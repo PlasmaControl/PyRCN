@@ -17,7 +17,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'ESN'
+project = 'PyRCN'
 copyright = '2020, Peter Steiner, Azarakhsh Jalalvand'
 author = 'Peter Steiner, Azarakhsh Jalalvand'
 
@@ -30,7 +30,7 @@ release = '0.0'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-extensions = ['sphinx.ext.napoleon']
+extensions = ['sphinx.ext.napoleon', 'sphinx.ext.autodoc']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
