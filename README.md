@@ -35,7 +35,7 @@ y_pred_classes = reg.predict(X=X_test)  # output is the prediction for each inpu
 # Acknowledgements
 This research is financed by Europäischer Sozialfonds (ESF), the Free State of Saxony and Ghent University.
 
-![SMWA_EFRE-ESF Logo](https://github.com/TUD-STKS/PyRCN/blob/master/images/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg&s=200)
+![SMWA_EFRE-ESF Logo](https://github.com/TUD-STKS/PyRCN/blob/master/images/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg)
 
 # References
 If you use the PyRCN, please cite the following publication:
