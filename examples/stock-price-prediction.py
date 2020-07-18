@@ -28,10 +28,6 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
-get_ipython().run_line_magic('matplotlib', 'inline')
-
-from IPython.display import set_matplotlib_formats
-set_matplotlib_formats('png', 'pdf')
 
 from pyrcn.echo_state_network import ESNRegressor
 
@@ -147,6 +143,8 @@ ax.plot(scaler.inverse_transform(prices_pred), label='Predicted')
 ax.set_xlabel("Timestamp")
 ax.set_ylabel("Price")
 ax.legend()
+
+plt.show()
 
 
 # We are experts in signal processing. Please notice that we do not give any kind of financial advice here! In the financial world, we are sure that much more effective models for time series prediction exist, which include actual background information.

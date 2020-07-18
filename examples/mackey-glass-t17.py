@@ -22,10 +22,6 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
-get_ipython().run_line_magic('matplotlib', 'inline')
-
-from IPython.display import set_matplotlib_formats
-set_matplotlib_formats('png', 'pdf')
 
 from pyrcn.echo_state_network import ESNRegressor
 
@@ -129,3 +125,4 @@ ax.plot(test_pred)
 ax.set_xlabel("n")
 ax.set_ylabel("X[n]")
 
+plt.show()
