@@ -1,7 +1,7 @@
 # PyRCN
 A Python 3 framework for Reservoir Computing with a scikit-learn-compatible API.
 
-PyRCN is a light-weight and transparent Python 3 framework that implements ESNs and is based on widely used scientific Python packages, such as numpy or scipy. The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to restructure their research data in order to use ESNs. Interested used can directly use scikit-learns built-in parameter optimization methods and example datasets.
+PyRCN is a light-weight and transparent Python 3 framework that implements ESNs and is based on widely used scientific Python packages, such as numpy or scipy. The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to restructure their research data in order to use ESNs. Interested users can directly use scikit-learn's built-in parameter optimization methods and example datasets.
 
 # Getting Started
 
