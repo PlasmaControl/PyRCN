@@ -133,7 +133,7 @@ PyRCN: Exploration and Application of ESNs
 
 Note Onset Detection using Echo State Networks
 
-´´´latex
+```latex
 @InProceedings{src:Steiner-20a,
 	title = {Note Onset Detection using Echo State Networks},
 	author = {Peter Steiner and Simon Stone and Peter Birkholz},
@@ -145,11 +145,11 @@ Note Onset Detection using Echo State Networks
 	publisher = {TUDpress, Dresden},
 	isbn = {978-3-959081-93-1}
 } 
-´´´
+```
 
 Feature Engineering and Stacked ESNs for Musical Onset Detection
 
-´´´latex
+```latex
 @INPROCEEDINGS{src:Steiner-20d,  
     author={Peter Steiner and Simon Stone and Azarakhsh Jalalvand and Peter Birkholz},  
     booktitle={2020 25th International Conference on Pattern Recognition (ICPR)},   
@@ -159,10 +159,10 @@ Feature Engineering and Stacked ESNs for Musical Onset Detection
     number={},  
     note={submitted},
 }
-´´´
+```
 
 Multipitch tracking in music signals using Echo State Networks
-´´´latex
+```latex
 @INPROCEEDINGS{src:Steiner-20b,
     author={Peter Steiner and Simon Stone and Peter Birkholz and Azarakhsh Jalalvand},
     booktitle={28th European Signal Processing Conference (EUSIPCO), 2020},
@@ -170,10 +170,10 @@ Multipitch tracking in music signals using Echo State Networks
     year={2020},
     note={accepted},
 }
-´´´
+```
 
 Multiple-F0 {E}stimation using {E}cho {S}tate {N}etworks
-´´´latex
+```latex
 @inproceedings{src:Steiner-19,
   title={Multiple-F0 {E}stimation using {E}cho {S}tate {N}etworks},
   booktitle={{MIREX}},
@@ -181,11 +181,11 @@ Multiple-F0 {E}stimation using {E}cho {S}tate {N}etworks
   year={2019},
   url = {https://www.music-ir.org/mirex/abstracts/2019/SBJ1.pdf}
 }
-´´´
+```
 
 
 # Acknowledgements
 This research is financed by Europäischer Sozialfonds (ESF), the Free State of Saxony and Ghent University.
 
-![SMWA_EFRE-ESF Logo](https://github.com/TUD-STKS/PyRCN/blob/master/images/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg&s=200)
-![Ghent University](https://github.com/TUD-STKS/PyRCN/blob/master/images/logo_UGent_EN_RGB_2400_color-on-white.png) ![IDLab](https://github.com/TUD-STKS/PyRCN/blob/master/images/Logo_IDLab_White.png&s=200)
+![SMWA_EFRE-ESF Logo](https://github.com/TUD-STKS/PyRCN/blob/master/images/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg)
+[comment]: <> (This is a comment, it will not be included ![Ghent University](https://github.com/TUD-STKS/PyRCN/blob/master/images/logo_UGent_EN_RGB_2400_color-on-white.png) ![IDLab](https://github.com/TUD-STKS/PyRCN/blob/master/images/Logo_IDLab_White.png)) 
