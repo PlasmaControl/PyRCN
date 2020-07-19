@@ -6,7 +6,13 @@
 Welcome to PyRCN's documentation!
 =================================
 
-.. automodule:: pyrcn.echo_state_network
+.. automodule:: pyrcn.echo_state_network.BaseEchoStateNetwork
+   :members:
+
+.. automodule:: pyrcn.echo_state_network.ESNClassifier
+   :members:
+
+.. automodule:: pyrcn.echo_state_network.ESNRegressor
    :members:
 
 .. toctree::
