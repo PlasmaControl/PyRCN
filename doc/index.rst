@@ -6,7 +6,7 @@
 Welcome to PyRCN's documentation!
 =================================
 
-.. automodule:: pyrcn.pyrcn
+.. automodule:: pyrcn.echo_state_network
    :members:
 
 .. toctree::
