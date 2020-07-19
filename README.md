@@ -43,11 +43,13 @@ PyRCn is developed using Python 3.6 or newer. It depends on the following packag
 ## Installation from PyPI
 
 The easiest and recommended way to install ``PyRCN`` is to use ``pip`` from (PyPI)[https://pypi.org] :
+
 ```python
 pip install pyrcn   
 ```
 
 ## Installation from source
+
 If you plan to contribute to ``PyRCN``, you can also install the package from source.
 
 Clone the Git repository:
@@ -64,19 +66,19 @@ python setup.py install --user
 # Package structure
 The package is structured in the following way: 
 
-- ´doc´
+- `doc`
     - This folder includes the package documentation.
-- ´examples´
+- `examples`
     - This folder includes example code as Jupyter Notebooks and python scripts.
-- ´images´
+- `images`
     - This folder includes the logos used in ´README.md´.
-- ´pyrcn´
+- `pyrcn`
     - This folder includes the actual Python package.
 
 
 # Getting Started
 
-PyRCN includes currently two variantes of Echo State Networks (ESNs): The ESNClassifier is meant to be a classifier, the ESNRegressor is meant to be a regressor.
+PyRCN includes currently two variants of Echo State Networks (ESNs): The ESNClassifier is meant to be a classifier, the ESNRegressor is meant to be a regressor.
 
 Basic example for the ESNClassifier:
 
@@ -185,7 +187,7 @@ Multiple-F0 {E}stimation using {E}cho {S}tate {N}etworks
 
 
 # Acknowledgements
-This research is financed by Europäischer Sozialfonds (ESF), the Free State of Saxony and Ghent University.
+This research was financed by Europäischer Sozialfonds (ESF), the Free State of Saxony (Application number: 100327771) and Ghent University.
 
 ![SMWA_EFRE-ESF Logo](https://github.com/TUD-STKS/PyRCN/blob/master/images/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg)
 [comment]: <> (This is a comment, it will not be included ![Ghent University](https://github.com/TUD-STKS/PyRCN/blob/master/images/logo_UGent_EN_RGB_2400_color-on-white.png) ![IDLab](https://github.com/TUD-STKS/PyRCN/blob/master/images/Logo_IDLab_White.png)) 

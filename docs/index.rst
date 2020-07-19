@@ -1,19 +1,23 @@
-.. ESN documentation master file, created by
-   sphinx-quickstart on Wed May  6 13:29:27 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 Welcome to PyRCN's documentation!
 =================================
 
-.. automodule:: pyrcn.echo_state_network.BaseEchoStateNetwork
-   :members:
+.. toctree::
+   :maxdepth: 1
 
-.. automodule:: pyrcn.echo_state_network.ESNClassifier
-   :members:
+   introduction
+   installation
+   usage
+   tutorial
+   development
+   citation
 
-.. automodule:: pyrcn.echo_state_network.ESNRegressor
-   :members:
+.. toctree::
+   :maxdepth: 3
+   :caption: Included estimators
+
+   PyRCN/echo_state_network/BaseEchoStateNetwork
+   PyRCN/echo_state_network/ESNClassifier
+   PyRCN/echo_state_network/ESNRegressor
 
 .. toctree::
    :maxdepth: 2
@@ -22,8 +26,13 @@ Welcome to PyRCN's documentation!
 
 
 Indices and tables
-==================
+------------------
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+Acknowledgements
+----------------
+
+This research was financed by Europäischer Sozialfonds (ESF), the Free State of Saxony (Application number: 100327771) and Ghent University.
