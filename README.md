@@ -188,6 +188,3 @@ Multiple-F0 {E}stimation using {E}cho {S}tate {N}etworks
 
 # Acknowledgements
 This research was financed by Europäischer Sozialfonds (ESF), the Free State of Saxony (Application number: 100327771) and Ghent University.
-
-![SMWA_EFRE-ESF Logo](https://github.com/TUD-STKS/PyRCN/blob/master/images/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg)
-[comment]: <> (This is a comment, it will not be included ![Ghent University](https://github.com/TUD-STKS/PyRCN/blob/master/images/logo_UGent_EN_RGB_2400_color-on-white.png) ![IDLab](https://github.com/TUD-STKS/PyRCN/blob/master/images/Logo_IDLab_White.png)) 
