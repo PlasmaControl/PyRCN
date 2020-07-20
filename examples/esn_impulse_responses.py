@@ -16,6 +16,10 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
+get_ipython().run_line_magic('matplotlib', 'inline')
+
+from IPython.display import set_matplotlib_formats
+set_matplotlib_formats('png', 'pdf')
 
 from pyrcn.echo_state_network import ESNRegressor
 
@@ -29,12 +33,12 @@ X = np.zeros(shape=(100, 1), dtype=int)
 X[5] = 1
 y = X[:, 0]
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=600)
-ax.plot(X)
-ax.set_xlim([0, 100])
-ax.set_ylim([0, 1])
-ax.set_xlabel('n')
-ax.set_ylabel('X[n]')
+plt.figure()
+plt.plot(X)
+plt.xlim([0, 100])
+plt.ylim([0, 1])
+plt.xlabel('n')
+plt.ylabel('X[n]')
 plt.grid()
 
 
@@ -60,13 +64,13 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[4]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=600)
-im = ax.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
 
@@ -88,13 +92,13 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[6]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=1200)
-im = ax.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
 
@@ -119,13 +123,13 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[8]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=1200)
-im = ax.imshow(np.abs(esn.reservoir_state[:, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state.shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
 
@@ -147,13 +151,13 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[10]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=1200)
-im = ax.imshow(np.abs(esn.reservoir_state[:, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state.shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
 
@@ -178,13 +182,13 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[12]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=1200)
-im = ax.imshow(np.abs(esn.reservoir_state[:, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state.shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
 
@@ -209,13 +213,13 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[14]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=1200)
-im = ax.imshow(np.abs(esn.reservoir_state[:, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state.shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
 
@@ -238,13 +242,13 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[16]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=1200)
-im = ax.imshow(np.abs(esn.reservoir_state[:, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state.shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
 
@@ -270,13 +274,13 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[18]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=1200)
-im = ax.imshow(np.abs(esn.reservoir_state[:, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state.shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:100, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
 
@@ -298,13 +302,13 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[20]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=1200)
-im = ax.imshow(np.abs(esn.reservoir_state[:, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state.shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
 
@@ -326,13 +330,13 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[22]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=1200)
-im = ax.imshow(np.abs(esn.reservoir_state[:, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state.shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
 
@@ -354,13 +358,12 @@ _ = esn.predict(X=X, keep_reservoir_state=True)
 # In[24]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.1), dpi=1200)
-im = ax.imshow(np.abs(esn.reservoir_state[:, 1:].T),vmin=0, vmax=1)
-ax.set_xlim([0, esn.reservoir_state.shape[0]])
-ax.set_ylim([0, esn.reservoir_state.shape[1] - 1])
-ax.set_xlabel('n')
-ax.set_ylabel('R[n]')
-plt.colorbar(im, ax=ax)
+plt.figure()
+im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
+plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
+plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
 plt.grid()
 
-plt.show()

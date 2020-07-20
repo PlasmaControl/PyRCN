@@ -5,14 +5,13 @@
 # 
 # ## Introduction
 # 
-# Time Series Prediction is one important regression task, which can be solved using several Machine Learning techniques.
+# Time Series Prediction is one important regression task, which can be solved using several machine learning techniques.
 # 
-# In this notebook, we would like to briefly introduce one very bais example for Time Series prediction:
+# In this notebook, we briefly introduce one very basic example for time series prediction:
 # 
 # Stock Price Prediction
 # 
-# Please note that this notebook is not supposed to be used for serious stock price analysis, and we will not give any
-# warranty that the approach will work in practice.
+# Disclaimer: We are signal processing experts, not financial advisors. Do not use any of the models presented herein to steer your investments.
 # 
 # At first, we need to import all required packages
 
@@ -28,6 +27,10 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
+get_ipython().run_line_magic('matplotlib', 'inline')
+
+from IPython.display import set_matplotlib_formats
+set_matplotlib_formats('png', 'pdf')
 
 from pyrcn.echo_state_network import ESNRegressor
 
@@ -63,15 +66,15 @@ time_series = time_series.dropna()
 time_series.head()
 
 
-# As one can see, the stock price trends upwards for the first few thousand days. Then goes down at around $n=\num{3300}$ before climbing again after around $n = 4900$. 
+# As one can see, the stock price trends upwards for the first few thousand days. Then goes down at around $n=3300$ before climbing again after around $n = 4900$. 
 
 # In[4]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.65), dpi=1200)
-time_series.plot(x='Date', y='Close', ax=ax, legend=False, grid=True)
-ax.set_xlabel("Timestamp")
-ax.set_ylabel("Price")
+plt.figure()
+time_series.plot(x='Date', y='Close', legend=False, grid=True)
+plt.xlabel("Timestamp")
+plt.ylabel("Price")
 
 
 # We pre-processed the dataset by removing undefined values, namely, weekends and public holidays. The remaining values were normalized to be in a range of $[0 1]$.
@@ -137,14 +140,12 @@ prices_pred = np.empty_like(prices)
 prices_pred[:] = np.nan
 prices_pred[train_len + future_len:, 0] = test_pred[train_len:]
 
-_, ax = plt.subplots(figsize=(4.75, 1.65), dpi=1200)
-ax.plot(scaler.inverse_transform(test_out), label='Target')
-ax.plot(scaler.inverse_transform(prices_pred), label='Predicted')
-ax.set_xlabel("Timestamp")
-ax.set_ylabel("Price")
-ax.legend()
-
-plt.show()
+plt.figure()
+plt.plot(scaler.inverse_transform(test_out), label='Target')
+plt.plot(scaler.inverse_transform(prices_pred), label='Predicted')
+plt.xlabel("Timestamp")
+plt.ylabel("Price")
+plt.legend()
 
 
-# We are experts in signal processing. Please notice that we do not give any kind of financial advice here! In the financial world, we are sure that much more effective models for time series prediction exist, which include actual background information.
+# Disclaimer: We are signal processing experts, not financial advisors. Do not use any of the models presented herein to steer your investments.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# # Stock Price Prediction using Echo State Networks
+# # Timeseries prediction of the Mackey-Glass Equation with ESNs 
 # 
 # ## Introduction
 # 
@@ -22,6 +22,10 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
+get_ipython().run_line_magic('matplotlib', 'inline')
+
+from IPython.display import set_matplotlib_formats
+set_matplotlib_formats('png', 'pdf')
 
 from pyrcn.echo_state_network import ESNRegressor
 
@@ -34,15 +38,15 @@ from pyrcn.echo_state_network import ESNRegressor
 data = np.loadtxt("./dataset/MackeyGlass_t17.txt")
 
 
-# The first \num{500} samples are visualized.
+# The first 500 samples are visualized.
 
 # In[3]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.65), dpi=1200)
-ax.plot(data[:500])
-ax.set_xlabel("n")
-ax.set_ylabel("X[n]")
+plt.figure()
+plt.plot(data[:500])
+plt.xlabel("n")
+plt.ylabel("X[n]")
 plt.grid()
 
 
@@ -106,11 +110,11 @@ print("Test MSE:\t{0}".format(test_err))
 # In[8]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.65), dpi=1200)
-ax.plot(train_out)
-ax.plot(train_pred)
-ax.set_xlabel("n")
-ax.set_ylabel("X[n]")
+plt.figure()
+plt.plot(train_out)
+plt.plot(train_pred)
+plt.xlabel("n")
+plt.ylabel("X[n]")
 
 
 # Prediction of the test set.
@@ -119,10 +123,9 @@ ax.set_ylabel("X[n]")
 # In[9]:
 
 
-_, ax = plt.subplots(figsize=(4.75, 1.65), dpi=1200)
-ax.plot(test_out)
-ax.plot(test_pred)
-ax.set_xlabel("n")
-ax.set_ylabel("X[n]")
+plt.figure()
+plt.plot(test_out)
+plt.plot(test_pred)
+plt.xlabel("n")
+plt.ylabel("X[n]")
 
-plt.show()
