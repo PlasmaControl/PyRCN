@@ -413,7 +413,7 @@ class BaseEchoStateNetwork(BaseEstimator):
                     b = np.dot(self.reservoir_weights_, reservoir_state[sample, :], self.spectral_radius)
 
                 reservoir_state[sample + 1, :] = ACTIVATIONS[self.reservoir_activation](
-                    a + b + self.bias_weights_ * self.bias * reservoir_inputs[sample, -self.ext_bias])
+                    np.atleast_2d(a + b).T + self.bias_weights_ * self.bias * reservoir_inputs[sample, -self.ext_bias]).flatten()
                 reservoir_state[sample + 1, :] = (1 - self.leakage) * reservoir_state[sample, :]\
                                                  + self.leakage * reservoir_state[sample + 1, :]
         else:

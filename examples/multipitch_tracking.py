@@ -158,7 +158,7 @@ if should_train:
 # The pipeline is similar as before: 
 # 
 # - Extract features and labels
-# - Pass features through ESN and compute output weights
+# - Pass features through ESN and compute outputs
 # - Binarize the outputs by simply thresholding
 # - Save labels, outputs, binarized outputs for further processing, e.g. visualization or evaluation.
 

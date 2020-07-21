@@ -81,10 +81,13 @@ def get_splits(onsets_splits_path: str=r"C:\Users\Steiner\Documents\Python\PyRCN
 
 
 try:
-    esn = load(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\models\esn_500_bi_delta.joblib")
+    esn1 = load(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\models\esn_5000_bi_delta.joblib")
+    esn2 = load(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\models\second_layer_esn_5000_bi.joblib")
 except:
-    esn = ESNRegressor(k_in=10, input_scaling=0.4, spectral_radius=0.5, bias=0.8, leakage=1.0, reservoir_size=500, k_res=10,
-                       reservoir_activation='tanh', bi_directional=False, solver='ridge', beta=1e-2, random_state=1)
+    esn1 = ESNRegressor(k_in=10, input_scaling=0.4, spectral_radius=0.5, bias=0.8, leakage=1.0, reservoir_size=500, k_res=10,
+                        reservoir_activation='tanh', bi_directional=False, solver='ridge', beta=1e-2, random_state=1)
+    esn2 = ESNRegressor(k_in=10, input_scaling=0.4, spectral_radius=0.5, bias=6.5, leakage=1.0, reservoir_size=500, k_res=10,
+                        reservoir_activation='tanh', bi_directional=False, solver='ridge', beta=1e-2, random_state=1, ext_bias=1)
 
 
 # ## Feature extraction
@@ -173,8 +176,8 @@ if should_train:
             train_files = curr_folds[d]
             for fid in train_ids:
                 X, y_true, _ = extract_features(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\boeck_dataset", file_name=fid)
-                esn.partial_fit(X=X, y=y_true, update_output_weights=False)
-        esn.finalize()
+                esn1.partial_fit(X=X, y=y_true, update_output_weights=False)
+        esn1.finalize()
         break  # Here, we have trained a model on seven folds. It can be now evaluated on the training and test examples.
 
 
@@ -185,8 +188,7 @@ if should_train:
 # The pipeline is similar as before: 
 # 
 # - Extract features and labels
-# - Pass features through ESN and compute output weights
-# - Binarize the outputs by simply thresholding
+# - Pass features through ESN and compute output
 # - Save labels, outputs, binarized outputs for further processing, e.g. visualization or evaluation.
 
 # In[6]:
@@ -210,14 +212,14 @@ for curr_split in range(len(folds)):
             X, y_true, onset_times = extract_features(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\boeck_dataset", file_name=fid)
             Onset_times_train.append(onset_times)
             X_train.append(X)
-            y_pred = esn.predict(X=X)
+            y_pred = esn1.predict(X=X)
             Y_pred_train.append(y_pred)
     
     test_files = curr_folds[-1]
     X, y_true, onset_times = extract_features(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\boeck_dataset", file_name=fid)
     Onset_times_test.append(onset_times)
     X_test.append(X)
-    y_pred = esn.predict(X=X)
+    y_pred = esn1.predict(X=X)
     Y_pred_test.append(y_pred)
     break
 
@@ -227,6 +229,125 @@ for curr_split in range(len(folds)):
 # We visualize inputs, onset detection function (ODF) and target onsets in two plots, respectively. 
 
 # In[7]:
+
+
+fig, (ax0, ax1) = plt.subplots(2, 1, figsize=(12, 6))
+
+ax0.imshow(X_train[0].T, origin='lower', vmin=0, vmax=1, aspect='auto')
+ax0.set_xlabel('n')
+ax0.set_ylabel('X[n]')
+ax0.grid()
+for target in Onset_times_train[0]:
+    ax0.axvline(100*target, color='w')
+
+if Y_pred_train[0].ndim > 1:
+    ax1.plot(Y_pred_train[0][:, 0])
+else:
+    ax1.plot(Y_pred_train[0][:, 0])
+ax1.set_xlabel('n')
+ax1.set_ylabel('y_pred[n]')
+ax1.grid()
+for target in Onset_times_train[0]:
+    ax1.axvline(100*target, color='k')
+
+plt.tight_layout()
+
+
+# ## Multilayer ESN
+# 
+# In our paper, we have presented a novel way of stacking Echo State Networks. The ESN can be trained layer-wise. That means, we can finalize the training of the first layer and then train the second layer using the first layer.
+# 
+# We have proposed to use a second reservoir in the following way:
+# 
+# - Pass features through the first ESN and compute output
+# - Pass features through the second layer, and use the output of the first ESN as bias for the second ESN.
+# - Compute output of the second layer.
+# 
+# As can be seen in the code, this is rather straight forward to do. In general, we allow the ESN to receive several external bias inputs, by ext_bias > 0. In that case, the ext_bias last features are used as the external bias and passed through the ESN via the bias weight matrix. 
+# 
+# To implement this for onset detection:
+# 
+# - We compute the output of esn1. 
+# - The feature vectors and the ouput of esn1 are concatenated.
+# - The concatenated feature matrix is fed through esn2 and the outputs are computed.
+
+# In[8]:
+
+
+should_train = False
+
+if should_train:
+    folds = get_splits()
+    for curr_split in range(len(folds)):
+        curr_folds = deque(folds)
+        curr_folds.rotate(curr_split)
+        for d in range(len(curr_folds) - 1):
+            train_files = curr_folds[d]
+            for fid in train_ids:
+                X, y_true, _ = extract_features(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\boeck_dataset", file_name=fid)
+                esn1.partial_fit(X=X, y=y_true, update_output_weights=False)
+        esn1.finalize()
+    
+        break  # Here, we have trained a model on seven folds. It can be now evaluated on the training and test examples.
+
+    folds = get_splits()
+    for curr_split in range(len(folds)):
+        curr_folds = deque(folds)
+        curr_folds.rotate(curr_split)
+        for d in range(len(curr_folds) - 1):
+            train_files = curr_folds[d]
+            for fid in train_ids:
+                X, y_true, _ = extract_features(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\boeck_dataset", file_name=fid)
+                y_pred = esn1.predict(X=X)
+                if y_pred.ndim > 1:
+                    X = np.concatenate((X, np.atleast_2d(y_pred[:, 0]).T), axis=1)
+                else:
+                    X = np.concatenate((X, np.atleast_2d(y_pred).T), axis=1)
+                esn2.partial_fit(X=X, y=y_true, update_output_weights=False)
+        esn2.finalize()
+    
+        break  # Here, we have trained a model on seven folds. It can be now evaluated on the training and test examples.
+
+
+# In[9]:
+
+
+folds = get_splits()
+X_train = []
+Onset_times_train = []
+Y_pred_train = []
+
+X_test = []
+Onset_times_test = []
+Y_pred_test = []
+
+for curr_split in range(len(folds)):
+    curr_folds = deque(folds)
+    curr_folds.rotate(curr_split)
+    for d in range(len(curr_folds) - 1):
+        train_files = curr_folds[d]
+        for fid in train_files:
+            X, y_true, onset_times = extract_features(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\boeck_dataset", file_name=fid)
+            Onset_times_train.append(onset_times)
+            X_train.append(X)
+            y_pred = esn1.predict(X=X)
+            if y_pred.ndim > 1:
+                X = np.concatenate((X, np.atleast_2d(y_pred[:, 0]).T), axis=1)
+            else:
+                X = np.concatenate((X, np.atleast_2d(y_pred).T), axis=1)
+            y_pred = esn2.predict(X=X)
+            Y_pred_train.append(y_pred)
+    
+    test_files = curr_folds[-1]
+    X, y_true, onset_times = extract_features(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\boeck_dataset", file_name=fid)
+    Onset_times_test.append(onset_times)
+    X_test.append(X)
+    y_pred = esn1.predict(X=X)
+    Y_pred_test.append(y_pred)
+    break
+
+
+# In[10]:
 
 
 fig, (ax0, ax1) = plt.subplots(2, 1, figsize=(12, 6))
