@@ -7,9 +7,9 @@
 # 
 # In this notebook, we demonstrate how the ESN can deal with multipitch tracking, a challenging multilabel classification problem in music analysis.
 # 
-# As this is a computational expensive task, we have pre-trained models to serve as an entry point.
+# As this is a computationally expensive task, we have pre-trained models to serve as an entry point.
 # 
-# The notebook depends on several packages: madmom, mir_eval, numpy, matplotlib, IPython and pyrcn.
+# At first, we import all packages required for this task. You can find the import statements below.
 
 # In[1]:
 
