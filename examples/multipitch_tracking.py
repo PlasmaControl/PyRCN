@@ -19,7 +19,7 @@ import os
 import csv
 from intervaltree import IntervalTree
 from sklearn.base import clone
-from joblib import dump, load, Parallel, delayed
+from joblib import dump, load
 
 from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
@@ -81,6 +81,8 @@ except:
 # ## Feature extraction
 # 
 # The acoustic features extracted from the input signal are obtained by filtering short-term spectra (window length 4096 samples and hop size 10 ms) with a bank of triangular filters in the frequency domain with log-spaced frequencies. The frequency range was 30 Hz to 17 000 Hz and we used 12 filters per octave. We used logarithmic magnitudes and added 1 inside the logarithm to ensure a minimum value of 0 for a frame without energy. The first derivative between adjacent frames was added in order to enrich the features by temporal information. Binary labels indicating absent (value 0) or present (value 1) pitches for each frame are assigned to each frame. Note that this task is a multilabel classification. Each MIDI pitch is a separate class, and multiple or no classes can be active at a discrete frame index.
+# 
+# For a more detailed description, please have a look in our repository ([https://github.com/TUD-STKS/Automatic-Music-Transcription](https://github.com/TUD-STKS/Automatic-Music-Transcription)) with several detailed examples for music analysis tasks.
 
 # In[4]:
 

@@ -23,7 +23,7 @@ setuptools.setup(
     keywords='PyRCN, Echo State Network',
     project_urls={
         'Documentation': 'https://pyrcn.readthedocs.io/',
-        'Funding': 'This research was financed by Europäischer Sozialfonds (ESF), the Free State of Saxony (Application number: 100327771) and Ghent University.',
+        'Funding': 'https://pyrcn.readthedocs.io/',
         'Source': 'https://github.com/TUD-STKS/PyRCN',
         'Tracker': 'https://github.com/TUD-STKS/PyRCN/issues',
     },
