@@ -267,7 +267,7 @@ grid = {'reservoir_size': [50, 100, 200, 400, 500, 800, 1000, 2000, 4000, 5000],
 # 
 # In the test case, we use a simple variant of sequence classification:
 # 
-# The ESN computes the output for each sequence. We integrate the outputs over time and find the highest integrated output index. This is the label of the sequence.
+# The ESN computes the output for each sequence. For classification, we just use the last output vector of each sequence. The highest index in that output vector is the label of the sequence.
 # 
 # We store all ground truth labels and the predicted labels for training and test. Then, we use the scikit-learn's classification_report and plot a confusion matrix in order to show the classification performance.
 # 
@@ -289,14 +289,14 @@ for params in ParameterGrid(grid):
     for X, y in zip(X_train, y_train):
         y_pred = reg.predict(X=X, keep_reservoir_state=False)
         Y_true_train.append(np.argmax(y))
-        Y_pred_train.append(np.argmax(y_pred.sum(axis=0)))
+        Y_pred_train.append(np.argmax(y_pred[-1, :]))
     
     Y_true_test = []
     Y_pred_test = []
     for X, y in zip(X_test, y_test):
         y_pred = reg.predict(X=X, keep_reservoir_state=False)
         Y_true_test.append(np.argmax(y))
-        Y_pred_test.append(np.argmax(y_pred.sum(axis=0)))
+        Y_pred_test.append(np.argmax(y_pred[-1, :]))
     cm = confusion_matrix(Y_true_train, Y_pred_train)
     cm_display = ConfusionMatrixDisplay(cm, display_labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).plot()
     print("Classification training report for estimator %s:\n%s\n"

@@ -35,7 +35,7 @@ Indices and tables
 Acknowledgements
 ----------------
 
-This research was financed by Europäischer Sozialfonds (ESF), the Free State of Saxony (Application number: 100327771) and Ghent University.
+This research is funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
 
 .. image:: logos/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg
   :height: 90

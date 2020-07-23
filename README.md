@@ -105,6 +105,10 @@ ref.fit(X=X_train, y=y_train)
 y_pred = reg.predict(X=X_test)  # output is the prediction for each input example
 ```
 
+An extensive introduction to getting started with PyRCN is included in the (examples)[https://github.com/TUD-STKS/PyRCN/blob/master/examples] directory. The notebook (digits)[https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.ipynb] or its corresponding (Python script)[https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.py] show how to set up an ESN for a small hand-written digit recognition experiment.
+
+Fore more advanced examples, pleas have a look at our (Automatic Music Transcription Repository)[https://github.com/TUD-STKS/Automatic-Music-Transcription], in which we provide an entire feature extraction, training and test pipeline for multipitch tracking and for note onset detection using PyRCN.
+
 # Citation
 
 If you use PyRCN, please cite the following publication:
@@ -187,4 +191,4 @@ Multiple-F0 {E}stimation using {E}cho {S}tate {N}etworks
 
 
 # Acknowledgements
-This research was financed by Europäischer Sozialfonds (ESF), the Free State of Saxony (Application number: 100327771) and Ghent University.
+This research is funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
