@@ -107,6 +107,10 @@ y_pred = reg.predict(X=X_test)  # output is the prediction for each input exampl
 
 An extensive introduction to getting started with PyRCN is included in the [examples](https://github.com/TUD-STKS/PyRCN/blob/master/examples) directory. The notebook [digits](https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.ipynb) or its corresponding [Python script](https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.py) show how to set up an ESN for a small hand-written digit recognition experiment.
 
+Launch the digits notebook on Binder: 
+
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TUD-STKS/PyRCN/master?filepath=examples%2Fdigits-last-state.ipynb)
+
 Fore more advanced examples, please have a look at our [Automatic Music Transcription Repository](https://github.com/TUD-STKS/Automatic-Music-Transcription), in which we provide an entire feature extraction, training and test pipeline for multipitch tracking and for note onset detection using PyRCN.
 
 # Citation
