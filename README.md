@@ -1,11 +1,9 @@
 # PyRCN
-A Python 3 framework for Reservoir Computing with a scikit-learn-compatible API.
+A Python 3 framework for Reservoir Computing with a [scikit-learn](https://scikit-learn.org/stable/)-compatible API.
 
-PyRCN is a light-weight and transparent Python 3 framework that implements ESNs and is based on widely used scientific Python packages, such as numpy or scipy. The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to restructure their research data in order to use ESNs. Interested used can directly use scikit-learns built-in parameter optimization methods and example datasets.
+PyRCN ("Python Reservoir Computing Networks") is a light-weight and transparent Python 3 framework for Reservoir Computing (currently only implementing Echo State Networks) and is based on widely used scientific Python packages, such as numpy or scipy. The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to refactor their code in order to use the estimators implemented by this framework. Scikit-learn's built-in parameter optimization methods and example datasets can also be used in the usual way.
 
 PyRCN is used by the [Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universität Dresden, Dresden, Germany](https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en) and [IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium](https://www.ugent.be/ea/idlab/en). 
-
-It is an acronym for "Python Reservoir Computing Networks". 
 
 Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger in different flavors, e.g. Classifier and Regressor. It is actively developed to be extended into several directions:
 
@@ -17,17 +15,17 @@ Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger in differe
 PyRCN has successfully been used for several tasks:
 
 - Music Information Retrieval (MIR)
-    - Multipitch Tracking
-    - Onset Detection
+    - Multipitch tracking
+    - Onset detection
 - Time Series Prediction
     - Mackey-Glass benchmark test
-    - Stock Price Prediction
-- Tasks we are working on at the moment:
-    - Beat Tracking in music signals
+    - Stock price prediction
+- Ongoing research tasks:
+    - Beat tracking in music signals
     - Pattern recognition in sensor data
     - Phoneme recognition
 
-Please see the "Reference" section for more information. Code examples to getting started with PyRCN are included in the "examples" directory.
+Please see the [References section](#references) for more information. For code examples, see [Getting started](#getting-started).
 
 # Installation
 
@@ -78,7 +76,7 @@ The package is structured in the following way:
 
 # Getting Started
 
-PyRCN includes currently two variants of Echo State Networks (ESNs): The ESNClassifier is meant to be a classifier, the ESNRegressor is meant to be a regressor.
+PyRCN includes currently two variants of Echo State Networks (ESNs): The ESNClassifier and the ESNRegressor.
 
 Basic example for the ESNClassifier:
 
@@ -127,7 +125,7 @@ If you use PyRCN, please cite the following publication:
 }
 ```
 
-# References:
+# References
 
 PyRCN: Exploration and Application of ESNs
 
@@ -182,7 +180,7 @@ Multipitch tracking in music signals using Echo State Networks
 }
 ```
 
-Multiple-F0 {E}stimation using {E}cho {S}tate {N}etworks
+Multiple-F0 Estimation using Echo State Networks
 ```latex
 @inproceedings{src:Steiner-19,
   title={Multiple-F0 {E}stimation using {E}cho {S}tate {N}etworks},
