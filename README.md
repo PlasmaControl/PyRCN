@@ -3,14 +3,14 @@ A Python 3 framework for Reservoir Computing with a scikit-learn-compatible API.
 
 PyRCN is a light-weight and transparent Python 3 framework that implements ESNs and is based on widely used scientific Python packages, such as numpy or scipy. The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to restructure their research data in order to use ESNs. Interested used can directly use scikit-learns built-in parameter optimization methods and example datasets.
 
-PyRCN is used by the Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universität Dresden, Dresden, Germany (https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en) and IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium (https://www.ugent.be/ea/idlab/en). 
+PyRCN is used by the [Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universität Dresden, Dresden, Germany](https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en) and [IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium](https://www.ugent.be/ea/idlab/en). 
 
 It is an acronym for "Python Reservoir Computing Networks". 
 
 Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger in different flavors, e.g. Classifier and Regressor. It is actively developed to be extended into several directions:
 
 - Incorporate Feedback
-- Better sequence handling with sktime (http://sktime.org/)
+- Better sequence handling with [sktime](http://sktime.org/)
 - A unified API to stack ESNs
 - More towards future work: Related architectures, such as Extreme Learning Machines (ELMs) and Liquid State Machines (LSMs)
 
@@ -42,7 +42,7 @@ PyRCn is developed using Python 3.6 or newer. It depends on the following packag
 
 ## Installation from PyPI
 
-The easiest and recommended way to install ``PyRCN`` is to use ``pip`` from (PyPI)[https://pypi.org] :
+The easiest and recommended way to install ``PyRCN`` is to use ``pip`` from [PyPI](https://pypi.org) :
 
 ```python
 pip install pyrcn   
@@ -105,9 +105,9 @@ ref.fit(X=X_train, y=y_train)
 y_pred = reg.predict(X=X_test)  # output is the prediction for each input example
 ```
 
-An extensive introduction to getting started with PyRCN is included in the (examples)[https://github.com/TUD-STKS/PyRCN/blob/master/examples] directory. The notebook (digits)[https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.ipynb] or its corresponding (Python script)[https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.py] show how to set up an ESN for a small hand-written digit recognition experiment.
+An extensive introduction to getting started with PyRCN is included in the [examples](https://github.com/TUD-STKS/PyRCN/blob/master/examples) directory. The notebook [digits](https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.ipynb) or its corresponding [Python script](https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.py) show how to set up an ESN for a small hand-written digit recognition experiment.
 
-Fore more advanced examples, pleas have a look at our (Automatic Music Transcription Repository)[https://github.com/TUD-STKS/Automatic-Music-Transcription], in which we provide an entire feature extraction, training and test pipeline for multipitch tracking and for note onset detection using PyRCN.
+Fore more advanced examples, please have a look at our [Automatic Music Transcription Repository](https://github.com/TUD-STKS/Automatic-Music-Transcription), in which we provide an entire feature extraction, training and test pipeline for multipitch tracking and for note onset detection using PyRCN.
 
 # Citation
 
