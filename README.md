@@ -107,7 +107,7 @@ An extensive introduction to getting started with PyRCN is included in the [exam
 
 Launch the digits notebook on Binder: 
 
-[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TUD-STKS/PyRCN/master?filepath=examples%2Fdigits-last-state.ipynb)
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TUD-STKS/PyRCN/master?filepath=examples%2Fdigits.ipynb)
 
 Fore more advanced examples, please have a look at our [Automatic Music Transcription Repository](https://github.com/TUD-STKS/Automatic-Music-Transcription), in which we provide an entire feature extraction, training and test pipeline for multipitch tracking and for note onset detection using PyRCN.
 
@@ -183,7 +183,7 @@ Multipitch tracking in music signals using Echo State Networks
 Multiple-F0 Estimation using Echo State Networks
 ```latex
 @inproceedings{src:Steiner-19,
-  title={Multiple-F0 {E}stimation using {E}cho {S}tate {N}etworks},
+  title={Multiple-F0 Estimation using Echo State Networks},
   booktitle={{MIREX}},
   author={Peter Steiner and Azarakhsh Jalalvand and Peter Birkholz},
   year={2019},
