@@ -11,7 +11,7 @@
 # 
 # This tutorial requires the Python modules numpy, scikit-learn, matplotlib and pyrcn.
 
-# In[1]:
+# In[ ]:
 
 
 import numpy as np
@@ -37,7 +37,7 @@ from pyrcn.echo_state_network import ESNRegressor
 # 
 # The dataset is already part of scikit-learn and consists of 1797 8x8 images. We are using the dataloader from scikit-learn.
 
-# In[2]:
+# In[ ]:
 
 
 digits = load_digits()
@@ -54,7 +54,7 @@ print("Shape of digits {0}".format(data[0].shape))
 # 
 # We treat each image as a sequence of 8 feature vectors with 8 dimensions.
 
-# In[3]:
+# In[ ]:
 
 
 # Split data into train and test subsets
@@ -73,7 +73,7 @@ print("Shape of output in test set: {0}".format(y_test[0].shape))
 # 
 # We define a user-defined optimization function to tune the hyper-parameters.
 
-# In[4]:
+# In[ ]:
 
 
 def opt_function(base_reg, params, X_train, y_train, X_test, y_test):
@@ -137,11 +137,21 @@ grid = {'input_scaling': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1,
 
 
 t1 = time.time()
-losses = [opt_function(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid)]
+losses = Parallel(n_jobs=1, verbose=50)(delayed(opt_function)(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid))
 losses = np.asarray(losses)
 print("Finished in {0} seconds!".format(time.time() - t1))
+
+print("The lowest training MSE: {0}; parameter combination: {1}".format(np.min(losses[:, 0]), ParameterGrid(grid)[np.argmin(losses[:, 0])]))
+print("The lowest test MSE: {0}; parameter combination: {1}".format(np.min(losses[:, 1]), ParameterGrid(grid)[np.argmin(losses[:, 1])]))
+
+
+# Let us see the impact of parallelization by utilizing all available kernels. One will notice that the optimization runs much faster now.
+
+# In[ ]:
+
+
 t1 = time.time()
-losses = Parallel(n_jobs=-1)(delayed(opt_function)(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid))
+losses = Parallel(n_jobs=-1, verbose=50)(delayed(opt_function)(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid))
 losses = np.asarray(losses)
 print("Finished in {0} seconds!".format(time.time() - t1))
 
@@ -184,11 +194,21 @@ grid = {'bias': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2
 
 
 t1 = time.time()
-losses = [opt_function(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid)]
+losses = Parallel(n_jobs=1, verbose=50)(delayed(opt_function)(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid))
 losses = np.asarray(losses)
 print("Finished in {0} seconds!".format(time.time() - t1))
+
+print("The lowest training MSE: {0}; parameter combination: {1}".format(np.min(losses[:, 0]), ParameterGrid(grid)[np.argmin(losses[:, 0])]))
+print("The lowest test MSE: {0}; parameter combination: {1}".format(np.min(losses[:, 1]), ParameterGrid(grid)[np.argmin(losses[:, 1])]))
+
+
+# Let us see the impact of parallelization by utilizing all available kernels. One will notice that the optimization runs much faster now.
+
+# In[ ]:
+
+
 t1 = time.time()
-losses = Parallel(n_jobs=-1)(delayed(opt_function)(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid))
+losses = Parallel(n_jobs=-1, verbose=50)(delayed(opt_function)(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid))
 losses = np.asarray(losses)
 print("Finished in {0} seconds!".format(time.time() - t1))
 
@@ -228,11 +248,20 @@ grid = {'beta': [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0
 
 
 t1 = time.time()
-losses = [opt_function(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid)]
+losses = Parallel(n_jobs=1, verbose=50)(delayed(opt_function)(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid))
 losses = np.asarray(losses)
 print("Finished in {0} seconds!".format(time.time() - t1))
+print("The lowest training MSE: {0}; parameter combination: {1}".format(np.min(losses[:, 0]), ParameterGrid(grid)[np.argmin(losses[:, 0])]))
+print("The lowest test MSE: {0}; parameter combination: {1}".format(np.min(losses[:, 1]), ParameterGrid(grid)[np.argmin(losses[:, 1])]))
+
+
+# Let us see the impact of parallelization by utilizing all available kernels. One will notice that the optimization runs much faster now.
+
+# In[ ]:
+
+
 t1 = time.time()
-losses = Parallel(n_jobs=-1)(delayed(opt_function)(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid))
+losses = Parallel(n_jobs=-1, verbose=50)(delayed(opt_function)(base_reg, params, X_train, y_train, X_test, y_test) for params in ParameterGrid(grid))
 losses = np.asarray(losses)
 print("Finished in {0} seconds!".format(time.time() - t1))
 
