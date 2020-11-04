@@ -31,13 +31,13 @@ class BaseExtremeLearningMachine(BaseEstimator):
     .. versionadded:: 0.00
     """
 
-    def __init__(self, k_in: int = 2, input_scaling: float = 1., bias: float = 0., reservoir_size: int = 500,
-                 reservoir_activation: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6, random_state: int = None):
+    def __init__(self, k_in: int = -1, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
+                 activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6, random_state: int = None):
         self.k_in = k_in
         self.input_scaling = input_scaling
         self.bias = bias
-        self.reservoir_size = reservoir_size
-        self.reservoir_activation = reservoir_activation
+        self.hidden_layer_size = hidden_layer_size
+        self.activation_function = activation_function
         self.solver = solver
         self.beta = beta
         self.random_state = random_state
@@ -111,8 +111,8 @@ class BaseExtremeLearningMachine(BaseEstimator):
         -------
 
         """
-        if self.reservoir_size <= 0:
-            raise ValueError("reservoir_size must be > 0, got %s." % self.reservoir_size)
+        if self.hidden_layer_size <= 0:
+            raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
         if self.input_scaling <= 0:
             raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
         if self.k_in <= 0:
@@ -123,9 +123,9 @@ class BaseExtremeLearningMachine(BaseEstimator):
             raise ValueError("beta must be >= 0, got %s." % self.beta)
         # raise ValueError if not registered
         supported_activations = ('identity', 'logistic', 'tanh', 'relu')
-        if self.reservoir_activation not in supported_activations:
-            raise ValueError("The reservoir_activation '%s' is not supported. Supported "
-                             "activations are %s." % (self.reservoir_activation, supported_activations))
+        if self.activation_function not in supported_activations:
+            raise ValueError("The activation_function '%s' is not supported. Supported "
+                             "activations are %s." % (self.activation_function, supported_activations))
         supported_solvers = _OFFLINE_SOLVERS
         if self.solver not in supported_solvers:
             raise ValueError("The solver %s is not supported. Expected one of: %s" %
@@ -133,7 +133,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
 
     def _initialize(self, y, n_features):
         """
-        Initialize everything for the Echo State Network. Set all attributes, allocate weights.
+        Initialize everything for the Extreme Learning Machine. Set all attributes, allocate weights.
         Parameters
         ----------
         y : ndarray of shape (n_samples, ) or (n_samples, n_outputs)
@@ -164,11 +164,11 @@ class BaseExtremeLearningMachine(BaseEstimator):
 
     def _init_state_collection_matrices(self):
         # collect the mean and variances of all reservoir nodes. This is required for the dropout strategy.
-        self._activations_mean = np.zeros(shape=(self.reservoir_size,))
-        self._activations_var = np.zeros(shape=(self.reservoir_size,))
+        self._activations_mean = np.zeros(shape=(self.hidden_layer_size,))
+        self._activations_var = np.zeros(shape=(self.hidden_layer_size,))
         # initialize xTx and xTy for linear regression. Will be deleted after the training is finalized.
-        self._xTx = np.zeros(shape=(self.reservoir_size + 1, self.reservoir_size + 1))
-        self._xTy = np.zeros(shape=(self.reservoir_size + 1, self.n_outputs_))
+        self._xTx = np.zeros(shape=(self.hidden_layer_size + 1, self.hidden_layer_size + 1))
+        self._xTy = np.zeros(shape=(self.hidden_layer_size + 1, self.n_outputs_))
 
     def _init_weights(self, n_features):
         """
@@ -183,23 +183,23 @@ class BaseExtremeLearningMachine(BaseEstimator):
         -------
 
         """
-        # Input-to-reservoir weights, drawn from uniform distribution.
+        # Input-to-node weights, drawn from uniform distribution.
         idx_co = 0
-        nr_entries = np.int32(self.reservoir_size*self.k_in)
+        nr_entries = np.int32(self.hidden_layer_size*self.k_in)
         ij = np.zeros((2, nr_entries), dtype=int)
         data_vec = self._random_state.rand(nr_entries) * 2 - 1
-        for en in range(self.reservoir_size):
+        for en in range(self.hidden_layer_size):
             per = self._random_state.permutation(n_features)[:self.k_in]
             ij[0][idx_co:idx_co+self.k_in] = en
             ij[1][idx_co:idx_co+self.k_in] = per
             idx_co = idx_co + self.k_in
         input_weights_init = scipy.sparse.csc_matrix((data_vec, ij),
-                                                     shape=(self.reservoir_size, n_features), dtype='float64')
+                                                     shape=(self.hidden_layer_size, n_features), dtype='float64')
         # Bias weights, fully connected bias for the reservoir nodes, drawn from uniform distribution.
-        bias_weights_init = (self._random_state.rand(self.reservoir_size) * 2 - 1)
+        bias_weights_init = (self._random_state.rand(self.hidden_layer_size) * 2 - 1)
         # Feedback weights, fully connected feedback from the output to the reservoir nodes
         # drawn from uniform distribution.
-        output_weights_init = None  # np.zeros(shape=(self.reservoir_size + 1, self.n_outputs_))
+        output_weights_init = None  # np.zeros(shape=(self.hidden_layer_size + 1, self.n_outputs_))
         return input_weights_init, bias_weights_init, output_weights_init
 
     def _fit(self, X, y, incremental=False, update_output_weights=True, n_jobs=0):
@@ -224,7 +224,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
 
         Returns
         -------
-        self : returns a trained ESN model.
+        self : returns a trained ELM model.
         """
         n_samples, n_features = X.shape
         # Ensure y is 2D
@@ -241,7 +241,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         self.is_fitted_ = True
         return self
 
-    def _pass_through_reservoir(self, X):
+    def _input_to_node(self, X):
         """
         Pass the data through the reservoir.
         Parameters
@@ -250,7 +250,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
             The input data
         Returns
         -------
-        reservoir_state : ndarray of shape (n_samples, reservoir_size)
+        reservoir_state : ndarray of shape (n_samples, hidden_layer_size)
             The collected reservoir states
         """
         reservoir_state = self._forward_pass(reservoir_inputs=X)
@@ -284,7 +284,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         n_samples = X.shape[0]
         self._n_samples = self._n_samples + n_samples
 
-        reservoir_state = self._pass_through_reservoir(X=X)
+        reservoir_state = self._input_to_node(X=X)
 
         if incremental:
             self._xTx = self._xTx + np.dot(reservoir_state.T, reservoir_state)
@@ -327,16 +327,16 @@ class BaseExtremeLearningMachine(BaseEstimator):
 
         """
         n_samples, n_features = reservoir_inputs.shape
-        reservoir_state = np.zeros(shape=(n_samples+1, self.reservoir_size))
+        reservoir_state = np.zeros(shape=(n_samples+1, self.hidden_layer_size))
         for sample in range(n_samples):
             if scipy.sparse.issparse(self.input_weights_):
                 a = self.input_weights_ * reservoir_inputs[sample, :] * self.input_scaling
             else:
                 a = np.dot(self.input_weights_, reservoir_inputs[sample, :], self.input_scaling)
 
-            reservoir_state[sample+1, :] = ACTIVATIONS[self.reservoir_activation](a + self.bias_weights_*self.bias)
+            reservoir_state[sample+1, :] = ACTIVATIONS[self.activation_function](a + self.bias_weights_*self.bias)
         """This should be the same: 
-        reservoir_state = ACTIVATIONS[self.reservoir_activation](self.input_weights_ * reservoir_inputs * self.input_scaling + self.bias_weights_*self.bias)
+        reservoir_state = ACTIVATIONS[self.activation_function](self.input_weights_ * reservoir_inputs * self.input_scaling + self.bias_weights_*self.bias)
         """
         return reservoir_state[1:, :]
 
@@ -361,7 +361,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
 
         Returns
         -------
-        self : returns a trained ESN model.
+        self : returns a trained ELM model.
         """
         if self.solver not in _OFFLINE_SOLVERS:
             raise AttributeError('partial_fit is only available for offline optimizers, not for %s.' % self.solver)
@@ -387,7 +387,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
 
         Returns
         -------
-        self : returns a trained ESN model.
+        self : returns a trained ELM model.
         """
         return self._fit(X, y, incremental=True, update_output_weights=update_output_weights, n_jobs=n_jobs)
 
@@ -446,7 +446,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
 
     def predict(self, X, keep_reservoir_state=False):
         """
-        Predict using the trained ESN model
+        Predict using the trained ELM model
 
         Parameters
         ----------
@@ -472,6 +472,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         """
         Predict using the trained ELM model
 
+        TODO: remove keep_reservoir_state
         Parameters
         ----------
         X : array-like, shape (n_samples, n_features)
@@ -483,14 +484,14 @@ class BaseExtremeLearningMachine(BaseEstimator):
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted values
         """
-        reservoir_state = self._pass_through_reservoir(X=X)
+        reservoir_state = self._input_to_node(X=X)
         if keep_reservoir_state:
             self.reservoir_state = reservoir_state
         y_pred = safe_sparse_dot(reservoir_state, self.output_weights_)
         return y_pred
 
 
-class ESNClassifier(BaseExtremeLearningMachine, ClassifierMixin):
+class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
     """
     Extreme Learning Machine classifier.
 
@@ -509,9 +510,9 @@ class ESNClassifier(BaseExtremeLearningMachine, ClassifierMixin):
     bias : float, default 0.0
         This element represents the bias scaling of the bias weights. It is a global scaling factor for the bias weight
         matrix.
-    reservoir_size : int, default 500
+    hidden_layer_size : int, default 500
         This element represents the number of neurons in the reservoir.
-    reservoir_activation : {'tanh', 'identity', 'logistic', 'relu'}
+    activation_function : {'tanh', 'identity', 'logistic', 'relu'}
         This element represents the activation function in the reservoir.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
             - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
@@ -541,11 +542,11 @@ class ESNClassifier(BaseExtremeLearningMachine, ClassifierMixin):
     ----------
     TODO
     """
-    def __init__(self, k_in: int = 2, input_scaling: float = 1., bias: float = 0., reservoir_size: int = 500,
-                 reservoir_activation: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
+    def __init__(self, k_in: int = 2, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
+                 activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
                  random_state: int = None):
-        super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, reservoir_size=reservoir_size,
-                         reservoir_activation=reservoir_activation, solver=solver, beta=beta, random_state=random_state)
+        super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
+                         activation_function=activation_function, solver=solver, beta=beta, random_state=random_state)
 
     def _validate_input(self, X, y):
         """
@@ -590,7 +591,7 @@ class ESNClassifier(BaseExtremeLearningMachine, ClassifierMixin):
 
         Returns
         -------
-        self : returns a trained ESN model.
+        self : returns a trained ELM model.
         """
         self._validate_hyperparameters()
         X, y = self._validate_input(X, y)
@@ -599,7 +600,7 @@ class ESNClassifier(BaseExtremeLearningMachine, ClassifierMixin):
 
     def predict(self, X, keep_reservoir_state=False):
         """
-        Predict the classes using the trained ESN classifier
+        Predict the classes using the trained ELM classifier
 
         Parameters
         ----------
@@ -646,7 +647,7 @@ class ESNClassifier(BaseExtremeLearningMachine, ClassifierMixin):
 
         Returns
         -------
-        self : returns a trained ESN classifier.
+        self : returns a trained ELM classifier.
         """
         if self.solver not in _OFFLINE_SOLVERS:
             raise AttributeError('partial_fit is only available for offline optimizers, not for %s.' % self.solver)
@@ -672,7 +673,7 @@ class ESNClassifier(BaseExtremeLearningMachine, ClassifierMixin):
 
         Returns
         -------
-        self : returns a trained ESN classifier.
+        self : returns a trained ELM classifier.
         """
         if _check_partial_fit_first_call(self, classes):
             super()._initialize(y=y, n_features=X.shape[1])
@@ -682,7 +683,7 @@ class ESNClassifier(BaseExtremeLearningMachine, ClassifierMixin):
 
     def predict_proba(self, X, keep_reservoir_state=False):
         """
-        Predict the probability estimates using the trained ESN classifier
+        Predict the probability estimates using the trained ELM classifier
 
         Parameters
         ----------
@@ -725,7 +726,7 @@ class ESNClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         return np.log(y_pred)
 
 
-class ESNRegressor(BaseExtremeLearningMachine, RegressorMixin):
+class ELMRegressor(BaseExtremeLearningMachine, RegressorMixin):
     """
     Extreme Learning Machine regressor.
 
@@ -744,9 +745,9 @@ class ESNRegressor(BaseExtremeLearningMachine, RegressorMixin):
     bias : float, default 0.0
         This element represents the bias scaling of the bias weights. It is a global scaling factor for the bias weight
         matrix.
-    reservoir_size : int, default 500
+    hidden_layer_size : int, default 500
         This element represents the number of neurons in the reservoir.
-    reservoir_activation : {'tanh', 'identity', 'logistic', 'relu'}
+    activation_function : {'tanh', 'identity', 'logistic', 'relu'}
         This element represents the activation function in the reservoir.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
             - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
@@ -776,11 +777,11 @@ class ESNRegressor(BaseExtremeLearningMachine, RegressorMixin):
     -----------
     TODO
     """
-    def __init__(self, k_in: int = 2, input_scaling: float = 1., bias: float = 0., reservoir_size: int = 500,
-                 reservoir_activation: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
+    def __init__(self, k_in: int = 2, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
+                 activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
                  random_state: int = None):
-        super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, reservoir_size=reservoir_size,
-                         reservoir_activation=reservoir_activation, solver=solver, beta=beta, random_state=random_state)
+        super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
+                         activation_function=activation_function, solver=solver, beta=beta, random_state=random_state)
 
     def fit(self, X, y, n_jobs=0):
         self._validate_hyperparameters()
@@ -790,7 +791,7 @@ class ESNRegressor(BaseExtremeLearningMachine, RegressorMixin):
 
     def predict(self, X, keep_reservoir_state=False):
         """
-        Predict the classes using the trained ESN regressor
+        Predict the classes using the trained ELM regressor
 
         Parameters
         ----------
@@ -831,7 +832,7 @@ class ESNRegressor(BaseExtremeLearningMachine, RegressorMixin):
 
         Returns
         -------
-        self : returns a trained ESN classifier.
+        self : returns a trained ELM classifier.
         """
         if self.solver not in _OFFLINE_SOLVERS:
             raise AttributeError("partial_fit is only available for offline optimizer. %s is not offline"
@@ -858,7 +859,7 @@ class ESNRegressor(BaseExtremeLearningMachine, RegressorMixin):
 
         Returns
         -------
-        self : returns a trained ESN classifier.
+        self : returns a trained ELM classifier.
         """
         super()._partial_fit(X, y, update_output_weights=update_output_weights, n_jobs=n_jobs)
         return self
