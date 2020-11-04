@@ -32,7 +32,8 @@ class BaseExtremeLearningMachine(BaseEstimator):
     """
 
     def __init__(self, k_in: int = -1, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
-                 activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6, random_state: int = None):
+                 activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
+                 random_state: int = None):
         self.k_in = k_in
         self.input_scaling = input_scaling
         self.bias = bias
@@ -115,14 +116,14 @@ class BaseExtremeLearningMachine(BaseEstimator):
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
         if self.input_scaling <= 0:
             raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
-        if self.k_in <= 0:
-            raise ValueError("k_in must be > 0, got %s." % self.k_in)
-        if self.bias < 0:
-            raise ValueError("bias must be > 0, got %s." % self.bias)
+        if self.k_in <= 0 or self.k_in != -1:
+            raise ValueError("k_in must be > 0 or -1 (all inputs are used by each neuron), got %s." % self.k_in)
+        # if self.bias < 0:
+        #    raise ValueError("bias must be > 0, got %s." % self.bias)
         if self.beta < 0.0:
             raise ValueError("beta must be >= 0, got %s." % self.beta)
         # raise ValueError if not registered
-        supported_activations = ('identity', 'logistic', 'tanh', 'relu')
+        supported_activations = ('identity', 'logistic', 'tanh', 'relu', 'bounded_relu')
         if self.activation_function not in supported_activations:
             raise ValueError("The activation_function '%s' is not supported. Supported "
                              "activations are %s." % (self.activation_function, supported_activations))
@@ -163,7 +164,19 @@ class BaseExtremeLearningMachine(BaseEstimator):
         self._init_state_collection_matrices()
 
     def _init_state_collection_matrices(self):
-        # collect the mean and variances of all reservoir nodes. This is required for the dropout strategy.
+        """
+        Initialize all weight matrices, e.g. connections from the input to the hidden layer, and recurrent connections
+        inside the hidden layer.
+        Parameters
+        ----------
+        n_features : int
+            The number of input features, e.g. the second dimension of input matrix X
+
+        Returns
+        -------
+
+        """
+        # collect the mean and variances of all hidden layer nodes. This is required for the dropout strategy.
         self._activations_mean = np.zeros(shape=(self.hidden_layer_size,))
         self._activations_var = np.zeros(shape=(self.hidden_layer_size,))
         # initialize xTx and xTy for linear regression. Will be deleted after the training is finalized.
@@ -172,8 +185,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
 
     def _init_weights(self, n_features):
         """
-        Initialize all weight matrices, e.g. connections from the input to the reservoir, and recurrent connections
-        inside the reservoir.
+        Initialize all weight matrices, e.g. connections from the input to the hidden layer.
         Parameters
         ----------
         n_features : int
@@ -187,7 +199,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         idx_co = 0
         nr_entries = np.int32(self.hidden_layer_size*self.k_in)
         ij = np.zeros((2, nr_entries), dtype=int)
-        data_vec = self._random_state.rand(nr_entries) * 2 - 1
+        data_vec = self._random_state.rand(nr_entries) * 2 - 1  # ANNOTATION: column vector of random size k_in*hidden_layer_size
         for en in range(self.hidden_layer_size):
             per = self._random_state.permutation(n_features)[:self.k_in]
             ij[0][idx_co:idx_co+self.k_in] = en
@@ -195,9 +207,9 @@ class BaseExtremeLearningMachine(BaseEstimator):
             idx_co = idx_co + self.k_in
         input_weights_init = scipy.sparse.csc_matrix((data_vec, ij),
                                                      shape=(self.hidden_layer_size, n_features), dtype='float64')
-        # Bias weights, fully connected bias for the reservoir nodes, drawn from uniform distribution.
+        # Bias weights, fully connected bias for the hidden layer nodes, drawn from uniform distribution.
         bias_weights_init = (self._random_state.rand(self.hidden_layer_size) * 2 - 1)
-        # Feedback weights, fully connected feedback from the output to the reservoir nodes
+        # Feedback weights, fully connected feedback from the output to the hidden layer nodes
         # drawn from uniform distribution.
         output_weights_init = None  # np.zeros(shape=(self.hidden_layer_size + 1, self.n_outputs_))
         return input_weights_init, bias_weights_init, output_weights_init
@@ -229,7 +241,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         n_samples, n_features = X.shape
         # Ensure y is 2D
         if y.ndim == 1:
-            y = y.reshape((-1, 1))
+            y = y.reshape((-1, 1))  # ANNOTATION: makes the y a column vector if it already is? 2d
         self.n_outputs_ = y.shape[1]
         if (not hasattr(self, 'input_weights_')) or (not hasattr(self, 'bias_weights_')) or not incremental:
             # First time training the model
@@ -243,19 +255,19 @@ class BaseExtremeLearningMachine(BaseEstimator):
 
     def _input_to_node(self, X):
         """
-        Pass the data through the reservoir.
+        Pass the data through the hidden layer.
         Parameters
         ----------
         X : ndarray of shape (n_samples, n_features)
             The input data
         Returns
         -------
-        reservoir_state : ndarray of shape (n_samples, hidden_layer_size)
-            The collected reservoir states
+        hidden_layer_state : ndarray of shape (n_samples, hidden_layer_size)
+            The collected hidden layer states
         """
-        reservoir_state = self._forward_pass(reservoir_inputs=X)
-        reservoir_state = np.concatenate((np.ones((reservoir_state.shape[0], 1)), reservoir_state), 1)
-        return reservoir_state
+        hidden_layer_state = self._forward_pass(elm_inputs=X)
+        hidden_layer_state = np.concatenate((np.ones((hidden_layer_state.shape[0], 1)), hidden_layer_state), 1)
+        return hidden_layer_state
 
     def _fit_offline(self, X, y, incremental=False, update_output_weights=True, n_jobs: int = 0):
         """
@@ -284,24 +296,24 @@ class BaseExtremeLearningMachine(BaseEstimator):
         n_samples = X.shape[0]
         self._n_samples = self._n_samples + n_samples
 
-        reservoir_state = self._input_to_node(X=X)
+        hidden_layer_state = self._input_to_node(X=X)
 
         if incremental:
-            self._xTx = self._xTx + np.dot(reservoir_state.T, reservoir_state)
-            self._xTy = self._xTy + np.dot(reservoir_state.T, y)
-            new_activations_mean = np.mean(reservoir_state, axis=0)[1:]
-            new_activations_var = np.var(reservoir_state, axis=0)[1:]
+            self._xTx = self._xTx + np.dot(hidden_layer_state.T, hidden_layer_state)
+            self._xTy = self._xTy + np.dot(hidden_layer_state.T, y)
+            new_activations_mean = np.mean(hidden_layer_state, axis=0)[1:]
+            new_activations_var = np.var(hidden_layer_state, axis=0)[1:]
             m = self._n_samples
-            n = reservoir_state.shape[0]
+            n = hidden_layer_state.shape[0]
             tmp_activations_mean = self._activations_mean
             self._activations_mean = m/(m+n)*tmp_activations_mean + n/(m+n)*new_activations_mean
             self._activations_var = m / (m + n) * self._activations_var + n / (m + n)*new_activations_var + \
                                     m * n / (m + n)**2 * (tmp_activations_mean - new_activations_mean)**2
         else:
-            self._xTx = np.dot(reservoir_state.T, reservoir_state)
-            self._xTy = np.dot(reservoir_state.T, y)
-            self.activations_mean = np.mean(reservoir_state, axis=0)[1:]
-            self.activations_var = np.var(reservoir_state, axis=0)[1:]
+            self._xTx = np.dot(hidden_layer_state.T, hidden_layer_state)
+            self._xTy = np.dot(hidden_layer_state.T, y)
+            self.activations_mean = np.mean(hidden_layer_state, axis=0)[1:]
+            self.activations_var = np.var(hidden_layer_state, axis=0)[1:]
 
         if update_output_weights:
             self._compute_output_weights(n_jobs=n_jobs)
@@ -312,33 +324,33 @@ class BaseExtremeLearningMachine(BaseEstimator):
             self._xTx = None
             self._xTy = None
 
-    def _forward_pass(self, reservoir_inputs):
+    def _forward_pass(self, elm_inputs):
         """
         Perform a forward pass on the network by computing the values
         of the neurons in the hidden layers and the output layer.
 
         Parameters
         ----------
-        reservoir_inputs : ndarray of shape (n_samples, n_features)
+        elm_inputs : ndarray of shape (n_samples, n_features)
             The input data
 
         Returns
         -------
 
         """
-        n_samples, n_features = reservoir_inputs.shape
-        reservoir_state = np.zeros(shape=(n_samples+1, self.hidden_layer_size))
+        n_samples, n_features = elm_inputs.shape
+        hidden_layer_state = np.zeros(shape=(n_samples+1, self.hidden_layer_size))
         for sample in range(n_samples):
             if scipy.sparse.issparse(self.input_weights_):
-                a = self.input_weights_ * reservoir_inputs[sample, :] * self.input_scaling
+                a = self.input_weights_ * elm_inputs[sample, :] * self.input_scaling
             else:
-                a = np.dot(self.input_weights_, reservoir_inputs[sample, :], self.input_scaling)
+                a = np.dot(self.input_weights_, elm_inputs[sample, :], self.input_scaling)
 
-            reservoir_state[sample+1, :] = ACTIVATIONS[self.activation_function](a + self.bias_weights_*self.bias)
+            hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation_function](a + self.bias_weights_*self.bias)
         """This should be the same: 
-        reservoir_state = ACTIVATIONS[self.activation_function](self.input_weights_ * reservoir_inputs * self.input_scaling + self.bias_weights_*self.bias)
+        hidden_layer_state = ACTIVATIONS[self.activation_function](self.input_weights_ * elm_inputs * self.input_scaling + self.bias_weights_*self.bias)
         """
-        return reservoir_state[1:, :]
+        return hidden_layer_state[1:, :]
 
     def partial_fit(self, X, y, update_output_weights=True, n_jobs=0):
         """
@@ -444,7 +456,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         else:
             self.output_weights_ = np.dot(inv_xTx, self._xTy)
 
-    def predict(self, X, keep_reservoir_state=False):
+    def predict(self, X, keep_hidden_layer_state=False):
         """
         Predict using the trained ELM model
 
@@ -452,42 +464,42 @@ class BaseExtremeLearningMachine(BaseEstimator):
         ----------
         X : array-like, shape (n_samples, n_features)
             The input data.
-        keep_reservoir_state : bool, default False
-            If True, the reservoir state is kept and can be accessed from outside. This is useful for visualization
+        keep_hidden_layer_state : bool, default False
+            If True, the hidden layer state is kept and can be accessed from outside. This is useful for visualization
         Returns
         -------
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted values
         """
-        check_is_fitted(self, ['input_weights_', 'reservoir_weights_', 'bias_weights_', 'output_weights_'])
+        check_is_fitted(self, ['input_weights_', 'recurrent_weights_', 'bias_weights_', 'output_weights_'])
         if not self.output_weights_.any():
             msg = ("This %(name)s instance is not fitted yet. Call 'fit' with "
                    "appropriate arguments before using this method.")
             raise NotFittedError(msg % {'name': type(self).__name__})
         X = check_array(X, accept_sparse=False)
-        y_pred = self._predict(X=X, keep_reservoir_state=keep_reservoir_state)
+        y_pred = self._predict(X=X, keep_hidden_layer_state=keep_hidden_layer_state)
         return y_pred
 
-    def _predict(self, X, keep_reservoir_state=False):
+    def _predict(self, X, keep_hidden_layer_state=False):
         """
         Predict using the trained ELM model
 
-        TODO: remove keep_reservoir_state
+        TODO: remove keep_hidden_layer_state
         Parameters
         ----------
         X : array-like, shape (n_samples, n_features)
             The input data.
-        keep_reservoir_state : bool, default False
-            If True, the reservoir state is kept and can be accessed from outside. This is useful for visualization
+        keep_hidden_layer_state : bool, default False
+            If True, the hidden layer state is kept and can be accessed from outside. This is useful for visualization
         Returns
         -------
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted values
         """
-        reservoir_state = self._input_to_node(X=X)
-        if keep_reservoir_state:
-            self.reservoir_state = reservoir_state
-        y_pred = safe_sparse_dot(reservoir_state, self.output_weights_)
+        hidden_layer_state = self._input_to_node(X=X)
+        if keep_hidden_layer_state:
+            self.hidden_layer_state = hidden_layer_state
+        y_pred = safe_sparse_dot(hidden_layer_state, self.output_weights_)
         return y_pred
 
 
@@ -503,21 +515,22 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
     ----------
     k_in : int, default 2
         This element represents the sparsity of the connections between the input and recurrent nodes.
-        It determines the number of features that every node inside the reservoir receives.
+        It determines the number of features that every node inside the hidden layer receives.
     input_scaling : float, default 1.0
-        This element represents the input scaling factor from the input to the reservoir. It is a global scaling factor
+        This element represents the input scaling factor from the input to the hidden layer. It is a global scaling factor
         for the input weight matrix.
     bias : float, default 0.0
         This element represents the bias scaling of the bias weights. It is a global scaling factor for the bias weight
         matrix.
     hidden_layer_size : int, default 500
-        This element represents the number of neurons in the reservoir.
+        This element represents the number of neurons in the hidden layer.
     activation_function : {'tanh', 'identity', 'logistic', 'relu'}
-        This element represents the activation function in the reservoir.
+        This element represents the activation function in the hidden layer.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
             - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
             - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
             - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'bounded_relu', the rectified linear unit function, returns f(x) = min(max(0, x),1)
     solver : {'ridge', 'pinv'}
         The solver for weight optimization.
         - 'pinv' uses the pseudoinverse solution of linear regression.
@@ -598,7 +611,7 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         self._initialize(y=y, n_features=X.shape[1])
         return self._fit(X, y, incremental=False, update_output_weights=True, n_jobs=n_jobs)
 
-    def predict(self, X, keep_reservoir_state=False):
+    def predict(self, X, keep_hidden_layer_state=False):
         """
         Predict the classes using the trained ELM classifier
 
@@ -606,19 +619,19 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         ----------
         X : array-like, shape (n_samples, n_features)
             The input data.
-        keep_reservoir_state : bool, default False
-            If True, the reservoir state is kept and can be accessed from outside. This is useful for visualization
+        keep_hidden_layer_state : bool, default False
+            If True, the hidden layer state is kept and can be accessed from outside. This is useful for visualization
         Returns
         -------
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted classes
         """
-        check_is_fitted(self, ['input_weights_', 'reservoir_weights_', 'bias_weights_', 'output_weights_'])
+        check_is_fitted(self, ['input_weights_', 'recurrent_weights_', 'bias_weights_', 'output_weights_'])
         if self.output_weights_.size == 0:
             msg = ("This %(name)s instance is not fitted yet. Call 'fit' with "
                    "appropriate arguments before using this method.")
             raise NotFittedError(msg % {'name': type(self).__name__})
-        y_pred = super().predict(X, keep_reservoir_state=keep_reservoir_state)
+        y_pred = super().predict(X, keep_hidden_layer_state=keep_hidden_layer_state)
 
         if self.n_outputs_ == 1:
             y_pred = y_pred.ravel()
@@ -681,7 +694,7 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         super()._partial_fit(X, y, update_output_weights=update_output_weights, n_jobs=n_jobs)
         return self
 
-    def predict_proba(self, X, keep_reservoir_state=False):
+    def predict_proba(self, X, keep_hidden_layer_state=False):
         """
         Predict the probability estimates using the trained ELM classifier
 
@@ -689,14 +702,14 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         ----------
         X : array-like, shape (n_samples, n_features)
             The input data.
-        keep_reservoir_state : bool, default False
-            If True, the reservoir state is kept and can be accessed from outside. This is useful for visualization
+        keep_hidden_layer_state : bool, default False
+            If True, the hidden layer state is kept and can be accessed from outside. This is useful for visualization
         Returns
         -------
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted probability estimates
         """
-        y_pred = super().predict(X, keep_reservoir_state=keep_reservoir_state)
+        y_pred = super().predict(X, keep_hidden_layer_state=keep_hidden_layer_state)
         y_pred = np.maximum(y_pred, 1e-3)
 
         if self.n_outputs_ == 1:
@@ -707,7 +720,7 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         else:
             return y_pred
 
-    def predict_log_proba(self, X, keep_reservoir_state=False):
+    def predict_log_proba(self, X, keep_hidden_layer_state=False):
         """
         Predict the logarithmic probability estimates using the trained ELM classifier
 
@@ -715,14 +728,14 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         ----------
         X : array-like, shape (n_samples, n_features)
             The input data.
-        keep_reservoir_state : bool, default False
-            If True, the reservoir state is kept and can be accessed from outside. This is useful for visualization
+        keep_hidden_layer_state : bool, default False
+            If True, the hidden layer state is kept and can be accessed from outside. This is useful for visualization
         Returns
         -------
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted logarithmic probability estimates
         """
-        y_pred = self.predict_proba(X=X, keep_reservoir_state=keep_reservoir_state)
+        y_pred = self.predict_proba(X=X, keep_hidden_layer_state=keep_hidden_layer_state)
         return np.log(y_pred)
 
 
@@ -738,17 +751,17 @@ class ELMRegressor(BaseExtremeLearningMachine, RegressorMixin):
     ----------
     k_in : int, default 2
         This element represents the sparsity of the connections between the input and recurrent nodes.
-        It determines the number of features that every node inside the reservoir receives.
+        It determines the number of features that every node inside the hidden layer receives.
     input_scaling : float, default 1.0
-        This element represents the input scaling factor from the input to the reservoir. It is a global scaling factor
+        This element represents the input scaling factor from the input to the hidden layer. It is a global scaling factor
         for the input weight matrix.
     bias : float, default 0.0
         This element represents the bias scaling of the bias weights. It is a global scaling factor for the bias weight
         matrix.
     hidden_layer_size : int, default 500
-        This element represents the number of neurons in the reservoir.
+        This element represents the number of neurons in the hidden layer.
     activation_function : {'tanh', 'identity', 'logistic', 'relu'}
-        This element represents the activation function in the reservoir.
+        This element represents the activation function in the hidden layer.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
             - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
             - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
@@ -789,22 +802,22 @@ class ELMRegressor(BaseExtremeLearningMachine, RegressorMixin):
         self._initialize(y=y, n_features=X.shape[1])
         return self._fit(X, y, update_output_weights=True, n_jobs=n_jobs)
 
-    def predict(self, X, keep_reservoir_state=False):
+    def predict(self, X, keep_hidden_layer_state=False):
         """
-        Predict the classes using the trained ELM regressor
+        Predict the output value using the trained ELM regressor
 
         Parameters
         ----------
         X : array-like, shape (n_samples, n_features)
             The input data.
-        keep_reservoir_state : bool, default False
-            If True, the reservoir state is kept and can be accessed from outside. This is useful for visualization
+        keep_hidden_layer_state : bool, default False
+            If True, the hidden layer state is kept and can be accessed from outside. This is useful for visualization
         Returns
         -------
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted classes
         """
-        y_pred = super().predict(X, keep_reservoir_state=keep_reservoir_state)
+        y_pred = super().predict(X, keep_hidden_layer_state=keep_hidden_layer_state)
 
         if self.n_outputs_ == 1:
             y_pred = y_pred.ravel()
