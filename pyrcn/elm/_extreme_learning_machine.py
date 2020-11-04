@@ -116,7 +116,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
         if self.input_scaling <= 0:
             raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
-        if self.k_in <= 0 or self.k_in != -1:
+        if self.k_in <= 0 and self.k_in != -1:
             raise ValueError("k_in must be > 0 or -1 (all inputs are used by each neuron), got %s." % self.k_in)
         # if self.bias < 0:
         #    raise ValueError("bias must be > 0, got %s." % self.bias)
@@ -197,9 +197,13 @@ class BaseExtremeLearningMachine(BaseEstimator):
         """
         # Input-to-node weights, drawn from uniform distribution.
         idx_co = 0
+
+        if self.k_in == -1:
+            self.k_in = n_features
+
         nr_entries = np.int32(self.hidden_layer_size*self.k_in)
         ij = np.zeros((2, nr_entries), dtype=int)
-        data_vec = self._random_state.rand(nr_entries) * 2 - 1  # ANNOTATION: column vector of random size k_in*hidden_layer_size
+        data_vec = self._random_state.rand(nr_entries) * 2 - 1
         for en in range(self.hidden_layer_size):
             per = self._random_state.permutation(n_features)[:self.k_in]
             ij[0][idx_co:idx_co+self.k_in] = en
@@ -208,6 +212,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         input_weights_init = scipy.sparse.csc_matrix((data_vec, ij),
                                                      shape=(self.hidden_layer_size, n_features), dtype='float64')
         # Bias weights, fully connected bias for the hidden layer nodes, drawn from uniform distribution.
+        # TODO: Optionally set bias weights to zero (GBH Paper)
         bias_weights_init = (self._random_state.rand(self.hidden_layer_size) * 2 - 1)
         # Feedback weights, fully connected feedback from the output to the hidden layer nodes
         # drawn from uniform distribution.
@@ -344,8 +349,10 @@ class BaseExtremeLearningMachine(BaseEstimator):
             if scipy.sparse.issparse(self.input_weights_):
                 a = self.input_weights_ * elm_inputs[sample, :] * self.input_scaling
             else:
-                a = np.dot(self.input_weights_, elm_inputs[sample, :], self.input_scaling)
+                a = np.dot(self.input_weights_, elm_inputs[sample, :] * self.input_scaling)  # Changed , to *
 
+            # no bounded_relu support
+            # https://github.com/scikit-learn/scikit-learn/blob/0fb307bf39bbdacd6ed713c00724f8f871d60370/sklearn/neural_network/_base.py
             hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation_function](a + self.bias_weights_*self.bias)
         """This should be the same: 
         hidden_layer_state = ACTIVATIONS[self.activation_function](self.input_weights_ * elm_inputs * self.input_scaling + self.bias_weights_*self.bias)
@@ -471,7 +478,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted values
         """
-        check_is_fitted(self, ['input_weights_', 'recurrent_weights_', 'bias_weights_', 'output_weights_'])
+        check_is_fitted(self, ['input_weights_', 'bias_weights_', 'output_weights_'])  # , 'recurrent_weights_'
         if not self.output_weights_.any():
             msg = ("This %(name)s instance is not fitted yet. Call 'fit' with "
                    "appropriate arguments before using this method.")
@@ -555,7 +562,7 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
     ----------
     TODO
     """
-    def __init__(self, k_in: int = 2, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
+    def __init__(self, k_in: int = -1, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
                  activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
                  random_state: int = None):
         super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
@@ -626,7 +633,7 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted classes
         """
-        check_is_fitted(self, ['input_weights_', 'recurrent_weights_', 'bias_weights_', 'output_weights_'])
+        check_is_fitted(self, ['input_weights_', 'bias_weights_', 'output_weights_'])  # , 'recurrent_weights_'
         if self.output_weights_.size == 0:
             msg = ("This %(name)s instance is not fitted yet. Call 'fit' with "
                    "appropriate arguments before using this method.")
@@ -790,7 +797,7 @@ class ELMRegressor(BaseExtremeLearningMachine, RegressorMixin):
     -----------
     TODO
     """
-    def __init__(self, k_in: int = 2, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
+    def __init__(self, k_in: int = -1, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
                  activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
                  random_state: int = None):
         super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
