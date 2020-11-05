@@ -118,8 +118,8 @@ class BaseExtremeLearningMachine(BaseEstimator):
             raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
         if self.k_in <= 0 and self.k_in != -1:
             raise ValueError("k_in must be > 0 or -1 (all inputs are used by each neuron), got %s." % self.k_in)
-        # if self.bias < 0:
-        #    raise ValueError("bias must be > 0, got %s." % self.bias)
+        if self.bias < 0:
+            raise ValueError("bias must be > 0, got %s." % self.bias)
         if self.beta < 0.0:
             raise ValueError("beta must be >= 0, got %s." % self.beta)
         # raise ValueError if not registered
@@ -356,6 +356,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
             hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation_function](a + self.bias_weights_*self.bias)
         """This should be the same: 
         hidden_layer_state = ACTIVATIONS[self.activation_function](self.input_weights_ * elm_inputs * self.input_scaling + self.bias_weights_*self.bias)
+        return hidden_layer_state
         """
         return hidden_layer_state[1:, :]
 
