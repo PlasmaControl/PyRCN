@@ -213,7 +213,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
                                                      shape=(self.hidden_layer_size, n_features), dtype='float64')
         # Bias weights, fully connected bias for the hidden layer nodes, drawn from uniform distribution.
         # TODO: Optionally set bias weights to zero (GBH Paper)
-        bias_weights_init = (self._random_state.rand(self.hidden_layer_size) * 2 - 1)
+        bias_weights_init = (self._random_state.rand(self.hidden_layer_size, 1) * 2 - 1)
         # Feedback weights, fully connected feedback from the output to the hidden layer nodes
         # drawn from uniform distribution.
         output_weights_init = None  # np.zeros(shape=(self.hidden_layer_size + 1, self.n_outputs_))
@@ -344,6 +344,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
 
         """
         n_samples, n_features = elm_inputs.shape
+        """
         hidden_layer_state = np.zeros(shape=(n_samples+1, self.hidden_layer_size))
         for sample in range(n_samples):
             if scipy.sparse.issparse(self.input_weights_):
@@ -354,11 +355,15 @@ class BaseExtremeLearningMachine(BaseEstimator):
             # no bounded_relu support
             # https://github.com/scikit-learn/scikit-learn/blob/0fb307bf39bbdacd6ed713c00724f8f871d60370/sklearn/neural_network/_base.py
             hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation_function](a + self.bias_weights_*self.bias)
-        """This should be the same: 
-        hidden_layer_state = ACTIVATIONS[self.activation_function](self.input_weights_ * elm_inputs * self.input_scaling + self.bias_weights_*self.bias)
-        return hidden_layer_state
-        """
         return hidden_layer_state[1:, :]
+        """
+        if scipy.sparse.issparse(self.input_weights_):
+            hidden_layer_state = ACTIVATIONS[self.activation_function](
+                self.input_weights_ * elm_inputs.T * self.input_scaling + np.dot(self.bias_weights_, np.ones((1, n_samples), dtype=float)) * self.bias)
+        else:
+            hidden_layer_state = ACTIVATIONS[self.activation_function](
+                np.dot(self.input_weights_, elm_inputs.T) * self.input_scaling + np.dot(self.bias_weights_, np.ones((1, n_samples), dtype=float)) * self.bias)
+        return hidden_layer_state.T
 
     def partial_fit(self, X, y, update_output_weights=True, n_jobs=0):
         """
