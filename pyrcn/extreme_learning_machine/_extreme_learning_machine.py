@@ -546,9 +546,9 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         The solver for weight optimization.
         - 'pinv' uses the pseudoinverse solution of linear regression.
         - 'ridge' uses L2 penalty while computing the linear regression
-    beta : float, optional, default 0.0001
+    beta : float, default 0.0001
         L2 penalty (regularization term) parameter.
-    random_state : int, RandomState instance or None, optional, default None
+    random_state : int, RandomState instance, default=None
         If int, random_state is the seed used by the random number generator;
         If RandomState instance, random_state is the random number generator;
         If None, the random number generator is the RandomState instance used
@@ -567,8 +567,7 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
     TODO
     """
     def __init__(self, k_in: int = None, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
-                 activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
-                 random_state: int = None):
+                 activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6, random_state=None):
         super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
                          activation_function=activation_function, solver=solver, beta=beta, random_state=random_state)
 
@@ -783,7 +782,7 @@ class ELMRegressor(BaseExtremeLearningMachine, RegressorMixin):
         - 'ridge' uses L2 penalty while computing the linear regression
     beta : float, optional, default 0.0001
         L2 penalty (regularization term) parameter.
-    random_state : int, RandomState instance or None, optional, default None
+    random_state : int, RandomState instance, default=None
         If int, random_state is the seed used by the random number generator;
         If RandomState instance, random_state is the random number generator;
         If None, the random number generator is the RandomState instance used
@@ -802,8 +801,7 @@ class ELMRegressor(BaseExtremeLearningMachine, RegressorMixin):
     TODO
     """
     def __init__(self, k_in: int = None, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
-                 activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
-                 random_state: int = None):
+                 activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6, random_state=None):
         super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
                          activation_function=activation_function, solver=solver, beta=beta, random_state=random_state)
 
