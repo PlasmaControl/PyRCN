@@ -31,9 +31,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
     .. versionadded:: 0.00
     """
 
-    def __init__(self, k_in: int = -1, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
-                 activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
-                 random_state: int = None):
+    def __init__(self, k_in, input_scaling, bias, hidden_layer_size, activation_function, solver, beta, random_state):
         self.k_in = k_in
         self.input_scaling = input_scaling
         self.bias = bias
@@ -43,7 +41,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         self.beta = beta
         self.random_state = random_state
 
-    def fit(self, X, y, n_jobs: int = 0):
+    def fit(self, X, y, n_jobs):
         """
         Fit the model to the data matrix X and target(s) y.
 
@@ -67,7 +65,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         self._initialize(y=y, n_features=X.shape[1])
         return self._fit(X, y, update_output_weights=True, n_jobs=n_jobs)
 
-    def finalize(self, n_jobs=0):
+    def finalize(self, n_jobs):
         """
         Finalize the training by solving the linear regression problem and deleting xTx and xTy attributes.
 
@@ -116,8 +114,8 @@ class BaseExtremeLearningMachine(BaseEstimator):
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
         if self.input_scaling <= 0:
             raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
-        if self.k_in <= 0 and self.k_in != -1:
-            raise ValueError("k_in must be > 0 or -1 (all inputs are used by each neuron), got %s." % self.k_in)
+        if self.k_in <= 0 and self.k_in is not None:
+            raise ValueError("k_in must be > 0 or None (all inputs are used by each neuron), got %s." % self.k_in)
         if self.bias < 0:
             raise ValueError("bias must be > 0, got %s." % self.bias)
         if self.beta < 0.0:
@@ -198,7 +196,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         # Input-to-node weights, drawn from uniform distribution.
         idx_co = 0
 
-        if self.k_in == -1:
+        if self.k_in is None:
             self.k_in = n_features
 
         nr_entries = np.int32(self.hidden_layer_size*self.k_in)
@@ -219,7 +217,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         output_weights_init = None  # np.zeros(shape=(self.hidden_layer_size + 1, self.n_outputs_))
         return input_weights_init, bias_weights_init, output_weights_init
 
-    def _fit(self, X, y, incremental=False, update_output_weights=True, n_jobs=0):
+    def _fit(self, X, y, incremental, update_output_weights, n_jobs):
         """
         Fit the model to the data matrix X and target(s) y.
         Parameters
@@ -274,7 +272,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         hidden_layer_state = np.concatenate((np.ones((hidden_layer_state.shape[0], 1)), hidden_layer_state), 1)
         return hidden_layer_state
 
-    def _fit_offline(self, X, y, incremental=False, update_output_weights=True, n_jobs: int = 0):
+    def _fit_offline(self, X, y, incremental, update_output_weights, n_jobs):
         """
         Do a single fit of the model on the entire dataset passed trough.
         Parameters
@@ -365,7 +363,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
                 np.dot(self.input_weights_, elm_inputs.T) * self.input_scaling + np.dot(self.bias_weights_, np.ones((1, n_samples), dtype=float)) * self.bias)
         return hidden_layer_state.T
 
-    def partial_fit(self, X, y, update_output_weights=True, n_jobs=0):
+    def partial_fit(self, X, y, update_output_weights, n_jobs):
         """
         Fit the model to the data matrix X and target(s) y without finalizing it. This can be used to add more training
         data later.
@@ -392,7 +390,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
             raise AttributeError('partial_fit is only available for offline optimizers, not for %s.' % self.solver)
         return self._partial_fit(X=X, y=y, update_output_weights=update_output_weights, n_jobs=n_jobs)
 
-    def _partial_fit(self, X, y, update_output_weights=True, n_jobs=0):
+    def _partial_fit(self, X, y, update_output_weights, n_jobs):
         """
         Fit the model to the data matrix X and target(s) y without finalizing it. This can be used to add more training
         data later.
@@ -416,7 +414,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         """
         return self._fit(X, y, incremental=True, update_output_weights=update_output_weights, n_jobs=n_jobs)
 
-    def _finalize(self, n_jobs: int = 0):
+    def _finalize(self, n_jobs):
         """
         This finalizes the training of a model. No more required attributes, such as activations, xTx, xTy will be
         removed.
@@ -442,7 +440,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         self._activations_var = None
         self.is_fitted_ = True
 
-    def _compute_output_weights(self, n_jobs=0):
+    def _compute_output_weights(self, n_jobs):
         """
         This is a helper function to compute the output weights using linear regression
         Parameters
@@ -469,7 +467,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         else:
             self.output_weights_ = np.dot(inv_xTx, self._xTy)
 
-    def predict(self, X, keep_hidden_layer_state=False):
+    def predict(self, X, keep_hidden_layer_state):
         """
         Predict using the trained ELM model
 
@@ -493,7 +491,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         y_pred = self._predict(X=X, keep_hidden_layer_state=keep_hidden_layer_state)
         return y_pred
 
-    def _predict(self, X, keep_hidden_layer_state=False):
+    def _predict(self, X, keep_hidden_layer_state):
         """
         Predict using the trained ELM model
 
@@ -526,7 +524,7 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
 
     Parameters
     ----------
-    k_in : int, default 2
+    k_in : int, default -1
         This element represents the sparsity of the connections between the input and recurrent nodes.
         It determines the number of features that every node inside the hidden layer receives.
     input_scaling : float, default 1.0
@@ -568,7 +566,7 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
     ----------
     TODO
     """
-    def __init__(self, k_in: int = -1, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
+    def __init__(self, k_in: int = None, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
                  activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
                  random_state: int = None):
         super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
@@ -803,7 +801,7 @@ class ELMRegressor(BaseExtremeLearningMachine, RegressorMixin):
     -----------
     TODO
     """
-    def __init__(self, k_in: int = -1, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
+    def __init__(self, k_in: int = None, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
                  activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6,
                  random_state: int = None):
         super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
