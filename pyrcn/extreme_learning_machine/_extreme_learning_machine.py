@@ -114,8 +114,9 @@ class BaseExtremeLearningMachine(BaseEstimator):
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
         if self.input_scaling <= 0:
             raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
-        if self.k_in <= 0 and self.k_in is not None:
-            raise ValueError("k_in must be > 0 or None (all inputs are used by each neuron), got %s." % self.k_in)
+        if self.k_in is not None:
+            if self.k_in <= 0:
+                raise ValueError("k_in must be > 0 or None (all inputs are used by each neuron), got %s." % self.k_in)
         if self.bias < 0:
             raise ValueError("bias must be > 0, got %s." % self.bias)
         if self.beta < 0.0:
@@ -357,10 +358,10 @@ class BaseExtremeLearningMachine(BaseEstimator):
         """
         if scipy.sparse.issparse(self.input_weights_):
             hidden_layer_state = ACTIVATIONS[self.activation_function](
-                self.input_weights_ * elm_inputs.T * self.input_scaling + np.dot(self.bias_weights_, np.ones((1, n_samples), dtype=float)) * self.bias)
+                self.input_weights_ * elm_inputs.T * self.input_scaling + self.bias_weights_ * self.bias)
         else:
             hidden_layer_state = ACTIVATIONS[self.activation_function](
-                np.dot(self.input_weights_, elm_inputs.T) * self.input_scaling + np.dot(self.bias_weights_, np.ones((1, n_samples), dtype=float)) * self.bias)
+                np.dot(self.input_weights_, elm_inputs.T) * self.input_scaling + self.bias_weights_ * self.bias)
         return hidden_layer_state.T
 
     def partial_fit(self, X, y, update_output_weights, n_jobs):
@@ -805,11 +806,11 @@ class ELMRegressor(BaseExtremeLearningMachine, RegressorMixin):
         super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
                          activation_function=activation_function, solver=solver, beta=beta, random_state=random_state)
 
-    def fit(self, X, y, n_jobs=0):
+    def fit(self, X, y, incremental=False, n_jobs=0):
         self._validate_hyperparameters()
         X, y = self._validate_input(X, y)
         self._initialize(y=y, n_features=X.shape[1])
-        return self._fit(X, y, update_output_weights=True, n_jobs=n_jobs)
+        return self._fit(X, y, incremental=incremental, update_output_weights=True, n_jobs=n_jobs)
 
     def predict(self, X, keep_hidden_layer_state=False):
         """
