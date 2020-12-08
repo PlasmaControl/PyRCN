@@ -32,17 +32,15 @@ class BaseEchoStateNetwork(BaseEstimator):
     """
 
     def __init__(self, k_in: int = 2, input_scaling: float = 1., spectral_radius: float = 0., bias: float = 0.,
-                 ext_bias: int = 0, leakage: float = 1., feedback_scaling: float = 0.,reservoir_size: int = 500,
-                 k_res: int = 10, wash_out: int = 0, reservoir_activation: str = 'tanh', bi_directional: bool = False,
-                 teacher_scaling: float = 1., teacher_shift: float = 0., solver: str = 'ridge', beta: float = 1e-6,
-                 random_state: int = None):
+                 ext_bias: int = 0, leakage: float = 1., reservoir_size: int = 500, k_res: int = 10, wash_out: int = 0,
+                 reservoir_activation: str = 'tanh', bi_directional: bool = False, teacher_scaling: float = 1.,
+                 teacher_shift: float = 0., solver: str = 'ridge', beta: float = 1e-6, random_state: int = None):
         self.k_in = k_in
         self.input_scaling = input_scaling
         self.spectral_radius = spectral_radius
         self.bias = bias
         self.ext_bias = ext_bias
         self.leakage = leakage
-        self.feedback_scaling = feedback_scaling
         self.reservoir_size = reservoir_size
         self.k_res = k_res
         self.wash_out = wash_out
@@ -128,12 +126,12 @@ class BaseEchoStateNetwork(BaseEstimator):
             raise ValueError("reservoir_size must be > 0, got %s." % self.reservoir_size)
         if self.input_scaling <= 0:
             raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
-        if self.k_in <= 0:
-            raise ValueError("k_in must be > 0, got %s." % self.k_in)
+        if self.k_in <= 1 and self.k_in != -1:
+            raise ValueError("k_in must be >= 1 or ==-1, got %s." % self.k_in)
         if self.spectral_radius < 0:
             raise ValueError("spectral_radius must be >= 0, got %s." % self.spectral_radius)
-        if self.k_res <= 0:
-            raise ValueError("k_res must be > 0, got %s." % self.k_res)
+        if self.k_res <= 1 and self.k_res != -1:
+            raise ValueError("k_res must be >= 1 or ==-1, got %s." % self.k_res)
         if self.bias < 0:
             raise ValueError("bias must be > 0, got %s." % self.bias)
         if self.leakage > 1 or self.leakage < 0:
@@ -150,15 +148,40 @@ class BaseEchoStateNetwork(BaseEstimator):
             raise ValueError("The solver %s is not supported. Expected one of: %s" %
                              (self.solver, ", ".join(supported_solvers)))
 
-    def _initialize(self, y, n_features):
+    def initialize_from_outside(self, y, n_features, input_weights=None, reservoir_weights=None, bias_weights=None):
         """
-        Initialize everything for the Echo State Network. Set all attributes, allocate weights.
+        Initializes weights and other settings from outside. Note that this is no replacement for set_params(**params).
+
         Parameters
         ----------
         y : ndarray of shape (n_samples, ) or (n_samples, n_outputs)
             The target values (class labels in classification, real numbers in regression).
         n_features : int
             The number of input features, e.g. the second dimension of input matrix X
+        input_weights : ndarray of shape (n_feature, n_res)
+            Externally input weights to be used
+        reservoir_weights : ndarray of shape (n_res, n_res)
+            Externally input weights to be used
+
+        Returns
+        -------
+        """
+        self._initialize(y=y, n_features=n_features, input_weights=input_weights, reservoir_weights=reservoir_weights, bias_weights=bias_weights)
+
+    def _initialize(self, y, n_features, input_weights=None, reservoir_weights=None, bias_weights=None):
+        """
+        Initialize everything for the Echo State Network. Set all attributes, allocate weights.
+
+        Parameters
+        ----------
+        y : ndarray of shape (n_samples, ) or (n_samples, n_outputs)
+            The target values (class labels in classification, real numbers in regression).
+        n_features : int
+            The number of input features, e.g. the second dimension of input matrix X
+        input_weights : ndarray of shape (n_feature, n_res)
+            Externally input weights to be used
+        reservoir_weights : ndarray of shape (n_res, n_res)
+            Externally input weights to be used
 
         Returns
         -------
@@ -175,11 +198,20 @@ class BaseEchoStateNetwork(BaseEstimator):
         self._n_samples = 0
 
         # initialize all weights the model consists of
-        input_weights_init, reservoir_weights_init, bias_weights_init, feedback_weights_init, output_weights_init = \
-            self._init_weights(n_features)
-        self.input_weights_ = input_weights_init
-        self.reservoir_weights_ = reservoir_weights_init
-        self.bias_weights_ = bias_weights_init
+        input_weights_init, reservoir_weights_init, bias_weights_init, output_weights_init = self._init_weights(n_features)
+        if input_weights is not None:
+            self.input_weights_ = input_weights
+        else:
+            self.input_weights_ = input_weights_init
+        if reservoir_weights is not None:
+            self.reservoir_weights_ = reservoir_weights
+        else:
+            self.reservoir_weights_ = reservoir_weights_init
+        if bias_weights is not None:
+            self.bias_weights_ = bias_weights
+        else:
+            self.bias_weights_ = bias_weights_init
+
         self.output_weights_ = output_weights_init
         self._init_state_collection_matrices()
 
@@ -210,35 +242,41 @@ class BaseEchoStateNetwork(BaseEstimator):
         """
         # Input-to-reservoir weights, drawn from uniform distribution.
         idx_co = 0
-        nr_entries = np.int32(self.reservoir_size*self.k_in)
-        ij = np.zeros((2, nr_entries), dtype=int)
-        data_vec = self._random_state.rand(nr_entries) * 2 - 1
-        for en in range(self.reservoir_size):
-            per = self._random_state.permutation(n_features)[:self.k_in]
-            ij[0][idx_co:idx_co+self.k_in] = en
-            ij[1][idx_co:idx_co+self.k_in] = per
-            idx_co = idx_co + self.k_in
-        input_weights_init = scipy.sparse.csc_matrix((data_vec, ij),
-                                                     shape=(self.reservoir_size, n_features), dtype='float64')
+        if self.k_in == -1:
+            input_weights_init = self._random_state.rand(self.reservoir_size, n_features) * 2 - 1
+        else:
+            nr_entries = np.int32(self.reservoir_size*self.k_in)
+            ij = np.zeros((2, nr_entries), dtype=int)
+            data_vec = self._random_state.rand(nr_entries) * 2 - 1
+            for en in range(self.reservoir_size):
+                per = self._random_state.permutation(n_features)[:self.k_in]
+                ij[0][idx_co:idx_co+self.k_in] = en
+                ij[1][idx_co:idx_co+self.k_in] = per
+                idx_co = idx_co + self.k_in
+            input_weights_init = scipy.sparse.csc_matrix((data_vec, ij),
+                                                         shape=(self.reservoir_size, n_features), dtype='float64')
         # Recurrent weights inside the reservoir, drawn from a standard normal distribution.
         converged = False
         # Recurrent weights are normalized to a unitary spectral radius if possible.
         attempts = 50
         while not converged and attempts > 0:
             try:
-                idx_co = 0
-                nr_entries = np.int32(self.reservoir_size * self.k_res)
-                ij = np.zeros((2, nr_entries), dtype=int)
-                data_vec = self._random_state.randn(nr_entries)
-                for en in range(self.reservoir_size):
-                    per = self._random_state.permutation(self.reservoir_size)[:self.k_res]
-                    ij[0][idx_co:idx_co + self.k_res] = en
-                    ij[1][idx_co:idx_co + self.k_res] = per
-                    idx_co += self.k_res
+                if self.k_res == -1:
+                    reservoir_weights_init = self._random_state.randn(self.reservoir_size, self.reservoir_size)
+                else:
+                    idx_co = 0
+                    nr_entries = np.int32(self.reservoir_size * self.k_res)
+                    ij = np.zeros((2, nr_entries), dtype=int)
+                    data_vec = self._random_state.randn(nr_entries)
+                    for en in range(self.reservoir_size):
+                        per = self._random_state.permutation(self.reservoir_size)[:self.k_res]
+                        ij[0][idx_co:idx_co + self.k_res] = en
+                        ij[1][idx_co:idx_co + self.k_res] = per
+                        idx_co += self.k_res
 
-                reservoir_weights_init = scipy.sparse.csc_matrix((data_vec, ij),
-                                                                 shape=(self.reservoir_size, self.reservoir_size),
-                                                                 dtype='float64')
+                    reservoir_weights_init = scipy.sparse.csc_matrix((data_vec, ij),
+                                                                     shape=(self.reservoir_size, self.reservoir_size),
+                                                                     dtype='float64')
                 we = eigens(reservoir_weights_init, return_eigenvectors=False, k=6)
                 converged = True
             except ArpackNoConvergence:
@@ -255,11 +293,8 @@ class BaseEchoStateNetwork(BaseEstimator):
             bias_weights_init = (self._random_state.rand(self.reservoir_size, self.ext_bias) * 2 - 1)
         else:
             bias_weights_init = (self._random_state.rand(self.reservoir_size) * 2 - 1)
-        # Feedback weights, fully connected feedback from the output to the reservoir nodes
-        # drawn from uniform distribution.
-        feedback_weights_init = (self._random_state.rand(self.n_outputs_, self.reservoir_size) * 2 - 1)
         output_weights_init = None  # np.zeros(shape=(self.reservoir_size + 1, self.n_outputs_))
-        return input_weights_init, reservoir_weights_init, bias_weights_init, feedback_weights_init, output_weights_init
+        return input_weights_init, reservoir_weights_init, bias_weights_init, output_weights_init
 
     def _fit(self, X, y, incremental=False, update_output_weights=True, n_jobs=0):
         """
