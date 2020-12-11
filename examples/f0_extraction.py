@@ -73,6 +73,22 @@ except FileNotFoundError:
     dump(scaler, "scaler.joblib")
 
 
+kmeans = MiniBatchKMeans(n_clusters=500, reassignment_ratio=0, max_no_improvement=50, init='k-means++', verbose=1, random_state=0)
+try:
+    kmeans = load("kmeans.joblib")
+except FileNotFoundError:
+    print("Fitting kmeans with features from the training set...")
+    X = [None] * len(training_files)
+    y = [None] * len(training_files)
+    with tqdm(total=len(training_files)) as pbar:
+        for k, file_name in enumerate(training_files):
+            X[k], y[k] = extract_features(file_name)
+            X[k] = scaler.transform(X[k])
+            pbar.update(1)
+    kmeans.fit(X=np.vstack(X))
+    dump(kmeans, "kmeans.joblib")
+
+
 # Define several error functions for f0 extraction
 def gpe(y_true, y_pred):
     """
@@ -149,11 +165,17 @@ def loss_function(base_esn, params, scaler, training_files, validation_files):
     return [np.mean(ffe_training), np.mean(ffe_validation)]
 
 
-base_esn = ESNRegressor(k_in=10, input_scaling=0.1, spectral_radius=0.9, bias=0.0, leakage=1.0, reservoir_size=500,
+base_esn = ESNRegressor(k_in=-1, input_scaling=0.1, spectral_radius=0.0, bias=0.0, leakage=1.0, reservoir_size=500,
                         k_res=10, reservoir_activation='tanh', teacher_scaling=1.0, teacher_shift=0.0,
                         bi_directional=False, solver='ridge', beta=1e-3, random_state=0)
 
 esn = clone(base_esn)
+w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
+X, y = extract_features(training_files[0])
+esn.initialize_from_outside(y=y[0], n_features=X.shape[0], input_weights=w_in, reservoir_weights=None, bias_weights=None)
+del X
+del y
+
 for k, file_name in enumerate(training_files):
     X, y = extract_features(file_name)
     X = scaler.transform(X)
