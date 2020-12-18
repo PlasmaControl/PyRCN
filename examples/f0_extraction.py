@@ -51,11 +51,12 @@ def extract_features(file_name):
     x, sr = librosa.core.load(file_name, sr=None, mono=False)
     stft_frames = np.abs(librosa.stft(x, n_fft=2048, hop_length=int(0.01*sr), win_length=int(0.04*sr)))**2
     S = librosa.power_to_db(stft_frames, ref=np.max)
-    X = S.T
+    X = np.pad(S.T[:, :257], ((2, 2), (0, 0)), 'edge')
+    U = np.concatenate((X[:-4, :], X[1:-3, :], X[2:-2, :], X[3:-1, :], X[4:, :]), axis=1)
     y = np.zeros(shape=(S.T.shape[0], 2))
     txt_data = np.loadtxt(file_name.replace("MIC", "REF").replace("mic", "ref").replace(".wav", ".f0"), usecols=(0, 1))
     y[2:2+len(txt_data), :] = txt_data
-    return X, y
+    return U, y
 
 
 # prepare a scaler to standardize features

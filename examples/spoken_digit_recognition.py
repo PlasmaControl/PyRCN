@@ -265,7 +265,7 @@ grid = {'input_scaling': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1,
        }
 
 t1 = time.time()
-losses = Parallel(n_jobs=-1, verbose=50)(delayed(opt_function)(base_esn, enc, params, X_train_scaled, y_train, X_test_scaled, y_test, w_in) for params in ParameterGrid(grid))
+losses = Parallel(n_jobs=1, verbose=50)(delayed(opt_function)(base_esn, enc, params, X_train_scaled, y_train, X_test_scaled, y_test, w_in) for params in ParameterGrid(grid))
 losses = np.asarray(losses)
 print("Finished in {0} seconds!".format(time.time() - t1))
 
