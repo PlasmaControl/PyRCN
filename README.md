@@ -130,11 +130,11 @@ If you use PyRCN, please cite the following publication:
 PyRCN: Exploration and Application of ESNs
 
 ```latex
-@INPROCEEDINGS{src:Steiner-20c,  
-    author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone Peter Birkholz},  
-    booktitle={2020 25th International Conference on Pattern Recognition (ICPR)},   
+@INPROCEEDINGS{src:Steiner-21,  
+    author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone Peter Birkholz},
+    booktitle = {2021 International Joint Conference on Neural Networks, {IJCNN} 2021,Shenzhen, China, July 18-22, 2021},
     title={PyRCN: Exploration and Application of ESNs},  
-    year={2020},  
+    year={2021},  
     note={submitted},
 }
 ```
