@@ -1,9 +1,8 @@
 import scipy
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin
 from pyrcn.extreme_learning_machine._base import ACTIVATIONS
-from sklearn.utils import check_random_state
-from sklearn.utils import check_X_y, column_or_1d, check_array
+from sklearn.utils import check_random_state, check_X_y, column_or_1d, check_array
 from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.preprocessing import LabelBinarizer
@@ -20,6 +19,90 @@ else:
     from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
 
 _OFFLINE_SOLVERS = ['pinv', 'ridge', 'lasso']
+
+
+class InputToNode(TransformerMixin, BaseEstimator):
+    """InputToNode class for ELM
+
+    .. versionadded:: 0.00
+    """
+    def __init__(self, hidden_layer_size, sparsity, activation, input_scaling, bias, random_state):
+        self.hidden_layer_size = hidden_layer_size  # read only
+        self.sparsity = sparsity  # read only
+        self.activation = activation  # read/write
+        self.input_scaling = input_scaling  # read/write
+        self.bias = bias  # read/write
+        self.random_state = random_state  # read only
+        self._hidden_layer_state = np.zeros(shape=(0, hidden_layer_size))
+
+    def fit(self, X, y=None):
+        """
+        Fit the input_weights_matrix.
+
+        Parameters
+        ----------
+        X : array-like of shape (n_samples, n_features)
+            The input data
+        y : Ignored
+
+        Returns
+        -------
+        self : returns a trained ELM model.
+        """
+        self._validate_hyperparameters()
+        self._set_uniform_random_input_weights(
+            n_features_in=X.shape[1],
+            hidden_layer_size=self.hidden_layer_size,
+            fan_in=np.rint(self.hidden_layer_size*self.sparsity).astype(int),
+            random_state=check_random_state(self.random_state))
+        self._set_uniform_random_bias(self.bias, self.hidden_layer_size, self.random_state)
+        return self
+
+    def _set_uniform_random_input_weights(self, n_features_in: int, hidden_layer_size: int, fan_in: int, random_state):
+        nr_entries = np.int32(n_features_in * fan_in)
+        weights_array = random_state.uniform(low=-1., high=1., size=nr_entries)
+
+        if fan_in < hidden_layer_size:
+            indices = np.zeros(shape=nr_entries, dtype=int)
+            indptr = np.arange(start=0, stop=(n_features_in + 1)*fan_in, step=fan_in)
+
+            for en in range(0, n_features_in*fan_in, fan_in):
+                indices[en: en + fan_in] = random_state.permutation(hidden_layer_size)[:fan_in].astype(int)
+            self._input_weights = scipy.sparse.csr_matrix(
+                (weights_array, indices, indptr), shape=(n_features_in, hidden_layer_size), dtype='float64')
+        else:
+            self._input_weights = weights_array.reshape((n_features_in, hidden_layer_size))
+
+    def _set_uniform_random_bias(self, bias: float, hidden_layer_size: int, random_state):
+        if bias > .0:
+            self._bias = random_state.uniform(low=-1., high=1., size=hidden_layer_size)
+        else:
+            self._bias = np.zeros(hidden_layer_size, dtype=float)
+
+    def transform(self, X):
+        self._hidden_layer_state = safe_sparse_dot(X, self._input_weights) * self.input_scaling\
+                                   + np.ones(shape=(X.shape[0], 1)) * self._bias
+        ACTIVATIONS[self.activation](self._hidden_layer_state)
+        return self._hidden_layer_state
+
+    def _validate_hyperparameters(self):
+        """
+        Validate the hyperparameter. Ensure that the parameter ranges and dimensions are valid.
+        Returns
+        -------
+
+        """
+        if self.hidden_layer_size <= 0:
+            raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
+        if self.input_scaling <= 0.:
+            raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
+        if self.sparsity <= 0. or self.sparsity > 1.:
+            raise ValueError("sparsity must be between 0. and 1., got %s." % self.sparsity)
+        if self.bias < 0:
+            raise ValueError("bias must be > 0, got %s." % self.bias)
+        if self.activation not in ACTIVATIONS:
+            raise ValueError("The activation_function '%s' is not supported. Supported "
+                             "activations are %s." % (self.activation, ACTIVATIONS))
 
 
 class BaseExtremeLearningMachine(BaseEstimator):

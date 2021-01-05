@@ -9,8 +9,9 @@ The :mod:`pyrcn.elm` module includes Extreme Learning Machine algorithms.
 #         the pyrcn community. ELM are copyright of their respective owners.
 # License: BSD 3-Clause (C) TU Dresden 2020
 
-from pyrcn.extreme_learning_machine._extreme_learning_machine import ELMClassifier, ELMRegressor
+from pyrcn.extreme_learning_machine._extreme_learning_machine import ELMClassifier, ELMRegressor, InputToNode
 
 __all__ = ['ELMClassifier',
-           'ELMRegressor'
+           'ELMRegressor',
+           'InputToNode'
            ]
