@@ -1,7 +1,7 @@
 import scipy
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-from sklearn.neural_network._base import ACTIVATIONS
+from pyrcn.extreme_learning_machine._base import ACTIVATIONS
 from sklearn.utils import check_random_state
 from sklearn.utils import check_X_y, column_or_1d, check_array
 from sklearn.utils.validation import check_is_fitted
