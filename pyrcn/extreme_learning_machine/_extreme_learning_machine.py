@@ -342,7 +342,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         -------
 
         """
-        n_samples, n_features = elm_inputs.shape
+        # n_samples, n_features = elm_inputs.shape
         """
         hidden_layer_state = np.zeros(shape=(n_samples+1, self.hidden_layer_size))
         for sample in range(n_samples):
@@ -356,12 +356,17 @@ class BaseExtremeLearningMachine(BaseEstimator):
             hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation_function](a + self.bias_weights_*self.bias)
         return hidden_layer_state[1:, :]
         """
+        hidden_layer_state = self.input_weights_ * elm_inputs.T * self.input_scaling + self.bias_weights_ * self.bias
+        ACTIVATIONS[self.activation_function](hidden_layer_state)
+
+        """
         if scipy.sparse.issparse(self.input_weights_):
             hidden_layer_state = ACTIVATIONS[self.activation_function](
                 self.input_weights_ * elm_inputs.T * self.input_scaling + self.bias_weights_ * self.bias)
         else:
             hidden_layer_state = ACTIVATIONS[self.activation_function](
                 np.dot(self.input_weights_, elm_inputs.T) * self.input_scaling + self.bias_weights_ * self.bias)
+        """
         return hidden_layer_state.T
 
     def partial_fit(self, X, y, update_output_weights, n_jobs):
@@ -567,7 +572,7 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
     ----------
     TODO
     """
-    def __init__(self, k_in: int = None, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
+    def __init__(self, k_in: int = None, input_scaling: float = 1., bias: float = 1., hidden_layer_size: int = 500,
                  activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6, random_state=None):
         super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
                          activation_function=activation_function, solver=solver, beta=beta, random_state=random_state)
@@ -801,7 +806,7 @@ class ELMRegressor(BaseExtremeLearningMachine, RegressorMixin):
     -----------
     TODO
     """
-    def __init__(self, k_in: int = None, input_scaling: float = 1., bias: float = 0., hidden_layer_size: int = 500,
+    def __init__(self, k_in: int = None, input_scaling: float = 1., bias: float = 1.0, hidden_layer_size: int = 500,
                  activation_function: str = 'tanh', solver: str = 'ridge', beta: float = 1e-6, random_state=None):
         super().__init__(k_in=k_in, input_scaling=input_scaling, bias=bias, hidden_layer_size=hidden_layer_size,
                          activation_function=activation_function, solver=solver, beta=beta, random_state=random_state)

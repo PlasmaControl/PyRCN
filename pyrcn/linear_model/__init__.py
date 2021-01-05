@@ -1,0 +1,56 @@
+"""
+The :mod:`pyrcn.linear_model` module implements a functionality to compute regression piecewise.
+"""
+
+# See https://github.com/TUD-STKS/PyRCN and for documentation.
+
+from sklearn.linear_model._base import LinearRegression
+from . import _split
+
+__all__ = ['ARDRegression',
+           'BayesianRidge',
+           'ElasticNet',
+           'ElasticNetCV',
+           'Hinge',
+           'Huber',
+           'HuberRegressor',
+           'Lars',
+           'LarsCV',
+           'Lasso',
+           'LassoCV',
+           'LassoLars',
+           'LassoLarsCV',
+           'LassoLarsIC',
+           'LinearRegression',
+           'Log',
+           'LogisticRegression',
+           'LogisticRegressionCV',
+           'ModifiedHuber',
+           'MultiTaskElasticNet',
+           'MultiTaskElasticNetCV',
+           'MultiTaskLasso',
+           'MultiTaskLassoCV',
+           'OrthogonalMatchingPursuit',
+           'OrthogonalMatchingPursuitCV',
+           'PassiveAggressiveClassifier',
+           'PassiveAggressiveRegressor',
+           'Perceptron',
+           'Ridge',
+           'RidgeCV',
+           'RidgeClassifier',
+           'RidgeClassifierCV',
+           'SGDClassifier',
+           'SGDRegressor',
+           'SquaredLoss',
+           'TheilSenRegressor',
+           'enet_path',
+           'lars_path',
+           'lars_path_gram',
+           'lasso_path',
+           'orthogonal_mp',
+           'orthogonal_mp_gram',
+           'ridge_regression',
+           'RANSACRegressor',
+           'PoissonRegressor',
+           'GammaRegressor',
+           'TweedieRegressor']
