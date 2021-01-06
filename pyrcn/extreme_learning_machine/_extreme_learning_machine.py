@@ -120,36 +120,6 @@ class InputToNode(BaseEstimator, TransformerMixin):
                              "activations are %s." % (self.activation, ACTIVATIONS))
 
 
-class IncrementalRegression(BaseEstimator, RegressorMixin):
-    def __init__(self, alpha=1.0, fit_intercept=True, normalize=False):
-        self.alpha = alpha
-        self.fit_intercept = fit_intercept
-        self.normalize = normalize
-        self.scaler = StandardScaler(copy=False)
-
-        self._K = None
-        self._P = None
-        self._output_weights = None
-
-    def fit(self, X, y, n_jobs=1):
-        X_preprocessed = X
-
-        if self.fit_intercept:
-            X_preprocessed = np.hstack((X_preprocessed, np.ones(X.shape[0])))
-
-        if self.normalize:
-            self.scaler.fit_transform(X_preprocessed, {'n_jobs': n_jobs})
-
-        self.partial_fit(X_preprocessed, y, n_jobs)
-
-    def predict(self, X):
-        if self._output_weights is None:
-            raise NotFittedError(self)
-
-    def partial_fit(self, X, y, n_jobs=1):
-        None
-
-
 class BaseExtremeLearningMachine(BaseEstimator):
     """Base class for ELM classification and regression.
 

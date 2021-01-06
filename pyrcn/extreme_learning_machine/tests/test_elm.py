@@ -92,5 +92,3 @@ def test_iris():
     for record in range(len(y_test)):
         # print('predicted: {0} \ttrue: {1}'.format(y_predicted[record], y_test[record]))
         assert y_predicted[record] == y_test[record]  # this combination fits coincidental - not a general assumption
-
-test_elm_regressor_sine()
