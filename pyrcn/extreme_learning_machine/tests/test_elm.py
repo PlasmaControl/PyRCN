@@ -54,20 +54,25 @@ def test_input_to_node_type():
 
 
 def test_elm_regressor_linear():
-    X_train, X_test, y_train, y_test = train_test_split(np.linspace(0, 10, 200), np.linspace(0, 10, 200)*3-2, test_size=10)
+    X_train, X_test, y_train, y_test =\
+        train_test_split(np.linspace(0, 10, 200), np.linspace(0, 10, 200)*3-2, test_size=10)
     elm = ELMRegressor(input_to_nodes=[('default', InputToNode(bias_scaling=10.))], random_state=42)
-    elm.fit(X_train.reshape(-1, 1), y_train.reshape(-1, 1))
+    elm.fit(X_train.reshape(-1, 1), y_train)
     y_elm = elm.predict(X_test.reshape(-1, 1))
-    print("test: {0} train: {1}".format(y_test, y_elm))
+    # print("test: {0} train: {1}".format(y_test, y_elm))
+    np.testing.assert_allclose(y_test, y_elm, rtol=1e-2)
 
 
 def test_elm_regressor_sine():
-    X_train, X_test, y_train, y_test = train_test_split(np.linspace(0, 10, 2000), np.sin(np.linspace(0, 10, 2000)), test_size=10, random_state=42)
+    X = np.linspace(0, 10, 2000)
+    y = np.hstack((np.sin(X).reshape(-1, 1), np.cos(X).reshape(-1, 1)))
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=10, random_state=42)
     elm = ELMRegressor(input_to_nodes=[('default', InputToNode(bias_scaling=10.))], random_state=42)
-    elm.fit(X_train.reshape(-1, 1), y_train.reshape(-1, 1), n_jobs=2)
+    elm.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
     y_elm = elm.predict(X_test.reshape(-1, 1))
-    print("test: {0} train: {1}".format(y_test, y_elm))
-    print(elm.get_params())
+    # print("test: {0} train: {1}".format(y_test, y_elm))
+    # print(elm.get_params())
+    np.testing.assert_allclose(y_test, y_elm, rtol=1e-2)
 
 
 def test_hidden_layer_size():
@@ -87,6 +92,5 @@ def test_iris():
     for record in range(len(y_test)):
         # print('predicted: {0} \ttrue: {1}'.format(y_predicted[record], y_test[record]))
         assert y_predicted[record] == y_test[record]  # this combination fits coincidental - not a general assumption
-
 
 test_elm_regressor_sine()

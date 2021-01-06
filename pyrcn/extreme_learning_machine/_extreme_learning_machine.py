@@ -3,13 +3,12 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin, MultiOutputMixin, is_regressor
 from pyrcn.extreme_learning_machine._base import ACTIVATIONS
 from sklearn.utils import check_random_state, check_X_y, column_or_1d, check_array
-from sklearn.utils.validation import check_is_fitted
 from sklearn.utils.extmath import safe_sparse_dot
-from sklearn.preprocessing import LabelBinarizer
-from sklearn.utils.multiclass import _check_partial_fit_first_call
+from sklearn.preprocessing import LabelBinarizer, StandardScaler
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.pipeline import FeatureUnion, Pipeline
+
 
 from joblib import Parallel, delayed
 
@@ -41,7 +40,10 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self.input_scaling = input_scaling  # read/write
         self.bias_scaling = bias_scaling  # read/write
         self.random_state = check_random_state(random_state)  # read only
-        self._hidden_layer_state = np.zeros(shape=(0, hidden_layer_size))
+
+        self._input_weights = None
+        self._bias = None
+        self._hidden_layer_state = None
 
     def fit(self, X, y=None, n_jobs=None):
         """
@@ -90,7 +92,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self._bias = random_state.uniform(low=-1., high=1., size=hidden_layer_size)
 
     def transform(self, X):
-        check_is_fitted(self, ['_input_weights', '_bias'])
+        if self._input_weights is None or self._bias is None:
+            raise NotFittedError(self)
+
         self._hidden_layer_state = safe_sparse_dot(X, self._input_weights) * self.input_scaling\
                                    + np.ones(shape=(X.shape[0], 1)) * self._bias * self.bias_scaling
         ACTIVATIONS[self.activation](self._hidden_layer_state)
@@ -114,6 +118,36 @@ class InputToNode(BaseEstimator, TransformerMixin):
         if self.activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
                              "activations are %s." % (self.activation, ACTIVATIONS))
+
+
+class IncrementalRegression(BaseEstimator, RegressorMixin):
+    def __init__(self, alpha=1.0, fit_intercept=True, normalize=False):
+        self.alpha = alpha
+        self.fit_intercept = fit_intercept
+        self.normalize = normalize
+        self.scaler = StandardScaler(copy=False)
+
+        self._K = None
+        self._P = None
+        self._output_weights = None
+
+    def fit(self, X, y, n_jobs=1):
+        X_preprocessed = X
+
+        if self.fit_intercept:
+            X_preprocessed = np.hstack((X_preprocessed, np.ones(X.shape[0])))
+
+        if self.normalize:
+            self.scaler.fit_transform(X_preprocessed, {'n_jobs': n_jobs})
+
+        self.partial_fit(X_preprocessed, y, n_jobs)
+
+    def predict(self, X):
+        if self._output_weights is None:
+            raise NotFittedError(self)
+
+    def partial_fit(self, X, y, n_jobs=1):
+        None
 
 
 class BaseExtremeLearningMachine(BaseEstimator):
@@ -582,7 +616,7 @@ class BaseExtremeLearningMachine(BaseEstimator):
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted values
         """
-        check_is_fitted(self, ['input_weights_', 'bias_weights_', 'output_weights_'])  # , 'recurrent_weights_'
+        # check_is_fitted(self, ['input_weights_', 'bias_weights_', 'output_weights_'])  # , 'recurrent_weights_'
         if not self.output_weights_.any():
             msg = ("This %(name)s instance is not fitted yet. Call 'fit' with "
                    "appropriate arguments before using this method.")
@@ -736,7 +770,7 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted classes
         """
-        check_is_fitted(self, ['input_weights_', 'bias_weights_', 'output_weights_'])  # , 'recurrent_weights_'
+        # check_is_fitted(self, ['input_weights_', 'bias_weights_', 'output_weights_'])  # , 'recurrent_weights_'
         if self.output_weights_.size == 0:
             msg = ("This %(name)s instance is not fitted yet. Call 'fit' with "
                    "appropriate arguments before using this method.")
@@ -798,8 +832,8 @@ class ELMClassifier(BaseExtremeLearningMachine, ClassifierMixin):
         -------
         self : returns a trained ELM classifier.
         """
-        if _check_partial_fit_first_call(self, classes):
-            super()._initialize(y=y, n_features=X.shape[1])
+        #if _check_partial_fit_first_call(self, classes):
+        #    super()._initialize(y=y, n_features=X.shape[1])
 
         super()._partial_fit(X, y, update_output_weights=update_output_weights, n_jobs=n_jobs)
         return self
@@ -904,14 +938,16 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self.input_to_nodes = input_to_nodes
         self.regressor = regressor
         self.random_state = check_random_state(random_state)
+        self._input_to_node = None
+        self._hidden_layer_state = None
+        self._regressor = None
 
-    def fit(self, X, y, incremental=False, n_jobs=1, transformer_weights=None, partial=False):
+    def fit(self, X, y, n_jobs=1, transformer_weights=None):
         self._validate_hyperparameters()
-
-        self._validate_hyperparameters()
-        self._validate_data(X, column_or_1d(y))
+        self._validate_data(X, y, multi_output=True)
 
         """
+        # shorthand
         self._elm = Pipeline(steps=[
             ('input_to_node', FeatureUnion(
                 transformer_list=self.input_to_nodes,
@@ -919,14 +955,13 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                 transformer_weights=transformer_weights)),
             ('regressor', self.regressor)])
         """
-        # performs same as
         self._input_to_node = FeatureUnion(
             transformer_list=self.input_to_nodes,
             n_jobs=n_jobs,
             transformer_weights=transformer_weights)
-        self.hidden_layer_state = self._input_to_node.fit_transform(X, column_or_1d(y))
+        self._hidden_layer_state = self._input_to_node.fit_transform(X)
 
-        self._regressor = self.regressor.fit(self.hidden_layer_state, column_or_1d(y))
+        self._regressor = self.regressor.fit(self._hidden_layer_state, y)
         return self
 
     def predict(self, X, keep_hidden_layer_state=False):
@@ -944,12 +979,17 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted classes
         """
+        # shorthand
         # check_is_fitted(self, ['_elm'])
         # return self._elm.predict(X)
 
-        check_is_fitted(self, ['_input_to_node', '_regressor'])
+        if self._input_to_node is None or self._regressor is None:
+            raise NotFittedError(self)
 
         hidden_layer_state = self._input_to_node.transform(X)
+        if not keep_hidden_layer_state:
+            self._hidden_layer_state = hidden_layer_state
+
         return self._regressor.predict(hidden_layer_state)
 
     def _validate_hyperparameters(self):
@@ -967,28 +1007,3 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             raise TypeError("The last step should be a regressor "
                             "and implement fit and predict"
                             "'%s' (type %s) doesn't" % (self.regressor, type(self.regressor)))
-
-    def _partial_fit(self, X, y, update_output_weights=True, n_jobs=1):
-        """
-        Fit the model to the data matrix X and target(s) y without finalizing it. This can be used to add more training
-        data later.
-        Parameters
-        ----------
-        X : ndarray of shape (n_samples, n_features)
-            The input data
-        y : ndarray of shape (n_samples, ) or (n_samples, n_outputs)
-            The target values (class labels in classification, real numbers in regression).
-        update_output_weights : bool, default True
-            If False, no output weights are computed after passing the current data through the network.
-            This is computationally more efficient in case of a lot of outputs and a large dataset that is fitted
-            incrementally.
-        n_jobs : int, default: 0
-            If n_jobs is larger than 1, then the linear regression for each output dimension is computed separately
-            using joblib.
-
-        Returns
-        -------
-        self : returns a trained ELM classifier.
-        """
-        # super()._partial_fit(X, y, update_output_weights=update_output_weights, n_jobs=n_jobs)
-        return self
