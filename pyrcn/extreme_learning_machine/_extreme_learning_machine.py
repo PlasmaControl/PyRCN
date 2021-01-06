@@ -32,7 +32,7 @@ class InputToNode(TransformerMixin, BaseEstimator):
         self.activation = activation  # read/write
         self.input_scaling = input_scaling  # read/write
         self.bias = bias  # read/write
-        self.random_state = random_state  # read only
+        self.random_state = check_random_state(random_state)  # read only
         self._hidden_layer_state = np.zeros(shape=(0, hidden_layer_size))
 
     def fit(self, X, y=None):
@@ -54,7 +54,7 @@ class InputToNode(TransformerMixin, BaseEstimator):
             n_features_in=X.shape[1],
             hidden_layer_size=self.hidden_layer_size,
             fan_in=np.rint(self.hidden_layer_size*self.sparsity).astype(int),
-            random_state=check_random_state(self.random_state))
+            random_state=self.random_state)
         self._set_uniform_random_bias(self.bias, self.hidden_layer_size, self.random_state)
         return self
 
