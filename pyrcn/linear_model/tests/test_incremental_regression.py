@@ -10,6 +10,7 @@ from pyrcn.linear_model import IncrementalRegression
 
 
 def test_linear():
+    print('\ntest_linear():')
     rs = np.random.RandomState(42)
     index = range(1000)
     X = np.hstack((np.linspace(0., 10., 1000).reshape(-1, 1),
