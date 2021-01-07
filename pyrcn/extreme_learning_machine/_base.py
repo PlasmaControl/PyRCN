@@ -103,17 +103,18 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self._validate_hyperparameters()
         self._validate_data(X, y)
         self._check_n_features(X, reset=True)
-        self._set_uniform_random_input_weights(
+        self._input_weights = self._uniform_random_input_weights(
             n_features_in=self.n_features_in_,
             hidden_layer_size=self.hidden_layer_size,
             fan_in=np.rint(self.hidden_layer_size * self.sparsity).astype(int),
             random_state=self.random_state)
-        self._set_uniform_random_bias(
+        self._bias = self._uniform_random_bias(
             hidden_layer_size=self.hidden_layer_size,
             random_state=self.random_state)
         return self
 
-    def _set_uniform_random_input_weights(self, n_features_in: int, hidden_layer_size: int, fan_in: int, random_state):
+    @staticmethod
+    def _uniform_random_input_weights(n_features_in: int, hidden_layer_size: int, fan_in: int, random_state):
         nr_entries = np.int32(n_features_in * fan_in)
         weights_array = random_state.uniform(low=-1., high=1., size=nr_entries)
 
@@ -123,13 +124,14 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
             for en in range(0, n_features_in * fan_in, fan_in):
                 indices[en: en + fan_in] = random_state.permutation(hidden_layer_size)[:fan_in].astype(int)
-            self._input_weights = scipy.sparse.csr_matrix(
+            return scipy.sparse.csr_matrix(
                 (weights_array, indices, indptr), shape=(n_features_in, hidden_layer_size), dtype='float64')
         else:
-            self._input_weights = weights_array.reshape((n_features_in, hidden_layer_size))
+            return weights_array.reshape((n_features_in, hidden_layer_size))
 
-    def _set_uniform_random_bias(self, hidden_layer_size: int, random_state):
-        self._bias = random_state.uniform(low=-1., high=1., size=hidden_layer_size)
+    @staticmethod
+    def _uniform_random_bias(hidden_layer_size: int, random_state):
+        return random_state.uniform(low=-1., high=1., size=hidden_layer_size)
 
     def transform(self, X):
         if self._input_weights is None or self._bias is None:
