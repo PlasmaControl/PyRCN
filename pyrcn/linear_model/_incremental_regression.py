@@ -3,7 +3,6 @@ Framework for incremental regression.
 """
 
 # Author: Michael Schindler <michael.schindler@maschindler.de>
-# some parts and tricks stolen from other sklearn files.
 # License: BSD 3 clause
 
 import numpy as np
@@ -30,7 +29,8 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         if reset:
             self._P = None
 
-        self.partial_fit(self._preprocessing(X), y, n_jobs)
+        self.partial_fit(X, y, n_jobs)
+        return self
 
     def predict(self, X):
         if self._output_weights is None:

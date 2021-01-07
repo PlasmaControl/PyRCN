@@ -230,11 +230,11 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self._regressor.predict(hidden_layer_state)
 
     def _validate_hyperparameters(self):
-        if not self.input_to_nodes:
+        if not self.input_to_nodes or self.input_to_nodes is None:
             self.input_to_nodes = [('default', InputToNode())]
         else:
             for n, t in self.input_to_nodes:
-                if t is None:
+                if t == 'drop':
                     continue
                 if not (hasattr(t, "fit") or hasattr(t, "fit_transform")) or not hasattr(t, "transform"):
                     raise TypeError("All input_to_nodes should be transformers "

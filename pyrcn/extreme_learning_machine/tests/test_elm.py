@@ -11,7 +11,7 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 from sklearn.utils.extmath import safe_sparse_dot
 
-from pyrcn import extreme_learning_machine
+from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier, ELMRegressor, InputToNode
 
 
@@ -88,6 +88,27 @@ def test_iris():
     lb = LabelBinarizer()
     y_train_numeric = lb.fit_transform(y_train)
     cls = ELMClassifier([('default', InputToNode(hidden_layer_size=10, random_state=42))], random_state=42)
+    cls.fit(X_train, y_train_numeric)
+    y_predicted = cls.predict(X_test)
+    # y_predicted = lb.inverse_transform(y_predicted_numeric)
+
+    for record in range(len(y_test)):
+        print('predicted: {0} \ttrue: {1}'.format(y_predicted[record], y_test[record]))
+
+    assert cls.score(X_test, y_test) >= 4./5.
+
+
+def test_iris_ensemble_iterative_regression():
+    print('\ntest_iris_ensemble_iterative_regression():')
+    X_train, X_test, y_train, y_test = train_test_split(X_iris, y_iris, test_size=5, random_state=42)
+    lb = LabelBinarizer()
+    y_train_numeric = lb.fit_transform(y_train)
+    cls = ELMClassifier(
+        input_to_nodes=[
+            ('tanh', InputToNode(hidden_layer_size=10, random_state=42, activation='tanh')),
+            ('bounded_relu', InputToNode(hidden_layer_size=10, random_state=42, activation='bounded_relu'))],
+        regressor=IncrementalRegression(alpha=.01),
+        random_state=42)
     cls.fit(X_train, y_train_numeric)
     y_predicted = cls.predict(X_test)
     # y_predicted = lb.inverse_transform(y_predicted_numeric)

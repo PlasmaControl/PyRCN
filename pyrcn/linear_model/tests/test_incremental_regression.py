@@ -3,6 +3,7 @@ import numpy as np
 
 import pytest
 
+from sklearn.base import is_regressor
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 
@@ -21,6 +22,7 @@ def test_linear():
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=10, random_state=42)
     reg = IncrementalRegression()
+    assert is_regressor(reg)
 
     for prt in np.array_split(index, 3):
         reg.partial_fit(X[prt, :], y[prt, :])
