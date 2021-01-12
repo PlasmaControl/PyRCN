@@ -1,3 +1,10 @@
+"""
+The :mod:`extreme_learninc_machine` contains the ELMRegressor and the ELMClassifier
+"""
+
+# Author: Michael Schindler <michael.schindler@maschindler.de>
+# License: BSD 3 clause
+
 import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
@@ -10,51 +17,21 @@ from sklearn.pipeline import FeatureUnion
 
 
 class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
-    """
-    Extreme Learning Machine regressor.
+    """Extreme Learning Machine regressor.
 
     This model optimizes the mean squared error loss function using linear regression.
 
-    .. versionadded:: 0.00
-
     Parameters
     ----------
-    k_in : int, default 2
-        This element represents the sparsity of the connections between the input and recurrent nodes.
-        It determines the number of features that every node inside the hidden layer receives.
-    input_scaling : float, default 1.0
-        This element represents the input scaling factor from the input to the hidden layer. It is a global scaling
-        factor for the input weight matrix.
-    bias : float, default 0.0
-        This element represents the bias scaling of the bias weights. It is a global scaling factor for the bias weight
-        matrix.
-    hidden_layer_size : int, default 500
-        This element represents the number of neurons in the hidden layer.
-    activation_function : {'tanh', 'identity', 'logistic', 'relu'}
-        This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
-            - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
-            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
-    beta : float, optional, default 0.0001
-        L2 penalty (regularization term) parameter.
+    input_to_nodes : iterable
+        List of (name, transform) tuples (implementing fit/transform) that are
+        chained, in the order in which they are chained, with the last object
+        an estimator.
+    regressor : object, default=IncrementalRegression(alpha=.0001)
+        Regressor object such as derived from ``RegressorMixin``. This
+        regressor will automatically be cloned each time prior to fitting.
+        regressor cannot be None, omit argument if in doubt
     random_state : int, RandomState instance, default=None
-        If int, random_state is the seed used by the random number generator;
-        If RandomState instance, random_state is the random number generator;
-        If None, the random number generator is the RandomState instance used
-        by `np.random`.
-
-    Attributes
-    ----------
-    TODO
-
-    Notes
-    -----
-    TODO
-
-    References
-    -----------
-    TODO
     """
     def __init__(self, input_to_nodes, regressor=IncrementalRegression(alpha=.0001), random_state=None):
         self.input_to_nodes = input_to_nodes
@@ -63,22 +40,29 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._input_to_node = None
         self._regressor = None
 
-    def partial_fit(self, X, y, n_jobs=1, transformer_weights=None):
+    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None):
+        """Fits the regressor partially.
+
+        Parameters
+        ----------
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
+            The targets to predict.
+        n_jobs : int, default=None
+            The number of jobs to run in parallel. ``-1`` means using all processors.
+            See :term:`Glossary <n_jobs>` for more details.
+        transformer_weights : ignored
+
+        Returns
+        -------
+        self : Returns a traines ELMRegressor model.
+        """
         if not hasattr(self.regressor, 'partial_fit'):
             raise BaseException('regressor has no attribute partial_fit, got {0}'.format(self.regressor))
 
         self._validate_hyperparameters()
         self._validate_data(X, y, multi_output=True)
 
-        """
-        # shorthand
-        self._elm = Pipeline(steps=[
-            ('input_to_node', FeatureUnion(
-                transformer_list=self.input_to_nodes,
-                n_jobs=n_jobs,
-                transformer_weights=transformer_weights)),
-            ('regressor', self.regressor)])
-        """
         if self._input_to_node is None:
             self._input_to_node = FeatureUnion(
                 transformer_list=self.input_to_nodes,
@@ -93,7 +77,23 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             self._regressor = self.regressor.partial_fit(hidden_layer_state, y)
         return self
 
-    def fit(self, X, y, n_jobs=1, transformer_weights=None):
+    def fit(self, X, y, n_jobs=None, transformer_weights=None):
+        """Fits the regressor.
+
+        Parameters
+        ----------
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
+            The targets to predict.
+        n_jobs : int, default=None
+            The number of jobs to run in parallel. ``-1`` means using all processors.
+            See :term:`Glossary <n_jobs>` for more details.
+        transformer_weights : ignored
+
+        Returns
+        -------
+        self : Returns a traines ELMRegressor model.
+        """
         self._validate_hyperparameters()
         self._validate_data(X, y, multi_output=True)
 
@@ -107,17 +107,15 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self
 
     def predict(self, X):
-        """
-        Predict the output value using the trained ELM regressor
+        """Predicts the targets using the trained ELM regressor.
 
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_features)
-            The input data.
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
         Returns
         -------
-        y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
-            The predicted classes
+        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
+            The predicted targets
         """
         if self._input_to_node is None or self._regressor is None:
             raise NotFittedError(self)
@@ -127,6 +125,12 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self._regressor.predict(hidden_layer_state)
 
     def _validate_hyperparameters(self):
+        """Validates the hyperparameters.
+
+        Returns
+        -------
+
+        """
         if not self.input_to_nodes or self.input_to_nodes is None:
             self.input_to_nodes = [('default', InputToNode())]
         else:
@@ -144,75 +148,42 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
 
 class ELMClassifier(ELMRegressor, ClassifierMixin):
-    """
-    Extreme Learning Machine classifier.
+    """Extreme Learning Machine classifier.
 
     This model optimizes the mean squared error loss function using linear regression.
 
-    .. versionadded:: 0.00
-
     Parameters
     ----------
-    k_in : int, default -1
-        This element represents the sparsity of the connections between the input and recurrent nodes.
-        It determines the number of features that every node inside the hidden layer receives.
-    input_scaling : float, default 1.0
-        This element represents the input scaling factor from the input to the hidden layer. It is a global scaling
-        factor for the input weight matrix.
-    bias : float, default 0.0
-        This element represents the bias scaling of the bias weights. It is a global scaling factor for the bias weight
-        matrix.
-    hidden_layer_size : int, default 500
-        This element represents the number of neurons in the hidden layer.
-    activation_function : {'tanh', 'identity', 'logistic', 'relu'}
-        This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
-            - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
-            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
-            - 'bounded_relu', the rectified linear unit function, returns f(x) = min(max(0, x),1)
-    beta : float, default 0.0001
-        L2 penalty (regularization term) parameter.
+    input_to_nodes : iterable
+        List of (name, transform) tuples (implementing fit/transform) that are
+        chained, in the order in which they are chained, with the last object
+        an estimator.
+    regressor : object, default=IncrementalRegression(alpha=.0001)
+        Regressor object such as derived from ``RegressorMixin``. This
+        regressor will automatically be cloned each time prior to fitting.
+        regressor cannot be None, omit argument if in doubt
     random_state : int, RandomState instance, default=None
-        If int, random_state is the seed used by the random number generator;
-        If RandomState instance, random_state is the random number generator;
-        If None, the random number generator is the RandomState instance used
-        by `np.random`.
-
-    Attributes
-    ----------
-    TODO
-
-    Notes
-    -----
-    TODO
-
-    References
-    ----------
-    TODO
     """
-
     def __init__(self, input_to_nodes, regressor=IncrementalRegression(alpha=.0001), random_state=None):
         super().__init__(input_to_nodes=input_to_nodes, regressor=regressor, random_state=random_state)
         self._encoder = None
 
-    def partial_fit(self, X, y, n_jobs=1, transformer_weights=None):
-        """
-        Fit the model to the data matrix X and target(s) y.
+    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None):
+        """Fits the regressor partially.
 
         Parameters
         ----------
-        X : ndarray of shape (n_samples, n_features)
-            The input data
-        y : ndarray of shape (n_samples, ) or (n_samples, n_outputs)
-            The target values (class labels in classification, real numbers in regression).
-        n_jobs : int, default: 0
-            If n_jobs is larger than 1, then the linear regression for each output dimension is computed separately.
-        transformer_weights: float or ndarray of shape (n_samples,) weights the targets y individually.
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_classes)
+            The targets to predict.
+        n_jobs : int, default=None
+            The number of jobs to run in parallel. ``-1`` means using all processors.
+            See :term:`Glossary <n_jobs>` for more details.
+        transformer_weights : ignored
 
         Returns
         -------
-        self : returns a trained ELM model.
+        self : returns a traines ELMClassifier model
         """
         self._validate_data(X, y, multi_output=True)
 
@@ -221,23 +192,22 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
 
         return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None)
 
-    def fit(self, X, y, n_jobs=1, transformer_weights=None):
-        """
-        Fit the model to the data matrix X and target(s) y.
+    def fit(self, X, y, n_jobs=None, transformer_weights=None):
+        """Fits the regressor.
 
         Parameters
         ----------
-        X : ndarray of shape (n_samples, n_features)
-            The input data
-        y : ndarray of shape (n_samples, ) or (n_samples, n_outputs)
-            The target values (class labels in classification, real numbers in regression).
-        n_jobs : int, default: 0
-            If n_jobs is larger than 1, then the linear regression for each output dimension is computed separately.
-        transformer_weights: float or ndarray of shape (n_samples,) weights the targets y individually.
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_classes)
+            The targets to predict.
+        n_jobs : int, default=None
+            The number of jobs to run in parallel. ``-1`` means using all processors.
+            See :term:`Glossary <n_jobs>` for more details.
+        transformer_weights : ignored
 
         Returns
         -------
-        self : returns a trained ELM model.
+        self : Returns a traines ELMClassifier model.
         """
         self._validate_data(X, y, multi_output=True)
         self._encoder = LabelBinarizer().fit(y)
@@ -245,47 +215,43 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         return super().fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None)
 
     def predict(self, X):
-        """
-        Predict the classes using the trained ELM classifier
+        """Predict the classes using the trained ELM classifier.
 
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_features)
-            The input data.
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
         Returns
         -------
-        y_pred : array-like, shape (n_samples,) or (n_samples, n_class)
-            The predicted classes
+        y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predicted classes.
         """
         return self._encoder.inverse_transform(super().predict(X), threshold=.0)
 
     def predict_proba(self, X):
-        """
-        Predict the probability estimates using the trained ELM classifier
+        """Predict the probability estimated using the trained ELM classifier.
 
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_features)
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
             The input data.
         Returns
         -------
-        y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
-            The predicted probability estimates
+        y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predicted probability estimated.
         """
         # for single dim proba use np.amax
         return self._encoder.inverse_transform(super().predict(X), threshold=.5)
 
     def predict_log_proba(self, X):
-        """
-        Predict the logarithmic probability estimates using the trained ELM classifier
+        """Predict the logarithmic probability estimated using the trained ELM classifier.
 
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_features)
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
             The input data.
         Returns
         -------
-        y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
-            The predicted logarithmic probability estimates
+        y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
+            The predicted logarithmic probability estimated.
         """
         return np.log(self.predict_proba(X=X))

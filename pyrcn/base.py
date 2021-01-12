@@ -1,9 +1,13 @@
-"""Utilities for the extreme learning machine modules
 """
+The :mod:`pyrcn.base`contains utilities for the reservoir computing modules
+"""
+
+# Author: Michael Schindler <michael.schindler@maschindler.de>
+# License: BSD 3 clause
+
 import scipy
 import numpy as np
 
-# noinspection PyProtectedMember
 from sklearn.neural_network._base import ACTIVATIONS
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state
@@ -13,6 +17,7 @@ from sklearn.exceptions import NotFittedError
 
 def inplace_bounded_relu(X):
     """Compute the bounded rectified linear unit function inplace.
+
     Parameters
     ----------
     X : {array-like, sparse matrix}, shape (n_samples, n_features)
@@ -23,6 +28,7 @@ def inplace_bounded_relu(X):
 
 def inplace_tanh_inverse(X):
     """Compute the tanh inverse function inplace.
+
     Parameters
     ----------
     X : {array-like, sparse matrix}, shape (n_samples, n_features)
@@ -33,6 +39,7 @@ def inplace_tanh_inverse(X):
 
 def inplace_identity_inverse(X):
     """Compute the identity inverse function inplace.
+
     Parameters
     ----------
     X : {array-like, sparse matrix}, shape (n_samples, n_features)
@@ -43,6 +50,7 @@ def inplace_identity_inverse(X):
 
 def inplace_logistic_inverse(X):
     """Compute the logistic inverse function inplace.
+
     Parameters
     ----------
     X : {array-like, sparse matrix}, shape (n_samples, n_features)
@@ -61,11 +69,27 @@ ACTIVATIONS_INVERSE = {
 
 
 class InputToNode(BaseEstimator, TransformerMixin):
-    """InputToNode class for ELM
+    """InputToNode class for reservoir computing modules (e.g. ELM)
 
-    .. versionadded:: 0.00
+    Parameters
+    ----------
+    hidden_layer_size : int, default=500
+        Sets the number of nodes in hidden layer. Equals number of output features.
+    sparsity : float, default=1.
+        Quotient of input weights per node (k_in) and number of input features (n_features)
+    activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
+        This element represents the activation function in the hidden layer.
+            - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
+            - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
+            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
+    input_scaling : float, default=1.
+        Scales the input weight matrix.
+    bias_scaling : float, default=1.
+        Scales the input bias of the activation.
+    random_state : {None, int, RandomState}, default=None
     """
-
     def __init__(self,
                  hidden_layer_size=500,
                  sparsity=1.,
@@ -73,32 +97,28 @@ class InputToNode(BaseEstimator, TransformerMixin):
                  input_scaling=1.,
                  bias_scaling=1.,
                  random_state=None):
-        self.hidden_layer_size = hidden_layer_size  # read only
-        self.sparsity = sparsity  # read only
-        self.activation = activation  # read/write
-        self.input_scaling = input_scaling  # read/write
-        self.bias_scaling = bias_scaling  # read/write
-        self.random_state = check_random_state(random_state)  # read only
+        self.hidden_layer_size = hidden_layer_size
+        self.sparsity = sparsity
+        self.activation = activation
+        self.input_scaling = input_scaling
+        self.bias_scaling = bias_scaling
+        self.random_state = check_random_state(random_state)
 
         self._input_weights = None
         self._bias = None
         self._hidden_layer_state = None
 
-    # noinspection PyUnusedLocal
-    def fit(self, X, y=None, n_jobs=None):
-        """
-        Fit the input_weights_matrix.
+    def fit(self, X, y=None):
+        """Fit the InputToNode. Initialize input weights and bias.
 
         Parameters
         ----------
-        X : array-like of shape (n_samples, n_features)
-            The input data
-        y : Ignored
-        n_jobs: Ignored
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        y : ignored
 
         Returns
         -------
-        self : returns a trained ELM model.
+        self
         """
         self._validate_hyperparameters()
         self._validate_data(X, y)
@@ -112,6 +132,26 @@ class InputToNode(BaseEstimator, TransformerMixin):
             hidden_layer_size=self.hidden_layer_size,
             random_state=self.random_state)
         return self
+
+    def transform(self, X):
+        """Transforms the input matrix X.
+
+        Parameters
+        ----------
+        X : {ndarray, sparse matrix} of size (n_samples, n_features)
+
+        Returns
+        -------
+        Y: ndarray of size (n_samples, hidden_layer_size)
+        """
+        if self._input_weights is None or self._bias is None:
+            raise NotFittedError(self)
+
+        self._hidden_layer_state =\
+            safe_sparse_dot(X, self._input_weights) * self.input_scaling\
+            + np.ones(shape=(X.shape[0], 1)) * self._bias * self.bias_scaling
+        ACTIVATIONS[self.activation](self._hidden_layer_state)
+        return self._hidden_layer_state
 
     @staticmethod
     def _uniform_random_input_weights(n_features_in: int, hidden_layer_size: int, fan_in: int, random_state):
@@ -133,19 +173,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
     def _uniform_random_bias(hidden_layer_size: int, random_state):
         return random_state.uniform(low=-1., high=1., size=hidden_layer_size)
 
-    def transform(self, X):
-        if self._input_weights is None or self._bias is None:
-            raise NotFittedError(self)
-
-        self._hidden_layer_state =\
-            safe_sparse_dot(X, self._input_weights) * self.input_scaling\
-            + np.ones(shape=(X.shape[0], 1)) * self._bias * self.bias_scaling
-        ACTIVATIONS[self.activation](self._hidden_layer_state)
-        return self._hidden_layer_state
-
     def _validate_hyperparameters(self):
-        """
-        Validate the hyperparameter. Ensure that the parameter ranges and dimensions are valid.
+        """Validates the hyperparameters.
+
         Returns
         -------
 
