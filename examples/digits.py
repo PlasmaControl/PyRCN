@@ -26,6 +26,7 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
+get_ipython().run_line_magic('matplotlib', 'inline')
 
 from pyrcn.echo_state_network import ESNRegressor
 
