@@ -25,21 +25,8 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self._P = None
         self._output_weights = None
 
-    def fit(self, X, y, n_jobs=1, reset=False):
-        if reset:
-            self._P = None
-
-        self.partial_fit(X, y, n_jobs)
-        return self
-
-    def predict(self, X):
-        if self._output_weights is None:
-            raise NotFittedError(self)
-
-        return safe_sparse_dot(self._preprocessing(X), self._output_weights)
-
-    def partial_fit(self, X, y, n_jobs=1, reset=False):
-        X_preprocessed = self._preprocessing(X)
+    def partial_fit(self, X, y, n_jobs=1, partial_normalize=True, reset=False):
+        X_preprocessed = self._preprocessing(X, partial_normalize=partial_normalize)
 
         if reset:
             self._K = None
@@ -55,15 +42,34 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         if self._output_weights is None:
             self._output_weights = np.matmul(self._P, safe_sparse_dot(X_preprocessed.T, y))
         else:
-            self._output_weights += np.matmul(self._P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
+            self._output_weights += np.matmul(
+                self._P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
 
-    def _preprocessing(self, X):
+        return self
+
+    def fit(self, X, y, n_jobs=1, reset=False):
+        if reset:
+            self._P = None
+
+        self.partial_fit(X, y, n_jobs, partial_normalize=False)
+        return self
+
+    def predict(self, X):
+        if self._output_weights is None:
+            raise NotFittedError(self)
+
+        return safe_sparse_dot(self._preprocessing(X), self._output_weights)
+
+    def _preprocessing(self, X, partial_normalize=True):
         X_preprocessed = X
 
         if self.fit_intercept:
             X_preprocessed = np.hstack((X_preprocessed, np.ones(shape=(X.shape[0], 1))))
 
         if self.normalize:
-            self.scaler.fit_transform(X_preprocessed)
+            if partial_normalize:
+                self.scaler.partial_fit(X_preprocessed).transform(X_preprocessed)
+            else:
+                self.scaler.fit_transform(X_preprocessed)
 
         return X_preprocessed

@@ -2,10 +2,10 @@ import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
 from pyrcn.base import InputToNode
+from pyrcn.linear_model import IncrementalRegression
 from sklearn.utils import check_random_state
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
-from sklearn.linear_model import Ridge
 from sklearn.pipeline import FeatureUnion
 
 
@@ -56,15 +56,17 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
     -----------
     TODO
     """
-    def __init__(self, input_to_nodes, regressor=Ridge(alpha=.0001), random_state=None):
+    def __init__(self, input_to_nodes, regressor=IncrementalRegression(alpha=.0001), random_state=None):
         self.input_to_nodes = input_to_nodes
         self.regressor = regressor
         self.random_state = check_random_state(random_state)
         self._input_to_node = None
-        self._hidden_layer_state = None
         self._regressor = None
 
-    def fit(self, X, y, n_jobs=1, transformer_weights=None):
+    def partial_fit(self, X, y, n_jobs=1, transformer_weights=None):
+        if not hasattr(self.regressor, 'partial_fit'):
+            raise BaseException('regressor has no attribute partial_fit, got {0}'.format(self.regressor))
+
         self._validate_hyperparameters()
         self._validate_data(X, y, multi_output=True)
 
@@ -77,16 +79,34 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                 transformer_weights=transformer_weights)),
             ('regressor', self.regressor)])
         """
+        if self._input_to_node is None:
+            self._input_to_node = FeatureUnion(
+                transformer_list=self.input_to_nodes,
+                n_jobs=n_jobs,
+                transformer_weights=transformer_weights).fit(X)
+
+        hidden_layer_state = self._input_to_node.transform(X)
+
+        if self._regressor:
+            self._regressor.partial_fit(hidden_layer_state, y)
+        else:
+            self._regressor = self.regressor.partial_fit(hidden_layer_state, y)
+        return self
+
+    def fit(self, X, y, n_jobs=1, transformer_weights=None):
+        self._validate_hyperparameters()
+        self._validate_data(X, y, multi_output=True)
+
         self._input_to_node = FeatureUnion(
             transformer_list=self.input_to_nodes,
             n_jobs=n_jobs,
             transformer_weights=transformer_weights)
-        self._hidden_layer_state = self._input_to_node.fit_transform(X)
+        hidden_layer_state = self._input_to_node.fit_transform(X)
 
-        self._regressor = self.regressor.fit(self._hidden_layer_state, y)
+        self._regressor = self.regressor.fit(hidden_layer_state, y)
         return self
 
-    def predict(self, X, keep_hidden_layer_state=False):
+    def predict(self, X):
         """
         Predict the output value using the trained ELM regressor
 
@@ -94,23 +114,15 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         ----------
         X : array-like, shape (n_samples, n_features)
             The input data.
-        keep_hidden_layer_state : bool, default False
-            If True, the hidden layer state is kept and can be accessed from outside. This is useful for visualization
         Returns
         -------
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted classes
         """
-        # shorthand
-        # check_is_fitted(self, ['_elm'])
-        # return self._elm.predict(X)
-
         if self._input_to_node is None or self._regressor is None:
             raise NotFittedError(self)
 
         hidden_layer_state = self._input_to_node.transform(X)
-        if not keep_hidden_layer_state:
-            self._hidden_layer_state = hidden_layer_state
 
         return self._regressor.predict(hidden_layer_state)
 
@@ -180,9 +192,34 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
     TODO
     """
 
-    def __init__(self, input_to_nodes, regressor=Ridge(alpha=.0001), random_state=None):
+    def __init__(self, input_to_nodes, regressor=IncrementalRegression(alpha=.0001), random_state=None):
         super().__init__(input_to_nodes=input_to_nodes, regressor=regressor, random_state=random_state)
         self._encoder = None
+
+    def partial_fit(self, X, y, n_jobs=1, transformer_weights=None):
+        """
+        Fit the model to the data matrix X and target(s) y.
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+            The input data
+        y : ndarray of shape (n_samples, ) or (n_samples, n_outputs)
+            The target values (class labels in classification, real numbers in regression).
+        n_jobs : int, default: 0
+            If n_jobs is larger than 1, then the linear regression for each output dimension is computed separately.
+        transformer_weights: float or ndarray of shape (n_samples,) weights the targets y individually.
+
+        Returns
+        -------
+        self : returns a trained ELM model.
+        """
+        self._validate_data(X, y, multi_output=True)
+
+        if self._encoder is None:
+            self._encoder = LabelBinarizer().fit(y)
+
+        return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None)
 
     def fit(self, X, y, n_jobs=1, transformer_weights=None):
         """
@@ -202,16 +239,12 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         -------
         self : returns a trained ELM model.
         """
-        self._validate_hyperparameters()
         self._validate_data(X, y, multi_output=True)
+        self._encoder = LabelBinarizer().fit(y)
 
-        if y.shape[1] == 1 and np.unique(y) > 2:
-            self._encoder = OneHotEncoder()
-            return super().fit(self._encoder.fit_transform(X), y, n_jobs=1, transformer_weights=None)
-        else:
-            return super().fit(X, y, n_jobs=1, transformer_weights=None)
+        return super().fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None)
 
-    def predict(self, X, keep_hidden_layer_state=False):
+    def predict(self, X):
         """
         Predict the classes using the trained ELM classifier
 
@@ -219,19 +252,14 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         ----------
         X : array-like, shape (n_samples, n_features)
             The input data.
-        keep_hidden_layer_state : bool, default False
-            If True, the hidden layer state is kept and can be accessed from outside. This is useful for visualization
         Returns
         -------
-        y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
+        y_pred : array-like, shape (n_samples,) or (n_samples, n_class)
             The predicted classes
         """
-        if self._encoder is not None:
-            return np.argmax(super().predict(self._encoder.transform(X), keep_hidden_layer_state=False), axis=1)
-        else:
-            return np.argmax(super().predict(X, keep_hidden_layer_state=False), axis=1)
+        return self._encoder.inverse_transform(super().predict(X), threshold=.0)
 
-    def predict_proba(self, X, keep_hidden_layer_state=False):
+    def predict_proba(self, X):
         """
         Predict the probability estimates using the trained ELM classifier
 
@@ -239,20 +267,15 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         ----------
         X : array-like, shape (n_samples, n_features)
             The input data.
-        keep_hidden_layer_state : bool, default False
-            If True, the hidden layer state is kept and can be accessed from outside. This is useful for visualization
         Returns
         -------
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted probability estimates
         """
         # for single dim proba use np.amax
-        if self._encoder is not None:
-            return super().predict(self._encoder.transform(X), keep_hidden_layer_state=keep_hidden_layer_state)
-        else:
-            return super().predict(X, keep_hidden_layer_state=keep_hidden_layer_state)
+        return self._encoder.inverse_transform(super().predict(X), threshold=.5)
 
-    def predict_log_proba(self, X, keep_hidden_layer_state=False):
+    def predict_log_proba(self, X):
         """
         Predict the logarithmic probability estimates using the trained ELM classifier
 
@@ -260,14 +283,9 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         ----------
         X : array-like, shape (n_samples, n_features)
             The input data.
-        keep_hidden_layer_state : bool, default False
-            If True, the hidden layer state is kept and can be accessed from outside. This is useful for visualization
         Returns
         -------
         y_pred : array-like, shape (n_samples,) or (n_samples, n_outputs)
             The predicted logarithmic probability estimates
         """
-        return np.log(self.predict_proba(X=X, keep_hidden_layer_state=keep_hidden_layer_state))
-
-    def _validate_hyperparameters(self):
-        return super()._validate_hyperparameters()
+        return np.log(self.predict_proba(X=X))
