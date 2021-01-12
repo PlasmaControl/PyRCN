@@ -26,7 +26,7 @@ def test_elm_regressor_jobs():
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=10, random_state=42)
     elm = ELMRegressor(
         input_to_nodes=[('default', InputToNode(bias_scaling=10.))],
-        regressor=Ridge(alpha=.0001),
+        regressor=IncrementalRegression(alpha=.0001),
         random_state=42)
     elm.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
     y_elm = elm.predict(X_test.reshape(-1, 1))
