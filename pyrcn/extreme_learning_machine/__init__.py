@@ -1,5 +1,5 @@
 """
-The :mod:`pyrcn` module includes various reservoir computing algorithms.
+The :mod:`pyrcn.elm` module includes Extreme Learning Machine algorithms.
 """
 
 # See https://github.com/TUD-STKS/PyRCN for complete
@@ -9,8 +9,8 @@ The :mod:`pyrcn` module includes various reservoir computing algorithms.
 #         the pyrcn community. ELM are copyright of their respective owners.
 # License: BSD 3-Clause (C) TU Dresden 2020
 
-from pyrcn import extreme_learning_machine, base
+from pyrcn.extreme_learning_machine._elm import ELMClassifier, ELMRegressor
 
-__all__ = ['extreme_learning_machine',
-           'base'
+__all__ = ['ELMClassifier',
+           'ELMRegressor'
            ]

@@ -180,7 +180,7 @@ if should_train:
                 X, y_true, _ = extract_features(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\onset_detection\boeck_dataset", file_name=fid)
                 esn1.partial_fit(X=X, y=y_true, update_output_weights=False)
         esn1.finalize()
-        break  # Here, we have trained a model on seven folds. It can be now evaluated on the training and test examples.
+        break  # Here, we have trained a model on seven folds. It can be now evaluated on the training and tests examples.
 
 
 # ## Validate the ESN model
@@ -290,7 +290,7 @@ if should_train:
                 esn1.partial_fit(X=X, y=y_true, update_output_weights=False)
         esn1.finalize()
     
-        break  # Here, we have trained a model on seven folds. It can be now evaluated on the training and test examples.
+        break  # Here, we have trained a model on seven folds. It can be now evaluated on the training and tests examples.
 
     folds = get_splits()
     for curr_split in range(len(folds)):
@@ -308,7 +308,7 @@ if should_train:
                 esn2.partial_fit(X=X, y=y_true, update_output_weights=False)
         esn2.finalize()
     
-        break  # Here, we have trained a model on seven folds. It can be now evaluated on the training and test examples.
+        break  # Here, we have trained a model on seven folds. It can be now evaluated on the training and tests examples.
 
 
 # In[9]:

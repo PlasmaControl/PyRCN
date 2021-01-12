@@ -7,7 +7,7 @@
 # 
 # This notebook adapts the existing example of applying support vector classification from scikit-learn ([https://scikit-learn.org/stable/auto_examples/classification/plot_digits_classification.html#sphx-glr-auto-examples-classification-plot-digits-classification-py](https://scikit-learn.org/stable/auto_examples/classification/plot_digits_classification.html#sphx-glr-auto-examples-classification-plot-digits-classification-py)) to PyRCN to demonstrate, how PyRCN can be used to classify hand-written digits.
 # 
-# The tutorial is based on numpy, scikit-learn and PyRCN. We are using the ESNRegressor, because we further process the outputs of the ESN. Note that the same can also be done using the ESNClassifier. Then, during prediction, we simply call "predict_proba".
+# The tutorial is based on numpy, scikit-learn and PyRCN. We are using the ELMRegressor, because we further process the outputs of the ESN. Note that the same can also be done using the ESNClassifier. Then, during prediction, we simply call "predict_proba".
 # 
 # This tutorial requires the Python modules numpy, scikit-learn, matplotlib and pyrcn.
 
@@ -23,13 +23,13 @@ from sklearn.base import clone
 from sklearn.metrics import mean_squared_error, classification_report, confusion_matrix, ConfusionMatrixDisplay
 
 from matplotlib import pyplot as plt
+
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
-get_ipython().run_line_magic('matplotlib', 'inline')
+# get_ipython().run_line_magic('matplotlib', 'inline')
 
-from pyrcn.echo_state_network import ESNRegressor
-
+from pyrcn.extreme_learning_machine import ELMRegressor
 
 # ## Load the dataset
 # 
@@ -42,7 +42,6 @@ digits = load_digits()
 data = digits.images
 print("Number of digits: {0}".format(len(data)))
 print("Shape of digits {0}".format(data[0].shape))
-
 
 # ## Split dataset in training and tests
 # 
@@ -66,7 +65,6 @@ print("Number of digits in tests set: {0}".format(len(X_test)))
 print("Shape of digits in tests set: {0}".format(X_test[0].shape))
 print("Shape of output in tests set: {0}".format(y_test[0].shape))
 
-
 # ## Set up a basic ESN
 # 
 # To develop an ESN model for digit recognition, we need to tune several hyper-parameters, e.g., input_scaling, spectral_radius, bias_scaling and leaky integration.
@@ -80,14 +78,12 @@ print("Shape of output in tests set: {0}".format(y_test[0].shape))
 # In[4]:
 
 
-base_reg = ESNRegressor(k_in = 5, input_scaling = 0.1, spectral_radius = 0.0, bias = 0.0, leakage = 1.0, reservoir_size = 50, 
-                   k_res = 5, reservoir_activation = 'tanh', teacher_scaling = 1.0, teacher_shift = 0.0, 
-                   bi_directional = False, solver = 'ridge', beta = 5e-3, random_state = 1)
+base_reg = ELMRegressor(k_in=-1, input_scaling=0.1, bias=0.0, hidden_layer_size=50,
+                        activation_function='tanh', solver='ridge', beta=5e-3, random_state=1)
 
-grid = {'input_scaling': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], 
-        'spectral_radius': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-       }
-
+grid = {'input_scaling': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5],
+        'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000, 2000, 4000, 5000]
+        }
 
 # ## Optimize input_scaling and spectral_radius
 # 
@@ -118,17 +114,14 @@ for params in ParameterGrid(grid):
     err_train = []
     for X, y in zip(X_train, y_train):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X, keep_reservoir_state=False)
+        y_pred = reg.predict(X=X)
         err_train.append(mean_squared_error(y, y_pred))
     err_test = []
     for X, y in zip(X_test, y_test):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X, keep_reservoir_state=False)
+        y_pred = reg.predict(X=X)
         err_test.append(mean_squared_error(y, y_pred))
     print('{0}\t{1}'.format(np.mean(err_train), np.mean(err_test)))
-        
-    
-
 
 # ## Update parameter of the basic ESN
 # 
@@ -141,14 +134,12 @@ for params in ParameterGrid(grid):
 # In[6]:
 
 
-base_reg = ESNRegressor(k_in = 5, input_scaling = 0.1, spectral_radius = 1.0, bias = 0.0, leakage = 1.0, reservoir_size = 50, 
-                   k_res = 5, reservoir_activation = 'tanh', teacher_scaling = 1.0, teacher_shift = 0.0, 
-                   bi_directional = False, solver = 'ridge', beta = 5e-3, random_state = 1)
+base_reg = ELMRegressor(k_in=-1, input_scaling=0.1, bias=0.0, hidden_layer_size=50,
+                        activation_function='tanh', solver='ridge', beta=5e-3, random_state=1)
 
-grid = {'bias': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], 
-        'leakage': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-       }
-
+grid = {'bias': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5],
+        'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000, 2000, 4000, 5000]
+        }
 
 # ## Optimize bias and leakage
 # 
@@ -175,17 +166,14 @@ for params in ParameterGrid(grid):
     err_train = []
     for X, y in zip(X_train, y_train):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X, keep_reservoir_state=False)
+        y_pred = reg.predict(X=X)
         err_train.append(mean_squared_error(y, y_pred))
     err_test = []
     for X, y in zip(X_test, y_test):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X, keep_reservoir_state=False)
+        y_pred = reg.predict(X=X)
         err_test.append(mean_squared_error(y, y_pred))
     print('{0}\t{1}'.format(np.mean(err_train), np.mean(err_test)))
-        
-    
-
 
 # ## Update parameter of the basic ESN
 # 
@@ -198,13 +186,11 @@ for params in ParameterGrid(grid):
 # In[8]:
 
 
-base_reg = ESNRegressor(k_in = 5, input_scaling = 0.1, spectral_radius = 1.0, bias = 0.8, leakage = 0.1, reservoir_size = 50, 
-                   k_res = 5, reservoir_activation = 'tanh', teacher_scaling = 1.0, teacher_shift = 0.0, 
-                   bi_directional = False, solver = 'ridge', beta = 5e-3, random_state = 1)
+base_reg = ELMRegressor(k_in=-1, input_scaling=0.1, bias=0.8, hidden_layer_size=50,
+                        activation_function='tanh', solver='ridge', beta=5e-3, random_state=1)
 
-grid = {'beta': [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0], 
-       }
-
+grid = {'beta': [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0],
+        }
 
 # ## Optimize beta
 # 
@@ -229,17 +215,14 @@ for params in ParameterGrid(grid):
     err_train = []
     for X, y in zip(X_train, y_train):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X, keep_reservoir_state=False)
+        y_pred = reg.predict(X=X)
         err_train.append(mean_squared_error(y, y_pred))
     err_test = []
     for X, y in zip(X_test, y_test):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X, keep_reservoir_state=False)
+        y_pred = reg.predict(X=X)
         err_test.append(mean_squared_error(y, y_pred))
     print('{0}\t{1}'.format(np.mean(err_train), np.mean(err_test)))
-        
-    
-
 
 # ## Update parameter of the basic ESN
 # 
@@ -254,20 +237,18 @@ for params in ParameterGrid(grid):
 # In[10]:
 
 
-base_reg = ESNRegressor(k_in = 5, input_scaling = 0.1, spectral_radius = 1.0, bias = 0.8, leakage = 0.1, reservoir_size = 50, 
-                   k_res = 5, reservoir_activation = 'tanh', teacher_scaling = 1.0, teacher_shift = 0.0, 
-                   bi_directional = False, solver = 'ridge', beta = 0.0005, random_state = 1)
+base_reg = ELMRegressor(k_in=-1, input_scaling=0.1, bias=0.8, hidden_layer_size=50,
+                        activation_function='tanh', solver='ridge', beta=0.0005, random_state=1)
 
-grid = {'reservoir_size': [50, 100, 200, 400, 500, 800, 1000, 2000, 4000, 5000], 
-        'bi_directional': [False, True]
-       }
-
+grid = {'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000, 2000, 4000, 5000],
+        'activation_function': ['tanh', 'identity', 'logistic', 'relu']
+        }
 
 # ## Test the ESN
 # 
 # In the tests case, we use a simple variant of sequence classification:
 # 
-# The ESN computes the output for each sequence. For classification, we just use the last output vector of each sequence. The highest index in that output vector is the label of the sequence.
+# The ESN computes the output for each sequence. We integrate the outputs over time and find the highest integrated output index. This is the label of the sequence.
 # 
 # We store all ground truth labels and the predicted labels for training and tests. Then, we use the scikit-learn's classification_report and plot a confusion matrix in order to show the classification performance.
 # 
@@ -287,25 +268,24 @@ for params in ParameterGrid(grid):
     Y_true_train = []
     Y_pred_train = []
     for X, y in zip(X_train, y_train):
-        y_pred = reg.predict(X=X, keep_reservoir_state=False)
+        y_pred = reg.predict(X=X)
         Y_true_train.append(np.argmax(y))
-        Y_pred_train.append(np.argmax(y_pred[-1, :]))
-    
+        Y_pred_train.append(np.argmax(y_pred.sum(axis=0)))
+
     Y_true_test = []
     Y_pred_test = []
     for X, y in zip(X_test, y_test):
-        y_pred = reg.predict(X=X, keep_reservoir_state=False)
+        y_pred = reg.predict(X=X)
         Y_true_test.append(np.argmax(y))
-        Y_pred_test.append(np.argmax(y_pred[-1, :]))
+        Y_pred_test.append(np.argmax(y_pred.sum(axis=0)))
     cm = confusion_matrix(Y_true_train, Y_pred_train)
     cm_display = ConfusionMatrixDisplay(cm, display_labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).plot()
     print("Classification training report for estimator %s:\n%s\n"
-      % (reg, classification_report(Y_true_train, Y_pred_train)))
+          % (reg, classification_report(Y_true_train, Y_pred_train)))
     plt.show()
-    
+
     cm = confusion_matrix(Y_true_test, Y_pred_test)
     cm_display = ConfusionMatrixDisplay(cm, display_labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).plot()
     print("Classification tests report for estimator %s:\n%s\n"
-      % (reg, classification_report(Y_true_test, Y_pred_test)))
+          % (reg, classification_report(Y_true_test, Y_pred_test)))
     plt.show()
-
