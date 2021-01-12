@@ -43,27 +43,27 @@ data = digits.images
 print("Number of digits: {0}".format(len(data)))
 print("Shape of digits {0}".format(data[0].shape))
 
-# ## Split dataset in training and test
+# ## Split dataset in training and tests
 # 
 # We use the OneHotEncoder to transform the target output into one-hot encoded values. 
 # 
-# Afterwards, we split the dataset into training and test sets. We train the ESN using 50% of the digits and test it using the remaining images. 
+# Afterwards, we split the dataset into training and tests sets. We train the ESN using 50% of the digits and tests it using the remaining images.
 # 
 # We treat each image as a sequence of 8 feature vectors with 8 dimensions.
 
 # In[3]:
 
 
-# Split data into train and test subsets
+# Split data into train and tests subsets
 enc = OneHotEncoder(sparse=False)
 y = enc.fit_transform(X=digits.target.reshape(-1, 1))
 X_train, X_test, y_train, y_test = train_test_split(data, y, test_size=0.5, shuffle=False)
 print("Number of digits in training set: {0}".format(len(X_train)))
 print("Shape of digits in training set: {0}".format(X_train[0].shape))
 print("Shape of output in training set: {0}".format(y_train[0].shape))
-print("Number of digits in test set: {0}".format(len(X_test)))
-print("Shape of digits in test set: {0}".format(X_test[0].shape))
-print("Shape of output in test set: {0}".format(y_test[0].shape))
+print("Number of digits in tests set: {0}".format(len(X_test)))
+print("Shape of digits in tests set: {0}".format(X_test[0].shape))
+print("Shape of output in tests set: {0}".format(y_test[0].shape))
 
 # ## Set up a basic ESN
 # 
@@ -89,12 +89,12 @@ grid = {'input_scaling': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1,
 # 
 # We use the ParameterGrid from scikit-learn, which converts the grid parameters defined before into a list of dictionaries for each parameter combination. 
 # 
-# We loop over each entry of the Parameter Grid, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and test set.  
+# We loop over each entry of the Parameter Grid, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and tests set.
 # 
 #     The lowest training MSE: 0.0725333549527569; parameter combination: {'input_scaling': 0.1, 'spectral_radius': 1.0}
-#     The lowest test MSE: 0.0755270784848419; parameter combination: {'input_scaling': 0.1, 'spectral_radius': 0.9}
+#     The lowest tests MSE: 0.0755270784848419; parameter combination: {'input_scaling': 0.1, 'spectral_radius': 0.9}
 # 
-# We use the best parameter combination from the training set, because we do not want to overfit on the test set.
+# We use the best parameter combination from the training set, because we do not want to overfit on the tests set.
 # 
 # As we can see in the python call, we have modified the training procedure: We use "partial_fit" in order to present the ESN all sequences independently from each other. The function "partial_fit" is part of the scikit-learn API. We have added one optional argument "update_output_weights". By default, it is True and thus, after feeding one sequence through the ESN, output weights are computed.
 # 
@@ -143,14 +143,14 @@ grid = {'bias': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2
 
 # ## Optimize bias and leakage
 # 
-# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and test set.  
+# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and tests set.
 # 
 #     The lowest training MSE: 0.0564864449264251; parameter combination: {'bias': 0.8, 'leakage': 0.2}
-#     The lowest test MSE: 0.0626353459066059; parameter combination: {'bias': 0.1, 'leakage': 0.2}
+#     The lowest tests MSE: 0.0626353459066059; parameter combination: {'bias': 0.1, 'leakage': 0.2}
 # 
-# We use the best parameter combination from the training set, because we do not want to overfit on the test set.
+# We use the best parameter combination from the training set, because we do not want to overfit on the tests set.
 # 
-# Note that the bias differs a lot between training and test set. A reason can be that the training set does not completely represent the test set. This should actually be investigated by comparing several train_test_splits, maybe even with other sample sizes.
+# Note that the bias differs a lot between training and tests set. A reason can be that the training set does not completely represent the tests set. This should actually be investigated by comparing several train_test_splits, maybe even with other sample sizes.
 
 # In[7]:
 
@@ -194,12 +194,12 @@ grid = {'beta': [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0
 
 # ## Optimize beta
 # 
-# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and test set.  
+# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and tests set.
 # 
 #     The lowest training MSE: 0.055284106204655556; parameter combination: {'beta': 0.0005}
-#     The lowest test MSE: 0.06266313201574032; parameter combination: {'beta': 0.001}
+#     The lowest tests MSE: 0.06266313201574032; parameter combination: {'beta': 0.001}
 # 
-# We use the best parameter combination from the test set, because the regularization is responsible to prevent overfitting on the training set. In a running system, of course, we should determine the regularization on a separate validation set.
+# We use the best parameter combination from the tests set, because the regularization is responsible to prevent overfitting on the training set. In a running system, of course, we should determine the regularization on a separate validation set.
 
 # In[9]:
 
@@ -246,11 +246,11 @@ grid = {'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000, 2000, 4000, 500
 
 # ## Test the ESN
 # 
-# In the test case, we use a simple variant of sequence classification:
+# In the tests case, we use a simple variant of sequence classification:
 # 
 # The ESN computes the output for each sequence. We integrate the outputs over time and find the highest integrated output index. This is the label of the sequence.
 # 
-# We store all ground truth labels and the predicted labels for training and test. Then, we use the scikit-learn's classification_report and plot a confusion matrix in order to show the classification performance.
+# We store all ground truth labels and the predicted labels for training and tests. Then, we use the scikit-learn's classification_report and plot a confusion matrix in order to show the classification performance.
 # 
 # As can be seen, the reservoir size as a very strong impact on the classification result.
 
@@ -286,6 +286,6 @@ for params in ParameterGrid(grid):
 
     cm = confusion_matrix(Y_true_test, Y_pred_test)
     cm_display = ConfusionMatrixDisplay(cm, display_labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).plot()
-    print("Classification test report for estimator %s:\n%s\n"
+    print("Classification tests report for estimator %s:\n%s\n"
           % (reg, classification_report(Y_true_test, Y_pred_test)))
     plt.show()

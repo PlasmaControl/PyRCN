@@ -8,7 +8,7 @@ import pytest
 
 from sklearn.utils.extmath import safe_sparse_dot
 
-from pyrcn.extreme_learning_machine import InputToNode
+from pyrcn.base import InputToNode
 
 
 def test_input_to_node_dense():
@@ -40,6 +40,6 @@ def test_transform_bounded_relu():
     X = rs.uniform(low=-1., high=1., size=(10, 3))
     i2n.fit(X)
     y = i2n.transform(X)
-    print('test bounded relu')
+    print('tests bounded relu')
     print(y)
     assert y.shape == (10, 5)

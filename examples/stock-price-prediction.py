@@ -131,7 +131,7 @@ print("Train MSE:\t{0}".format(train_err))
 print("Test MSE:\t{0}".format(test_err))
 
 
-# We see that the ESN even captures the downward trend in the test set, although it has not seen any longer downward movement during the training.
+# We see that the ESN even captures the downward trend in the tests set, although it has not seen any longer downward movement during the training.
 
 # In[9]:
 

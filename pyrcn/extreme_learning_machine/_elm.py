@@ -1,13 +1,12 @@
-import scipy
 import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
-from pyrcn.extreme_learning_machine._base import InputToNode
+from pyrcn.base import InputToNode
 from sklearn.utils import check_random_state
 from sklearn.preprocessing import OneHotEncoder
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import Ridge
-from sklearn.pipeline import FeatureUnion, Pipeline
+from sklearn.pipeline import FeatureUnion
 
 
 class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):

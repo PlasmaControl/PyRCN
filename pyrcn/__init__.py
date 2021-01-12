@@ -9,7 +9,8 @@ The :mod:`pyrcn` module includes various reservoir computing algorithms.
 #         the pyrcn community. ELM are copyright of their respective owners.
 # License: BSD 3-Clause (C) TU Dresden 2020
 
-from pyrcn import extreme_learning_machine
+from pyrcn import extreme_learning_machine, base
 
 __all__ = ['extreme_learning_machine',
+           'base'
            ]

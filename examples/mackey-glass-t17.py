@@ -66,7 +66,7 @@ data = data / (data.max() - data.min())
 initLen = 100 # number of time steps during which internal activations are washed-out during training
 # we consider trainLen including the warming-up period (i.e. internal activations that are washed-out when training)
 trainLen = initLen + 1900 # number of time steps during which we train the network
-testLen = 2000 # number of time steps during which we test/run the network
+testLen = 2000 # number of time steps during which we tests/run the network
 
 
 # Echo State Network preparation
@@ -81,7 +81,7 @@ esn = ESNRegressor(k_in=1, input_scaling=1.0, spectral_radius=1.2, bias=0.0, ext
 
 # Training and Prediction. Be careful, this can take a longer time!!!
 # 
-# The lowest MSE obtained with this settings were \num{5.97e-06} for the training set and \num{43.1e-06} for the test set.
+# The lowest MSE obtained with this settings were \num{5.97e-06} for the training set and \num{43.1e-06} for the tests set.
 
 # In[7]:
 
@@ -117,7 +117,7 @@ plt.xlabel("n")
 plt.ylabel("X[n]")
 
 
-# Prediction of the test set.
+# Prediction of the tests set.
 # 
 
 # In[9]:

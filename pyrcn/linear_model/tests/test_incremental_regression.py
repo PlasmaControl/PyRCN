@@ -28,6 +28,6 @@ def test_linear():
         reg.partial_fit(X[prt, :], y[prt, :])
 
     y_reg = reg.predict(X_test)
-    print("test: {0}\nregr: {1}".format(y_test, y_reg))
+    print("tests: {0}\nregr: {1}".format(y_test, y_reg))
     np.testing.assert_allclose(y_reg, y_test, rtol=.01, atol=.15)
 

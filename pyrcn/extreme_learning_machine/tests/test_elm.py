@@ -10,8 +10,9 @@ from sklearn.datasets import load_iris, load_digits
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 
+from pyrcn.base import InputToNode
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.extreme_learning_machine import ELMClassifier, ELMRegressor, InputToNode
+from pyrcn.extreme_learning_machine import ELMClassifier, ELMRegressor
 
 
 X_iris, y_iris = load_iris(return_X_y=True)
@@ -25,7 +26,7 @@ def test_elm_regressor_jobs():
     elm = ELMRegressor(input_to_nodes=[('default', InputToNode(bias_scaling=10.))], random_state=42)
     elm.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
     y_elm = elm.predict(X_test.reshape(-1, 1))
-    print("test: {0} train: {1}".format(y_test, y_elm))
+    print("tests: {0} train: {1}".format(y_test, y_elm))
     print(elm.get_params())
     np.testing.assert_allclose(y_test, y_elm, rtol=1e-2)
 
