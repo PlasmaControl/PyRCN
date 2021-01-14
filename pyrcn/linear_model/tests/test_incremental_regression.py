@@ -4,10 +4,15 @@ import numpy as np
 import pytest
 
 from sklearn.base import is_regressor
-from sklearn.preprocessing import LabelBinarizer
+from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 
+from pyrcn.base import InputToNode
 from pyrcn.linear_model import IncrementalRegression
+from sklearn.linear_model import Ridge
+
+
+X_diabetes, y_diabetes = load_diabetes(return_X_y=True)
 
 
 def test_linear():
@@ -31,3 +36,12 @@ def test_linear():
     print("tests: {0}\nregr: {1}".format(y_test, y_reg))
     np.testing.assert_allclose(y_reg, y_test, rtol=.01, atol=.15)
 
+
+def test_compare_ridge():
+    X_train, X_test, y_train, y_test = train_test_split(X_diabetes, y_diabetes, test_size=10, random_state=42)
+
+    i_reg = IncrementalRegression(alpha=.01).fit(X_train, y_train)
+    ridge = Ridge(alpha=.01, solver='svd').fit(X_train, y_train)
+
+    print("incremental: {0} ridge: {1}".format(i_reg.coef_, ridge.coef_))
+    np.testing.assert_allclose(i_reg.coef_, ridge.coef_, rtol=.0001)

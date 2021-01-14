@@ -2,7 +2,7 @@
 Incremental regression
 """
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Michael Schindler <michael.schindler@maschindler.de>
+# Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Azarakhsh Jalalvand <azarakhsh.jalalvand@ugent.be>
 # License: BSD 3 clause
 
 import numpy as np
@@ -13,8 +13,8 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
 
 
-class IncrementalRegression(BaseEstimator, RegressorMixin):
-    """Linear regression.
+class FastIncrementalRegression(BaseEstimator, RegressorMixin):
+    """Fast Linear regression.
     This linear regression algorithm is able to perform a linear regression
     with the L2 regularization and iterative fit. [1]_
     .. [1] https://ieeexplore.ieee.org/document/4012031
@@ -45,11 +45,11 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self.normalize = normalize
         self.scaler = StandardScaler(copy=False)
 
-        self._K = None
-        self._P = None
+        self._xTx = None
+        self._xTy = None
         self._output_weights = None
 
-    def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True):
+    def partial_fit(self, X, y, partial_normalize=True, validate=True, update_output_weights=True, finalize=False):
         """Fits the regressor partially.
         Parameters
         ----------
@@ -57,10 +57,12 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
         partial_normalize : bool, default=True
             Partial fits the normalization transformer on this sample if True.
-        reset : bool, default=False
-            Begin a new fit, drop prior fits.
         validate: bool, default=True
             Validate input data if True.
+        update_output_weights : bool, default=True
+            Only update the output weights if required. This saves time
+        finalize : bool, default=False
+            Remove correlation matrices after the model has been fit with all data.
         Returns
         -------
         self
@@ -70,22 +72,24 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
 
         X_preprocessed = self._preprocessing(X, partial_normalize=partial_normalize)
 
-        if reset:
-            self._K = None
-            self._P = None
-
-        if self._K is None:
-            self._K = safe_sparse_dot(X_preprocessed.T, X_preprocessed)
+        if self._xTx is None:
+            self._xTx = safe_sparse_dot(X_preprocessed.T, X_preprocessed)
         else:
-            self._K += safe_sparse_dot(X_preprocessed.T, X_preprocessed)
+            self._xTx += safe_sparse_dot(X_preprocessed.T, X_preprocessed)
 
-        self._P = np.linalg.inv(self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
-
-        if self._output_weights is None:
-            self._output_weights = np.matmul(self._P, safe_sparse_dot(X_preprocessed.T, y))
+        if self._xTy is None:
+            self._xTy = safe_sparse_dot(X_preprocessed.T, y)
         else:
-            self._output_weights += np.matmul(
-                self._P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
+            self._xTy += safe_sparse_dot(X_preprocessed.T, y)
+
+        if update_output_weights and finalize:
+            inv_xTx = np.linalg.inv(self._xTx + self.alpha * self._n_samples * np.eye(self._xTx.shape[0]))
+            self._output_weights = safe_sparse_dot(inv_xTx, self._xTy)
+            self._xTx = None
+            self._xTy = None
+        elif update_output_weights:
+            inv_xTx = np.linalg.inv(self._xTx + self.alpha * self._n_samples * np.eye(self._xTx.shape[0]))
+            self._output_weights = safe_sparse_dot(inv_xTx, self._xTy)
 
         return self
 
@@ -99,7 +103,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         -------
         self
         """
-        self.partial_fit(X, y, partial_normalize=False, reset=True, validate=True)
+        self.partial_fit(X, y, partial_normalize=False, validate=True, update_output_weights=True, finalize=True)
         return self
 
     def predict(self, X):

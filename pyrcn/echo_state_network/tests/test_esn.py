@@ -1,5 +1,5 @@
 """
-Testing for Extreme Learning Machine module (pyrcn.extreme_learning_machine)
+Testing for Echo State Network module (pyrcn.echo_state_network)
 """
 import scipy
 import numpy as np
@@ -11,37 +11,39 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import Ridge
 
-from pyrcn.base import InputToNode
+from pyrcn.base import InputToNode, NodeToNode
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.extreme_learning_machine import ELMClassifier, ELMRegressor
+from pyrcn.echo_state_network import ESNClassifier, ESNRegressor
 
 
 X_iris, y_iris = load_iris(return_X_y=True)
 
 
-def test_elm_regressor_jobs():
-    print('\ntest_elm_regressor_sine():')
+def test_esn_regressor_jobs():
+    print('\ntest_esn_regressor_sine():')
     X = np.linspace(0, 10, 2000)
     y = np.hstack((np.sin(X).reshape(-1, 1), np.cos(X).reshape(-1, 1)))
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=10, random_state=42)
-    elm = ELMRegressor(
+    esn = ESNRegressor(
         input_to_nodes=[('default', InputToNode(bias_scaling=10.))],
-        regressor=IncrementalRegression(alpha=.0001),
+        nodes_to_nodes=[('default', NodeToNode(spectral_radius=0.0, bi_directional=False))],
+        regressor=Ridge(alpha=.0001),
         random_state=42)
-    elm.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
-    y_elm = elm.predict(X_test.reshape(-1, 1))
-    print("tests: {0} train: {1}".format(y_test, y_elm))
-    print(elm.get_params())
-    np.testing.assert_allclose(y_test, y_elm, rtol=1e-2)
+    esn.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
+    y_esn = esn.predict(X_test.reshape(-1, 1))
+    print("tests: {0} train: {1}".format(y_test, y_esn))
+    print(esn.get_params())
+    np.testing.assert_allclose(y_test, y_esn, rtol=1e-2)
 
 
 def test_iris_ensemble_iterative_regression():
     print('\ntest_iris_ensemble_iterative_regression():')
     X_train, X_test, y_train, y_test = train_test_split(X_iris, y_iris, test_size=5, random_state=42)
-    cls = ELMClassifier(
+    cls = ESNClassifier(
         input_to_nodes=[
             ('tanh', InputToNode(hidden_layer_size=10, random_state=42, activation='tanh')),
             ('bounded_relu', InputToNode(hidden_layer_size=10, random_state=42, activation='bounded_relu'))],
+        nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=20, spectral_radius=0.0))],
         regressor=IncrementalRegression(alpha=.01),
         random_state=42)
 
