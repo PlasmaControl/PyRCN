@@ -275,7 +275,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y)
+        self._validate_data(X, y, multi_output=True)
         self._check_n_features(X, reset=True)
 
         if self.k_rec is not None:
@@ -371,6 +371,157 @@ class NodeToNode(BaseEstimator, TransformerMixin):
                              "activations are %s." % (self.activation, ACTIVATIONS))
         if self.k_rec is not None and self.k_rec <= 0:
             raise ValueError("k_rec must be > 0, got %d." % self.k_rec)
+
+    @property
+    def hidden_layer_state(self):
+        return self._hidden_layer_state
+
+
+class FeedbackNodeToNode(NodeToNode):
+    """FeedbackNodeToNode class for reservoir computing modules (e.g. ESN)
+
+    Parameters
+    ----------
+    hidden_layer_size : int, default=500
+        Sets the number of nodes in hidden layer. Equals number of output features.
+    sparsity : float, default=1.
+        Quotient of input weights per node (k_rec) and number of input features (n_features)
+    activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
+        This element represents the activation function in the hidden layer.
+            - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
+            - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
+            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
+    spectral_radius : float, default=1.
+        Scales the input weight matrix.
+    leakage : float, default=1.
+        parameter to determine the degree of leaky integration.
+    bias_scaling : float, default=1.
+        Scales the input bias of the activation.
+    feedback_scaling : float, default=1.
+        Scales the output feedback of the activation.
+    k_rec : int, default=None.
+        recurrent weights per node. By default, it is None. If set, it overrides sparsity.
+    random_state : {None, int, RandomState}, default=None
+    """
+    def __init__(self,
+                 hidden_layer_size=500,
+                 sparsity=1.,
+                 activation='tanh',
+                 spectral_radius=1.,
+                 leakage=1.,
+                 bias_scaling=1.,
+                 feedback_scaling=1.,
+                 k_rec=None,
+                 random_state=None):
+        super().__init__(hidden_layer_size=hidden_layer_size, sparsity=sparsity, activation=activation,
+                         spectral_radius=spectral_radius, leakage=leakage, bias_scaling=bias_scaling,
+                         bi_directional=False, k_rec=k_rec, random_state=random_state)
+        self.feedback_scaling = feedback_scaling
+
+        self._feedback = None
+        self._regressor = None
+
+    def set_regressor(self, regressor):
+        self._set_regressor(regressor=regressor)
+
+    def _set_regressor(self, regressor):
+        self._regressor = regressor
+
+    def fit(self, X, y=None):
+        """Fit the FeedbackNodeToNode. Initialize input weights and bias.
+
+        Parameters
+        ----------
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        y : {ndarray, sparse matrix} of shape (n_samples, n_outputs)
+
+        Returns
+        -------
+        self
+        """
+        super().fit(X=X, y=y)
+        self._validate_hyperparameters()
+
+        self._feedback = self._uniform_random_feedback(
+            hidden_layer_size=self.hidden_layer_size,
+            n_outputs=y.shape[1],
+            random_state=self.random_state)
+        return self
+
+    def transform(self, X):
+        """Transforms the input matrix X.
+
+        Parameters
+        ----------
+        X : {ndarray, sparse matrix} of size (n_samples, hidden_layer_size)
+
+        Returns
+        -------
+        Y: ndarray of size (n_samples, hidden_layer_size)
+        """
+        if self._feedback is None or self._regressor is None:
+            raise NotFittedError(self)
+
+        self._hidden_layer_state = self._pass_through_recurrent_weights(X=X)
+        return self._hidden_layer_state
+
+    def fit_transform(self, X, y=None, **fit_params):
+        """Transforms the input matrix X.
+
+        Parameters
+        ----------
+        X : {ndarray, sparse matrix} of size (n_samples, hidden_layer_size)
+
+        Returns
+        -------
+        Y: ndarray of size (n_samples, hidden_layer_size)
+        """
+        if self._recurrent_weights is None or self._bias is None:
+            raise NotFittedError(self)
+
+        self._hidden_layer_state = self._pass_through_recurrent_weights_with_teacher(X=X, y=y)
+        return self._hidden_layer_state
+
+    def _pass_through_recurrent_weights_with_teacher(self, X, y):
+        hidden_layer_state = np.zeros(shape=(X.shape[0]+1, self.hidden_layer_size))
+        for sample in range(X.shape[0]):
+            a = X[sample, :]
+            b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
+            c = self._bias * self.bias_scaling
+            d = safe_sparse_dot(y[sample, :], self._feedback) * self.feedback_scaling
+            hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c + d)
+            hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
+                                                 + self.leakage * hidden_layer_state[sample + 1, :]
+        return hidden_layer_state[1:, :]
+
+    def _pass_through_recurrent_weights(self, X):
+        hidden_layer_state = np.zeros(shape=(X.shape[0]+1, self.hidden_layer_size))
+        for sample in range(X.shape[0]):
+            a = X[sample, :]
+            b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
+            c = self._bias * self.bias_scaling
+            d = safe_sparse_dot(self._regressor.predict(X=hidden_layer_state[sample, :].reshape(1, -1)), self._feedback) \
+                * self.feedback_scaling
+            hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c + d)
+            hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
+                                                 + self.leakage * hidden_layer_state[sample + 1, :]
+        return hidden_layer_state[1:, :]
+
+    @staticmethod
+    def _uniform_random_feedback(hidden_layer_size: int, n_outputs: int, random_state):
+        return random_state.uniform(low=-1., high=1., size=(n_outputs, hidden_layer_size))
+
+    def _validate_hyperparameters(self):
+        """Validates the hyperparameters.
+
+        Returns
+        -------
+
+        """
+        if self.feedback_scaling < 0:
+            raise ValueError("feedback must be > 0, got %s." % self.feedback_scaling)
 
     @property
     def hidden_layer_state(self):
