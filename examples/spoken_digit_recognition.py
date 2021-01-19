@@ -8,11 +8,35 @@ from sklearn.base import clone
 from sklearn.model_selection import train_test_split, ParameterGrid
 from sklearn.preprocessing import StandardScaler
 from sklearn.preprocessing import OneHotEncoder
-from sklearn.metrics import mean_squared_error, classification_report, confusion_matrix, ConfusionMatrixDisplay, accuracy_score
-from sklearn.cluster import MiniBatchKMeans
+from sklearn.metrics import mean_squared_error, classification_report, confusion_matrix, ConfusionMatrixDisplay, silhouette_score
+from sklearn.cluster import MiniBatchKMeans, KMeans
+from sklearn_extra.cluster import KMedoids
+from sklearn.manifold import TSNE
 from joblib import Parallel, delayed
 from pyrcn.echo_state_network import ESNRegressor
-import matplotlib.pyplot as plt
+from pyrcn.linear_model import IncrementalRegression
+from pyrcn.base import InputToNode, NodeToNode
+import matplotlib
+from matplotlib import pyplot as plt
+#Options
+params = {'image.cmap' : 'RdBu',
+          'text.usetex' : True,
+          'font.size' : 11,
+          'axes.titlesize' : 24,
+          'axes.labelsize' : 20,
+          'lines.linewidth' : 3,
+          'lines.markersize' : 10,
+          'xtick.labelsize' : 16,
+          'ytick.labelsize' : 16,
+          'text.latex.unicode': True,
+          }
+plt.rcParams.update(params)
+# plt.rcParams['pdf.fonttype'] = 42
+# plt.rcParams['ps.fonttype'] = 42
+matplotlib.rcParams['text.usetex'] = True
+
+from IPython.display import set_matplotlib_formats
+set_matplotlib_formats('png', 'pdf')
 
 import librosa
 
@@ -20,28 +44,34 @@ import librosa
 all_files = glob.glob(r"E:\free-spoken-digit-dataset\recordings\*.wav")
 print(len(all_files))
 
-X = [None] * len(all_files)
-y = [None] * len(all_files)
+X_train = []
+X_test = []
+y_train = []
+y_test = []
 print("extracting features...")
 with tqdm(total=len(all_files)) as pbar:
     for k, f in enumerate(all_files):
         basename = os.path.basename(f).split('.')[0]
         # Get label (0-9) of recording.
         label = int(basename.split('_')[0])
+        idx = int(basename.split('_')[2])
         # Load the audio signal and normalize it.
         x, sr = librosa.core.load(f, sr=None, mono=False)
         # x /= np.max(np.abs(x))
         mfcc = librosa.feature.mfcc(y=x, sr=sr, hop_length=int(0.01*sr), n_fft=256, htk=True, n_mels=100, n_mfcc=13)
         mfcc_delta = librosa.feature.delta(mfcc)
         mfcc_delta2 = librosa.feature.delta(mfcc, order=2)
-        X[k] = mfcc.T
-        y[k] = label
+        if idx <= 4:
+            X_test.append(mfcc.T)
+            y_test.append(label)
+        else:
+            X_train.append(mfcc.T)
+            y_train.append(label)
         pbar.update(1)
 print("done!")
 
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1, stratify=y)
-X_val, X_test, y_val, y_test = train_test_split(X_test, y_test, test_size=0.5, random_state=1, stratify=y_test)
+X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=0.1, random_state=1, stratify=y_train)
 
 # Validate training and test sizes
 print(len(X_train), len(y_train), X_train[0].shape, y_train[0])
@@ -54,6 +84,16 @@ scaler = StandardScaler().fit(X=np.vstack(X_train))
 X_train_scaled = [scaler.transform(X) for X in X_train]
 X_val_scaled = [scaler.transform(X) for X in X_val]
 X_test_scaled = [scaler.transform(X) for X in X_test]
+
+base_input_to_nodes = InputToNode(hidden_layer_size=500, activation='identity', k_in=X_train_scaled[0].shape[1],
+                                  input_scaling=0.4, bias_scaling=0.0, random_state=0)
+base_input_to_nodes.fit(X=X_train_scaled[0])
+base_nodes_to_nodes = NodeToNode(hidden_layer_size=500, activation='tanh', spectral_radius=0.1, leakage=0.1,
+                                 bias_scaling=0.0, bi_directional=False, k_rec=10, random_state=0)
+
+base_esn = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
+                        nodes_to_nodes=[('default', base_nodes_to_nodes)],
+                        regressor=IncrementalRegression(alpha=1e-3), random_state=0)
 
 
 # One-Hot encoding of labels
