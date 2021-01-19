@@ -14,16 +14,18 @@ from sklearn.utils import check_random_state
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 
+from sklearn.preprocessing import StandardScaler
+
 
 def inplace_bounded_relu(X):
     """Compute the bounded rectified linear unit function inplace.
 
     Parameters
     ----------
-    X : {array-like, sparse matrix}, shape (n_samples, n_features)
+    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    np.minimum(np.maximum(X, 0), 1, out=X)
+    np.minimum(np.maximum(X, 0, out=X), 1, out=X)
 
 
 def inplace_tanh_inverse(X):
@@ -31,7 +33,7 @@ def inplace_tanh_inverse(X):
 
     Parameters
     ----------
-    X : {array-like, sparse matrix}, shape (n_samples, n_features)
+    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
     np.arctanh(X, out=X)
@@ -42,7 +44,7 @@ def inplace_identity_inverse(X):
 
     Parameters
     ----------
-    X : {array-like, sparse matrix}, shape (n_samples, n_features)
+    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
     ACTIVATIONS['identity'](X)
@@ -53,10 +55,38 @@ def inplace_logistic_inverse(X):
 
     Parameters
     ----------
-    X : {array-like, sparse matrix}, shape (n_samples, n_features)
+    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    np.negative(np.log(1 - X), out=X)
+    np.negative(np.log(1 - X, out=X), out=X)
+
+
+def inplace_relu_inverse(X):
+    """Compute the relu inverse function inplace.
+
+    The relu function is not invertible!
+    This is an approximation assuming $x = f^{-1}(y=0) = 0$. It is valid in $x \in [0, \infty]$.
+
+    Parameters
+    ----------
+    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
+        The input data.
+    """
+    ACTIVATIONS['relu'](X)
+
+
+def inplace_bounded_relu_inverse(X):
+    """Compute the bounded relu inverse function inplace.
+
+    The bounded relu function is not invertible!
+    This is an approximation assuming $x = f^{-1}(y=0) = 0$ and $x = f^{-1}(y=1) = 1$. It is valid in $x \in [0, 1]$.
+
+    Parameters
+    ----------
+    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
+        The input data.
+    """
+    ACTIVATIONS['bounded_relu'](X)
 
 
 ACTIVATIONS.update({'bounded_relu': inplace_bounded_relu})
@@ -64,7 +94,17 @@ ACTIVATIONS.update({'bounded_relu': inplace_bounded_relu})
 ACTIVATIONS_INVERSE = {
     'tanh': inplace_tanh_inverse,
     'identity': inplace_identity_inverse,
-    'logistic': inplace_logistic_inverse
+    'logistic': inplace_logistic_inverse,
+    'relu': inplace_relu_inverse,
+    'bounded_relu': inplace_bounded_relu_inverse
+}
+
+ACTIVATIONS_INVERSE_BOUNDS = {
+    'tanh': [-.99, .99],
+    'identity': [-np.inf, np.inf],
+    'logistic': [0.01, .99],
+    'relu': [0, np.inf],
+    'bounded_relu': [0, 1]
 }
 
 
@@ -88,7 +128,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         Scales the input weight matrix.
     bias_scaling : float, default=1.
         Scales the input bias of the activation.
-    random_state : {None, int, RandomState}, default=None
+    random_state : Union(int, RandomState instance), default=None, default=None
     """
     def __init__(self,
                  hidden_layer_size=500,
@@ -113,7 +153,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        X : Union(ndarray, sparse matrix) of shape (n_samples, n_features)
         y : ignored
 
         Returns
@@ -138,7 +178,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of size (n_samples, n_features)
+        X : Union(ndarray, sparse matrix) of size (n_samples, n_features)
 
         Returns
         -------
@@ -147,9 +187,8 @@ class InputToNode(BaseEstimator, TransformerMixin):
         if self._input_weights is None or self._bias is None:
             raise NotFittedError(self)
 
-        self._hidden_layer_state =\
-            safe_sparse_dot(X, self._input_weights) * self.input_scaling\
-            + np.ones(shape=(X.shape[0], 1)) * self._bias * self.bias_scaling
+        self._hidden_layer_state = InputToNode._node_inputs(
+            X, self._input_weights, self.input_scaling, self._bias, self.bias_scaling)
         ACTIVATIONS[self.activation](self._hidden_layer_state)
         return self._hidden_layer_state
 
@@ -173,6 +212,10 @@ class InputToNode(BaseEstimator, TransformerMixin):
     def _uniform_random_bias(hidden_layer_size: int, random_state):
         return random_state.uniform(low=-1., high=1., size=hidden_layer_size)
 
+    @staticmethod
+    def _node_inputs(X, input_weights, input_scaling, bias, bias_scaling):
+        return safe_sparse_dot(X, input_weights) * input_scaling + np.ones(shape=(X.shape[0], 1)) * bias * bias_scaling
+
     def _validate_hyperparameters(self):
         """Validates the hyperparameters.
 
@@ -191,3 +234,105 @@ class InputToNode(BaseEstimator, TransformerMixin):
         if self.activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
                              "activations are %s." % (self.activation, ACTIVATIONS))
+
+
+class BatchIntrinsicPlasticity(InputToNode):
+    def __init__(self, distribution: str = 'normal', algorithm: str = 'dresden', *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.distribution = distribution
+        self.algorithm = algorithm
+        self._scaler = None
+        self._m = 1
+        self._c = 0
+
+    IN_DISTRIBUTION_PARAMS = {
+        'exponential': (.5, -.5),
+        'uniform': (.7, .0),
+        'normal': (.5, .0)
+    }
+
+    OUT_DISTRIBUTION = {
+        'exponential': lambda size: np.random.poisson(lam=1., size=size),
+        'uniform': lambda size: np.random.uniform(low=-1., high=1., size=size),
+        'normal': lambda size: np.random.normal(loc=0., scale=1., size=size)
+    }
+
+    def fit(self, X, y=None):
+        self._validate_hyperparameters()
+
+        if self.algorithm == 'neumann':
+            self._fit_neumann(X, y=None)
+
+        if self.algorithm == 'dresden':
+            self._fit_dresden(X, y=None)
+        return self
+
+    def transform(self, X):
+        if self.algorithm == 'neumann':
+            return super().transform(X)
+
+        if self.algorithm == 'dresden':
+            s = BatchIntrinsicPlasticity._node_inputs(
+                X, self._input_weights, self.input_scaling, self._bias, self.bias_scaling)
+            np.add(np.multiply(self._scaler.transform(s), self._m), self._c, out=s)
+            ACTIVATIONS[self.activation](s)
+            return s
+    
+    def _fit_neumann(self, X, y=None):
+        super().fit(X, y=None)
+
+        s = np.sort(BatchIntrinsicPlasticity._node_inputs(
+            X, self._input_weights, self.input_scaling, self._bias, self.bias_scaling), axis=0)
+
+        phi = np.transpose(np.stack((s, np.ones(s.shape)), axis=2), axes=(1, 0, 2))
+
+        if callable(BatchIntrinsicPlasticity.OUT_DISTRIBUTION[self.distribution]):
+            t = BatchIntrinsicPlasticity.OUT_DISTRIBUTION[self.distribution](size=X.shape[0])
+            t_min, t_max = np.min(t), np.max(t)
+
+            if self.distribution in {'uniform'} and self.activation in {'tanh', 'logistic'}:
+                bound_low = ACTIVATIONS_INVERSE_BOUNDS[self.activation][0] * .5
+                bound_high = ACTIVATIONS_INVERSE_BOUNDS[self.activation][1] * .5
+            else:
+                bound_low = ACTIVATIONS_INVERSE_BOUNDS[self.activation][0]
+                bound_high = ACTIVATIONS_INVERSE_BOUNDS[self.activation][1]
+
+            if bound_low == np.inf:
+                bound_low = t_min
+
+            if bound_high == np.inf:
+                bound_high = t_max
+
+            t = (t - t_min)*(bound_high - bound_low)/(t_max - t_min) + bound_low
+
+            t.sort()
+            ACTIVATIONS_INVERSE[self.activation](t)
+        else:
+            raise ValueError('Not a valid activation inverse, got {0}'.format(self.distribution))
+
+        v = safe_sparse_dot(np.linalg.pinv(phi), t)
+
+        np.multiply(self._input_weights, v[:, 0], out=self._input_weights)
+        self._bias += v[:, 1]
+        return self
+
+    def _fit_dresden(self, X, y=None):
+        if self.activation != 'tanh':
+            raise ValueError('This algorithm is working with tanh-activation only, got {0}'.format(self.activation))
+
+        super().fit(X, y=None)
+
+        s = BatchIntrinsicPlasticity._node_inputs(
+            X, self._input_weights, self.input_scaling, self._bias, self.bias_scaling)
+
+        self._scaler = StandardScaler().fit(s)
+
+        if self.distribution:
+            self._m, self._c = BatchIntrinsicPlasticity.IN_DISTRIBUTION_PARAMS[self.distribution]
+        return self
+
+    def _validate_hyperparameters(self):
+        super()._validate_hyperparameters()
+
+        if self.algorithm not in {'neumann', 'dresden'}:
+            raise ValueError('The selected algorithm ist unknown, got {0}'.format(self.algorithm))
