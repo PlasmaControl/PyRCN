@@ -1,5 +1,5 @@
 """
-The :mod:`extreme_learninc_machine` contains the ELMRegressor and the ELMClassifier
+The :mod:`extreme_learning_machine` contains the ELMRegressor and the ELMClassifier
 """
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Michael Schindler <michael.schindler@maschindler.de>
@@ -168,14 +168,21 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         super().__init__(input_to_nodes=input_to_nodes, regressor=regressor, random_state=random_state)
         self._encoder = None
 
-    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None):
-        """Fits the regressor partially.
+    def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None):
+        """Fits the classifier partially.
 
         Parameters
         ----------
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
         y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_classes)
             The targets to predict.
+        classes : array of shape (n_classes,), default=None
+            Classes across all calls to partial_fit.
+            Can be obtained via `np.unique(y_all)`, where y_all is the
+            target vector of the entire dataset.
+            This argument is required for the first call to partial_fit
+            and can be omitted in the subsequent calls.
+            Note that y doesn't need to contain all labels in `classes`.
         n_jobs : int, default=None
             The number of jobs to run in parallel. ``-1`` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
@@ -188,7 +195,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         self._validate_data(X, y, multi_output=True)
 
         if self._encoder is None:
-            self._encoder = LabelBinarizer().fit(y)
+            self._encoder = LabelBinarizer().fit(classes)
 
         return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None)
 
@@ -240,7 +247,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
             The predicted probability estimated.
         """
         # for single dim proba use np.amax
-        return self._encoder.inverse_transform(super().predict(X), threshold=.5)
+        return np.maximum(super().predict(X), 1e-5)
 
     def predict_log_proba(self, X):
         """Predict the logarithmic probability estimated using the trained ELM classifier.

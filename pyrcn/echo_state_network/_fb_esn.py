@@ -77,10 +77,7 @@ class ESNFeedbackRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                 transformer_weights=transformer_weights).fit(X)
 
         if self._node_to_node is None:
-            self._node_to_node = FeatureUnion(
-                transformer_list=self.nodes_to_nodes,
-                n_jobs=n_jobs,
-                transformer_weights=transformer_weights).fit(self._input_to_node.transform(X))
+            self._node_to_node = self.nodes_to_nodes.fit(self._input_to_node.transform(X))
 
         forwarded_state = self._input_to_node.transform(X)
         hidden_layer_state = self._node_to_node.transform(forwarded_state)
@@ -116,10 +113,7 @@ class ESNFeedbackRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             n_jobs=n_jobs,
             transformer_weights=transformer_weights).fit(X)
 
-        self._node_to_node = FeatureUnion(
-            transformer_list=self.nodes_to_nodes,
-            n_jobs=n_jobs,
-            transformer_weights=transformer_weights).fit(self._input_to_node.transform(X), y)
+        self._node_to_node = self.nodes_to_nodes.fit(self._input_to_node.transform(X), y)
 
         forwarded_state = self._input_to_node.transform(X)
         hidden_layer_state = self._node_to_node.fit_transform(forwarded_state, y)

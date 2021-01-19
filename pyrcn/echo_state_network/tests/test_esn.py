@@ -49,7 +49,7 @@ def test_iris_ensemble_iterative_regression():
 
     for samples in np.split(np.arange(0, X_train.shape[0]), 5):
         cls.partial_fit(X_train[samples, :], y_train[samples])
-    y_predicted = cls.predict(X_test)
+    y_predicted = cls.predict_proba(X_test)
 
     for record in range(len(y_test)):
         print('predicted: {0} \ttrue: {1}'.format(y_predicted[record], y_test[record]))
