@@ -248,7 +248,7 @@ class BatchIntrinsicPlasticity(InputToNode):
     IN_DISTRIBUTION_PARAMS = {
         'exponential': (.5, -.5),
         'uniform': (.7, .0),
-        'normal': (.5, .0)
+        'normal': (.3, .0)
     }
 
     OUT_DISTRIBUTION = {

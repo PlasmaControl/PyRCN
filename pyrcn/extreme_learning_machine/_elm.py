@@ -23,7 +23,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     Parameters
     ----------
-    input_to_nodes : iterable
+    input_to_nodes : iterable, default=[('default', InputToNode())]
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.
@@ -33,10 +33,13 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         regressor cannot be None, omit argument if in doubt
     random_state : int, RandomState instance, default=None
     """
-    def __init__(self, input_to_nodes, regressor=IncrementalRegression(alpha=.0001), random_state=None):
+    def __init__(self,
+                 input_to_nodes=[('default', InputToNode())],
+                 regressor=IncrementalRegression(alpha=.0001),
+                 random_state=None):
         self.input_to_nodes = input_to_nodes
         self.regressor = regressor
-        self.random_state = check_random_state(random_state)
+        self.random_state = random_state
         self._input_to_node = None
         self._regressor = None
 
@@ -131,6 +134,8 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         -------
 
         """
+        self.random_state = check_random_state(self.random_state)
+
         if not self.input_to_nodes or self.input_to_nodes is None:
             self.input_to_nodes = [('default', InputToNode())]
         else:
@@ -154,7 +159,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
 
     Parameters
     ----------
-    input_to_nodes : iterable
+    input_to_nodes : iterable, default=[('default', InputToNode())]
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.
@@ -164,7 +169,10 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         regressor cannot be None, omit argument if in doubt
     random_state : int, RandomState instance, default=None
     """
-    def __init__(self, input_to_nodes, regressor=IncrementalRegression(alpha=.0001), random_state=None):
+    def __init__(self,
+                 input_to_nodes=[('default', InputToNode())],
+                 regressor=IncrementalRegression(alpha=.0001),
+                 random_state=None):
         super().__init__(input_to_nodes=input_to_nodes, regressor=regressor, random_state=random_state)
         self._encoder = None
 
