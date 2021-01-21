@@ -2,6 +2,8 @@
 *.png
 *.log
 *.csv
+*.txt
+*.pdf
 
 dataset/
 .ipynb_checkpoints/
