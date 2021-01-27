@@ -47,7 +47,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._regressor = None
         self.n_samples_ = 0
 
-    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None):
+    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, update_output_weights=None):
         """Fits the regressor partially.
 
         Parameters
@@ -59,6 +59,8 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             The number of jobs to run in parallel. ``-1`` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
+        update_output_weights : bool, default None
+            Just use
 
         Returns
         -------
@@ -86,9 +88,10 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         hidden_layer_state = self._node_to_node.transform(forwarded_state)
 
         if self._regressor:
-            self._regressor.partial_fit(hidden_layer_state, y)
+            self._regressor.partial_fit(hidden_layer_state, y, update_output_weights=update_output_weights)
         else:
-            self._regressor = self.regressor.partial_fit(hidden_layer_state, y)
+            self._regressor = self.regressor.partial_fit(hidden_layer_state, y,
+                                                         update_output_weights=update_output_weights)
         return self
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
@@ -210,7 +213,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
                          random_state=random_state)
         self._encoder = None
 
-    def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None):
+    def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, update_output_weights=None):
         """Fits the classifier partially.
 
         Parameters
@@ -229,6 +232,8 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
             The number of jobs to run in parallel. ``-1`` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
+        update_output_weights : bool, default None
+            Just use
 
         Returns
         -------
@@ -239,7 +244,8 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         if self._encoder is None:
             self._encoder = LabelBinarizer().fit(classes)
 
-        return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None)
+        return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None,
+                                   update_output_weights=update_output_weights)
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
         """Fits the regressor.

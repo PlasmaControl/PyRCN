@@ -83,12 +83,12 @@ class FastIncrementalRegression(BaseEstimator, RegressorMixin):
             self._xTy += safe_sparse_dot(X_preprocessed.T, y)
 
         if update_output_weights and finalize:
-            inv_xTx = np.linalg.inv(self._xTx + self.alpha * self._n_samples * np.eye(self._xTx.shape[0]))
+            inv_xTx = np.linalg.inv(self._xTx + self.alpha * np.identity(self._xTx.shape[0]))
             self._output_weights = safe_sparse_dot(inv_xTx, self._xTy)
             self._xTx = None
             self._xTy = None
         elif update_output_weights:
-            inv_xTx = np.linalg.inv(self._xTx + self.alpha * self._n_samples * np.eye(self._xTx.shape[0]))
+            inv_xTx = np.linalg.inv(self._xTx + self.alpha * np.identity(self._xTx.shape[0]))
             self._output_weights = safe_sparse_dot(inv_xTx, self._xTy)
 
         return self

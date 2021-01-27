@@ -49,7 +49,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self._P = None
         self._output_weights = None
 
-    def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True):
+    def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True, update_output_weights=None):
         """Fits the regressor partially.
         Parameters
         ----------
@@ -99,7 +99,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         -------
         self
         """
-        self.partial_fit(X, y, partial_normalize=False, reset=True, validate=True)
+        self.partial_fit(X, y, partial_normalize=False, reset=True, validate=True, update_output_weights=None)
         return self
 
     def predict(self, X):
