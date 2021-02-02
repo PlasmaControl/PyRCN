@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="PyRCN",
-    version="0.0.3b",
+    version="0.0.4c",
     author="Peter Steiner",
     author_email="peter.steiner@tu-dresden.de",
     description="A Python3 framework for Reservoir Computing with a scikit-learn-compatible API",
