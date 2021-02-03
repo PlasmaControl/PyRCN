@@ -8,6 +8,10 @@ The :mod:`pyrcn.base`contains utilities for the reservoir computing modules
 import scipy
 import numpy as np
 
+from pkg_resources import parse_version
+import warnings
+
+import sklearn
 from sklearn.neural_network._base import ACTIVATIONS
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state
@@ -15,6 +19,18 @@ from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 
 from sklearn.preprocessing import StandardScaler
+
+if parse_version(sklearn.__version__) < parse_version('0.24.0'):
+    from sklearn.utils import check_array
+
+    def validate_data(self, X, y=None, *args, **kwargs):
+        warnings.warn('Due to scikit version, _validate_data(X, y) returns check_array(X), y.', DeprecationWarning)
+        if y:
+            return check_array(X, accept_sparse=True, **kwargs), y
+        else:
+            return check_array(X, accept_sparse=True, **kwargs)
+
+    setattr(BaseEstimator, '_validate_data', validate_data)
 
 
 def inplace_bounded_relu(X):
