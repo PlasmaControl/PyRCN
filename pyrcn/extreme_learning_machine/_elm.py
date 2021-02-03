@@ -248,7 +248,9 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
             The predicted probability estimated.
         """
         # for single dim proba use np.amax
-        return self._encoder.inverse_transform(super().predict(X), threshold=.5)
+        # predicted_positive = np.subtract(predicted.T, np.min(predicted, axis=1))
+        predicted_positive = np.clip(super().predict(X), a_min=0, a_max=None).T
+        return np.divide(predicted_positive, np.sum(predicted_positive, axis=0)).T
 
     def predict_log_proba(self, X):
         """Predict the logarithmic probability estimated using the trained ELM classifier.

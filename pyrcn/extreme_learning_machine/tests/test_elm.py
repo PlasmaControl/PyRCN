@@ -60,4 +60,5 @@ def test_iris_ensemble_iterative_regression():
 
     print('score: {0}'.format(cls.score(X_test, y_test)))
     print('proba: {0}'.format(cls.predict_proba(X_test)))
+    print('log_proba: {0}'.format(cls.predict_log_proba(X_test)))
     assert cls.score(X_test, y_test) >= 4./5.
