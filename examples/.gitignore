@@ -6,7 +6,7 @@
 *.pdf
 *.pgf
 *.npz
+*.joblib
 
-dataset/
 .ipynb_checkpoints/
-/plots.py
+/dataset/
