@@ -4,6 +4,9 @@
 *.csv
 *.txt
 *.pdf
+*.pgf
+*.npz
 
 dataset/
 .ipynb_checkpoints/
+/plots.py
