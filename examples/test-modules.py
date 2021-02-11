@@ -32,7 +32,7 @@ def new_logger(name, directory=os.getcwd()):
     return logger
 
 
-def main(*args, out_directory=os.getcwd()):
+def main(out_directory=os.getcwd(), param_list=None):
     logger = new_logger('main', directory=out_directory)
     logger.info('Created logger successfully')
 
@@ -52,7 +52,7 @@ def main(*args, out_directory=os.getcwd()):
 if __name__ == '__main__':
     parsed_args = argument_parser.parse_args(sys.argv[1:])
     if os.path.isdir(parsed_args.out):
-        main(parsed_args.params, out_directory=parsed_args.out)
+        main(param_list=parsed_args.params, out_directory=parsed_args.out)
     else:
         main(parsed_args.params)
     exit(0)
