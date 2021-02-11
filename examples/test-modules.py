@@ -11,8 +11,8 @@ import pyrcn
 
 
 argument_parser = argparse.ArgumentParser(description='Standard input parser for HPC examples on PyRCN.')
-argument_parser.add_argument('-o', '--out', help='output directory', type=str)
-argument_parser.add_argument('params', metavar='params', nargs='+', help='optional parameter for scripts')
+argument_parser.add_argument('-o', '--out', nargs='?', help='output directory', type=str)
+argument_parser.add_argument('params', metavar='params', nargs='*', help='optional parameter for scripts')
 
 
 # noinspection PyArgumentList
