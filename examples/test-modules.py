@@ -1,12 +1,19 @@
 import sys
 import os
 import logging
+import argparse
 
 import scipy
 import numpy as np
 
 import sklearn
 import pyrcn
+
+
+argument_parser = argparse.ArgumentParser(description='Standard input parser for HPC examples on PyRCN.')
+argument_parser.add_argument('-o', '--out', help='output directory', type=str)
+argument_parser.add_argument('params', metavar='params', nargs='+', help='optional parameter for scripts')
+
 
 # noinspection PyArgumentList
 logging.basicConfig(
@@ -25,15 +32,15 @@ def new_logger(name, directory=os.getcwd()):
     return logger
 
 
-def main():
-    logger = new_logger('main')
+def main(*args, out_directory=os.getcwd()):
+    logger = new_logger('main', directory=out_directory)
     logger.info('Created logger successfully')
 
-    for modulename in ['scipy', 'numpy', 'sklearn', 'pyrcn']:
-        if modulename not in sys.modules:
-            logger.error('Module {0} was not loaded'.format(modulename))
+    for module_name in ['scipy', 'numpy', 'sklearn', 'pyrcn']:
+        if module_name not in sys.modules:
+            logger.error('Module {0} was not loaded'.format(module_name))
         else:
-            logger.info('Module {0} loaded'.format(modulename))
+            logger.info('Module {0} loaded'.format(module_name))
 
     from pyrcn.extreme_learning_machine.tests import test_elm
     test_elm.test_iris_ensemble_iterative_regression()
@@ -43,5 +50,9 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    parsed_args = argument_parser.parse_args(sys.argv[1:])
+    if os.path.isdir(parsed_args.out):
+        main(parsed_args.params, out_directory=parsed_args.out)
+    else:
+        main(parsed_args.params)
     exit(0)
