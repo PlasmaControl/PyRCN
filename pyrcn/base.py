@@ -158,7 +158,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self.activation = activation
         self.input_scaling = input_scaling
         self.bias_scaling = bias_scaling
-        self.random_state = check_random_state(random_state)
+        self.random_state = random_state
 
         self._input_weights = None
         self._bias = None
@@ -239,6 +239,8 @@ class InputToNode(BaseEstimator, TransformerMixin):
         -------
 
         """
+        self.random_state = check_random_state(self.random_state)
+
         if self.hidden_layer_size <= 0:
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
         if self.input_scaling <= 0.:

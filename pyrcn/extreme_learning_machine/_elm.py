@@ -34,7 +34,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
     random_state : int, RandomState instance, default=None
     """
     def __init__(self,
-                 input_to_nodes=[('default', InputToNode())],
+                 input_to_nodes=InputToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
                  random_state=None):
         self.input_to_nodes = input_to_nodes
@@ -100,10 +100,15 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._validate_hyperparameters()
         self._validate_data(X, y, multi_output=True)
 
-        self._input_to_node = FeatureUnion(
-            transformer_list=self.input_to_nodes,
-            n_jobs=n_jobs,
-            transformer_weights=transformer_weights)
+        if hasattr(self.input_to_nodes, '__iter__'):
+            # Feature Union of list of input_to_nodes
+            self._input_to_node = FeatureUnion(
+                transformer_list=self.input_to_nodes,
+                n_jobs=n_jobs,
+                transformer_weights=transformer_weights)
+        else:
+            # single input_to_node
+            self._input_to_node = self.input_to_nodes
         hidden_layer_state = self._input_to_node.fit_transform(X)
 
         self._regressor = self.regressor.fit(hidden_layer_state, y)
@@ -139,13 +144,19 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         if not self.input_to_nodes or self.input_to_nodes is None:
             self.input_to_nodes = [('default', InputToNode())]
         else:
-            for n, t in self.input_to_nodes:
-                if t == 'drop':
-                    continue
-                if not (hasattr(t, "fit") or hasattr(t, "fit_transform")) or not hasattr(t, "transform"):
+            if hasattr(self.input_to_nodes, '__iter__'):
+                for n, t in self.input_to_nodes:
+                    if t == 'drop':
+                        continue
+                    if not (hasattr(t, "fit") or hasattr(t, "fit_transform")) or not hasattr(t, "transform"):
+                        raise TypeError("All input_to_nodes should be transformers "
+                                        "and implement fit and transform "
+                                        "'%s' (type %s) doesn't" % (t, type(t)))
+            else:
+                if not (hasattr(self.input_to_nodes, "fit") or hasattr(self.input_to_nodes, "fit_transform")) or not hasattr(self.input_to_nodes, "transform"):
                     raise TypeError("All input_to_nodes should be transformers "
                                     "and implement fit and transform "
-                                    "'%s' (type %s) doesn't" % (t, type(t)))
+                                    "'%s' (type %s) doesn't" % (self.input_to_nodes, type(self.input_to_nodes)))
         if not is_regressor(self.regressor):
             raise TypeError("The last step should be a regressor "
                             "and implement fit and predict"
@@ -170,7 +181,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
     random_state : int, RandomState instance, default=None
     """
     def __init__(self,
-                 input_to_nodes=[('default', InputToNode())],
+                 input_to_nodes=InputToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
                  random_state=None):
         super().__init__(input_to_nodes=input_to_nodes, regressor=regressor, random_state=random_state)
