@@ -76,6 +76,8 @@ def elm_hyperparameters(directory):
     X, y = get_mnist(directory)
     logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
 
+    X = X/255.
+
     label_encoder = LabelEncoder().fit(y)
     y_encoded = label_encoder.transform(y)
 
@@ -83,9 +85,9 @@ def elm_hyperparameters(directory):
 
     param_grid = {
         'input_to_nodes__hidden_layer_size': [500, 1000, 2000, 4000],
-        'input_to_nodes__input_scaling': np.linspace(start=.2, stop=5., num=10),
-        'input_to_nodes__bias_scaling': np.linspace(start=.2, stop=5., num=10),
-        'input_to_nodes__activation': ['tanh', 'relu'],
+        'input_to_nodes__input_scaling': np.logspace(start=.01, stop=100., num=7),
+        'input_to_nodes__bias_scaling': np.logspace(start=.01, stop=100, num=7),
+        'input_to_nodes__activation': ['tanh', 'relu', 'bounded_relu', 'logistic', 'identity'],
         'input_to_nodes__random_state': [42],
         'regressor__alpha': [.00001, .001, .1],
         'regressor__random_state': [42],
