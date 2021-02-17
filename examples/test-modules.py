@@ -8,28 +8,7 @@ import numpy as np
 
 import sklearn
 import pyrcn
-
-
-argument_parser = argparse.ArgumentParser(description='Standard input parser for HPC examples on PyRCN.')
-argument_parser.add_argument('-o', '--out', nargs='?', help='output directory', type=str)
-argument_parser.add_argument('params', metavar='params', nargs='*', help='optional parameter for scripts')
-
-
-# noinspection PyArgumentList
-logging.basicConfig(
-    level=logging.INFO,
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
-
-
-def new_logger(name, directory=os.getcwd()):
-    logger = logging.getLogger(name)
-    logger.setLevel(logging.NOTSET)
-    formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s')
-    handler = logging.FileHandler(os.path.join(directory, '{0}.log'.format(name)))
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    return logger
+from pyrcn.util import new_logger, argument_parser
 
 
 def main(out_directory=os.getcwd(), param_list=None):
