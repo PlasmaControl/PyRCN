@@ -85,8 +85,8 @@ def elm_hyperparameters(directory):
 
     param_grid = {
         'input_to_nodes__hidden_layer_size': [2000],
-        'input_to_nodes__input_scaling': np.logspace(start=.01, stop=100., num=7),
-        'input_to_nodes__bias_scaling': np.logspace(start=.01, stop=100, num=7),
+        'input_to_nodes__input_scaling': np.logspace(start=-2, stop=2, base=10, num=7),
+        'input_to_nodes__bias_scaling': np.logspace(start=-2, stop=2, base=10, num=7),
         'input_to_nodes__activation': ['tanh'],
         'input_to_nodes__random_state': [42],
         'regressor__alpha': [1e-5],
