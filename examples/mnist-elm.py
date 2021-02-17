@@ -35,7 +35,7 @@ from pyrcn.extreme_learning_machine import ELMClassifier
 from pyrcn.cluster import KCluster
 
 
-train_size = 70000
+train_size = 60000
 hidden_layer_sizes = np.array([300, 450, 1000, 2250])
 
 
