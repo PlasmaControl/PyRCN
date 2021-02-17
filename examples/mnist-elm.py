@@ -17,13 +17,10 @@ import csv
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder, StandardScaler
 from sklearn.decomposition import PCA
 
-from sklearn.model_selection import train_test_split
-
 from sklearn.metrics import silhouette_score, accuracy_score
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import cross_validate, GridSearchCV
+from sklearn.model_selection import cross_validate, GridSearchCV, train_test_split, StratifiedShuffleSplit
 
-from sklearn.datasets import fetch_openml
 from sklearn.cluster import KMeans
 from sklearn.linear_model import Ridge
 
@@ -31,8 +28,6 @@ from pyrcn.util import new_logger, argument_parser, get_mnist
 from pyrcn.base import InputToNode
 # from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier
-
-from pyrcn.cluster import KCluster
 
 
 train_size = 60000
@@ -95,8 +90,8 @@ def elm_hyperparameters(directory):
     }
 
     estimator = ELMClassifier(input_to_nodes=InputToNode(), regressor=Ridge())
-    cv = GridSearchCV(estimator, param_grid)
-    cv.fit(X_train, y_train, n_jobs=-1)
+    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=-1)
+    cv.fit(X_train, y_train)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
     cv_results = cv.cv_results_
@@ -117,8 +112,8 @@ def elm_hyperparameters(directory):
         'random_state': [42]
     }
 
-    cv = GridSearchCV(estimator, param_grid)
-    cv.fit(X_train, y_train, n_jobs=-1)
+    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=-1)
+    cv.fit(X_train, y_train)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
     cv_results = cv.cv_results_
@@ -139,13 +134,64 @@ def elm_hyperparameters(directory):
         'random_state': [42]
     }
 
-    cv = GridSearchCV(estimator, param_grid)
-    cv.fit(X_train, y_train, n_jobs=-1)
+    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=-1)
+    cv.fit(X_train, y_train)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
     cv_results = cv.cv_results_
     del cv_results['params']
     with open(os.path.join(directory, '{0}_alpha.csv'.format(self_name)), 'w') as f:
+        f.write(','.join(cv_results.keys()) + '\n')
+        for row in list(map(list, zip(*cv_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
+
+
+def elm_hyperparameters_relu(directory):
+    self_name = 'elm_hyperparameters_relu'
+    logger = new_logger(self_name, directory=directory)
+    X, y = get_mnist(directory)
+    logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
+
+    X = X/255.
+
+    label_encoder = LabelEncoder().fit(y)
+    y_encoded = label_encoder.transform(y)
+
+    param_grid = [{
+            'input_to_nodes__hidden_layer_size': [500, 2000],
+            'input_to_nodes__input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+            'input_to_nodes__bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+            'input_to_nodes__activation': ['relu'],
+            'input_to_nodes__random_state': [42],
+            'regressor__alpha': [1e-5],
+            'regressor__random_state': [42],
+            'random_state': [42]
+        },
+        {
+            'input_to_nodes__hidden_layer_size': [2000],
+            'input_to_nodes__input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+            'input_to_nodes__bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+            'input_to_nodes__activation': ['tanh'],
+            'input_to_nodes__random_state': [42],
+            'regressor__alpha': [1e-5],
+            'regressor__random_state': [42],
+            'random_state': [42]
+        }
+    ]
+
+    estimator = ELMClassifier(input_to_nodes=InputToNode(), regressor=Ridge())
+    cv = GridSearchCV(
+        estimator=estimator,
+        param_grid=param_grid,
+        scoring='accuracy',
+        n_jobs=-1,
+        cv=StratifiedShuffleSplit(n_splits=1, train_size=train_size, random_state=42))
+    cv.fit(X, y_encoded)
+    logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
+
+    cv_results = cv.cv_results_
+    del cv_results['params']
+    with open(os.path.join(directory, '{0}.csv'.format(self_name)), 'w') as f:
         f.write(','.join(cv_results.keys()) + '\n')
         for row in list(map(list, zip(*cv_results.values()))):
             f.write(','.join(map(str, row)) + '\n')
@@ -344,6 +390,7 @@ def main(directory, params):
     # register parameters
     experiment_names = {
         'elm_hyperparameters': elm_hyperparameters,
+        'elm_hyperparameters_relu': elm_hyperparameters_relu,
         'elm_basic': elm_basic,
         'elm_preprocessed': elm_preprocessed,
         'elm_coates': elm_coates
