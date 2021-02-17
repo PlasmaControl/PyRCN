@@ -84,12 +84,12 @@ def elm_hyperparameters(directory):
     X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, train_size=train_size, random_state=42, shuffle=True)
 
     param_grid = {
-        'input_to_nodes__hidden_layer_size': [500, 1000, 2000, 4000],
+        'input_to_nodes__hidden_layer_size': [2000],
         'input_to_nodes__input_scaling': np.logspace(start=.01, stop=100., num=7),
         'input_to_nodes__bias_scaling': np.logspace(start=.01, stop=100, num=7),
-        'input_to_nodes__activation': ['tanh', 'relu', 'bounded_relu', 'logistic', 'identity'],
+        'input_to_nodes__activation': ['tanh'],
         'input_to_nodes__random_state': [42],
-        'regressor__alpha': [.00001, .001, .1],
+        'regressor__alpha': [1e-5],
         'regressor__random_state': [42],
         'random_state': [42]
     }
@@ -101,7 +101,51 @@ def elm_hyperparameters(directory):
 
     cv_results = cv.cv_results_
     del cv_results['params']
-    with open(os.path.join(directory, '{0}.csv'.format(self_name)), 'w') as f:
+    with open(os.path.join(directory, '{0}_scaling.csv'.format(self_name)), 'w') as f:
+        f.write(','.join(cv_results.keys()) + '\n')
+        for row in list(map(list, zip(*cv_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
+
+    param_grid = {
+        'input_to_nodes__hidden_layer_size': [500, 1000, 2000, 4000],
+        'input_to_nodes__input_scaling': [cv.best_params_['input_to_nodes__input_scaling']],
+        'input_to_nodes__bias_scaling': [cv.best_params_['input_to_nodes__bias_scaling']],
+        'input_to_nodes__activation': ['tanh', 'relu', 'bounded_relu', 'logistic', 'identity'],
+        'input_to_nodes__random_state': [42],
+        'regressor__alpha': [1e-5],
+        'regressor__random_state': [42],
+        'random_state': [42]
+    }
+
+    cv = GridSearchCV(estimator, param_grid)
+    cv.fit(X_train, y_train, n_jobs=-1)
+    logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
+
+    cv_results = cv.cv_results_
+    del cv_results['params']
+    with open(os.path.join(directory, '{0}_size.csv'.format(self_name)), 'w') as f:
+        f.write(','.join(cv_results.keys()) + '\n')
+        for row in list(map(list, zip(*cv_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
+
+    param_grid = {
+        'input_to_nodes__hidden_layer_size': [cv.best_params_['input_to_nodes__hidden_layer_size']],
+        'input_to_nodes__input_scaling': [cv.best_params_['input_to_nodes__input_scaling']],
+        'input_to_nodes__bias_scaling': [cv.best_params_['input_to_nodes__bias_scaling']],
+        'input_to_nodes__activation': [cv.best_params_['input_to_nodes__activation']],
+        'input_to_nodes__random_state': [42],
+        'regressor__alpha': [.00001, .001, .1],
+        'regressor__random_state': [42],
+        'random_state': [42]
+    }
+
+    cv = GridSearchCV(estimator, param_grid)
+    cv.fit(X_train, y_train, n_jobs=-1)
+    logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
+
+    cv_results = cv.cv_results_
+    del cv_results['params']
+    with open(os.path.join(directory, '{0}_alpha.csv'.format(self_name)), 'w') as f:
         f.write(','.join(cv_results.keys()) + '\n')
         for row in list(map(list, zip(*cv_results.values()))):
             f.write(','.join(map(str, row)) + '\n')
