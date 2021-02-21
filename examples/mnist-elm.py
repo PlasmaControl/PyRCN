@@ -87,34 +87,34 @@ def train_kmeans(directory):
     kmeans50 = MiniBatchKMeans(n_clusters=50, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(pca50.transform(X))
     with open(os.path.join(directory, 'kmeans-mnist-pca-50.pickle'), 'wb') as f:
         pickle.dump(kmeans50, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-pca-20.pickle')
+    logger.info('successfulyy trained and saved to kmeans-mnist-pca-50.pickle')
 
     # 100 centroids
     pca100 = PCA(n_components=100).fit(X)
     kmeans100 = MiniBatchKMeans(n_clusters=100, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(pca100.transform(X))
     with open(os.path.join(directory, 'kmeans-mnist-pca-100.pickle'), 'wb') as f:
         pickle.dump(kmeans100, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-pca-20.pickle')
+    logger.info('successfulyy trained and saved to kmeans-mnist-pca-100.pickle')
 
     # 200 centroids
     pca200 = PCA(n_components=200).fit(X)
     kmeans200 = MiniBatchKMeans(n_clusters=200, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(pca200.transform(X))
     with open(os.path.join(directory, 'kmeans-mnist-pca-200.pickle'), 'wb') as f:
         pickle.dump(kmeans200, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-pca-20.pickle')
+    logger.info('successfulyy trained and saved to kmeans-mnist-pca-200.pickle')
 
     # 450 centroids
     pca450 = PCA(n_components=450).fit(X)
     kmeans450 = MiniBatchKMeans(n_clusters=450, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(pca450.transform(X))
     with open(os.path.join(directory, 'kmeans-mnist-pca-450.pickle'), 'wb') as f:
         pickle.dump(kmeans450, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-pca-20.pickle')
+    logger.info('successfulyy trained and saved to kmeans-mnist-pca-450.pickle')
 
     # 900 centroids, no preprocessing
     kmeans900 = MiniBatchKMeans(n_clusters=900, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(X)
-    with open(os.path.join(directory, 'kmeans-mnist-pca-900.pickle'), 'wb') as f:
+    with open(os.path.join(directory, 'kmeans-mnist-900.pickle'), 'wb') as f:
         pickle.dump(kmeans900, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-pca-20.pickle')
+    logger.info('successfulyy trained and saved to kmeans-mnist-900.pickle')
 
 
 def elm_hyperparameters(directory):
@@ -187,7 +187,7 @@ def elm_hyperparameters(directory):
         'random_state': [42]
     }
 
-    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=-1)
+    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=1)
     cv.fit(X_train, y_train)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
@@ -404,8 +404,6 @@ def elm_hidden_layer_size(directory):
 
     # fan-out from paper
     fan_out = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20]
-    # debug
-    fan_out = [1, 2]
 
     # prepare parameter grids
     param_grid_basic = [{
