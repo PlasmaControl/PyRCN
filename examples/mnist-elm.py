@@ -205,8 +205,8 @@ def elm_basic(directory):
     X, y = get_mnist(directory)
     logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
 
-    # preprocessing
-    X = X/255.
+    # scaling
+    X /= 255.
 
     # encode labels
     label_encoder = LabelEncoder().fit(y)
@@ -241,7 +241,7 @@ def elm_basic(directory):
         param_grid=param_grid,
         scoring='accuracy',
         n_jobs=2,
-        cv=(range(stop=train_size), range(start=train_size, stop=70000)))  # split train test (dataset size = 70k)
+        cv=(range(0, train_size), range(train_size, 70000)))  # split train test (dataset size = 70k)
 
     # run!
     cv.fit(X, y_encoded)
