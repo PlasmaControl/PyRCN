@@ -7,22 +7,16 @@ import scipy
 import numpy as np
 import time
 
+import pickle
+import pandas
+
+from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 import matplotlib
-matplotlib.use('pgf')
+# matplotlib.use('pgf')
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap, Normalize
 
-
-tud_colors = {
-    'darkblue': (0 / 255., 48 / 255., 94 / 255.),
-    'gray': (114 / 255., 120 / 255., 121 / 255.),
-    'lightblue': (0 / 255., 106 / 255., 179 / 255.),
-    'darkgreen': (0 / 255., 125 / 255., 64 / 255.),
-    'lightgreen': (106 / 255., 176 / 255., 35 / 255.),
-    'darkpurple': (84 / 255., 55 / 255., 138 / 255.),
-    'lightpurple': (147 / 255., 16 / 255., 126 / 255.),
-    'orange': (238 / 255., 127 / 255., 0 / 255.),
-    'red': (181 / 255., 28 / 255., 28 / 255.)
-}
+from pyrcn.util import tud_colors
 
 
 directory = 'plots'
@@ -36,7 +30,7 @@ def f_y(y, sigma=1, mu=0.):
     return np.divide(f_x(np.arctanh(y), sigma, mu), (1 - np.power(y, 2)))
 
 
-def save_plot_data(lines, filepath):
+def save_line2d_data(lines: [plt.Line2D], filepath: str):
     data = []
     header = []
     fmt = []
@@ -90,7 +84,7 @@ def plot_activation_variance():
     fig.tight_layout()
     fig.savefig(os.path.join(directory, 'plot-distribution-sigma.pdf'))
 
-    save_plot_data(lines, os.path.join(directory, 'plot-distribution-sigma.csv'))
+    save_line2d_data(lines, os.path.join(directory, 'plot-distribution-sigma.csv'))
     return
 
 
@@ -125,16 +119,158 @@ def plot_activation_mean():
     fig.tight_layout()
     fig.savefig(os.path.join(directory, 'plot-distribution-mean.pgf'), format='pgf')
 
-    save_plot_data(lines, os.path.join(directory, 'plot-distribution-mean.csv'))
+    save_line2d_data(lines, os.path.join(directory, 'plot-distribution-mean.csv'))
     return
+
+
+def plot_hyperparameters():
+    filepath = os.path.join('./plots', 'elm_hyperparameters_relu.csv')
+    df = pandas.read_csv(filepath, sep=',')
+    df_tanh2000 = df[
+        (df['param_input_to_nodes__activation'] == 'tanh') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+    df_relu500 = df[
+        (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 500)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+    df_relu2000 = df[
+        (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+
+    n_rows = df_tanh2000.shape[0]
+
+    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(10., 3.))  # , subplot_kw={'projection': '3d'})
+
+    df_dict = {
+        0: df_tanh2000,
+        1: df_relu500,
+        2: df_relu2000
+    }
+
+    # colormap
+    # cm = ListedColormap(np.linspace(start=tud_colors['red'], stop=tud_colors['lightgreen'], num=255))
+    n_upper = 20
+    color_array = np.zeros((255, 4))
+    color_array[: 255 - n_upper, :] += np.linspace(start=tud_colors['red'], stop=(1., 1., 1., 1.), num=255 - n_upper)
+    color_array[255 - n_upper:, :] += np.linspace(start=(1., 1., 1., 1.), stop=tud_colors['darkgreen'], num=n_upper)
+    cm = ListedColormap(color_array)
+
+    for idx in range(3):
+        df_loop = df_dict[idx]
+        ax = axs[idx]
+
+        X_ticks = np.sort(df_loop['param_input_to_nodes__input_scaling'].unique())  # ascending
+        Y_ticks = np.sort(df_loop['param_input_to_nodes__bias_scaling'].unique())[::-1]  # descending
+
+        mesh_shape = (len(X_ticks), len(Y_ticks))
+
+        Z_value = df_loop['mean_test_score'].values.reshape(mesh_shape)*100
+        # norm = Normalize(vmin=np.mean(Z_value), clip=True) # -np.std(Z_value)
+
+        # surf = ax.plot_surface(
+        im = ax.imshow(
+            # np.log10(df_loop['param_input_to_nodes__bias_scaling'].values.reshape(mesh_shape)),
+            # np.log10(df_loop['param_input_to_nodes__input_scaling'].values.reshape(mesh_shape)),
+            Z_value,
+            cmap=cm,  # matplotlib.cm.coolwarm
+            # norm=norm
+        )
+
+        fig.colorbar(im, ax=ax, use_gridspec=True, spacing='proportional')
+
+        # ax.set_xticks(np.log10(X_ticks))
+        ax.set_xticks(range(mesh_shape[0]))
+        ax.set_xticklabels(['{0:3.3f}'.format(x) for x in X_ticks])
+        ax.tick_params(axis='x', labelrotation=90)
+        ax.set_xlabel('input scaling')
+
+        # ax.set_yticks(np.log10(Y_ticks))
+        ax.set_yticks(range(mesh_shape[1]))
+        ax.set_yticklabels(['{0:0.3f}'.format(y) for y in Y_ticks])
+        ax.set_ylabel('bias scaling')
+
+        # annotate
+        y = np.argmax(Z_value) // len(Z_value)
+        x = np.argmax(Z_value) % len(Z_value)
+        ax.annotate('{0:0.1f}%'.format(np.max(Z_value)), xy=(x, y), c=(1., 1., 1., 1.), horizontalalignment='center', fontsize='small', fontstretch='ultra-condensed')
+
+    axs[0].set_title('tanh, $m=2000$')
+    axs[1].set_title('relu, $m=500$')
+    axs[2].set_title('relu, $m=2000$')
+
+    # fig.colorbar(surf, shrink=0.5, aspect=5)
+    fig.tight_layout()
+    fig.savefig('/home/michael/Dokumente/Studium/TUD/DA/hyperparameter-relu-tanh.pdf')
+    plt.show()
+
+
+def plot_preprocessed():
+    filepath = os.path.join('./mnist-elm', 'elm_preprocessed_relu.csv')
+    df = pandas.read_csv(filepath, sep=',')
+    df_tanh2000 = df[
+        (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+
+    fig, axs = plt.subplots(nrows=1, ncols=1, figsize=(3., 3.))  # , subplot_kw={'projection': '3d'})
+
+    df_dict = {
+        0: df_tanh2000,
+    }
+
+    # colormap
+    # cm = ListedColormap(np.linspace(start=tud_colors['red'], stop=tud_colors['lightgreen'], num=255))
+    n_upper = 20
+    color_array = np.zeros((255, 4))
+    color_array[: 255 - n_upper, :] += np.linspace(start=tud_colors['red'], stop=(1., 1., 1., 1.), num=255 - n_upper)
+    color_array[255 - n_upper:, :] += np.linspace(start=(1., 1., 1., 1.), stop=tud_colors['darkgreen'], num=n_upper)
+    cm = ListedColormap(color_array)
+
+    df_loop = df_tanh2000
+    ax = axs
+
+    X_ticks = np.sort(df_loop['param_input_to_nodes__input_scaling'].unique())  # ascending
+    Y_ticks = np.sort(df_loop['param_input_to_nodes__bias_scaling'].unique())[::-1]  # descending
+
+    mesh_shape = (len(X_ticks), len(Y_ticks))
+
+    Z_value = df_loop['mean_test_score'].values.reshape(mesh_shape)*100
+
+    im = ax.imshow(
+        Z_value,
+        cmap=cm
+    )
+
+    fig.colorbar(im, ax=ax, use_gridspec=True, spacing='proportional')
+
+    ax.set_xticks(range(mesh_shape[0]))
+    ax.set_xticklabels(['{0:0.3f}'.format(x) for x in X_ticks])
+    ax.tick_params(axis='x', labelrotation=90)
+    ax.set_xlabel('input scaling')
+
+    ax.set_yticks(range(mesh_shape[1]))
+    ax.set_yticklabels(['{0:0.3f}'.format(y) for y in Y_ticks])
+    ax.set_ylabel('bias scaling')
+
+    # annotate
+    y = np.argmax(Z_value) // len(Z_value)
+    x = np.argmax(Z_value) % len(Z_value)
+    ax.annotate('{0:0.1f}%'.format(np.max(Z_value)), xy=(x, y), c=(1., 1., 1., 1.), horizontalalignment='center', fontsize='small', fontstretch='ultra-condensed')
+
+    ax.set_title('relu, $m=2000$\n450 features')
+
+    # fig.colorbar(surf, shrink=0.5, aspect=5)
+    fig.tight_layout()
+    fig.savefig('/home/michael/Dokumente/Studium/TUD/DA/elm_preprocessed_relu-compare.pdf')
+    plt.show()
 
 
 def main():
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    plot_activation_variance()
-    plot_activation_mean()
+    # plot_activation_variance()
+    # plot_activation_mean()
+    # plot_hyperparameters()
+    plot_preprocessed()
     return
 
 

@@ -7,6 +7,10 @@
 *.pgf
 *.npz
 *.joblib
+*.pickle
 
 .ipynb_checkpoints/
 /dataset/
+/mnist-elm*
+/plots*
+/preprocessing-mnist*

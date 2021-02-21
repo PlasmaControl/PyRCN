@@ -18,15 +18,15 @@ argument_parser.add_argument('-o', '--out', metavar='outdir', nargs='?', help='o
 argument_parser.add_argument(dest='params', metavar='params', nargs='*', help='optional parameter for scripts')
 
 tud_colors = {
-    'darkblue': (0 / 255., 48 / 255., 94 / 255.),
-    'gray': (114 / 255., 120 / 255., 121 / 255.),
-    'lightblue': (0 / 255., 106 / 255., 179 / 255.),
-    'darkgreen': (0 / 255., 125 / 255., 64 / 255.),
-    'lightgreen': (106 / 255., 176 / 255., 35 / 255.),
-    'darkpurple': (84 / 255., 55 / 255., 138 / 255.),
-    'lightpurple': (147 / 255., 16 / 255., 126 / 255.),
-    'orange': (238 / 255., 127 / 255., 0 / 255.),
-    'red': (181 / 255., 28 / 255., 28 / 255.)
+    'darkblue': (0 / 255., 48 / 255., 94 / 255., 1.0),
+    'gray': (114 / 255., 120 / 255., 121 / 255., 1.0),
+    'lightblue': (0 / 255., 106 / 255., 179 / 255., 1.0),
+    'darkgreen': (0 / 255., 125 / 255., 64 / 255., 1.0),
+    'lightgreen': (106 / 255., 176 / 255., 35 / 255., 1.0),
+    'darkpurple': (84 / 255., 55 / 255., 138 / 255., 1.0),
+    'lightpurple': (147 / 255., 16 / 255., 126 / 255., 1.0),
+    'orange': (238 / 255., 127 / 255., 0 / 255., 1.0),
+    'red': (181 / 255., 28 / 255., 28 / 255., 1.0)
 }
 
 # noinspection PyArgumentList
