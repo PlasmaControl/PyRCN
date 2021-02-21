@@ -241,7 +241,7 @@ def elm_basic(directory):
         param_grid=param_grid,
         scoring='accuracy',
         n_jobs=2,
-        cv=(range(0, train_size), range(train_size, 70000)))  # split train test (dataset size = 70k)
+        cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
     cv.fit(X, y_encoded)
@@ -403,7 +403,7 @@ def elm_hidden_layer_size(directory):
     logger.info('Preprocessing successful!')
 
     # fan-out from paper
-    fan_out = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20]
+    fan_out = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # , 12, 15, 20
 
     # prepare parameter grids
     param_grid_basic = [{
