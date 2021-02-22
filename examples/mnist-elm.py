@@ -14,6 +14,8 @@ import numpy as np
 import pickle
 import csv
 
+import time
+
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder, StandardScaler
 from sklearn.decomposition import PCA
 
@@ -129,7 +131,7 @@ def elm_hyperparameters(directory):
     y_encoded = label_encoder.transform(y)
 
     # X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, train_size=train_size, random_state=42, shuffle=True)
-    X_train, X_test, y_train, y_test = X[:train_size, :], X[train_size:, :], y_encoded[train_size:], y_encoded[:train_size]
+    X_train, X_test, y_train, y_test = X[:train_size, :], X[train_size:, :], y_encoded[:train_size], y_encoded[train_size:]
 
     param_grid = {
         'input_to_nodes__hidden_layer_size': [2000],
@@ -261,8 +263,93 @@ def elm_basic(directory):
         print('Missing privileges: {0}'.format(e))
 
 
-def elm_preprocessed(directory):
+def elm_pca(directory):
     self_name = 'elm_pca'
+    logger = new_logger(self_name, directory=directory)
+    X, y = get_mnist(directory)
+    logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
+
+    # encode y
+    label_encoder = LabelEncoder().fit(y)
+    y_encoded = label_encoder.transform(y)
+
+    # scale X
+    X /= 255.
+
+    # split train test
+    X_train, X_test, y_train, y_test = X[:train_size, :], X[train_size:, :], y_encoded[:train_size], y_encoded[train_size:]
+
+    # prepare parameter grids
+    param_grid_basic = {
+            'input_to_nodes__hidden_layer_size': 2000,
+            'input_to_nodes__input_scaling': 1.,
+            'input_to_nodes__bias_scaling': 0.,
+            'input_to_nodes__activation': 'relu',
+            'input_to_nodes__random_state': 42,
+            'regressor__alpha': 1e-5,
+            'regressor__random_state': 42,
+            'random_state': 42
+    }
+
+    # setup estimator
+    estimator = ELMClassifier(input_to_nodes=InputToNode(), regressor=Ridge())
+
+    # initialize filepath
+    filepath = os.path.join(directory, '{0}_basic.csv'.format(self_name))
+
+    # initialize param dict
+    param_dict_job = estimator.get_params().copy()
+    param_dict_job.update(param_grid_basic)
+
+    # initialize results dict
+    results_dict_job = param_dict_job.copy()
+    # add dummy results
+    results_dict_job.update({'time_fit': 0, 'time_pred': 0, 'score': 0, 'pca_n_components': 0})
+
+    # preprocessing pca
+    try:
+        # write header
+        with open(filepath, 'w') as f:
+            writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
+            writer.writeheader()
+
+        for pca_n_components in [10, 20, 50, 100, 200, 500, 784]:
+            results_dict_job.update({'pca_n_components': pca_n_components})
+            estimator.set_params(**param_dict_job)
+
+            # preprocessing
+            pca = PCA(n_components=pca_n_components).fit(X_train)
+            X_train_pca, X_test_pca = pca.transform(X_train), pca.transform(X_test)
+
+            # run!
+            time_start = time.time()
+            estimator.fit(X_train_pca, y_train)
+            time_fit = time.time()
+            y_pred = estimator.predict(X_test_pca)
+            time_pred = time.time()
+            # run end!
+
+            results_dict_job.update({
+                'time_fit': time_fit - time_start,
+                'time_pred': time_pred - time_fit,
+                'score': accuracy_score(y_test, y_pred)
+            })
+
+            logger.info('pca.n_components_: {0}, score: {1}'.format(pca_n_components, results_dict_job['score']))
+
+            with open(filepath, 'a') as f:
+                writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
+                writer.writerow(results_dict_job)
+    except MemoryError as e:
+        logger.error('Memory error: {0}'.format(e))
+    except PermissionError as e:
+        logger.error('Missing privileges: {0}'.format(e))
+    except Exception as e:
+        logger.error('Unexpected exception: {0}'.format(e))
+
+
+def elm_preprocessed(directory):
+    self_name = 'elm_preprocessed'
     logger = new_logger(self_name, directory=directory)
     X, y = get_mnist(directory)
     logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
@@ -271,8 +358,9 @@ def elm_preprocessed(directory):
     y_encoded = label_encoder.transform(y)
 
     # preprocessing
-    pca = PCA(n_components=200).fit(X / 255.)
-    X_preprocessed = pca.transform(X / 255.)
+    X /= 255.
+    pca = PCA(n_components=100).fit(X)
+    X_preprocessed = pca.transform(X)
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
     # prepare parameter grid
@@ -398,100 +486,159 @@ def elm_hidden_layer_size(directory):
     # scale X
     X /= 255.
 
-    # preprocessing
-    pca450 = PCA(n_components=450).fit(X)
-    logger.info('Preprocessing successful!')
+    # split train test
+    X_train, X_test, y_train, y_test = X[:train_size, :], X[train_size:, :], y_encoded[:train_size], y_encoded[train_size:]
 
     # fan-out from paper
     fan_out = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20]
 
     # prepare parameter grids
-    param_grid_basic = [{
-            'input_to_nodes__hidden_layer_size': 784 * np.array(fan_out),
-            'input_to_nodes__input_scaling': [1.],
-            'input_to_nodes__bias_scaling': [1.],
-            'input_to_nodes__activation': ['relu'],
-            'input_to_nodes__random_state': [42],
-            'regressor__alpha': [1e-5],
-            'regressor__random_state': [42],
-            'random_state': [42]
-    }]
+    param_grid_basic = {
+            'input_to_nodes__hidden_layer_size': 0,
+            'input_to_nodes__input_scaling': 1.,
+            'input_to_nodes__bias_scaling': 0.,
+            'input_to_nodes__activation': 'relu',
+            'input_to_nodes__random_state': 42,
+            'regressor__alpha': 1e-5,
+            'regressor__random_state': 42,
+            'random_state': 42
+    }
 
-    param_grid_pca = [{
-            'input_to_nodes__hidden_layer_size': np.concatenate((450 * np.array(fan_out), 784 * np.array(fan_out)), axis=0),
-            'input_to_nodes__input_scaling': [1./40],
-            'input_to_nodes__bias_scaling': [1.],
-            'input_to_nodes__activation': ['relu'],
-            'input_to_nodes__random_state': [42],
-            'regressor__alpha': [1e-5],
-            'regressor__random_state': [42],
-            'random_state': [42]
-    }]
+    param_grid_pca = {
+            'input_to_nodes__hidden_layer_size': 0,
+            'input_to_nodes__input_scaling': 1.,
+            'input_to_nodes__bias_scaling': 0.,
+            'input_to_nodes__activation': 'relu',
+            'input_to_nodes__random_state': 42,
+            'regressor__alpha': 1e-5,
+            'regressor__random_state': 42,
+            'random_state': 42
+    }
 
     # setup estimator
     estimator = ELMClassifier(input_to_nodes=InputToNode(), regressor=Ridge())
 
-    # setup grid search
-    cv_basic = GridSearchCV(
-        estimator=estimator,
-        param_grid=param_grid_basic,
-        scoring='accuracy',
-        n_jobs=1,
-        pre_dispatch=1,
-        verbose=2,
-        cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
-
-    cv_pca = GridSearchCV(
-        estimator=estimator,
-        param_grid=param_grid_pca,
-        scoring='accuracy',
-        n_jobs=1,
-        pre_dispatch=1,
-        verbose=2,
-        cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
-
-    # run!
+    # basic
     try:
-        cv_basic.fit(X, y_encoded)
-        logger.info('best parameters: {0} (score: {1})'.format(cv_basic.best_params_, cv_basic.best_score_))
+        # initialize filepath
+        filepath = os.path.join(directory, '{0}_basic.csv'.format(self_name))
+
+        # initialize param dict
+        param_dict_job = estimator.get_params().copy()
+        param_dict_job.update(param_grid_basic)
+
+        # initialize results dict
+        results_dict_job = param_dict_job.copy()
+        # add dummy results
+        results_dict_job.update({'time_fit': 0, 'time_pred': 0, 'score': 0})
+
+        # write header
+        with open(filepath, 'w') as f:
+            writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
+            writer.writeheader()
+
+        for hls in 784 * np.array(fan_out):
+            param_dict_job.update({'input_to_nodes__hidden_layer_size': hls})
+            estimator.set_params(**param_dict_job)
+
+            # run!
+            time_start = time.time()
+            estimator.fit(X_train, y_train)
+            time_fit = time.time()
+            y_pred = estimator.predict(X_test)
+            time_pred = time.time()
+            # run end!
+
+            results_dict_job.update(estimator.get_params())
+
+            results_dict_job.update({
+                'time_fit': time_fit - time_start,
+                'time_pred': time_pred - time_fit,
+                'score': accuracy_score(y_test, y_pred)
+            })
+
+            logger.info('hidden_layer_size: {0}, score: {1}'.format(hls, results_dict_job['score']))
+
+            with open(filepath, 'a') as f:
+                writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
+                writer.writerow(results_dict_job)
     except MemoryError as e:
         logger.error('Memory error: {0}'.format(e))
+    except PermissionError as e:
+        logger.error('Missing privileges: {0}'.format(e))
     except Exception as e:
         logger.error('Unexpected exception: {0}'.format(e))
-    finally:
-        # refine results
-        cv_basic_results = cv_basic.cv_results_
-        del cv_basic_results['params']
 
-        # save results
-        try:
-            with open(os.path.join(directory, '{0}_basic.csv'.format(self_name)), 'w') as f:
-                f.write(','.join(cv_basic_results.keys()) + '\n')
-                for row in list(map(list, zip(*cv_basic_results.values()))):
-                    f.write(','.join(map(str, row)) + '\n')
-        except PermissionError as e:
-            print('Missing privileges: {0}'.format(e))
-
+    # preprocessing pca
     try:
-        cv_pca.fit(pca450.transform(X), y_encoded)
-        logger.info('best parameters: {0} (score: {1})'.format(cv_pca.best_params_, cv_pca.best_score_))
+        # initialize filepath
+        filepath = os.path.join(directory, '{0}_pca.csv'.format(self_name))
+
+        # preprocessing
+        pca50 = PCA(n_components=50).fit(X_train)
+        X_train_pca50, X_test_pca50 = pca50.transform(X_train), pca50.transform(X_test)
+
+        pca100 = PCA(n_components=100).fit(X_train)
+        X_train_pca100, X_test_pca100 = pca100.transform(X_train), pca100.transform(X_test)
+
+        list_dict_pca = [{
+            'n_components': 50,
+            'X_train': X_train_pca50,
+            'X_test': X_test_pca50
+        }, {
+            'n_components': 100,
+            'X_train': X_train_pca100,
+            'X_test': X_test_pca100
+        }]
+        logger.info('Preprocessing successful!')
+
+        # initialize param dict
+        param_dict_job = estimator.get_params().copy()
+        param_dict_job.update(param_grid_pca)
+
+        # initialize results dict
+        results_dict_job = param_dict_job.copy()
+        # add dummy results
+        results_dict_job.update({'time_fit': 0, 'time_pred': 0, 'score': 0, 'pca_n_components': 0})
+
+        # write header
+        with open(filepath, 'w') as f:
+            writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
+            writer.writeheader()
+
+        for dict_pca in list_dict_pca:
+            results_dict_job.update({'pca_n_components': dict_pca['n_components']})
+            for hls in np.concatenate((100 * np.array(fan_out), 784 * np.array(fan_out)), axis=0):
+                param_dict_job.update({'input_to_nodes__hidden_layer_size': hls})
+                estimator.set_params(**param_dict_job)
+
+                # run!
+                time_start = time.time()
+                estimator.fit(dict_pca['X_train'], y_train)
+                time_fit = time.time()
+                y_pred = estimator.predict(dict_pca['X_test'])
+                time_pred = time.time()
+                # run end!
+
+                results_dict_job.update(estimator.get_params())
+
+                results_dict_job.update({
+                    'time_fit': time_fit - time_start,
+                    'time_pred': time_pred - time_fit,
+                    'score': accuracy_score(y_test, y_pred)
+                })
+
+                logger.info('n_components: {2}, hidden_layer_size: {0}, score: {1}'.format(hls, results_dict_job['score'], results_dict_job['pca_n_components']))
+
+                with open(filepath, 'a') as f:
+                    writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
+                    writer.writerow(results_dict_job)
     except MemoryError as e:
         logger.error('Memory error: {0}'.format(e))
+    except PermissionError as e:
+        logger.error('Missing privileges: {0}'.format(e))
     except Exception as e:
         logger.error('Unexpected exception: {0}'.format(e))
-    finally:
-        # refine results
-        cv_pca_results = cv_pca.cv_results_
-        del cv_pca_results['params']
-
-        # save results
-        try:
-            with open(os.path.join(directory, '{0}_pca.csv'.format(self_name)), 'w') as f:
-                f.write(','.join(cv_pca_results.keys()) + '\n')
-                for row in list(map(list, zip(*cv_pca_results.values()))):
-                    f.write(','.join(map(str, row)) + '\n')
-        except PermissionError as e:
-            print('Missing privileges: {0}'.format(e))
 
 
 def elm_coates(directory):
@@ -513,7 +660,7 @@ def elm_coates(directory):
     X_coates = np.dot(X_preprocessed, cluster.cluster_centers_.T)
 
     # X_train, X_test, y_train, y_test = train_test_split(X_coates, y_encoded, train_size=train_size, random_state=42, shuffle=True)
-    X_train, X_test, y_train, y_test = X[:train_size, :], X[train_size:, :], y_encoded[train_size:], y_encoded[:train_size]
+    X_train, X_test, y_train, y_test = X[:train_size, :], X[train_size:, :], y_encoded[:train_size], y_encoded[train_size:]
 
     hidden_layer_sizes = np.array([300, 450, 1000, 2250])
 
@@ -584,6 +731,7 @@ def main(directory, params):
         'train_kmeans': train_kmeans,
         'elm_hyperparameters': elm_hyperparameters,
         'elm_basic': elm_basic,
+        'elm_pca': elm_pca,
         'elm_preprocessed': elm_preprocessed,
         'elm_random_state': elm_random_state,
         'elm_hidden_layer_size': elm_hidden_layer_size,
