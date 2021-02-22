@@ -81,6 +81,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         if reset:
             self._K = None
             self._P = None
+            self._output_weights = None
 
         if self._K is None:
             self._K = safe_sparse_dot(X_preprocessed.T, X_preprocessed)
