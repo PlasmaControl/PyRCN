@@ -437,6 +437,7 @@ def elm_hidden_layer_size(directory):
         param_grid=param_grid_basic,
         scoring='accuracy',
         n_jobs=1,
+        pre_dispatch=1,
         verbose=2,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
@@ -445,6 +446,7 @@ def elm_hidden_layer_size(directory):
         param_grid=param_grid_pca,
         scoring='accuracy',
         n_jobs=1,
+        pre_dispatch=1,
         verbose=2,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
