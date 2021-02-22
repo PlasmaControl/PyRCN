@@ -5,6 +5,8 @@ The :mod:`extreme_learninc_machine` contains the ELMRegressor and the ELMClassif
 # Author: Michael Schindler <michael.schindler@maschindler.de>
 # License: BSD 3 clause
 
+import sys
+
 import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
@@ -31,16 +33,20 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         Regressor object such as derived from ``RegressorMixin``. This
         regressor will automatically be cloned each time prior to fitting.
         regressor cannot be None, omit argument if in doubt
+    chunk_size : int, default=None
+        if X.shape[0] > chunk_size, calculate results incrementally with partial_fit
     random_state : int, RandomState instance, default=None
     """
     def __init__(self,
                  input_to_nodes=InputToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
+                 chunk_size=None,
                  random_state=None):
         self.input_to_nodes = input_to_nodes
         self.regressor = regressor
         self.random_state = random_state
         self._input_to_node = None
+        self._chunk_size = chunk_size
         self._regressor = None
 
     def partial_fit(self, X, y, n_jobs=None, transformer_weights=None):
@@ -58,7 +64,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
         Returns
         -------
-        self : Returns a traines ELMRegressor model.
+        self : Returns a trained ELMRegressor model.
         """
         if not hasattr(self.regressor, 'partial_fit'):
             raise BaseException('regressor has no attribute partial_fit, got {0}'.format(self.regressor))
@@ -67,13 +73,22 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._validate_data(X, y, multi_output=True)
 
         if self._input_to_node is None:
-            self._input_to_node = FeatureUnion(
-                transformer_list=self.input_to_nodes,
-                n_jobs=n_jobs,
-                transformer_weights=transformer_weights).fit(X)
+            if hasattr(self.input_to_nodes, '__iter__'):
+                # Feature Union of list of input_to_nodes
+                self._input_to_node = FeatureUnion(
+                    transformer_list=self.input_to_nodes,
+                    n_jobs=n_jobs,
+                    transformer_weights=transformer_weights)
+            else:
+                # single input_to_node
+                self._input_to_node = self.input_to_nodes
 
+            self._input_to_node.fit(X)
+
+        # input_to_node
         hidden_layer_state = self._input_to_node.transform(X)
 
+        # regression
         if self._regressor:
             self._regressor.partial_fit(hidden_layer_state, y)
         else:
@@ -95,7 +110,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
         Returns
         -------
-        self : Returns a traines ELMRegressor model.
+        self : Returns a trained ELMRegressor model.
         """
         self._validate_hyperparameters()
         self._validate_data(X, y, multi_output=True)
@@ -109,9 +124,24 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         else:
             # single input_to_node
             self._input_to_node = self.input_to_nodes
-        hidden_layer_state = self._input_to_node.fit_transform(X)
 
-        self._regressor = self.regressor.fit(hidden_layer_state, y)
+        self._input_to_node.fit(X)
+        self._regressor = self.regressor.__class__()
+
+        if self._chunk_size is None:
+            # input_to_node
+            hidden_layer_state = self._input_to_node.transform(X)
+
+            # regression
+            self._regressor.fit(hidden_layer_state, y)
+        elif self._chunk_size < X.shape[0]:
+            for idx in range(0, X.shape[0], self._chunk_size):
+                ELMRegressor.partial_fit(
+                    self,
+                    X=X[idx:idx + self._chunk_size, ...],
+                    y=y[idx:idx + self._chunk_size, ...],
+                    n_jobs=n_jobs,
+                    transformer_weights=transformer_weights)
         return self
 
     def predict(self, X):
@@ -157,10 +187,22 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                     raise TypeError("All input_to_nodes should be transformers "
                                     "and implement fit and transform "
                                     "'%s' (type %s) doesn't" % (self.input_to_nodes, type(self.input_to_nodes)))
+
+        if not isinstance(self._chunk_size, int) or self._chunk_size < 0:
+            raise ValueError('Invalid value for chunk_size, got {0}'.format(self._chunk_size))
+
         if not is_regressor(self.regressor):
             raise TypeError("The last step should be a regressor "
                             "and implement fit and predict"
                             "'%s' (type %s) doesn't" % (self.regressor, type(self.regressor)))
+
+    @property
+    def chunk_size(self):
+        return self._chunk_size
+
+    @chunk_size.setter
+    def chunk_size(self, chunk_size):
+        self._chunk_size = chunk_size
 
 
 class ELMClassifier(ELMRegressor, ClassifierMixin):
@@ -178,13 +220,16 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         Regressor object such as derived from ``RegressorMixin``. This
         regressor will automatically be cloned each time prior to fitting.
         regressor cannot be None, omit argument if in doubt
+    chunk_size : int, default=None
+        if X.shape[0] > chunk_size, calculate results incrementally with partial_fit
     random_state : int, RandomState instance, default=None
     """
     def __init__(self,
                  input_to_nodes=InputToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
+                 chunk_size=None,
                  random_state=None):
-        super().__init__(input_to_nodes=input_to_nodes, regressor=regressor, random_state=random_state)
+        super().__init__(input_to_nodes=input_to_nodes, regressor=regressor, chunk_size=chunk_size, random_state=random_state)
         self._encoder = None
 
     def partial_fit(self, X, y, n_jobs=None, transformer_weights=None):
@@ -202,7 +247,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
 
         Returns
         -------
-        self : returns a traines ELMClassifier model
+        self : returns a trained ELMClassifier model
         """
         self._validate_data(X, y, multi_output=True)
 
@@ -226,7 +271,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
 
         Returns
         -------
-        self : Returns a traines ELMClassifier model.
+        self : Returns a trained ELMClassifier model.
         """
         self._validate_data(X, y, multi_output=True)
         self._encoder = LabelBinarizer().fit(y)
