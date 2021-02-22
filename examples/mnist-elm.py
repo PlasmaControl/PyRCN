@@ -28,7 +28,7 @@ from sklearn.linear_model import Ridge
 
 from pyrcn.util import new_logger, argument_parser, get_mnist
 from pyrcn.base import InputToNode
-# from pyrcn.linear_model import IncrementalRegression
+from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier
 
 # import importlib
@@ -499,8 +499,8 @@ def elm_hidden_layer_size(directory):
             'input_to_nodes__bias_scaling': 0.,
             'input_to_nodes__activation': 'relu',
             'input_to_nodes__random_state': 42,
+            'chunk_size': 5000,
             'regressor__alpha': 1e-5,
-            'regressor__random_state': 42,
             'random_state': 42
     }
 
@@ -510,13 +510,13 @@ def elm_hidden_layer_size(directory):
             'input_to_nodes__bias_scaling': 0.,
             'input_to_nodes__activation': 'relu',
             'input_to_nodes__random_state': 42,
+            'chunk_size': 5000,
             'regressor__alpha': 1e-5,
-            'regressor__random_state': 42,
             'random_state': 42
     }
 
     # setup estimator
-    estimator = ELMClassifier(input_to_nodes=InputToNode(), regressor=Ridge())
+    estimator = ELMClassifier(input_to_nodes=InputToNode(), regressor=IncrementalRegression())
 
     # basic
     try:
