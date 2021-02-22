@@ -128,7 +128,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._input_to_node.fit(X)
         self._regressor = self.regressor.__class__()
 
-        if self._chunk_size is None:
+        if self._chunk_size is None or self._chunk_size > X.shape[0]:
             # input_to_node
             hidden_layer_state = self._input_to_node.transform(X)
 
@@ -142,6 +142,8 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                     y=y[idx:idx + self._chunk_size, ...],
                     n_jobs=n_jobs,
                     transformer_weights=transformer_weights)
+        else:
+            raise ValueError('chunk_size invalid {0}'.format(self._chunk_size))
         return self
 
     def predict(self, X):
@@ -198,10 +200,26 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     @property
     def chunk_size(self):
+        """Returns the chunk_size, in which X will be chopped.
+
+        Returns
+        -------
+        chunk_size : int or None
+        """
         return self._chunk_size
 
     @chunk_size.setter
     def chunk_size(self, chunk_size):
+        """Sets the chunk_size, in which X will be chopped.
+
+        Parameters
+        ----------
+        chunk_size : int or None
+
+        Returns
+        -------
+
+        """
         self._chunk_size = chunk_size
 
 
