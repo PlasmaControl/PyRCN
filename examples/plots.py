@@ -124,7 +124,7 @@ def plot_activation_mean():
 
 
 def plot_hyperparameters():
-    filepath = os.path.join('./plots', 'elm_hyperparameters_relu.csv')
+    filepath = os.path.join('./mnist-elm', 'elm_basic.csv')
     df = pandas.read_csv(filepath, sep=',')
     df_tanh2000 = df[
         (df['param_input_to_nodes__activation'] == 'tanh') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
@@ -136,14 +136,29 @@ def plot_hyperparameters():
         (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
     ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
 
+    filepath = os.path.join('./mnist-elm', 'elm_pca.csv')
+    df = pandas.read_csv(filepath, sep=',')
+    df_tanh2000pca = df[
+        (df['param_input_to_nodes__activation'] == 'tanh') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+    df_relu500pca = df[
+        (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 500)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+    df_relu2000pca = df[
+        (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+
     n_rows = df_tanh2000.shape[0]
 
-    fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(10., 3.))  # , subplot_kw={'projection': '3d'})
+    fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(10., 6.))  # , subplot_kw={'projection': '3d'})
 
     df_dict = {
         0: df_tanh2000,
         1: df_relu500,
-        2: df_relu2000
+        2: df_relu2000,
+        3: df_tanh2000pca,
+        4: df_relu500pca,
+        5: df_relu2000pca
     }
 
     # colormap
@@ -154,48 +169,52 @@ def plot_hyperparameters():
     color_array[255 - n_upper:, :] += np.linspace(start=(1., 1., 1., 1.), stop=tud_colors['darkgreen'], num=n_upper)
     cm = ListedColormap(color_array)
 
-    for idx in range(3):
-        df_loop = df_dict[idx]
-        ax = axs[idx]
+    for row in range(axs.shape[0]):
+        for col in range(axs.shape[1]):
+            df_loop = df_dict[row*3 + col]
+            ax = axs[row][col]
 
-        X_ticks = np.sort(df_loop['param_input_to_nodes__input_scaling'].unique())  # ascending
-        Y_ticks = np.sort(df_loop['param_input_to_nodes__bias_scaling'].unique())[::-1]  # descending
+            X_ticks = np.sort(df_loop['param_input_to_nodes__input_scaling'].unique())  # ascending
+            Y_ticks = np.sort(df_loop['param_input_to_nodes__bias_scaling'].unique())[::-1]  # descending
 
-        mesh_shape = (len(X_ticks), len(Y_ticks))
+            mesh_shape = (len(X_ticks), len(Y_ticks))
 
-        Z_value = df_loop['mean_test_score'].values.reshape(mesh_shape)*100
-        # norm = Normalize(vmin=np.mean(Z_value), clip=True) # -np.std(Z_value)
+            Z_value = df_loop['mean_test_score'].values.reshape(mesh_shape)*100
+            # norm = Normalize(vmin=np.mean(Z_value), clip=True) # -np.std(Z_value)
 
-        # surf = ax.plot_surface(
-        im = ax.imshow(
-            # np.log10(df_loop['param_input_to_nodes__bias_scaling'].values.reshape(mesh_shape)),
-            # np.log10(df_loop['param_input_to_nodes__input_scaling'].values.reshape(mesh_shape)),
-            Z_value,
-            cmap=cm,  # matplotlib.cm.coolwarm
-            # norm=norm
-        )
+            # surf = ax.plot_surface(
+            im = ax.imshow(
+                # np.log10(df_loop['param_input_to_nodes__bias_scaling'].values.reshape(mesh_shape)),
+                # np.log10(df_loop['param_input_to_nodes__input_scaling'].values.reshape(mesh_shape)),
+                Z_value,
+                cmap=cm,  # matplotlib.cm.coolwarm
+                # norm=norm
+            )
 
-        fig.colorbar(im, ax=ax, use_gridspec=True, spacing='proportional')
+            fig.colorbar(im, ax=ax, use_gridspec=True, spacing='proportional')
 
-        # ax.set_xticks(np.log10(X_ticks))
-        ax.set_xticks(range(mesh_shape[0]))
-        ax.set_xticklabels(['{0:3.3f}'.format(x) for x in X_ticks])
-        ax.tick_params(axis='x', labelrotation=90)
-        ax.set_xlabel('input scaling')
+            # ax.set_xticks(np.log10(X_ticks))
+            ax.set_xticks(range(mesh_shape[0]))
+            ax.set_xticklabels(['{0:3.3f}'.format(x) for x in X_ticks])
+            ax.tick_params(axis='x', labelrotation=90)
+            ax.set_xlabel('input scaling')
 
-        # ax.set_yticks(np.log10(Y_ticks))
-        ax.set_yticks(range(mesh_shape[1]))
-        ax.set_yticklabels(['{0:0.3f}'.format(y) for y in Y_ticks])
-        ax.set_ylabel('bias scaling')
+            # ax.set_yticks(np.log10(Y_ticks))
+            ax.set_yticks(range(mesh_shape[1]))
+            ax.set_yticklabels(['{0:0.3f}'.format(y) for y in Y_ticks])
+            ax.set_ylabel('bias scaling')
 
-        # annotate
-        y = np.argmax(Z_value) // len(Z_value)
-        x = np.argmax(Z_value) % len(Z_value)
-        ax.annotate('{0:0.1f}%'.format(np.max(Z_value)), xy=(x, y), c=(1., 1., 1., 1.), horizontalalignment='center', fontsize='small', fontstretch='ultra-condensed')
+            # annotate
+            y = np.argmax(Z_value) // len(Z_value)
+            x = np.argmax(Z_value) % len(Z_value)
+            ax.annotate('{0:0.1f}%'.format(np.max(Z_value)), xy=(x, y), c=(1., 1., 1., 1.), horizontalalignment='center', fontsize='small', fontstretch='ultra-condensed')
 
-    axs[0].set_title('tanh, $m=2000$')
-    axs[1].set_title('relu, $m=500$')
-    axs[2].set_title('relu, $m=2000$')
+    axs[0][0].set_title('tanh, $m=2000$')
+    axs[0][1].set_title('relu, $m=500$')
+    axs[0][2].set_title('relu, $m=2000$')
+    axs[1][0].set_title('pca, tanh, $m=2000$')
+    axs[1][1].set_title('pca, relu, $m=500$')
+    axs[1][2].set_title('pca, relu, $m=2000$')
 
     # fig.colorbar(surf, shrink=0.5, aspect=5)
     fig.tight_layout()
@@ -269,8 +288,8 @@ def main():
 
     # plot_activation_variance()
     # plot_activation_mean()
-    # plot_hyperparameters()
-    plot_preprocessed()
+    plot_hyperparameters()
+    # plot_preprocessed()
     return
 
 

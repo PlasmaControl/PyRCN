@@ -403,7 +403,7 @@ def elm_hidden_layer_size(directory):
     logger.info('Preprocessing successful!')
 
     # fan-out from paper
-    fan_out = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # , 12, 15, 20
+    fan_out = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20]
 
     # prepare parameter grids
     param_grid_basic = [{
@@ -418,7 +418,7 @@ def elm_hidden_layer_size(directory):
     }]
 
     param_grid_pca = [{
-            'input_to_nodes__hidden_layer_size': [500, 2000],
+            'input_to_nodes__hidden_layer_size': np.concatenate((450 * np.array(fan_out), 784 * np.array(fan_out)), axis=0),
             'input_to_nodes__input_scaling': [1./40],
             'input_to_nodes__bias_scaling': [1.],
             'input_to_nodes__activation': ['relu'],
