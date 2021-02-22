@@ -437,6 +437,7 @@ def elm_hidden_layer_size(directory):
         param_grid=param_grid_basic,
         scoring='accuracy',
         n_jobs=1,
+        verbose=2,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     cv_pca = GridSearchCV(
@@ -444,37 +445,51 @@ def elm_hidden_layer_size(directory):
         param_grid=param_grid_pca,
         scoring='accuracy',
         n_jobs=1,
+        verbose=2,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
-    cv_basic.fit(X, y_encoded)
-    logger.info('best parameters: {0} (score: {1})'.format(cv_basic.best_params_, cv_basic.best_score_))
-    cv_pca.fit(pca450.transform(X), y_encoded)
-    logger.info('best parameters: {0} (score: {1})'.format(cv_pca.best_params_, cv_pca.best_score_))
-
-    # refine results
-    cv_basic_results = cv_basic.cv_results_
-    del cv_basic_results['params']
-
-    cv_pca_results = cv_pca.cv_results_
-    del cv_pca_results['params']
-
-    # save results
     try:
-        with open(os.path.join(directory, '{0}_basic.csv'.format(self_name)), 'w') as f:
-            f.write(','.join(cv_basic_results.keys()) + '\n')
-            for row in list(map(list, zip(*cv_basic_results.values()))):
-                f.write(','.join(map(str, row)) + '\n')
-    except PermissionError as e:
-        print('Missing privileges: {0}'.format(e))
+        cv_basic.fit(X, y_encoded)
+        logger.info('best parameters: {0} (score: {1})'.format(cv_basic.best_params_, cv_basic.best_score_))
+    except MemoryError as e:
+        logger.error('Memory error: {0}'.format(e))
+    except Exception as e:
+        logger.error('Unexpected exception: {0}'.format(e))
+    finally:
+        # refine results
+        cv_basic_results = cv_basic.cv_results_
+        del cv_basic_results['params']
+
+        # save results
+        try:
+            with open(os.path.join(directory, '{0}_basic.csv'.format(self_name)), 'w') as f:
+                f.write(','.join(cv_basic_results.keys()) + '\n')
+                for row in list(map(list, zip(*cv_basic_results.values()))):
+                    f.write(','.join(map(str, row)) + '\n')
+        except PermissionError as e:
+            print('Missing privileges: {0}'.format(e))
 
     try:
-        with open(os.path.join(directory, '{0}_pca.csv'.format(self_name)), 'w') as f:
-            f.write(','.join(cv_pca_results.keys()) + '\n')
-            for row in list(map(list, zip(*cv_pca_results.values()))):
-                f.write(','.join(map(str, row)) + '\n')
-    except PermissionError as e:
-        print('Missing privileges: {0}'.format(e))
+        cv_pca.fit(pca450.transform(X), y_encoded)
+        logger.info('best parameters: {0} (score: {1})'.format(cv_pca.best_params_, cv_pca.best_score_))
+    except MemoryError as e:
+        logger.error('Memory error: {0}'.format(e))
+    except Exception as e:
+        logger.error('Unexpected exception: {0}'.format(e))
+    finally:
+        # refine results
+        cv_pca_results = cv_pca.cv_results_
+        del cv_pca_results['params']
+
+        # save results
+        try:
+            with open(os.path.join(directory, '{0}_pca.csv'.format(self_name)), 'w') as f:
+                f.write(','.join(cv_pca_results.keys()) + '\n')
+                for row in list(map(list, zip(*cv_pca_results.values()))):
+                    f.write(','.join(map(str, row)) + '\n')
+        except PermissionError as e:
+            print('Missing privileges: {0}'.format(e))
 
 
 def elm_coates(directory):
