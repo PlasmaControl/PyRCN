@@ -464,8 +464,6 @@ def elm_hidden_layer_size(directory):
 
     # fan-out from paper
     fan_out = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20]
-    # debug
-    fan_out = [1]
 
     # prepare parameter grids
     param_grid_basic = {
