@@ -77,46 +77,19 @@ def train_kmeans(directory):
     # scale X -> $X \in [0, 1]$
     X /= 255.
 
-    # 20 centroids
-    pca20 = PCA(n_components=20).fit(X)
-    kmeans20 = MiniBatchKMeans(n_clusters=20, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(pca20.transform(X))
-    with open(os.path.join(directory, 'kmeans-mnist-pca-20.pickle'), 'wb') as f:
-        pickle.dump(kmeans20, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-pca-20.pickle')
+    list_n_components = [50, 100]
+    list_n_clusters = [20, 50, 100, 200, 500, 1000]
 
-    # 50 centroids
-    pca50 = PCA(n_components=50).fit(X)
-    kmeans50 = MiniBatchKMeans(n_clusters=50, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(pca50.transform(X))
-    with open(os.path.join(directory, 'kmeans-mnist-pca-50.pickle'), 'wb') as f:
-        pickle.dump(kmeans50, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-pca-50.pickle')
+    for n_components in list_n_components:
+        pca = PCA(n_components=n_components, random_state=42).fit(X)
+        X_pca = pca.transform(X)
+        np.save('pca{0}_components.npy', pca.components_)
+        logger.info('pca{0}: explained variance ratio = {1}'.format(n_components, np.sum(pca.explained_variance_ratio_)))
 
-    # 100 centroids
-    pca100 = PCA(n_components=100).fit(X)
-    kmeans100 = MiniBatchKMeans(n_clusters=100, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(pca100.transform(X))
-    with open(os.path.join(directory, 'kmeans-mnist-pca-100.pickle'), 'wb') as f:
-        pickle.dump(kmeans100, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-pca-100.pickle')
-
-    # 200 centroids
-    pca200 = PCA(n_components=200).fit(X)
-    kmeans200 = MiniBatchKMeans(n_clusters=200, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(pca200.transform(X))
-    with open(os.path.join(directory, 'kmeans-mnist-pca-200.pickle'), 'wb') as f:
-        pickle.dump(kmeans200, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-pca-200.pickle')
-
-    # 450 centroids
-    pca450 = PCA(n_components=450).fit(X)
-    kmeans450 = MiniBatchKMeans(n_clusters=450, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(pca450.transform(X))
-    with open(os.path.join(directory, 'kmeans-mnist-pca-450.pickle'), 'wb') as f:
-        pickle.dump(kmeans450, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-pca-450.pickle')
-
-    # 900 centroids, no preprocessing
-    kmeans900 = MiniBatchKMeans(n_clusters=900, init='k-means++', n_init=10, batch_size=1000, random_state=42).fit(X)
-    with open(os.path.join(directory, 'kmeans-mnist-900.pickle'), 'wb') as f:
-        pickle.dump(kmeans900, f)
-    logger.info('successfulyy trained and saved to kmeans-mnist-900.pickle')
+        for n_clusters in list_n_clusters:
+            clusterer = MiniBatchKMeans(n_clusters=n_clusters, init='k-means++', random_state=42, batch_size=5000, n_init=5).fit(X_pca)
+            np.save('kmeans{0}-pca{1}_centroids.npy'.format(n_clusters, n_components), clusterer.cluster_centers_)
+            logger.info('successfuly trained MiniBatchKMeans and saved to kmeans{0}-pca{1}_centroids.npy'.format(n_clusters, n_components))
 
 
 def elm_hyperparameters(directory):
