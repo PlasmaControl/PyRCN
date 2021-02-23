@@ -20,7 +20,7 @@ from sklearn.preprocessing import LabelBinarizer, LabelEncoder, StandardScaler
 from sklearn.decomposition import PCA
 
 from sklearn.metrics import silhouette_score, accuracy_score
-from sklearn.pipeline import Pipeline
+from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.model_selection import cross_validate, GridSearchCV, train_test_split, StratifiedShuffleSplit
 
 from sklearn.cluster import KMeans, MiniBatchKMeans
@@ -74,7 +74,7 @@ def train_kmeans(directory):
     X, y = get_mnist(directory)
     logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
 
-    # scale X -> $X \in [0, 1]$
+    # scale X, so $X \in [0, 1]$
     X /= 255.
 
     list_n_components = [50, 100]
@@ -83,13 +83,20 @@ def train_kmeans(directory):
     for n_components in list_n_components:
         pca = PCA(n_components=n_components, random_state=42).fit(X)
         X_pca = pca.transform(X)
-        np.save('pca{0}_components.npy', pca.components_)
         logger.info('pca{0}: explained variance ratio = {1}'.format(n_components, np.sum(pca.explained_variance_ratio_)))
 
         for n_clusters in list_n_clusters:
+            kmeans_basename = 'pca{0}+kmeans{1}'.format(n_components, n_clusters)
+
             clusterer = MiniBatchKMeans(n_clusters=n_clusters, init='k-means++', random_state=42, batch_size=5000, n_init=5).fit(X_pca)
-            np.save('kmeans{0}-pca{1}_centroids.npy'.format(n_clusters, n_components), clusterer.cluster_centers_)
-            logger.info('successfuly trained MiniBatchKMeans and saved to kmeans{0}-pca{1}_centroids.npy'.format(n_clusters, n_components))
+            np.save(os.path.join(directory, '{0}_matrix.npy'.format(kmeans_basename)), np.dot(pca.components_.T, clusterer.cluster_centers_.T))
+
+            # assemble pipeline
+            p = make_pipeline(pca, clusterer)
+            with open(os.path.join(directory, '{0}_pipeline.pickle'.format(kmeans_basename)), 'wb') as f:
+                pickle.dump(p, f)
+
+            logger.info('successfuly trained MiniBatchKMeans and saved to npy/pickle {0}'.format(kmeans_basename))
 
 
 def elm_hyperparameters(directory):
@@ -215,7 +222,8 @@ def elm_basic(directory):
         estimator=estimator,
         param_grid=param_grid,
         scoring='accuracy',
-        n_jobs=2,
+        n_jobs=1,
+        verbose=2,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
@@ -367,7 +375,8 @@ def elm_preprocessed(directory):
         estimator=estimator,
         param_grid=param_grid,
         scoring='accuracy',
-        n_jobs=2,
+        n_jobs=1,
+        verbose=2,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
