@@ -190,7 +190,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                                     "and implement fit and transform "
                                     "'%s' (type %s) doesn't" % (self.input_to_nodes, type(self.input_to_nodes)))
 
-        if not isinstance(self._chunk_size, int) or self._chunk_size < 0:
+        if self._chunk_size is not None and (not isinstance(self._chunk_size, int) or self._chunk_size < 0):
             raise ValueError('Invalid value for chunk_size, got {0}'.format(self._chunk_size))
 
         if not is_regressor(self.regressor):
