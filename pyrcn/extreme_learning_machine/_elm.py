@@ -43,11 +43,9 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                  chunk_size=None,
                  random_state=None):
         self.input_to_nodes = input_to_nodes
-        self.regressor = regressor
         self.random_state = random_state
-        self._input_to_node = None
         self._chunk_size = chunk_size
-        self._regressor = None
+        self._regressor = regressor
 
     def partial_fit(self, X, y, n_jobs=None, transformer_weights=None):
         """Fits the regressor partially.
@@ -66,33 +64,23 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         -------
         self : Returns a trained ELMRegressor model.
         """
-        if not hasattr(self.regressor, 'partial_fit'):
-            raise BaseException('regressor has no attribute partial_fit, got {0}'.format(self.regressor))
+        if not hasattr(self._regressor, 'partial_fit'):
+            raise BaseException('regressor has no attribute partial_fit, got {0}'.format(self._regressor))
 
         self._validate_hyperparameters()
         self._validate_data(X, y, multi_output=True)
 
-        if self._input_to_node is None:
-            if hasattr(self.input_to_nodes, '__iter__'):
-                # Feature Union of list of input_to_nodes
-                self._input_to_node = FeatureUnion(
-                    transformer_list=self.input_to_nodes,
-                    n_jobs=n_jobs,
-                    transformer_weights=transformer_weights)
-            else:
-                # single input_to_node
-                self._input_to_node = self.input_to_nodes
-
-            self._input_to_node.fit(X)
-
         # input_to_node
-        hidden_layer_state = self._input_to_node.transform(X)
+        try:
+            hidden_layer_state = self._input_to_node.transform(X)
+        except NotFittedError as e:
+            print('input_to_node has not been fitted yet: {0}'.format(e))
+            hidden_layer_state = self._input_to_node.fit_transform(X)
+            pass
 
         # regression
         if self._regressor:
             self._regressor.partial_fit(hidden_layer_state, y)
-        else:
-            self._regressor = self.regressor.partial_fit(hidden_layer_state, y)
         return self
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
@@ -115,18 +103,8 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._validate_hyperparameters()
         self._validate_data(X, y, multi_output=True)
 
-        if hasattr(self.input_to_nodes, '__iter__'):
-            # Feature Union of list of input_to_nodes
-            self._input_to_node = FeatureUnion(
-                transformer_list=self.input_to_nodes,
-                n_jobs=n_jobs,
-                transformer_weights=transformer_weights)
-        else:
-            # single input_to_node
-            self._input_to_node = self.input_to_nodes
-
         self._input_to_node.fit(X)
-        self._regressor = self.regressor.__class__()
+        self._regressor = self._regressor.__class__()
 
         if self._chunk_size is None or self._chunk_size > X.shape[0]:
             # input_to_node
@@ -173,30 +151,87 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         """
         self.random_state = check_random_state(self.random_state)
 
-        if not self.input_to_nodes or self.input_to_nodes is None:
-            self.input_to_nodes = [('default', InputToNode())]
-        else:
-            if hasattr(self.input_to_nodes, '__iter__'):
-                for n, t in self.input_to_nodes:
-                    if t == 'drop':
-                        continue
-                    if not (hasattr(t, "fit") or hasattr(t, "fit_transform")) or not hasattr(t, "transform"):
-                        raise TypeError("All input_to_nodes should be transformers "
-                                        "and implement fit and transform "
-                                        "'%s' (type %s) doesn't" % (t, type(t)))
-            else:
-                if not (hasattr(self.input_to_nodes, "fit") or hasattr(self.input_to_nodes, "fit_transform")) or not hasattr(self.input_to_nodes, "transform"):
-                    raise TypeError("All input_to_nodes should be transformers "
-                                    "and implement fit and transform "
-                                    "'%s' (type %s) doesn't" % (self.input_to_nodes, type(self.input_to_nodes)))
+        if not (hasattr(self.input_to_nodes, "fit") and hasattr(self.input_to_nodes, "fit_transform") and hasattr(
+                self.input_to_nodes, "transform")):
+            raise TypeError("All input_to_nodes should be transformers "
+                            "and implement fit and transform "
+                            "'%s' (type %s) doesn't" % (self.input_to_nodes, type(self.input_to_nodes)))
 
         if self._chunk_size is not None and (not isinstance(self._chunk_size, int) or self._chunk_size < 0):
             raise ValueError('Invalid value for chunk_size, got {0}'.format(self._chunk_size))
 
-        if not is_regressor(self.regressor):
+        if not is_regressor(self._regressor):
             raise TypeError("The last step should be a regressor "
                             "and implement fit and predict"
-                            "'%s' (type %s) doesn't" % (self.regressor, type(self.regressor)))
+                            "'%s' (type %s) doesn't" % (self._regressor, type(self._regressor)))
+
+    def __sizeof__(self):
+        return object.__sizeof__(self) + \
+            sys.getsizeof(self._input_to_node) + \
+            sys.getsizeof(self._regressor)
+
+    @property
+    def regressor(self):
+        """Returns the chunk_size, in which X will be chopped.
+
+        Returns
+        -------
+        chunk_size : int or None
+        """
+        return self._regressor
+
+    @regressor.setter
+    def regressor(self, regressor):
+        """Sets the regressor.
+
+        Parameters
+        ----------
+        regressor : regressor or None
+
+        Returns
+        -------
+
+        """
+        self._regressor = regressor
+
+    @property
+    def input_to_nodes(self):
+        """Returns the input_to_nodes list or the input_to_node Transformer.
+
+        Returns
+        -------
+        input_to_nodes : Transformer or [Transformer]
+        """
+        return self._input_to_node
+
+    @input_to_nodes.setter
+    def input_to_nodes(self, input_to_nodes, n_jobs=None, transformer_weights=None):
+        """Sets the input_to_nodes list or the input_to_nodes Transformer.
+
+        Parameters
+        ----------
+        input_to_nodes : Transformer or [Transformer]
+        n_jobs : int, default=None
+        Number of jobs to run in parallel.
+        None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
+        transformer_weights : dict, default=None
+        Multiplicative weights for features per transformer.
+        Keys are transformer names, values the weights.
+        Raises ValueError if key not present in transformer_list.
+
+        Returns
+        -------
+
+        """
+        if hasattr(input_to_nodes, '__iter__'):
+            # Feature Union of list of input_to_nodes
+            self._input_to_node = FeatureUnion(
+                transformer_list=input_to_nodes,
+                n_jobs=n_jobs,
+                transformer_weights=transformer_weights)
+        else:
+            # single input_to_node
+            self._input_to_node = input_to_nodes
 
     @property
     def chunk_size(self):

@@ -5,6 +5,8 @@ The :mod:`pyrcn.base`contains utilities for the reservoir computing modules
 # Author: Michael Schindler <michael.schindler@maschindler.de>
 # License: BSD 3 clause
 
+import sys
+
 import scipy
 import numpy as np
 
@@ -252,6 +254,21 @@ class InputToNode(BaseEstimator, TransformerMixin):
         if self.activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
                              "activations are %s." % (self.activation, ACTIVATIONS))
+
+    def __sizeof__(self):
+        return object.__sizeof__(self) + \
+            self._bias.nbytes + \
+            self._input_weights.nbytes + \
+            self._hidden_layer_state.nbytes + \
+            sys.getsizeof(self.random_state)
+
+    @property
+    def input_weights(self):
+        return self._input_weights
+
+    @property
+    def bias(self):
+        return self._bias
 
 
 class BatchIntrinsicPlasticity(InputToNode):

@@ -5,6 +5,8 @@ Incremental regression
 # Author: Michael Schindler <michael.schindler@maschindler.de>
 # License: BSD 3 clause
 
+import sys
+
 import numpy as np
 import scipy
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -154,6 +156,13 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
                 self.scaler.fit_transform(X_preprocessed)
 
         return X_preprocessed
+
+    def __sizeof__(self):
+        return object.__sizeof__(self) + \
+            self._K.nbytes + \
+            self._P.nbytes + \
+            self._output_weights.nbytes + \
+            sys.getsizeof(self.scaler)
 
     @property
     def coef_(self):
