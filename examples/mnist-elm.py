@@ -464,6 +464,8 @@ def elm_hidden_layer_size(directory):
 
     # fan-out from paper
     fan_out = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20]
+    # debug
+    fan_out = [1]
 
     # prepare parameter grids
     param_grid_basic = {
@@ -472,7 +474,7 @@ def elm_hidden_layer_size(directory):
             'input_to_nodes__bias_scaling': 0.,
             'input_to_nodes__activation': 'relu',
             'input_to_nodes__random_state': 42,
-            'chunk_size': 5000,
+            'chunk_size': 1000,
             'regressor__alpha': 1e-5,
             'random_state': 42
     }
@@ -483,7 +485,7 @@ def elm_hidden_layer_size(directory):
             'input_to_nodes__bias_scaling': 0.,
             'input_to_nodes__activation': 'relu',
             'input_to_nodes__random_state': 42,
-            'chunk_size': 5000,
+            'chunk_size': 1000,
             'regressor__alpha': 1e-5,
             'random_state': 42
     }
@@ -494,7 +496,7 @@ def elm_hidden_layer_size(directory):
     # basic
     try:
         # initialize filepath
-        filepath = os.path.join(directory, '{0}_basic.csv'.format(self_name))
+        csv_filepath = os.path.join(directory, '{0}_basic.csv'.format(self_name))
 
         # initialize param dict
         param_dict_job = estimator.get_params().copy()
@@ -506,7 +508,7 @@ def elm_hidden_layer_size(directory):
         results_dict_job.update({'time_fit': 0, 'time_pred': 0, 'score': 0})
 
         # write header
-        with open(filepath, 'w') as f:
+        with open(csv_filepath, 'w') as f:
             writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
             writer.writeheader()
 
@@ -532,20 +534,23 @@ def elm_hidden_layer_size(directory):
 
             logger.info('hidden_layer_size: {0}, score: {1}'.format(hls, results_dict_job['score']))
 
-            with open(filepath, 'a') as f:
+            with open(csv_filepath, 'a') as f:
                 writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
                 writer.writerow(results_dict_job)
+
+            with open(os.path.join(directory, 'elmc_hls{0}_basic.pickle'.format(hls)), 'wb') as f:
+                pickle.dump(estimator, f)
     except MemoryError as e:
         logger.error('Memory error: {0}'.format(e))
+        pass
     except PermissionError as e:
         logger.error('Missing privileges: {0}'.format(e))
-    except Exception as e:
-        logger.error('Unexpected exception: {0}'.format(e))
+        pass
 
     # preprocessing pca
     try:
         # initialize filepath
-        filepath = os.path.join(directory, '{0}_pca.csv'.format(self_name))
+        csv_filepath = os.path.join(directory, '{0}_pca.csv'.format(self_name))
 
         # preprocessing
         pca50 = PCA(n_components=50).fit(X_train)
@@ -575,7 +580,7 @@ def elm_hidden_layer_size(directory):
         results_dict_job.update({'time_fit': 0, 'time_pred': 0, 'score': 0, 'pca_n_components': 0})
 
         # write header
-        with open(filepath, 'w') as f:
+        with open(csv_filepath, 'w') as f:
             writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
             writer.writeheader()
 
@@ -603,15 +608,18 @@ def elm_hidden_layer_size(directory):
 
                 logger.info('n_components: {2}, hidden_layer_size: {0}, score: {1}'.format(hls, results_dict_job['score'], results_dict_job['pca_n_components']))
 
-                with open(filepath, 'a') as f:
+                with open(csv_filepath, 'a') as f:
                     writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
                     writer.writerow(results_dict_job)
+
+                with open(os.path.join(directory, 'elmc_hls{0}_pca{1}.pickle'.format(hls, results_dict_job['pca_n_components'])), 'wb') as f:
+                    pickle.dump(estimator, f)
     except MemoryError as e:
         logger.error('Memory error: {0}'.format(e))
+        pass
     except PermissionError as e:
         logger.error('Missing privileges: {0}'.format(e))
-    except Exception as e:
-        logger.error('Unexpected exception: {0}'.format(e))
+        pass
 
 
 def elm_coates(directory):
