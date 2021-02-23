@@ -332,7 +332,7 @@ def elm_preprocessed(directory):
 
     # preprocessing
     X /= 255.
-    pca = PCA(n_components=100).fit(X)
+    pca = PCA(n_components=50).fit(X)
     X_preprocessed = pca.transform(X)
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
