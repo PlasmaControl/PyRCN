@@ -31,9 +31,6 @@ from pyrcn.base import InputToNode
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier
 
-# import importlib
-# prep = importlib.import_module(os.path.abspath('../preprocessing.py'))
-
 train_size = 60000
 
 
@@ -544,6 +541,8 @@ def elm_hidden_layer_size(directory):
             with open(csv_filepath, 'a') as f:
                 writer = csv.DictWriter(f, fieldnames=results_dict_job.keys())
                 writer.writerow(results_dict_job)
+
+            del estimator.input_to_nodes._hidden_layer_state
 
             with open(os.path.join(directory, 'elmc_hls{0}_basic.pickle'.format(hls)), 'wb') as f:
                 pickle.dump(estimator, f)
