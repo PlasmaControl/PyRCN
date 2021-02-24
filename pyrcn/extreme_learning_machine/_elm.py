@@ -47,7 +47,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._chunk_size = chunk_size
         self._regressor = regressor
 
-    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None):
+    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, postpone_inverse=False):
         """Fits the regressor partially.
 
         Parameters
@@ -80,7 +80,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
         # regression
         if self._regressor:
-            self._regressor.partial_fit(hidden_layer_state, y)
+            self._regressor.partial_fit(hidden_layer_state, y, postpone_inverse=postpone_inverse)
         return self
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
@@ -113,13 +113,27 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             # regression
             self._regressor.fit(hidden_layer_state, y)
         elif self._chunk_size < X.shape[0]:
-            for idx in range(0, X.shape[0], self._chunk_size):
+            # setup chunk list
+            chunks = list(range(0, X.shape[0], self._chunk_size))
+            # postpone inverse calculation for chunks n-1
+            for idx in chunks[:-1]:
                 ELMRegressor.partial_fit(
                     self,
                     X=X[idx:idx + self._chunk_size, ...],
                     y=y[idx:idx + self._chunk_size, ...],
                     n_jobs=n_jobs,
-                    transformer_weights=transformer_weights)
+                    transformer_weights=transformer_weights,
+                    postpone_inverse=True
+                )
+            # last chunk, calculate inverse and bias
+            ELMRegressor.partial_fit(
+                self,
+                X=X[chunks[-1]:, ...],
+                y=y[chunks[-1]:, ...],
+                n_jobs=n_jobs,
+                transformer_weights=transformer_weights,
+                postpone_inverse=False
+            )
         else:
             raise ValueError('chunk_size invalid {0}'.format(self._chunk_size))
         return self

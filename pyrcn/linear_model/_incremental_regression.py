@@ -54,10 +54,10 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self.scaler = StandardScaler(copy=False)
 
         self._K = None
-        self._P = None
+        self._xTy = None
         self._output_weights = None
 
-    def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True):
+    def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True, postpone_inverse=False):
         """Fits the regressor partially.
 
         Parameters
@@ -82,7 +82,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
 
         if reset:
             self._K = None
-            self._P = None
+            self._xTy = None
             self._output_weights = None
 
         if self._K is None:
@@ -90,14 +90,23 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         else:
             self._K += safe_sparse_dot(X_preprocessed.T, X_preprocessed)
 
-        self._P = np.linalg.inv(self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
+        if self._xTy is None:
+            self._xTy = safe_sparse_dot(X_preprocessed.T, y)
+        else:
+            self._xTy += safe_sparse_dot(X_preprocessed.T, y)
+
+        # can only be postponed if output weights have not been initialized yet
+        if postpone_inverse and self._output_weights is None:
+            return self
+
+        P = np.linalg.inv(self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
 
         if self._output_weights is None:
-            self._output_weights = np.matmul(self._P, safe_sparse_dot(X_preprocessed.T, y))
+            self._output_weights = np.matmul(P, self._xTy)
         else:
-            self._output_weights += np.matmul(
-                self._P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
-
+            #self._output_weights += np.matmul(
+            #    P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
+            self._output_weights += np.matmul(P, self._xTy - np.matmul(self._K, self._output_weights))
         return self
 
     def fit(self, X, y):
