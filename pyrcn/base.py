@@ -212,6 +212,20 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _uniform_random_input_weights(n_features_in: int, hidden_layer_size: int, fan_in: int, random_state):
+        """Returns uniform random input weights in range [-1, 1]
+
+        Parameters
+        ----------
+        n_features_in : int
+        hidden_layer_size : int
+        fan_in : int
+            Determines how many features are mapped to one neuron.
+        random_state : numpy.RandomState
+
+        Returns
+        -------
+        uniform_random_input_weights : ndarray of size (n_features, hidden_layer_size)
+        """
         nr_entries = np.int32(n_features_in * fan_in)
         weights_array = random_state.uniform(low=-1., high=1., size=nr_entries)
 
@@ -228,10 +242,35 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _uniform_random_bias(hidden_layer_size: int, random_state):
+        """Returns uniform random bias in range [-1, 1].
+
+        Parameters
+        ----------
+        hidden_layer_size : int
+        random_state : numpy.RandomState
+
+        Returns
+        -------
+        uniform_random_bias : ndarray of size (hidden_layer_size)
+        """
         return random_state.uniform(low=-1., high=1., size=hidden_layer_size)
 
     @staticmethod
     def _node_inputs(X, input_weights, input_scaling, bias, bias_scaling):
+        """Returns the node inputs scaled by input_scaling, multiplied by input_weights and bias added.
+
+        Parameters
+        ----------
+        X : ndarray of size (n_samples, n_features)
+        input_weights : ndarray of size (n_features, hidden_layer_size)
+        input_scaling : float
+        bias : ndarray of size (hidden_layer_size)
+        bias_scaling : float
+
+        Returns
+        -------
+        node_inputs : ndarray of size (n_samples, hidden_layer_size)
+        """
         return safe_sparse_dot(X, input_weights) * input_scaling + np.ones(shape=(X.shape[0], 1)) * bias * bias_scaling
 
     def _validate_hyperparameters(self):
@@ -256,6 +295,13 @@ class InputToNode(BaseEstimator, TransformerMixin):
                              "activations are %s." % (self.activation, ACTIVATIONS))
 
     def __sizeof__(self):
+        """Returns the size of the object in bytes.
+
+        Returns
+        -------
+        size : int
+        Object memory in bytes.
+        """
         return object.__sizeof__(self) + \
             self._bias.nbytes + \
             self._input_weights.nbytes + \
@@ -264,10 +310,22 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     @property
     def input_weights(self):
+        """Returns the input weights.
+
+        Returns
+        -------
+        input_weights : ndarray of size (n_features, hidden_layer_size)
+        """
         return self._input_weights
 
     @property
     def bias(self):
+        """Returns the bias.
+
+        Returns
+        -------
+        bias : ndarray of size (hidden_layer_size)
+        """
         return self._bias
 
 

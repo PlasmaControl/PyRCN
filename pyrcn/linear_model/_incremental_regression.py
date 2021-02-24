@@ -167,9 +167,16 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         return X_preprocessed
 
     def __sizeof__(self):
+        """Returns the size of the object in bytes.
+
+        Returns
+        -------
+        size : int
+        Object memory in bytes.
+        """
         return object.__sizeof__(self) + \
             self._K.nbytes + \
-            self._P.nbytes + \
+            self._xTy.nbytes + \
             self._output_weights.nbytes + \
             sys.getsizeof(self.scaler)
 

@@ -59,6 +59,9 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             The number of jobs to run in parallel. ``-1`` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
+        postpone_inverse : bool, default=False
+            If output weights have not been fitted yet, regressor might be hinted at
+            postponing inverse calculation. Refer to IncrementalRegression for details.
 
         Returns
         -------
@@ -180,6 +183,13 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                             "'%s' (type %s) doesn't" % (self._regressor, type(self._regressor)))
 
     def __sizeof__(self):
+        """Returns the size of the object in bytes.
+
+        Returns
+        -------
+        size : int
+        Object memory in bytes.
+        """
         return object.__sizeof__(self) + \
             sys.getsizeof(self._input_to_node) + \
             sys.getsizeof(self._regressor)
@@ -299,7 +309,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         super().__init__(input_to_nodes=input_to_nodes, regressor=regressor, chunk_size=chunk_size, random_state=random_state)
         self._encoder = None
 
-    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None):
+    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, postpone_inverse=False):
         """Fits the regressor partially.
 
         Parameters
@@ -311,6 +321,9 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
             The number of jobs to run in parallel. ``-1`` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
+        postpone_inverse : bool, default=False
+            If output weights have not been fitted yet, regressor might be hinted at
+            postponing inverse calculation. Refer to IncrementalRegression for details.
 
         Returns
         -------
