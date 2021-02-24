@@ -6,7 +6,7 @@ optimize them and save the results in data files and pickles
 """
 
 import sys
-import os
+import os, glob
 
 import scipy
 import numpy as np
@@ -16,7 +16,7 @@ import csv
 
 import time
 
-from sklearn.preprocessing import LabelBinarizer, LabelEncoder, StandardScaler
+from sklearn.preprocessing import LabelBinarizer, LabelEncoder, StandardScaler, FunctionTransformer
 from sklearn.decomposition import PCA
 
 from sklearn.metrics import silhouette_score, accuracy_score
@@ -27,7 +27,7 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.linear_model import Ridge
 
 from pyrcn.util import new_logger, argument_parser, get_mnist
-from pyrcn.base import InputToNode
+from pyrcn.base import InputToNode, ACTIVATIONS
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier
 
@@ -636,62 +636,101 @@ def elm_coates(directory):
 
     label_encoder = LabelEncoder().fit(y)
     y_encoded = label_encoder.transform(y)
-    X_preprocessed = preprocessing(X, directory=directory, overwrite=False)
-    logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
-    cluster = KMeans(n_clusters=20, init='k-means++', n_init=10, random_state=42).fit(X_preprocessed)
-    logger.info('cluster.cluster_centers_ = {0}'.format(cluster.cluster_centers_))
-    with open(os.path.join(directory, 'clusterer.pickle'), 'wb') as f:
-        pickle.dump(cluster, f)
+    # scale X so X in [0, 1]
+    X /= 255.
 
-    X_coates = np.dot(X_preprocessed, cluster.cluster_centers_.T)
+    # setup modified input to node
+    class ModifiedInputToNode(InputToNode):
+        def __init__(self, predefined_input_weights, activation='relu', input_scaling=1., bias_scaling=0., random_state=None):
+            super().__init__(sparsity=1., activation=activation, input_scaling=input_scaling, bias_scaling=bias_scaling, random_state=random_state)
+            self.predefined_input_weights = predefined_input_weights
 
-    # X_train, X_test, y_train, y_test = train_test_split(X_coates, y_encoded, train_size=train_size, random_state=42, shuffle=True)
-    X_train, X_test, y_train, y_test = X[:train_size, :], X[train_size:, :], y_encoded[:train_size], y_encoded[train_size:]
+        def fit(self, X, y=None):
+            # no validation!
+            if self.random_state is None:
+                self.random_state = np.random.RandomState()
+            elif isinstance(self.random_state, (int, np.integer)):
+                self.random_state = np.random.RandomState(self.random_state)
+            elif isinstance(self.random_state, np.random.RandomState):
+                pass
+            else:
+                raise ValueError('random_state is not valid, got {0}.'.format(self.random_state))
 
-    hidden_layer_sizes = np.array([300, 450, 1000, 2250])
+            if self.predefined_input_weights is None:
+                return super().fit(X, y)
 
-    hidden_layer_size_list = []
-    best_score = []
-    best_time = []
-    best_scorer = []
+            if self.predefined_input_weights.shape[0] != X.shape[1]:
+                raise ValueError('X has not the expected shape {0}, given {1}.'.format(self.predefined_input_weights.shape[0], X.shape[1]))
 
-    for hidden_layer_size in hidden_layer_sizes:
-        scores = cross_validate(
-            ELMClassifier(
-                input_to_nodes=[('default', InputToNode(hidden_layer_size=hidden_layer_size, random_state=42))],
-                regressor=Ridge(alpha=.001, random_state=42),
-                random_state=42
-            ),
-            X_train, y_train,
+            self.hidden_layer_size = self.predefined_input_weights.shape[1]
+            self._input_weights = self.predefined_input_weights
+            self._bias = self._uniform_random_bias(
+                hidden_layer_size=self.hidden_layer_size,
+                random_state=self.random_state)
+            return self
+
+    # setup estimator
+    estimator = ELMClassifier(ModifiedInputToNode(predefined_input_weights=np.ones((10, 10))), Ridge())
+    # logger.info('[pass] Estimator params: {0}'.format(estimator.get_params()))
+    logger.info('Estimator params: {0}'.format(estimator.get_params().keys()))
+    # return
+
+    # setup parameter grid
+    param_grid = {
+        'input_to_nodes__predefined_input_weights': [],
+        'input_to_nodes__input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+        'input_to_nodes__bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+        'input_to_nodes__activation': ['relu'],
+        'input_to_nodes__random_state': [42],
+        'regressor__alpha': [1e-5],
+        'regressor__random_state': [42],
+        'random_state': [42]
+    }
+
+    # read input matrices from files
+    list_filepaths = []
+    for filepath in glob.glob(os.path.join(directory, '*kmeans*matrix.npy')):
+        logger.info('matrix file found: {0}'.format(filepath))
+        list_filepaths.append(filepath)
+
+        # set input weights
+        param_grid.update({'input_to_nodes__predefined_input_weights': [np.load(filepath)]})
+
+        # setup grid search
+        cv = GridSearchCV(
+            estimator=estimator,
+            param_grid=param_grid,
             scoring='accuracy',
-            cv=10,
-            return_estimator=True,
-            return_train_score=True,
-            n_jobs=-1
-        )
-        hidden_layer_size_list.append(hidden_layer_size)
-        best_score_index = np.argmax(scores['test_score'])
-        best_score.append(scores['test_score'][best_score_index])
-        best_time.append(scores['score_time'][best_score_index])
-        best_scorer.append(scores['estimator'][best_score_index])
-        logger.info('run hidden_layer_size = {0}, time = {1}, score = {2}'.format(hidden_layer_size, best_time[-1], best_score[-1]))
+            n_jobs=1,
+            verbose=1,
+            cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
-    best_overall_score_index = np.argmax(np.array(best_score))
-    best_overall_score = best_score[best_overall_score_index]
-    best_overall_scorer = best_scorer[best_overall_score_index]
+        # run!
+        cv.fit(X, y_encoded)
+        cv_best_params = cv.best_params_
+        del cv_best_params['input_to_nodes__predefined_input_weights']
 
-    try:
-        # noinspection PyTypeChecker
-        np.savetxt(
-            fname=os.path.join(directory, '{0}.csv'.format(self_name)),
-            X=np.hstack((np.array(hidden_layer_size_list, ndmin=2).T, np.array(best_time, ndmin=2).T, np.array(best_score, ndmin=2).T)),
-            fmt='%f,%f,%f',
-            header='hidden_layer_size,best_time,best_score',
-            comments='best scorer = {0} (score = {1})\n\n'.format(str(best_overall_scorer.get_params()), best_overall_score)
-        )
-    except PermissionError as e:
-        print('Missing privileges: {0}'.format(e))
+        # refine best params
+        logger.info('file {2}, best parameters: {0} (score: {1})'.format(cv_best_params, cv.best_score_, filepath))
+
+        # refine results
+        cv_results = cv.cv_results_
+        del cv_results['params']
+        del cv_results['param_input_to_nodes__predefined_input_weights']
+
+        # save results
+        try:
+            with open(os.path.join(directory, '{0}.csv'.format(os.path.splitext(os.path.basename(filepath))[0])), 'w') as f:
+                f.write(','.join(cv_results.keys()) + '\n')
+                for row in list(map(list, zip(*cv_results.values()))):
+                    f.write(','.join(map(str, row)) + '\n')
+        except PermissionError as e:
+            print('Missing privileges: {0}'.format(e))
+
+    if not list_filepaths:
+        logger.warning('no input weights matrices found')
+        return
 
 
 def main(directory, params):
