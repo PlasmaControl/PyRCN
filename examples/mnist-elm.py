@@ -743,7 +743,7 @@ def elm_coates(directory):
             return self
 
     # setup estimator
-    estimator = ELMClassifier(ModifiedInputToNode(predefined_input_weights=np.ones((10, 10))), Ridge())
+    estimator = ELMClassifier(ModifiedInputToNode(predefined_input_weights=np.ones((10, 10))), IncrementalRegression())
     # logger.info('[pass] Estimator params: {0}'.format(estimator.get_params()))
     logger.info('Estimator params: {0}'.format(estimator.get_params().keys()))
     # return
@@ -751,12 +751,12 @@ def elm_coates(directory):
     # setup parameter grid
     param_grid = {
         'input_to_nodes__predefined_input_weights': [],
-        'input_to_nodes__input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
-        'input_to_nodes__bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+        'input_to_nodes__input_scaling': [1.],  # np.logspace(start=-3, stop=1, base=10, num=6),
+        'input_to_nodes__bias_scaling': [0.],  # np.logspace(start=-3, stop=1, base=10, num=6),
         'input_to_nodes__activation': ['relu'],
         'input_to_nodes__random_state': [42],
         'regressor__alpha': [1e-5],
-        'regressor__random_state': [42],
+        'chunk_size': [1000],
         'random_state': [42]
     }
 
