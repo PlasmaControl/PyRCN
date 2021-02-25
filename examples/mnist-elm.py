@@ -74,7 +74,7 @@ def train_kmeans(directory):
     # scale X, so $X \in [0, 1]$
     X /= 255.
 
-    list_n_components = [50, 100]
+    list_n_components = [100]  # 50
     list_n_clusters = [20, 50, 100, 200, 500, 1000, 2000, 4000, 8000, 16000]
 
     for n_components in list_n_components:
@@ -86,20 +86,22 @@ def train_kmeans(directory):
             # minibatch kmeans
             kmeans_basename = 'minibatch-pca{0}+kmeans{1}'.format(n_components, n_clusters)
 
-            clusterer = MiniBatchKMeans(n_clusters=n_clusters, init='k-means++', random_state=42, batch_size=5000, n_init=5).fit(X_pca)
-            np.save(os.path.join(directory, '{0}_matrix.npy'.format(kmeans_basename)), np.dot(pca.components_.T, clusterer.cluster_centers_.T))
+            # only if file does not exist
+            if not os.path.isfile(os.path.join(directory, '{0}_matrix.npy'.format(kmeans_basename))):
+                clusterer = MiniBatchKMeans(n_clusters=n_clusters, init='k-means++', random_state=42, batch_size=5000, n_init=5).fit(X_pca)
+                np.save(os.path.join(directory, '{0}_matrix.npy'.format(kmeans_basename)), np.dot(pca.components_.T, clusterer.cluster_centers_.T))
 
-            # assemble pipeline
-            p = make_pipeline(pca, clusterer)
-            with open(os.path.join(directory, '{0}_pipeline.pickle'.format(kmeans_basename)), 'wb') as f:
-                pickle.dump(p, f)
+                # assemble pipeline
+                p = make_pipeline(pca, clusterer)
+                with open(os.path.join(directory, '{0}_pipeline.pickle'.format(kmeans_basename)), 'wb') as f:
+                    pickle.dump(p, f)
 
-            logger.info('successfuly trained MiniBatchKMeans and saved to npy/pickle {0}'.format(kmeans_basename))
+                logger.info('successfuly trained MiniBatchKMeans and saved to npy/pickle {0}'.format(kmeans_basename))
 
-            if n_components < 2000:
-                # original kmeans
-                kmeans_basename = 'original-pca{0}+kmeans{1}'.format(n_components, n_clusters)
+            # original kmeans
+            kmeans_basename = 'original-pca{0}+kmeans{1}'.format(n_components, n_clusters)
 
+            if n_clusters < 2000 and not os.path.isfile(os.path.join(directory, '{0}_matrix.npy'.format(kmeans_basename))):
                 clusterer = KMeans(n_clusters=n_clusters, init='k-means++', random_state=42, n_init=5).fit(X_pca)
                 np.save(os.path.join(directory, '{0}_matrix.npy'.format(kmeans_basename)), np.dot(pca.components_.T, clusterer.cluster_centers_.T))
 
@@ -762,43 +764,45 @@ def elm_coates(directory):
 
     # read input matrices from files
     list_filepaths = []
-    for filepath in glob.glob(os.path.join(directory, '*kmeans*matrix.npy')):
+    for filepath in glob.glob(os.path.join(directory, 'original-pca*kmeans*matrix.npy')):
         logger.info('matrix file found: {0}'.format(filepath))
         list_filepaths.append(filepath)
 
-        # set input weights
-        param_grid.update({'input_to_nodes__predefined_input_weights': [np.load(filepath)]})
+        # only if file does not exist yet
+        if not os.path.isfile(os.path.join(directory, '{0}.csv'.format(os.path.splitext(os.path.basename(filepath))[0]))):
+            # set input weights
+            param_grid.update({'input_to_nodes__predefined_input_weights': [np.load(filepath)]})
 
-        # setup grid search
-        cv = GridSearchCV(
-            estimator=estimator,
-            param_grid=param_grid,
-            scoring='accuracy',
-            n_jobs=1,
-            verbose=1,
-            cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
+            # setup grid search
+            cv = GridSearchCV(
+                estimator=estimator,
+                param_grid=param_grid,
+                scoring='accuracy',
+                n_jobs=1,
+                verbose=1,
+                cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
-        # run!
-        cv.fit(X, y_encoded)
-        cv_best_params = cv.best_params_
-        del cv_best_params['input_to_nodes__predefined_input_weights']
+            # run!
+            cv.fit(X, y_encoded)
+            cv_best_params = cv.best_params_
+            del cv_best_params['input_to_nodes__predefined_input_weights']
 
-        # refine best params
-        logger.info('file {2}, best parameters: {0} (score: {1})'.format(cv_best_params, cv.best_score_, filepath))
+            # refine best params
+            logger.info('file {2}, best parameters: {0} (score: {1})'.format(cv_best_params, cv.best_score_, filepath))
 
-        # refine results
-        cv_results = cv.cv_results_
-        del cv_results['params']
-        del cv_results['param_input_to_nodes__predefined_input_weights']
+            # refine results
+            cv_results = cv.cv_results_
+            del cv_results['params']
+            del cv_results['param_input_to_nodes__predefined_input_weights']
 
-        # save results
-        try:
-            with open(os.path.join(directory, '{0}.csv'.format(os.path.splitext(os.path.basename(filepath))[0])), 'w') as f:
-                f.write(','.join(cv_results.keys()) + '\n')
-                for row in list(map(list, zip(*cv_results.values()))):
-                    f.write(','.join(map(str, row)) + '\n')
-        except PermissionError as e:
-            print('Missing privileges: {0}'.format(e))
+            # save results
+            try:
+                with open(os.path.join(directory, '{0}.csv'.format(os.path.splitext(os.path.basename(filepath))[0])), 'w') as f:
+                    f.write(','.join(cv_results.keys()) + '\n')
+                    for row in list(map(list, zip(*cv_results.values()))):
+                        f.write(','.join(map(str, row)) + '\n')
+            except PermissionError as e:
+                print('Missing privileges: {0}'.format(e))
 
     if not list_filepaths:
         logger.warning('no input weights matrices found')
