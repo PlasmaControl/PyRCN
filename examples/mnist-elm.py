@@ -74,7 +74,7 @@ def train_kmeans(directory):
     # scale X, so $X \in [0, 1]$
     X /= 255.
 
-    list_n_components = [100]  # 50
+    list_n_components = [50, 100]
     list_n_clusters = [20, 50, 100, 200, 500, 1000, 2000, 4000, 8000, 16000]
 
     for n_components in list_n_components:
@@ -764,7 +764,7 @@ def elm_coates(directory):
 
     # read input matrices from files
     list_filepaths = []
-    for filepath in glob.glob(os.path.join(directory, 'original-pca*kmeans*matrix.npy')):
+    for filepath in glob.glob(os.path.join(directory, '*pca*kmeans*matrix.npy')):
         logger.info('matrix file found: {0}'.format(filepath))
         list_filepaths.append(filepath)
 
