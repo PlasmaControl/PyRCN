@@ -956,7 +956,7 @@ def significance(directory):
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
     # number of initializations
-    n_inits = 100
+    n_inits = 2
     random_state = np.random.RandomState(43)
     random_state_inits = random_state.choice(int(2**16-1), size=n_inits)
 
@@ -989,7 +989,7 @@ def significance(directory):
         estimator=estimator,
         param_grid=param_grid,
         scoring='accuracy',
-        n_jobs=-1,
+        n_jobs=1,
         # pre_dispatch=2,
         verbose=2,
         refit=False,
