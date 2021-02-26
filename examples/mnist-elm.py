@@ -946,17 +946,18 @@ def significance(directory):
                 random_state=self.random_state)
             return self
 
+    """
         def transform(self, X):
             self._hidden_layer_state = self.clusterer.transform(X) * self.input_scaling + np.ones((X.shape[0], 1)) * self._bias * self.bias_scaling
             ACTIVATIONS[self.activation](self._hidden_layer_state)
             return self._hidden_layer_state
-
+    """
     # preprocessing
     label_encoder = LabelEncoder().fit(y)
     y_encoded = label_encoder.transform(y)
 
     X /= 255.
-    pca = PCA(n_components=100).fit(X)
+    pca = PCA(n_components=50).fit(X)
     X_preprocessed = pca.transform(X)
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
@@ -1013,7 +1014,7 @@ def significance(directory):
 
     # save results
     try:
-        with open(os.path.join(directory, '{0}.csv'.format(self_name)), 'w') as f:
+        with open(os.path.join(directory, '{0}_pca{1}_cosinus.csv'.format(self_name, pca.n_components_)), 'w') as f:
             f.write(','.join(cv_results.keys()) + '\n')
             for row in list(map(list, zip(*cv_results.values()))):
                 f.write(','.join(map(str, row)) + '\n')
