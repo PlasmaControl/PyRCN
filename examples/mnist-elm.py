@@ -916,6 +916,107 @@ def elm_coates_stacked(directory):
         return
 
 
+def significance(directory):
+    self_name = 'significance'
+    logger = new_logger(self_name, directory=directory)
+    X, y = get_mnist(directory)
+    logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
+
+    # setup modified input to node
+    class KMeansInputToNode(InputToNode):
+        def __init__(self, hidden_layer_size=500, activation='relu', input_scaling=1., bias_scaling=0., random_state=None):
+            super().__init__(sparsity=1., hidden_layer_size=hidden_layer_size, activation=activation, input_scaling=input_scaling, bias_scaling=bias_scaling, random_state=random_state)
+            self.clusterer = MiniBatchKMeans(init='k-means++', batch_size=5000, n_init=1)
+
+        def fit(self, X, y=None):
+            # no validation!
+            if self.random_state is None:
+                self.random_state = np.random.RandomState()
+            elif isinstance(self.random_state, (int, np.integer)):
+                self.random_state = np.random.RandomState(self.random_state)
+            elif isinstance(self.random_state, np.random.RandomState):
+                pass
+            else:
+                raise ValueError('random_state is not valid, got {0}.'.format(self.random_state))
+
+            dict_params = {'n_clusters': self.hidden_layer_size, 'random_state': self.random_state}
+            self.clusterer.set_params(**dict_params)
+            self.clusterer.fit(X)
+            self._input_weights = self.clusterer.cluster_centers_.T
+            self._bias = self._uniform_random_bias(
+                hidden_layer_size=self.hidden_layer_size,
+                random_state=self.random_state)
+            return self
+
+    # preprocessing
+    label_encoder = LabelEncoder().fit(y)
+    y_encoded = label_encoder.transform(y)
+
+    X /= 255.
+    pca = PCA(n_components=50).fit(X[:train_size, ...])
+    X_preprocessed = pca.transform(X)
+    logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
+
+    # number of initializations
+    n_inits = 50  # 50
+    random_state = np.random.RandomState(42)
+    random_state_inits = random_state.choice(int(2**16-1), size=n_inits)
+
+    # prepare parameter grid
+    param_grid = [{
+        'input_to_nodes': [InputToNode()],
+        'input_to_nodes__hidden_layer_size': [2000],
+        'input_to_nodes__input_scaling': [1.],
+        'input_to_nodes__bias_scaling': [0.],
+        'input_to_nodes__activation': ['relu'],
+        'input_to_nodes__random_state': random_state_inits,
+        'regressor__alpha': [1e-5],
+        'chunk_size': [10000],
+        'random_state': [42]
+    }, {
+        'input_to_nodes': [KMeansInputToNode()],
+        'input_to_nodes__hidden_layer_size': [2000],
+        'input_to_nodes__input_scaling': [1.],
+        'input_to_nodes__bias_scaling': [0.],
+        'input_to_nodes__activation': ['relu'],
+        'input_to_nodes__random_state': random_state_inits,
+        'regressor__alpha': [1e-5],
+        'chunk_size': [10000],
+        'random_state': [42]
+    }]
+
+    # setup estimator
+    estimator = ELMClassifier(regressor=IncrementalRegression())
+
+    # setup grid search
+    cv = GridSearchCV(
+        estimator=estimator,
+        param_grid=param_grid,
+        scoring='accuracy',
+        n_jobs=1,
+        verbose=2,
+        cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
+
+    # run!
+    cv.fit(X, y_encoded)
+
+    # refine best params
+    logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
+
+    # refine results
+    cv_results = cv.cv_results_
+    del cv_results['params']
+
+    # save results
+    try:
+        with open(os.path.join(directory, '{0}.csv'.format(self_name)), 'w') as f:
+            f.write(','.join(cv_results.keys()) + '\n')
+            for row in list(map(list, zip(*cv_results.values()))):
+                f.write(','.join(map(str, row)) + '\n')
+    except PermissionError as e:
+        print('Missing privileges: {0}'.format(e))
+
+
 def main(directory, params):
     # workdir
     if not os.path.isdir(directory):
@@ -946,6 +1047,7 @@ def main(directory, params):
         'elm_hidden_layer_size': elm_hidden_layer_size,
         'elm_coates': elm_coates,
         'elm_coates_stacked': elm_coates_stacked,
+        'significance': significance,
     }
 
     # run specified programs
