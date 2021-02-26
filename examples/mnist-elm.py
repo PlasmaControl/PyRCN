@@ -977,10 +977,10 @@ def significance(directory):
         'regressor__alpha': [1e-5],
         'random_state': [42]
     }, {
-        'input_to_nodes': [KMeansInputToNode()],
+        'input_to_nodes': [BatchIntrinsicPlasticity()],
         'input_to_nodes__hidden_layer_size': [2000],
-        'input_to_nodes__input_scaling': [1.],
-        'input_to_nodes__bias_scaling': [0.],
+        # 'input_to_nodes__input_scaling': [1.],
+        # 'input_to_nodes__bias_scaling': [0.],
         'input_to_nodes__activation': ['relu'],
         'input_to_nodes__random_state': random_state_inits,
         'regressor__alpha': [1e-5],
@@ -1014,7 +1014,7 @@ def significance(directory):
 
     # save results
     try:
-        with open(os.path.join(directory, '{0}_pca{1}_cosinus.csv'.format(self_name, pca.n_components_)), 'w') as f:
+        with open(os.path.join(directory, '{0}_pca{1}_bip.csv'.format(self_name, pca.n_components_)), 'w') as f:
             f.write(','.join(cv_results.keys()) + '\n')
             for row in list(map(list, zip(*cv_results.values()))):
                 f.write(','.join(map(str, row)) + '\n')
