@@ -136,7 +136,7 @@ def plot_hyperparameters():
         (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
     ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
 
-    filepath = os.path.join('./mnist-elm', 'elm_pca.csv')
+    filepath = os.path.join('./mnist-elm', 'elm_preprocessed.csv')
     df = pandas.read_csv(filepath, sep=',')
     df_tanh2000pca = df[
         (df['param_input_to_nodes__activation'] == 'tanh') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
@@ -212,9 +212,9 @@ def plot_hyperparameters():
     axs[0][0].set_title('tanh, $m=2000$')
     axs[0][1].set_title('relu, $m=500$')
     axs[0][2].set_title('relu, $m=2000$')
-    axs[1][0].set_title('pca, tanh, $m=2000$')
-    axs[1][1].set_title('pca, relu, $m=500$')
-    axs[1][2].set_title('pca, relu, $m=2000$')
+    axs[1][0].set_title('pca50, tanh, $m=2000$')
+    axs[1][1].set_title('pca50, relu, $m=500$')
+    axs[1][2].set_title('pca50, relu, $m=2000$')
 
     # fig.colorbar(surf, shrink=0.5, aspect=5)
     fig.tight_layout()

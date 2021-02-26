@@ -330,8 +330,19 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
 
 class BatchIntrinsicPlasticity(InputToNode):
-    def __init__(self, distribution: str = 'normal', algorithm: str = 'dresden', *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(
+            self,
+            distribution: str = 'normal',
+            algorithm: str = 'dresden',
+            activation='tanh',
+            hidden_layer_size=500,
+            sparsity=1.,
+            random_state=None):
+        super().__init__(
+            activation=activation,
+            hidden_layer_size=hidden_layer_size,
+            sparsity=sparsity,
+            random_state=random_state)
         self.distribution = distribution
         self.algorithm = algorithm
         self._scaler = None
