@@ -958,7 +958,7 @@ def significance(directory):
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
     # number of initializations
-    n_inits = 50  # 50
+    n_inits = 100
     random_state = np.random.RandomState(42)
     random_state_inits = random_state.choice(int(2**16-1), size=n_inits)
 
@@ -993,7 +993,7 @@ def significance(directory):
         estimator=estimator,
         param_grid=param_grid,
         scoring='accuracy',
-        n_jobs=1,
+        n_jobs=-1,
         verbose=2,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
