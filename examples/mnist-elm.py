@@ -946,6 +946,11 @@ def significance(directory):
                 random_state=self.random_state)
             return self
 
+        def transform(self, X):
+            self._hidden_layer_state = self.clusterer.transform(X) * self.input_scaling + np.ones((X.shape[0], 1)) * self._bias * self.bias_scaling
+            ACTIVATIONS[self.activation](self._hidden_layer_state)
+            return self._hidden_layer_state
+
     # preprocessing
     label_encoder = LabelEncoder().fit(y)
     y_encoded = label_encoder.transform(y)
@@ -956,7 +961,7 @@ def significance(directory):
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
     # number of initializations
-    n_inits = 2
+    n_inits = 100
     random_state = np.random.RandomState(43)
     random_state_inits = random_state.choice(int(2**16-1), size=n_inits)
 
