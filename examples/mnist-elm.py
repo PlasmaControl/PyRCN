@@ -394,7 +394,7 @@ def elm_preprocessed(directory):
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
-    cv.fit(X, y_encoded)
+    cv.fit(X_preprocessed, y_encoded)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
     # refine results
@@ -421,8 +421,6 @@ def elm_random_state(directory):
     y_encoded = label_encoder.transform(y)
 
     pca = PCA(n_components=200).fit(X)
-
-    # X_preprocessed = preprocessing(X, directory=directory, overwrite=False)
     X_preprocessed = pca.transform(X) / 255.
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
@@ -452,7 +450,7 @@ def elm_random_state(directory):
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
-    cv.fit(X, y_encoded)
+    cv.fit(X_preprocessed, y_encoded)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
     # refine results
@@ -926,7 +924,7 @@ def significance(directory):
     class KMeansInputToNode(InputToNode):
         def __init__(self, hidden_layer_size=500, activation='relu', input_scaling=1., bias_scaling=0., random_state=None):
             super().__init__(sparsity=1., hidden_layer_size=hidden_layer_size, activation=activation, input_scaling=input_scaling, bias_scaling=bias_scaling, random_state=random_state)
-            self.clusterer = MiniBatchKMeans(init='k-means++', batch_size=100, n_init=3)
+            self.clusterer = MiniBatchKMeans(init='k-means++', batch_size=5000, n_init=3)
 
         def fit(self, X, y=None):
             # no validation!
@@ -953,13 +951,13 @@ def significance(directory):
     y_encoded = label_encoder.transform(y)
 
     X /= 255.
-    pca = PCA(n_components=50).fit(X[:train_size, ...])
+    pca = PCA(n_components=100).fit(X)
     X_preprocessed = pca.transform(X)
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
     # number of initializations
-    n_inits = 1
-    random_state = np.random.RandomState(42)
+    n_inits = 100
+    random_state = np.random.RandomState(43)
     random_state_inits = random_state.choice(int(2**16-1), size=n_inits)
 
     # prepare parameter grid
@@ -991,8 +989,8 @@ def significance(directory):
         estimator=estimator,
         param_grid=param_grid,
         scoring='accuracy',
-        n_jobs=1,
-        pre_dispatch=16,
+        n_jobs=-1,
+        # pre_dispatch=2,
         verbose=2,
         refit=False,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
