@@ -926,7 +926,7 @@ def significance(directory):
     class KMeansInputToNode(InputToNode):
         def __init__(self, hidden_layer_size=500, activation='relu', input_scaling=1., bias_scaling=0., random_state=None):
             super().__init__(sparsity=1., hidden_layer_size=hidden_layer_size, activation=activation, input_scaling=input_scaling, bias_scaling=bias_scaling, random_state=random_state)
-            self.clusterer = MiniBatchKMeans(init='k-means++', batch_size=5000, n_init=1)
+            self.clusterer = MiniBatchKMeans(init='k-means++', batch_size=100, n_init=3)
 
         def fit(self, X, y=None):
             # no validation!
@@ -958,7 +958,7 @@ def significance(directory):
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
     # number of initializations
-    n_inits = 100
+    n_inits = 1
     random_state = np.random.RandomState(42)
     random_state_inits = random_state.choice(int(2**16-1), size=n_inits)
 
@@ -971,7 +971,6 @@ def significance(directory):
         'input_to_nodes__activation': ['relu'],
         'input_to_nodes__random_state': random_state_inits,
         'regressor__alpha': [1e-5],
-        'chunk_size': [10000],
         'random_state': [42]
     }, {
         'input_to_nodes': [KMeansInputToNode()],
@@ -981,24 +980,25 @@ def significance(directory):
         'input_to_nodes__activation': ['relu'],
         'input_to_nodes__random_state': random_state_inits,
         'regressor__alpha': [1e-5],
-        'chunk_size': [10000],
         'random_state': [42]
     }]
 
     # setup estimator
-    estimator = ELMClassifier(regressor=IncrementalRegression())
+    estimator = ELMClassifier(regressor=Ridge())
 
     # setup grid search
     cv = GridSearchCV(
         estimator=estimator,
         param_grid=param_grid,
         scoring='accuracy',
-        n_jobs=-1,
+        n_jobs=1,
+        pre_dispatch=16,
         verbose=2,
+        refit=False,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
-    cv.fit(X, y_encoded)
+    cv.fit(X_preprocessed, y_encoded)
 
     # refine best params
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
@@ -1006,6 +1006,7 @@ def significance(directory):
     # refine results
     cv_results = cv.cv_results_
     del cv_results['params']
+    del cv_results['param_input_to_nodes']
 
     # save results
     try:
