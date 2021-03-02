@@ -104,9 +104,8 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         if self._output_weights is None:
             self._output_weights = np.matmul(P, self._xTy)
         else:
-            #self._output_weights += np.matmul(
-            #    P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
-            self._output_weights += np.matmul(P, self._xTy - np.matmul(self._K, self._output_weights))
+            self._output_weights += np.matmul(P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
+            # self._output_weights += np.matmul(P, self._xTy - np.matmul(self._K, self._output_weights))
         return self
 
     def fit(self, X, y):
