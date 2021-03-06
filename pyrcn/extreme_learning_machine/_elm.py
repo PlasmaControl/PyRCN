@@ -109,7 +109,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._input_to_node.fit(X)
         self._regressor = self._regressor.__class__()
 
-        if self._chunk_size is None or self._chunk_size > X.shape[0]:
+        if self._chunk_size is None or self._chunk_size >= X.shape[0]:
             # input_to_node
             hidden_layer_state = self._input_to_node.transform(X)
 
