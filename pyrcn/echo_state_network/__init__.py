@@ -9,10 +9,7 @@ The :mod:`pyrcn.esn` module includes Echo State Network algorithms.
 # License: BSD 3 clause
 
 from pyrcn.echo_state_network._esn import ESNClassifier, ESNRegressor
-from pyrcn.echo_state_network._fb_esn import ESNFeedbackClassifier, ESNFeedbackRegressor
 
 __all__ = ['ESNClassifier',
            'ESNRegressor',
-           'ESNFeedbackClassifier',
-           'ESNFeedbackRegressor'
            ]
