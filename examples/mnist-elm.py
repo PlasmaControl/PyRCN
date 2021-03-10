@@ -35,37 +35,6 @@ from pyrcn.extreme_learning_machine import ELMClassifier
 train_size = 60000
 
 
-def preprocessing(X, directory=os.getcwd(), save_file='preprocessor.pickle', overwrite=True):
-    self_name = 'preprocessing'
-    if not os.path.isdir(directory):
-        raise NotADirectoryError('{0} is not a directory.'.format(directory))
-
-    logger = new_logger(self_name, directory=directory)
-    logger.info('Preprocessing was called.')
-
-    if os.path.isfile(os.path.join(directory, save_file)) and not overwrite:
-        logger.info('Load precalculated preprocessor.')
-        try:
-            with open(os.path.join(directory, save_file), 'rb') as f:
-                prep = pickle.load(f)
-        except Exception as e:
-            logger.error('Unexpected error: {0}'.format(e))
-            exit(1)
-    else:
-        logger.info('Recalculating preprocessor.')
-        prep = Pipeline(steps=[
-            ('whiten', PCA(whiten=False, random_state=42, n_components=450)),
-            ('scale', StandardScaler()),
-        ]).fit(X)
-        try:
-            with open(os.path.join(directory, save_file), 'wb') as f:
-                pickle.dump(prep, f)
-        except Exception as e:
-            logger.error('Unexpected error: {0}'.format(e))
-            exit(1)
-    return prep.transform(X)
-
-
 def train_kmeans(directory):
     self_name = 'train_kmeans'
     logger = new_logger(self_name, directory=directory)
@@ -239,6 +208,7 @@ def elm_basic(directory):
         scoring='accuracy',
         n_jobs=1,
         verbose=2,
+        refit=False,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
@@ -392,6 +362,7 @@ def elm_preprocessed(directory):
         scoring='accuracy',
         n_jobs=1,
         verbose=2,
+        refit=False,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
@@ -448,6 +419,7 @@ def elm_random_state(directory):
         scoring='accuracy',
         n_jobs=1,
         verbose=2,
+        refit=False,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
@@ -505,6 +477,7 @@ def elm_bip(directory):
         scoring='accuracy',
         n_jobs=1,
         verbose=2,
+        refit=False,
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
@@ -723,16 +696,9 @@ def elm_coates(directory):
     # scale X so X in [0, 1]
     X /= 255.
 
-    # setup parameter grid
-    param_grid = {
-        'input_to_nodes__input_scaling': [1.],  # np.logspace(start=-3, stop=1, base=10, num=6),
-        'input_to_nodes__bias_scaling': [0.],  # np.logspace(start=-3, stop=1, base=10, num=6),
-        'input_to_nodes__activation': ['relu'],
-        'input_to_nodes__random_state': [42],
-        'regressor__alpha': [1e-5],
-        'chunk_size': [1000],
-        'random_state': [42]
-    }
+    X_train, X_test, y_train, y_test = X[:train_size, ...], X[train_size:], y_encoded[:train_size], y_encoded[train_size:]
+
+    csv_filepath = os.path.join(directory, '{0}.csv'.format(self_name))
 
     # read input matrices from files
     list_filepaths = []
@@ -742,65 +708,76 @@ def elm_coates(directory):
         filename = os.path.splitext(os.path.basename(filepath))[0]
 
         est_filepath = os.path.join(directory, 'est_coates-{0}.pickle'.format(filename))
-        csv_filepath = os.path.join(directory, '{0}.csv'.format(filename))
         pred_filpath = os.path.join(directory, 'est_coates-{0}-predicted.npz'.format(filename))
 
         # only if files do not exist yet
-        if not os.path.isfile(csv_filepath) or not os.path.isfile(est_filepath):
-            # set input weights
-            # param_grid.update({'input_to_nodes__predefined_input_weights': [np.load(filepath)]})
-
+        if not os.path.isfile(csv_filepath) or not os.path.isfile(est_filepath) or not os.path.isfile(pred_filpath):
             # setup estimator
             estimator = ELMClassifier(
-                PredefinedWeightsInputToNode(
-                    predefined_input_weights=np.load(filepath)),
-                IncrementalRegression(alpha=1e-5))
-            # logger.info('[pass] Estimator params: {0}'.format(estimator.get_params()))
+                input_to_nodes=PredefinedWeightsInputToNode(
+                    predefined_input_weights=np.load(filepath),
+                    input_scaling=1.0,
+                    bias_scaling=0.0,
+                    activation='relu',
+                    random_state=42,
+                ),
+                regressor=IncrementalRegression(alpha=1e-5),
+                chunk_size=1000,
+                random_state=42,
+            )
             logger.info('Estimator params: {0}'.format(estimator.get_params().keys()))
-            # return
 
-            # setup grid search
-            cv = GridSearchCV(
-                estimator=estimator,
-                param_grid=param_grid,
-                scoring='accuracy',
-                n_jobs=1,
-                verbose=1,
-                refit=False,
-                cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
+            # !run
+            time_start = time.time()
+            estimator.fit(X_train, y_train)
+            time_fitted = time.time()
+            y_pred = estimator.predict(X_test)
+            time_predicted = time.time()
+            # !run
 
-            # run!
-            cv.fit(X, y_encoded)
-            cv_best_params = cv.best_params_
-            # del cv_best_params['input_to_nodes__predefined_input_weights']
+            # results
+            dict_results = estimator.get_params()
+            dict_results.update({
+                'filename': filename,
+                'fit_time': time_fitted - time_start,
+                'score_time': time_predicted - time_fitted,
+                'score': accuracy_score(y_test, y_pred)
+            })
 
-            # refine best params
-            logger.info('file {2}, best parameters: {0} (score: {1})'.format(cv_best_params, cv.best_score_, filepath))
+            # drop data
+            dict_results.pop('input_to_nodes__predefined_input_weights')
+            dict_results.pop('input_to_nodes')
+            dict_results.pop('regressor')
 
-            # refine results
-            cv_results = cv.cv_results_
-            # del cv_results['params']
-            # del cv_results['param_input_to_nodes__predefined_input_weights']
+            logger.info('fitted time {1}, score on test set: {0}'.format(dict_results['score'], dict_results['fit_time']))
 
             # save estimator
             try:
                 with open(est_filepath, 'wb') as f:
-                    pickle.dump(cv.best_estimator_, f)
+                    pickle.dump(estimator, f)
             except Exception as e:
                 logger.error('Unexpected error: {0}'.format(e))
                 exit(1)
 
             # save results
             try:
-                with open(os.path.join(directory, '{0}.csv'.format(os.path.splitext(os.path.basename(filepath))[0])), 'w') as f:
-                    f.write(','.join(cv_results.keys()) + '\n')
-                    for row in list(map(list, zip(*cv_results.values()))):
-                        f.write(','.join(map(str, row)) + '\n')
+                if not os.path.isfile(csv_filepath):
+                    with open(csv_filepath, 'a') as f:
+                        f.write(','.join(dict_results.keys()) + '\n')
+                        f.write(','.join([str(item) for item in dict_results.values()]) + '\n')
+                else:
+                    with open(csv_filepath, 'a') as f:
+                        f.write(','.join([str(item) for item in dict_results.values()]) + '\n')
             except PermissionError as e:
                 print('Missing privileges: {0}'.format(e))
 
             # save prediction
-            np.savez_compressed(pred_filpath, X_test=X[train_size:, ...], y_test=y_encoded[train_size:], y_pred=cv.best_estimator_.predict(X[train_size:, ...]))
+            np.savez_compressed(
+                pred_filpath,
+                X_test=X_test,
+                y_test=label_encoder.inverse_transform(y_test),
+                y_pred=label_encoder.inverse_transform(y_pred),
+            )
 
     if not list_filepaths:
         logger.warning('no input weights matrices found')
