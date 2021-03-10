@@ -13,13 +13,14 @@ import numpy as np
 
 import pickle
 import csv
+import copy
 
 import time
 
 from sklearn.preprocessing import LabelBinarizer, LabelEncoder, StandardScaler, FunctionTransformer
 from sklearn.decomposition import PCA
 
-from sklearn.metrics import silhouette_score, accuracy_score
+from sklearn.metrics import silhouette_score, accuracy_score, confusion_matrix
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.model_selection import cross_validate, GridSearchCV, train_test_split, StratifiedShuffleSplit
 
@@ -27,7 +28,7 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.linear_model import Ridge
 
 from pyrcn.util import new_logger, argument_parser, get_mnist
-from pyrcn.base import InputToNode, ACTIVATIONS, BatchIntrinsicPlasticity
+from pyrcn.base import InputToNode, ACTIVATIONS, BatchIntrinsicPlasticity, PredefinedWeightsInputToNode
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier
 
@@ -74,8 +75,8 @@ def train_kmeans(directory):
     # scale X, so $X \in [0, 1]$
     X /= 255.
 
-    list_n_components = [50, 100]
-    list_n_clusters = [20, 50, 100, 200, 500, 1000, 2000, 4000, 8000, 16000]
+    list_n_components = [50]  # [50, 100]
+    list_n_clusters = [200]  # [20, 50, 100, 200, 500, 1000, 2000, 4000, 8000, 16000]
 
     for n_components in list_n_components:
         pca = PCA(n_components=n_components, random_state=42).fit(X)
@@ -709,48 +710,21 @@ def elm_coates(directory):
     label_encoder = LabelEncoder().fit(y)
     y_encoded = label_encoder.transform(y)
 
+    filepath_label_encoder = os.path.join(directory, 'label_encoder_{0}.pickle'.format(self_name))
+
+    # save label_encoder
+    try:
+        with open(filepath_label_encoder, 'wb') as f:
+            pickle.dump(label_encoder, f)
+    except Exception as e:
+        logger.error('Unexpected error: {0}'.format(e))
+        exit(1)
+
     # scale X so X in [0, 1]
     X /= 255.
 
-    # setup modified input to node
-    class ModifiedInputToNode(InputToNode):
-        def __init__(self, predefined_input_weights, activation='relu', input_scaling=1., bias_scaling=0., random_state=None):
-            super().__init__(sparsity=1., activation=activation, input_scaling=input_scaling, bias_scaling=bias_scaling, random_state=random_state)
-            self.predefined_input_weights = predefined_input_weights
-
-        def fit(self, X, y=None):
-            # no validation!
-            if self.random_state is None:
-                self.random_state = np.random.RandomState()
-            elif isinstance(self.random_state, (int, np.integer)):
-                self.random_state = np.random.RandomState(self.random_state)
-            elif isinstance(self.random_state, np.random.RandomState):
-                pass
-            else:
-                raise ValueError('random_state is not valid, got {0}.'.format(self.random_state))
-
-            if self.predefined_input_weights is None:
-                return super().fit(X, y)
-
-            if self.predefined_input_weights.shape[0] != X.shape[1]:
-                raise ValueError('X has not the expected shape {0}, given {1}.'.format(self.predefined_input_weights.shape[0], X.shape[1]))
-
-            self.hidden_layer_size = self.predefined_input_weights.shape[1]
-            self._input_weights = self.predefined_input_weights
-            self._bias = self._uniform_random_bias(
-                hidden_layer_size=self.hidden_layer_size,
-                random_state=self.random_state)
-            return self
-
-    # setup estimator
-    estimator = ELMClassifier(ModifiedInputToNode(predefined_input_weights=np.ones((10, 10))), IncrementalRegression())
-    # logger.info('[pass] Estimator params: {0}'.format(estimator.get_params()))
-    logger.info('Estimator params: {0}'.format(estimator.get_params().keys()))
-    # return
-
     # setup parameter grid
     param_grid = {
-        'input_to_nodes__predefined_input_weights': [],
         'input_to_nodes__input_scaling': [1.],  # np.logspace(start=-3, stop=1, base=10, num=6),
         'input_to_nodes__bias_scaling': [0.],  # np.logspace(start=-3, stop=1, base=10, num=6),
         'input_to_nodes__activation': ['relu'],
@@ -762,14 +736,28 @@ def elm_coates(directory):
 
     # read input matrices from files
     list_filepaths = []
-    for filepath in glob.glob(os.path.join(directory, '*pca*kmeans*matrix.npy')):
+    for filepath in glob.glob(os.path.join(directory, '*pca*+kmeans*_matrix.npy')):
         logger.info('matrix file found: {0}'.format(filepath))
         list_filepaths.append(filepath)
+        filename = os.path.splitext(os.path.basename(filepath))[0]
 
-        # only if file does not exist yet
-        if not os.path.isfile(os.path.join(directory, '{0}.csv'.format(os.path.splitext(os.path.basename(filepath))[0]))):
+        est_filepath = os.path.join(directory, 'est_coates-{0}.pickle'.format(filename))
+        csv_filepath = os.path.join(directory, '{0}.csv'.format(filename))
+        pred_filpath = os.path.join(directory, 'est_coates-{0}-predicted.npz'.format(filename))
+
+        # only if files do not exist yet
+        if not os.path.isfile(csv_filepath) or not os.path.isfile(est_filepath):
             # set input weights
-            param_grid.update({'input_to_nodes__predefined_input_weights': [np.load(filepath)]})
+            # param_grid.update({'input_to_nodes__predefined_input_weights': [np.load(filepath)]})
+
+            # setup estimator
+            estimator = ELMClassifier(
+                PredefinedWeightsInputToNode(
+                    predefined_input_weights=np.load(filepath)),
+                IncrementalRegression(alpha=1e-5))
+            # logger.info('[pass] Estimator params: {0}'.format(estimator.get_params()))
+            logger.info('Estimator params: {0}'.format(estimator.get_params().keys()))
+            # return
 
             # setup grid search
             cv = GridSearchCV(
@@ -783,15 +771,23 @@ def elm_coates(directory):
             # run!
             cv.fit(X, y_encoded)
             cv_best_params = cv.best_params_
-            del cv_best_params['input_to_nodes__predefined_input_weights']
+            # del cv_best_params['input_to_nodes__predefined_input_weights']
 
             # refine best params
             logger.info('file {2}, best parameters: {0} (score: {1})'.format(cv_best_params, cv.best_score_, filepath))
 
             # refine results
             cv_results = cv.cv_results_
-            del cv_results['params']
-            del cv_results['param_input_to_nodes__predefined_input_weights']
+            # del cv_results['params']
+            # del cv_results['param_input_to_nodes__predefined_input_weights']
+
+            # save estimator
+            try:
+                with open(est_filepath, 'wb') as f:
+                    pickle.dump(cv.best_estimator_, f)
+            except Exception as e:
+                logger.error('Unexpected error: {0}'.format(e))
+                exit(1)
 
             # save results
             try:
@@ -801,6 +797,9 @@ def elm_coates(directory):
                         f.write(','.join(map(str, row)) + '\n')
             except PermissionError as e:
                 print('Missing privileges: {0}'.format(e))
+
+            # save prediction
+            np.savez_compressed(pred_filpath, X_test=X[train_size:, ...], y_test=y_encoded[train_size:], y_pred=cv.best_estimator_.predict(X[train_size:, ...]))
 
     if not list_filepaths:
         logger.warning('no input weights matrices found')
@@ -819,46 +818,9 @@ def elm_coates_stacked(directory):
     # scale X so X in [0, 1]
     X /= 255.
 
-    # setup modified input to node
-    class ModifiedInputToNode(InputToNode):
-        def __init__(self, predefined_input_weights=None, activation='relu', input_scaling=1., bias_scaling=0., random_state=None):
-            super().__init__(sparsity=1., activation=activation, input_scaling=input_scaling, bias_scaling=bias_scaling, random_state=random_state)
-            self.predefined_input_weights = predefined_input_weights
-
-        def fit(self, X, y=None):
-            # no validation!
-            if self.random_state is None:
-                self.random_state = np.random.RandomState()
-            elif isinstance(self.random_state, (int, np.integer)):
-                self.random_state = np.random.RandomState(self.random_state)
-            elif isinstance(self.random_state, np.random.RandomState):
-                pass
-            else:
-                raise ValueError('random_state is not valid, got {0}.'.format(self.random_state))
-
-            if self.predefined_input_weights is None:
-                return super().fit(X, y)
-
-            if self.predefined_input_weights.shape[0] != X.shape[1]:
-                raise ValueError('X has not the expected shape {0}, given {1}.'.format(self.predefined_input_weights.shape[0], X.shape[1]))
-
-            self.hidden_layer_size = self.predefined_input_weights.shape[1]
-            self._input_weights = self.predefined_input_weights
-            self._bias = self._uniform_random_bias(
-                hidden_layer_size=self.hidden_layer_size,
-                random_state=self.random_state)
-            return self
-
-    # setup estimator
-    estimator = ELMClassifier(ModifiedInputToNode(), IncrementalRegression())
-    # logger.info('[pass] Estimator params: {0}'.format(estimator.get_params()))
-    logger.info('Estimator params: {0}'.format(estimator.get_params().keys()))
-    # return
-
     # setup parameter grid
     param_grid = {
         'chunk_size': [10000],
-        'input_to_nodes__predefined_input_weights': [],
         'input_to_nodes__input_scaling': np.logspace(start=-3, stop=1, base=10, num=3),
         'input_to_nodes__bias_scaling': [0.],  # np.logspace(start=-3, stop=1, base=10, num=6),
         'input_to_nodes__activation': ['relu'],
@@ -875,8 +837,13 @@ def elm_coates_stacked(directory):
         list_filepaths.append(filepath)
         predefined_input_weights = np.append(predefined_input_weights, np.load(filepath), axis=1)
 
-    # set input weights
-    param_grid.update({'input_to_nodes__predefined_input_weights': [predefined_input_weights]})
+    # setup estimator
+    estimator = ELMClassifier(
+        PredefinedWeightsInputToNode(predefined_input_weights=predefined_input_weights),
+        IncrementalRegression())
+    # logger.info('[pass] Estimator params: {0}'.format(estimator.get_params()))
+    logger.info('Estimator params: {0}'.format(estimator.get_params().keys()))
+    # return
 
     # setup grid search
     cv = GridSearchCV(
@@ -921,10 +888,11 @@ def significance(directory):
     logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
 
     # setup modified input to node
-    class KMeansInputToNode(InputToNode):
-        def __init__(self, hidden_layer_size=500, activation='relu', input_scaling=1., bias_scaling=0., random_state=None):
+    class PCAKMeansInputToNode(InputToNode):
+        def __init__(self, hidden_layer_size=500, activation='relu', input_scaling=1., bias_scaling=0., random_state=None, pca_components=np.array([])):
             super().__init__(sparsity=1., hidden_layer_size=hidden_layer_size, activation=activation, input_scaling=input_scaling, bias_scaling=bias_scaling, random_state=random_state)
-            self.clusterer = MiniBatchKMeans(init='k-means++', batch_size=5000, n_init=3)
+            self.clusterer = MiniBatchKMeans(init='k-means++', batch_size=5000, n_init=5)
+            self.pca_components = pca_components
 
         def fit(self, X, y=None):
             # no validation!
@@ -937,29 +905,41 @@ def significance(directory):
             else:
                 raise ValueError('random_state is not valid, got {0}.'.format(self.random_state))
 
+            if self.pca_components.size != 0:
+                X_preprocessed = np.matmul(X - np.mean(X, axis=0), self.pca_components.T)
+                # X_preprocessed = np.matmul(X, self.pca_components.T)
+            else:
+                X_preprocessed = X
+
             dict_params = {'n_clusters': self.hidden_layer_size, 'random_state': self.random_state}
             self.clusterer.set_params(**dict_params)
-            self.clusterer.fit(X)
-            self._input_weights = self.clusterer.cluster_centers_.T
+            self.clusterer.fit(X_preprocessed)
+            # self.clusterer.fit(np.divide(X.T, np.linalg.norm(X, axis=1)).T)
+            #self._input_weights = (self.clusterer.cluster_centers_ / np.linalg.norm(self.clusterer.cluster_centers_, axis=0)).T
+            # self._input_weights = np.load(os.path.join(directory, 'original-pca50+kmeans200_matrix.npy'), allow_pickle=True)
+            self._input_weights = np.matmul(self.pca_components.T, self.clusterer.cluster_centers_.T)
             self._bias = self._uniform_random_bias(
                 hidden_layer_size=self.hidden_layer_size,
                 random_state=self.random_state)
             return self
 
-    """
+        """
         def transform(self, X):
-            self._hidden_layer_state = self.clusterer.transform(X) * self.input_scaling + np.ones((X.shape[0], 1)) * self._bias * self.bias_scaling
-            ACTIVATIONS[self.activation](self._hidden_layer_state)
-            return self._hidden_layer_state
-    """
+            # self._hidden_layer_state = - self.clusterer.transform(X) * self.input_scaling + np.ones((X.shape[0], self.hidden_layer_size)) * self.bias_scaling
+            # ACTIVATIONS[self.activation](self._hidden_layer_state)
+            # return self._hidden_layer_state
+            return super().transform(np.divide(X.T, np.linalg.norm(X, axis=1)).T)
+        """
+
     # preprocessing
     label_encoder = LabelEncoder().fit(y)
     y_encoded = label_encoder.transform(y)
 
     X /= 255.
-    pca = PCA(n_components=50).fit(X)
-    X_preprocessed = pca.transform(X)
-    logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
+    pca = PCA(n_components=50, random_state=42).fit(X)
+    # X_preprocessed = pca.transform(X)
+    # X_preprocessed = np.dot(X - np.mean(X, axis=0), pca.components_.T)
+    # logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
     # number of initializations
     n_inits = 100
@@ -973,23 +953,26 @@ def significance(directory):
         'input_to_nodes__input_scaling': [1.],
         'input_to_nodes__bias_scaling': [0.],
         'input_to_nodes__activation': ['relu'],
-        'input_to_nodes__random_state': random_state_inits,
+        'input_to_nodes__random_state': [42],  # random_state_inits,
         'regressor__alpha': [1e-5],
-        'random_state': [42]
+        'random_state': [42],
+        'chunk_size': [1000],
     }, {
-        'input_to_nodes': [KMeansInputToNode()],  # [BatchIntrinsicPlasticity(activation='tanh', hidden_layer_size=200, random_state=42, distribution='normal')],
+        'input_to_nodes': [PCAKMeansInputToNode()],  # [BatchIntrinsicPlasticity(activation='tanh', hidden_layer_size=200, random_state=42, distribution='normal')],
         'input_to_nodes__hidden_layer_size': [200],
         'input_to_nodes__input_scaling': [1.],
         'input_to_nodes__bias_scaling': [0.],
         'input_to_nodes__activation': ['relu'],
+        'input_to_nodes__pca_components': [pca.components_],
         'input_to_nodes__random_state': random_state_inits,
         'regressor__alpha': [1e-5],
-        'random_state': [42]
+        'random_state': [42],
+        'chunk_size': [1000],
     }]
 
     # setup estimator
-    estimator = ELMClassifier(regressor=Ridge())
-    print(ELMClassifier(input_to_nodes=BatchIntrinsicPlasticity()).get_params().keys())
+    estimator = ELMClassifier(regressor=IncrementalRegression())
+    print(ELMClassifier(input_to_nodes=PCAKMeansInputToNode()).get_params().keys())
 
     # setup grid search
     cv = GridSearchCV(
@@ -1003,7 +986,7 @@ def significance(directory):
         cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
     # run!
-    cv.fit(X_preprocessed, y_encoded)
+    cv.fit(X, y_encoded)
 
     # refine best params
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
@@ -1011,11 +994,13 @@ def significance(directory):
     # refine results
     cv_results = cv.cv_results_
     del cv_results['params']
-    del cv_results['param_input_to_nodes']
+    del cv_results['param_input_to_nodes__pca_components']
+    cv_results.update({'param_input_to_nodes': [type(p).__name__ for p in cv_results['param_input_to_nodes']]})
+    cv_results.update({'mean_test_error_rate': [1 - v for v in cv_results['mean_test_score']]})
 
     # save results
     try:
-        with open(os.path.join(directory, '{0}_pca{1}_kmeans200.csv'.format(self_name, pca.n_components_)), 'w') as f:
+        with open(os.path.join(directory, '{0}_pca{1}_kmeans200_cosine_prepmatrix.csv'.format(self_name, pca.n_components_)), 'a') as f:
             f.write(','.join(cv_results.keys()) + '\n')
             for row in list(map(list, zip(*cv_results.values()))):
                 f.write(','.join(map(str, row)) + '\n')
