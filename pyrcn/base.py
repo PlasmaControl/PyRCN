@@ -440,3 +440,48 @@ class BatchIntrinsicPlasticity(InputToNode):
 
         if self.algorithm not in {'neumann', 'dresden'}:
             raise ValueError('The selected algorithm ist unknown, got {0}'.format(self.algorithm))
+
+
+class PredefinedWeightsInputToNode(InputToNode):
+    def __init__(
+            self,
+            predefined_input_weights,
+            activation='relu',
+            input_scaling=1.,
+            bias_scaling=0.,
+            random_state=None):
+        super().__init__(
+            hidden_layer_size=predefined_input_weights.shape[1],
+            sparsity=1.,
+            activation=activation,
+            input_scaling=input_scaling,
+            bias_scaling=bias_scaling,
+            random_state=random_state)
+        self.predefined_input_weights = predefined_input_weights
+
+    def fit(self, X, y=None):
+        self._validate_hyperparameters()
+        self._validate_data(X, y)
+        self._check_n_features(X, reset=True)
+
+        if self.random_state is None:
+            self.random_state = np.random.RandomState()
+        elif isinstance(self.random_state, (int, np.integer)):
+            self.random_state = np.random.RandomState(self.random_state)
+        elif isinstance(self.random_state, np.random.RandomState):
+            pass
+        else:
+            raise ValueError('random_state is not valid, got {0}.'.format(self.random_state))
+
+        if self.predefined_input_weights is None:
+            raise ValueError('predefined_input_weights have to be defined, use InputToNode class!')
+
+        if self.predefined_input_weights.shape[0] != X.shape[1]:
+            raise ValueError('X has not the expected shape {0}, given {1}.'.format(
+                self.predefined_input_weights.shape[0], X.shape[1]))
+
+        self._input_weights = self.predefined_input_weights
+        self._bias = self._uniform_random_bias(
+            hidden_layer_size=self.hidden_layer_size,
+            random_state=self.random_state)
+        return self
