@@ -766,6 +766,7 @@ def elm_coates(directory):
                 scoring='accuracy',
                 n_jobs=1,
                 verbose=1,
+                refit=False,
                 cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
 
             # run!
