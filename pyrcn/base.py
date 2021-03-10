@@ -37,6 +37,7 @@ if parse_version(sklearn.__version__) < parse_version('0.24.0'):
             del kwargs['multi_output']
             return check_array(X, accept_sparse=True, **kwargs), y
         else:
+            del kwargs['accept_sparse']
             return check_array(X, accept_sparse=True, **kwargs)
 
     setattr(BaseEstimator, '_validate_data', validate_data)
