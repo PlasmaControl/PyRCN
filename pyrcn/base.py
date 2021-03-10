@@ -34,7 +34,10 @@ if parse_version(sklearn.__version__) < parse_version('0.24.0'):
     def validate_data(self, X, y=None, *args, **kwargs):
         warnings.warn('Due to scikit version, _validate_data(X, y) returns check_array(X), y.', DeprecationWarning)
         if y is not None:
-            del kwargs['multi_output']
+            if 'accept_sparse' in kwargs:
+                del kwargs['accept_sparse']
+            if 'multi_output' in kwargs:
+                del kwargs['multi_output']
             return check_array(X, accept_sparse=True, **kwargs), y
         else:
             if 'accept_sparse' in kwargs:
