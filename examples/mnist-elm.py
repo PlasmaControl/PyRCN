@@ -998,6 +998,9 @@ def silhouette_n_clusters(directory, *args, **kwargs):
     pca = PCA(n_components=50, whiten=False, random_state=42).fit(X)
     min_var = 3088.6875
 
+    # reduce train size
+    X = X[:10000, ...]
+
     # variance threshold
     X_var_threshold = X[..., scaler.var_ > min_var]
 
@@ -1039,7 +1042,7 @@ def silhouette_n_clusters(directory, *args, **kwargs):
         dict_results['pca_explained_variance'].append(np.sum(pca.explained_variance_))
         dict_results['pca_explained_variance_ratio'].append(np.sum(pca.explained_variance_ratio_))
 
-        clusterer = KMeans(n_clusters=n_clusters, init='k-means++', n_init=n_init, random_state=42)
+        clusterer = MiniBatchKMeans(n_clusters=n_clusters, init='k-means++', n_init=n_init, random_state=42)
 
         # original
         t = time.time()
