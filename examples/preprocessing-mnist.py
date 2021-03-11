@@ -722,7 +722,7 @@ def plot_silhouette_subset(directory, *args, **kwargs):
             logger.info('silhouette (preinit) at subset size {1}: {0}'.format(dict_results['silhouette_preinit'][-1], dict_results['subset_size'][-1]))
 
     # save results to csv
-    with open(os.path.join(directory, 'kmeans_silhouette_subset_size.csv'), 'w') as f:
+    with open(os.path.join(directory, 'silhouette_kmeans_subset_size.csv'), 'w') as f:
         f.write(','.join(dict_results.keys()) + '\n')
         for row in list(map(list, zip(*dict_results.values()))):
             f.write(','.join(map(str, row)) + '\n')
@@ -798,7 +798,7 @@ def plot_silhouette_features(directory, *args, **kwargs):
         logger.info('pca silhouette at n_features={1:.0f}: {0}'.format(dict_results['silhouette_pca'][-1], n_features))
 
     # save results to csv
-    with open(os.path.join(directory, 'kmeans{0:.0f}_silhouette_features.csv'.format(k)), 'w') as f:
+    with open(os.path.join(directory, 'silhouette_kmeans{0:.0f}_features.csv'.format(k)), 'w') as f:
         f.write(','.join(dict_results.keys()) + '\n')
         for row in list(map(list, zip(*dict_results.values()))):
             f.write(','.join(map(str, row)) + '\n')
