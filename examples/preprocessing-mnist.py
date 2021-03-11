@@ -479,8 +479,6 @@ def plot_img_cluster(directory, *args, **kwargs):
     clusterer = KMeans(n_clusters=4, random_state=42)
     img_clusters = clusterer.fit_predict(img.reshape((784, 1))).reshape((28, 28))
     list_cluster_colors = [tud_colors['lightblue'], tud_colors['lightgreen'], tud_colors['lightpurple'], tud_colors['gray']]
-    # list_cluster_colors = [tud_colors['lightblue'], tud_colors['red'], tud_colors['gray'], tud_colors['gray']]
-    # [tud_colors['lightblue'][:-1] + (.3,), tud_colors['lightgreen'][:-1] + (.3,), tud_colors['lightpurple'][:-1] + (.3,), tud_colors['gray'][:-1] + (.3,)]
 
     img_cluster_colors = np.zeros((28, 28, 4))
 
@@ -491,7 +489,6 @@ def plot_img_cluster(directory, *args, **kwargs):
     # display digits
     fig, axs = plt.subplots(1, 1, figsize=(2, 2))
 
-    # axs.imshow(np.resize(img, (28, 28)), cmap=plt.cm.gray_r, interpolation='none')
     axs.imshow(img_cluster_colors, interpolation='none')
     axs.set_xticks([0, 27])
     axs.set_xticklabels([0, 27])
@@ -503,98 +500,93 @@ def plot_img_cluster(directory, *args, **kwargs):
     plt.imsave(os.path.join(directory, 'plot-img-clusters.png'), img_cluster_colors)
 
 
-def plot_silhouette_dimension_reduction(directory, *args, **kwargs):
-    logger = new_logger('plot_silhouette_dimension_reduction', directory)
+def plot_silhouette_n_clusters(directory, *args, **kwargs):
+    logger = new_logger('plot_silhouette_n_clusters', directory)
     logger.info('entering')
     X, y = get_mnist(directory)
 
-    X, X_trash, y, y_trash = train_test_split(X, y, random_state=42, train_size=1000, shuffle=True, stratify=y)
-
-    # min_var = 6502.5
-    min_expl_var = min_var
-
     scaler = StandardScaler().fit(X)
-    whitener = PCA(whiten=False, random_state=42)
+    X /= 255.
 
-    X_avgfree = np.subtract(X, scaler.mean_) / 255
-    X_min_var = X_avgfree[..., scaler.var_ > min_var]
+    pca = PCA(n_components=50, whiten=False, random_state=42).fit(X)
 
-    X_whitened_all = whitener.fit_transform(X)
-    sum_explained_variance = np.flip(np.cumsum(np.flip(whitener.explained_variance_)))
-    X_white_min_var = X_whitened_all[:, sum_explained_variance > min_expl_var]
+    # variance threshold
+    X_var_threshold = X[..., scaler.var_ > min_var]
 
-    logger.info('whitener.explained_variance_ratio_: {0}'.format(
-        np.sum(whitener.explained_variance_ratio_[whitener.explained_variance_ > min_expl_var])))
-    logger.info('whitener.n_components_: {0}'.format(X_white_min_var.shape[1]))
-    logger.info('scaler.var_.shape (> {1}): {0}'.format(min_var, scaler.var_[scaler.var_ > min_var].shape))
+    # pca
+    X_pca = pca.transform(X)
 
-    k = np.concatenate((range(5, 20, 1), range(20, 110, 10))).astype(int)
+    # n_clusters
+    k = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 200, 500, 1000, 2000, 4000]
 
-    s_k = [-1]
-    s_k_min_var = [-1]
-    s_k_white_min_var = [-1]
+    # n_init
+    n_init = 10
 
-    # k = [5, 10, 20]
-
-    best_clusterer = None
-    metric = 'euclidean'  # 'cosine'
+    dict_results = {
+        'n_clusters': [],
+        'n_init': [],
+        'variance_threshold': [],
+        'pca_n_components': [],
+        'pca_explained_variance': [],
+        'pca_explained_variance_ratio': [],
+        'silhouette_original': [],
+        'silhouette_variance_threshold': [],
+        'silhouette_pca': [],
+        'fittime_original': [],
+        'fittime_variance_threshold': [],
+        'fittime_pca': [],
+        'inertia_original': [],
+        'inertia_variance_threshold': [],
+        'inertia_pca': [],
+        'n_iter_original': [],
+        'n_iter_variance_threshold': [],
+        'n_iter_pca': []
+    }
 
     for n_clusters in k:
-        clusterer = KMeans(n_clusters=n_clusters, init='k-means++', random_state=42)
+        dict_results['n_clusters'].append(n_clusters)
+        dict_results['n_init'].append(n_init)
+        dict_results['variance_threshold'].append(min_var)
+        dict_results['pca_n_components'].append(pca.n_components_)
+        dict_results['pca_explained_variance'].append(np.sum(pca.explained_variance_))
+        dict_results['pca_explained_variance_ratio'].append(np.sum(pca.explained_variance_ratio_))
 
-        pred = clusterer.fit_predict(X)
-        s_k.append(silhouette_score(X, pred, metric=metric, random_state=42))
+        clusterer = KMeans(n_clusters=n_clusters, init='k-means++', n_init=n_init, random_state=42)
 
-        pred = clusterer.fit_predict(X_min_var)
-        s_k_min_var.append(silhouette_score(X_min_var, pred, metric=metric, random_state=42))
+        # original
+        t = time.time()
+        clusterer.fit(X)
+        dict_results['fittime_original'].append(time.time() - t)
+        dict_results['inertia_original'].append(clusterer.inertia_)
+        dict_results['n_iter_original'].append(clusterer.n_iter_)
+        dict_results['silhouette_original'].append(
+            silhouette_score(X, clusterer.predict(X), metric='euclidean', random_state=42))
 
-        pred = clusterer.fit_predict(X_white_min_var)
-        s_k_white_min_var.append(silhouette_score(X_white_min_var, pred, metric=metric, random_state=42))
+        # var threshold
+        t = time.time()
+        clusterer.fit(X_var_threshold)
+        dict_results['fittime_variance_threshold'].append(time.time() - t)
+        dict_results['inertia_variance_threshold'].append(clusterer.inertia_)
+        dict_results['n_iter_variance_threshold'].append(clusterer.n_iter_)
+        dict_results['silhouette_variance_threshold'].append(
+            silhouette_score(X_var_threshold, clusterer.predict(X_var_threshold), metric='euclidean', random_state=42))
 
-        logger.info('s_k: {0}'.format(s_k_white_min_var[-1]))
+        # pca
+        t = time.time()
+        clusterer.fit(X_pca)
+        dict_results['fittime_pca'].append(time.time() - t)
+        dict_results['inertia_pca'].append(clusterer.inertia_)
+        dict_results['n_iter_pca'].append(clusterer.n_iter_)
+        dict_results['silhouette_pca'].append(
+            silhouette_score(X_pca, clusterer.predict(X_pca), metric='euclidean', random_state=42))
 
-        if s_k_white_min_var[-1] > np.max(s_k_white_min_var[:-1]):
-            best_clusterer = clusterer
+        logger.info('n_clusters = {0}, pca kmeans score: {1}'.format(n_clusters, dict_results['silhouette_pca'][-1]))
 
-    s_k.pop(0)
-    s_k_min_var.pop(0)
-    s_k_white_min_var.pop(0)
-
-    with open('mnist-minibatch-kmeans-silhouette-results.txt', 'w') as results:
-        results.write(
-            '#features: all={0}, sigma>E(sigma)={1}, pca={2}'.format(X.shape[1], X_min_var[1], X_white_min_var[1]))
-        results.write('k: {0}\n'.format(k))
-        results.write('s(k): {0}\n'.format(s_k_white_min_var))
-        results.write('best_clusterer.cluster_centers_: {0}\n'.format(best_clusterer.cluster_centers_))
-
-    fig = plt.figure(figsize=(7, 5))
-    ax = plt.axes()
-
-    lines = []
-    lines += ax.loglog(k, s_k, color=tud_colors['lightpurple'])
-    lines += ax.loglog(k, s_k_min_var, color=tud_colors['lightgreen'])
-    lines += ax.loglog(k, s_k_white_min_var, color=tud_colors['lightblue'])
-
-    ax.legend(lines, (
-        'original ({0})'.format(X.shape[1]),
-        'each $\sigma_i^2$ > {0} ({1})'.format(min_var, X_min_var.shape[1]),
-        'PCA, $expl. \sigma^2$ > {0} ({1})'.format(min_expl_var, X_white_min_var.shape[1])))
-
-    ax.set_xlim((np.min(k), np.max(k)))
-    x_ticks = [5, 10, 15, 20, 50, 100]
-    ax.set_xticks(ticks=x_ticks)
-    ax.set_xticklabels(['{0:d}'.format(x) for x in x_ticks])
-    ax.set_ylim((.055, .09))
-    y_ticks = [.06, 0.07, 0.08, 0.09]
-    ax.set_yticks(y_ticks)
-    ax.set_yticklabels(['{0:0.2f}'.format(y) for y in y_ticks])
-
-    ax.grid(which='both', axis='x')
-    ax.grid(which='major', axis='y')
-    ax.set_xlabel('#Clusters k')
-    ax.set_ylabel('Silhouette score s(k)')
-    fig.tight_layout()
-    fig.savefig(os.path.join(directory, 'mnist-kmeans-silhouette-k{0}.pdf'.format(np.max(k))))
+    # save results to csv
+    with open(os.path.join(directory, 'silhouette_n_clusters.csv'), 'w') as f:
+        f.write(','.join(dict_results.keys()) + '\n')
+        for row in list(map(list, zip(*dict_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
     return
 
 
@@ -603,77 +595,54 @@ def plot_silhouette_kcluster(directory, *args, **kwargs):
     logger.info('entering')
     X, y = get_mnist(directory)
 
-    min_expl_var = min_var
+    X /= 255.
 
-    # scaler = StandardScaler().fit(X)
-    whitener = PCA(whiten=False, random_state=42)
+    scaler = StandardScaler().fit(X)
+    pca = PCA(n_components=50, whiten=False, random_state=42).fit(X)
 
-    # X_avgfree = np.subtract(X, scaler.mean_)/255
-    # X_min_var = X_avgfree[..., scaler.var_ > min_var]
-
-    X_whitened_all = whitener.fit_transform(X)
-    sum_explained_variance = np.flip(np.cumsum(np.flip(whitener.explained_variance_)))
-    X_white_min_var = X_whitened_all[:, sum_explained_variance > min_expl_var]
-
-    # rs = np.random.RandomState(42)
-    # n_random = 20
-    # X_random = X[:, rs.randint(low=0, high=X.shape[1], size=n_random)]
-
-    logger.info('whitener.explained_variance_ratio_: {0}'.format(
-        np.sum(whitener.explained_variance_ratio_[whitener.explained_variance_ > min_expl_var])))
-    logger.info('whitener.n_components_: {0}'.format(X_white_min_var.shape[1]))
-    # logger.info('scaler.var_.shape (> {1}): {0}'.format(min_var, scaler.var_[scaler.var_ > min_var].shape))
+    # PCA preprocessed
+    X_pca = pca.transform(X)
 
     k = np.concatenate((range(5, 20, 1), range(20, 110, 10))).astype(int)
 
-    s_k_cosine = [-1]
-    s_k_euclid = [-1]
+    dict_results = {
+        'n_clusters': [],
+        'pca_n_components': [],
+        'pca_expl_var': [],
+        'pca_expl_var_ratio': [],
+        'silhouette_kcosine': [],
+        'silhouette_kmeans': [],
+        'fittime_kcosine': [],
+        'fittime_kmeans': []
+    }
 
     for n_clusters in k:
-        clusterer_cosine = KCluster(n_clusters=n_clusters, metric='cosine', random_state=42)
+        dict_results['n_clusters'].append(n_clusters)
+        dict_results['pca_n_components'].append(pca.n_components_)
+        dict_results['pca_expl_var'].append(np.sum(pca.explained_variance_))
+        dict_results['pca_expl_var_ratio'].append(np.sum(pca.explained_variance_ratio_))
+
+        # kmeans
         clusterer_euclid = KMeans(n_clusters=n_clusters, random_state=42)
+        t = time.time()
+        clusterer_euclid.fit(X_pca)
+        dict_results['fittime_kmeans'].append(time.time() - t)
+        dict_results['silhouette_kmeans'].append(
+            silhouette_score(X_pca, clusterer_euclid.predict(X_pca), metric='euclidean', random_state=42))
 
-        pred = clusterer_euclid.fit_predict(X_white_min_var)
-        s_k_euclid.append(silhouette_score(X_white_min_var, pred, metric='euclidean', random_state=42))
+        # kcosine
+        clusterer_cosine = KCluster(n_clusters=n_clusters, metric='cosine', random_state=42)
+        t = time.time()
+        clusterer_cosine.fit(X_pca)
+        dict_results['fittime_kcosine'].append(time.time() - t)
+        dict_results['silhouette_kcosine'].append(
+            silhouette_score(X_pca, clusterer_cosine.predict(X_pca), metric='cosine', random_state=42))
 
-        pred = clusterer_cosine.fit_predict(X_white_min_var)
-        s_k_cosine.append(silhouette_score(X_white_min_var, pred, metric='cosine', random_state=42))
-
-        logger.info('inertia_: {0} n_iter_: {1}'.format(clusterer_cosine.inertia_, clusterer_cosine.n_iter_))
-        logger.info('s_k: {0}'.format(s_k_cosine[-1]))
-
-    s_k_cosine.pop(0)
-    s_k_euclid.pop(0)
-
-    # noinspection PyTypeChecker
-    np.savetxt(
-        fname=os.path.join(directory, 'plot_silhouette_kcluster.csv'),
-        X=np.hstack((np.array(k, ndmin=2).T, np.array(s_k_cosine, ndmin=2).T, np.array(s_k_euclid, ndmin=2).T)),
-        fmt='%f,%f',
-        header='k, k-means (cosine), k-means (euclidean)',
-        comments='PCA - sum explained variance > {0}\n\n'.format(min_expl_var)
-    )
-
-    fig = plt.figure(figsize=(7, 5))
-    ax = plt.axes()
-
-    lines = ax.loglog(k, s_k_cosine, color=tud_colors['lightblue'])
-    lines += ax.loglog(k, s_k_euclid, color=tud_colors['lightpurple'])
-
-    ax.legend(lines, ('cosine', 'euclidean'))
-    ax.set_xlim((np.min(k), np.max(k)))
-    ax.set_xticks(ticks=k)
-    ax.set_xticklabels(
-        ['5', '', '', '', '', '10', '', '', '', '', '15', '', '', '', '', '20', '', '', '50', '', '', '', '', '100'])
-    # ax.set_ylim((.1, .2))
-    # ax.set_yticks([.1, .12, .14, .16, .18, .2])
-    # ax.set_yticklabels(['0.10', '0.12', '0.14', '0.16', '0.18', '0.20'])
-
-    ax.grid(True)
-    ax.set_xlabel('#Clusters k')
-    ax.set_ylabel('Silhouette score s(k)')
-    fig.tight_layout()
-    fig.savefig(os.path.join(directory, 'mnist-kcosine-silhouette-sub{0}.pdf'.format(X.shape[0])))
+    # save results to csv
+    with open(os.path.join(directory, 'silhouette_kcluster.csv'), 'w') as f:
+        f.write(','.join(dict_results.keys()) + '\n')
+        for row in list(map(list, zip(*dict_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
     return
 
 
@@ -682,91 +651,81 @@ def plot_silhouette_subset(directory, *args, **kwargs):
     logger.info('entering')
     X, y = get_mnist(directory)
 
-    subset_sizes = [250, 500, 1000, 2000, 4000, 8000, 16000, 32000]  # , 64000]
+    X /= 255.
 
-    # scaler = StandardScaler().fit(X)
-    min_expl_var = 6502.5
-    whitener = PCA(whiten=False, random_state=42)
+    pca = PCA(n_components=50, whiten=False, random_state=42)
 
     # preprocessing
-    X_whitened = whitener.fit_transform(X)
-    sum_explained_variance = np.flip(np.cumsum(np.flip(whitener.explained_variance_)))
-    indices = sum_explained_variance > min_expl_var
-    X_whitended_variance = X_whitened[:, indices]
+    X_pca = pca.fit_transform(X)
 
-    logger.info('n_features: {0}'.format(X_whitended_variance.shape[1]))
+    # define subset sizes
+    subset_sizes = [250, 500, 1000, 2000, 4000, 8000, 16000, 32000, 60000]
 
-    logger.info('explained variance: {0}'.format(np.sum(whitener.explained_variance_[indices])))
+    # number of centroids
+    k_list = [20]
 
-    logger.info('explained variance ratio: {0}'.format(np.sum(whitener.explained_variance_ratio_[indices])))
-
-    # split subsets
-    X_list = []
-    y_list = []
-
-    for train_size in subset_sizes:
-        X_train, X_test, y_train, y_test = train_test_split(
-            X_whitended_variance, y, random_state=42, train_size=train_size, shuffle=True, stratify=y)
-
-        X_list.append(X_train)
-        y_list.append(y_train)
-
-    # run experiment
-    k_list = [15, 20, 30]
-    s = []
-    s_init = []
+    dict_results = {
+        'subset_size': [],
+        'k': [],
+        'n_init': [],
+        'silhouette_raninit': [],
+        'silhouette_preinit': [],
+        'fittime_raninit': [],
+        'fittime_preinit': [],
+        'scoretime_raninit': [],
+        'scoretime_preinit': []
+    }
 
     for k in k_list:
-        s.append([])
-        s_init.append([])
+        # preinit
+        # initial training set
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_pca, y, random_state=42, train_size=subset_sizes[0], shuffle=True, stratify=y)
+        clusterer_init = KMeans(n_clusters=k, random_state=42, init='k-means++', n_init=10).fit(X_train)
 
-        cluster_centers = KMeans(
-            n_clusters=k, random_state=42, init='k-means++', n_init=50).fit(X_list[0]).cluster_centers_
+        # random inits
+        clusterer = KMeans(n_clusters=k, n_init=10, random_state=42)
 
-        clusterer = KMeans(n_clusters=k, random_state=42)
+        for subset_size in subset_sizes[2:4]:
+            # split on subset size
+            dict_results['subset_size'].append(subset_size)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X_pca, y, random_state=42, train_size=subset_size, shuffle=True, stratify=y)
 
-        for X_subset in X_list:
-            clusterer_init = KMeans(n_clusters=k, random_state=42, init=cluster_centers)
-            s_init[-1].append(
-                silhouette_score(X_subset, clusterer_init.fit_predict(X_subset), metric='euclidean', random_state=42))
-            cluster_centers = clusterer_init.cluster_centers_
+            # train preinit
+            t = time.time()
+            clusterer_init = KMeans(n_clusters=k, random_state=42, n_init=1, init=clusterer_init.cluster_centers_)
+            clusterer_init.fit_predict(X_train)
+            dict_results['fittime_preinit'].append(time.time() - t)
 
-            if X_subset.shape[0] < 8000:
-                s[-1].append(
-                    silhouette_score(X_subset, clusterer.fit_predict(X_subset), metric='euclidean', random_state=42))
-            else:
-                s[-1].append(
-                    silhouette_score(X_subset, clusterer.predict(X_subset), metric='euclidean', random_state=42))
+            # score preinit
+            t = time.time()
+            dict_results['silhouette_preinit'].append(
+                silhouette_score(X_train, clusterer_init.predict(X_train), metric='euclidean', random_state=42))
+            dict_results['scoretime_preinit'].append(time.time() - t)
 
-            logger.info('s: {0}'.format(s[-1]))
+            # train randinit
+            t = time.time()
+            clusterer.fit(X_train)
+            dict_results['fittime_raninit'].append(time.time() - t)
 
-    # plot results
-    fig = plt.figure(figsize=(7, 5))
-    ax = plt.axes()
+            # score raninit
+            t = time.time()
+            dict_results['silhouette_raninit'].append(
+                silhouette_score(X_train, clusterer.predict(X_train), metric='euclidean', random_state=42))
+            dict_results['scoretime_raninit'].append(time.time() - t)
 
-    lines = []
-    for idx in range(len(k_list)):
-        lines += ax.plot(subset_sizes, s[idx], color=tud_colors['lightblue'],
-                         label='k (n_init={1})={0}'.format(k_list[idx], 10), alpha=(idx + 1) / len(k_list))
-        lines += ax.plot(subset_sizes, s_init[idx], color=tud_colors['lightgreen'],
-                         label='k (preinit)={0}'.format(k_list[idx]), alpha=(idx + 1) / len(k_list))
+            # store results
+            dict_results['k'].append(k)
+            dict_results['n_init'].append(clusterer.n_init)
 
-    ax.legend()
-    ax.set_xscale('log')
-    ax.set_xlim((np.min(subset_sizes), np.max(subset_sizes)))
-    ax.set_xticks(ticks=subset_sizes)
-    ax.set_xticklabels(subset_sizes)
+            logger.info('silhouette (preinit) at subset size {1}: {0}'.format(dict_results['silhouette_preinit'][-1], dict_results['subset_size'][-1]))
 
-    ax.set_yscale('log')
-    # ax.set_ylim((.1, .2))
-    # ax.set_yticks([.1, .12, .14, .16, .18, .2])
-    # ax.set_yticklabels(['0.10', '0.12', '0.14', '0.16', '0.18', '0.20'])
-
-    ax.grid(True)
-    ax.set_xlabel('subset size')
-    ax.set_ylabel('Silhouette score s')
-    fig.tight_layout()
-    fig.savefig(os.path.join(directory, 'mnist-kmeans-silhouette-sub{0}.pdf'.format(np.max(subset_sizes))))
+    # save results to csv
+    with open(os.path.join(directory, 'kmeans_silhouette_subset_size.csv'), 'w') as f:
+        f.write(','.join(dict_results.keys()) + '\n')
+        for row in list(map(list, zip(*dict_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
     return
 
 
@@ -775,90 +734,74 @@ def plot_silhouette_features(directory, *args, **kwargs):
     logger.info('entering')
     X, y = get_mnist(directory)
 
+    X /= 255.
+
     scaler = StandardScaler().fit(X)
+    pca = PCA(whiten=False, random_state=42).fit(X)
+
+    X_pca = pca.transform(X)
+
+    # sort scaler variances
     variance_indices = np.argsort(scaler.var_)[::-1]
-    whitener = PCA(whiten=False, random_state=42)
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, random_state=42, train_size=1000, shuffle=True, stratify=y)
-    X_train_whitened = whitener.fit_transform(X_train)
-
-    logger.info('whitener.explained_variance_ratio_: {0}'.format(np.sum(whitener.explained_variance_ratio_)))
-    logger.info('whitener.components_.shape: {0}'.format(whitener.components_.shape))
-
-    n_features_list = np.concatenate((range(1, 10, 1), range(10, 100, 10), range(100, 800, 100))).astype(int)
+    n_features_list = np.concatenate((range(1, 10, 1), range(10, 100, 10), range(100, 800, 100), [784])).astype(int)
 
     rs = np.random.RandomState(42)
 
     k = 20
-    s_rnd = [-1]
-    s_var = [-1]
-    s_pca = [-1]
 
-    var_rnd = []
-    var_var = []
-    var_pca = []
+    dict_results = {
+        'nfeatures': [],
+        'fittime_random': [],
+        'fittime_maxvar': [],
+        'fittime_pca': [],
+        'silhouette_random': [],
+        'silhouette_maxvar': [],
+        'silhouette_pca': [],
+        'explainvar_random': [],
+        'explainvar_maxvar': [],
+        'explainvar_pca': [],
+        'explvarrat_random': [],
+        'explvarrat_maxvar': [],
+        'explvarrat_pca': [],
+        'n_clusters': [],
+    }
 
     for n_features in n_features_list:
         clusterer = KMeans(n_clusters=k, random_state=42)
-        indices = rs.choice(X_train.shape[1], size=n_features)
-        pred = clusterer.fit_predict(X_train[:, indices])
-        s_rnd.append(silhouette_score(X_train[:, indices], pred, metric='euclidean', random_state=42))
-        var_rnd.append(np.sum(scaler.var_[indices]))
+        dict_results['nfeatures'].append(n_features)
+        dict_results['n_clusters'].append(clusterer.n_clusters)
 
+        indices = rs.choice(X.shape[1], size=n_features)
+        t = time.time()
+        pred = clusterer.fit_predict(X[:, indices])
+        dict_results['fittime_random'].append(time.time() - t)
+        dict_results['silhouette_random'].append(silhouette_score(X[:, indices], pred, metric='euclidean', random_state=42))
+        dict_results['explainvar_random'].append(np.sum(scaler.var_[indices]))
+        dict_results['explvarrat_random'].append(np.sum(scaler.var_[indices]) / np.sum(scaler.var_))
+
+        t = time.time()
         indices = variance_indices[:n_features]
-        pred = clusterer.fit_predict(X_train[:, indices])
-        s_var.append(silhouette_score(X_train[:, indices], pred, metric='euclidean', random_state=42))
-        var_var.append(np.sum(scaler.var_[indices]))
+        pred = clusterer.fit_predict(X[:, indices])
+        dict_results['fittime_maxvar'].append(time.time() - t)
+        dict_results['silhouette_maxvar'].append(silhouette_score(X[:, indices], pred, metric='euclidean', random_state=42))
+        dict_results['explainvar_maxvar'].append(np.sum(scaler.var_[indices]))
+        dict_results['explvarrat_maxvar'].append(np.sum(scaler.var_[indices]) / np.sum(scaler.var_))
 
-        pred = clusterer.fit_predict(X_train_whitened[:, :n_features])
-        s_pca.append(silhouette_score(X_train_whitened[:, :n_features], pred, metric='euclidean', random_state=42))
-        var_pca.append(np.sum(whitener.explained_variance_[:n_features]))
+        t = time.time()
+        pred = clusterer.fit_predict(X_pca[:, :n_features])
+        dict_results['fittime_pca'].append(time.time() - t)
+        dict_results['silhouette_pca'].append(silhouette_score(X_pca[:, :n_features], pred, metric='euclidean', random_state=42))
+        dict_results['explainvar_pca'].append(np.sum(pca.explained_variance_[:n_features]))
+        dict_results['explvarrat_pca'].append(np.sum(pca.explained_variance_ratio_[:n_features]))
 
-        logger.info('silhouette: {0}'.format(s_pca[-1]))
+        logger.info('pca silhouette at n_features={1:.0f}: {0}'.format(dict_results['silhouette_pca'][-1], n_features))
 
-    s_rnd.pop(0)
-    s_var.pop(0)
-    s_pca.pop(0)
-
-    fig = plt.figure(figsize=(7, 5))
-    ax = plt.axes()
-    ax_var = ax.twinx()
-
-    lines_var = []
-    lines_var += ax_var.plot(n_features_list, var_rnd, linestyle='dashed', color=tud_colors['lightpurple'])
-    lines_var += ax_var.plot(n_features_list, var_var, linestyle='dashed', color=tud_colors['lightgreen'])
-    lines_var += ax_var.plot(n_features_list, var_pca, linestyle='dashed', color=tud_colors['lightblue'])
-
-    lines = []
-    lines += ax.plot(n_features_list, s_rnd, color=tud_colors['lightpurple'])
-    lines += ax.plot(n_features_list, s_var, color=tud_colors['lightgreen'])
-    lines += ax.plot(n_features_list, s_pca, color=tud_colors['lightblue'])
-
-    ax.legend(lines, ['random', 'sorted $\sigma^2$', 'pca expl. $\sigma^2$'], loc='center right')
-    ax.set_xscale('log')
-    ax.set_xlim((np.min(n_features_list), np.max(n_features_list)))
-    x_ticks = [1, 2, 5, 10, 20, 50, 100, 200, 500]
-    ax.set_xticks(ticks=x_ticks)
-    ax.set_xticklabels(['{:d}'.format(y) for y in x_ticks])
-
-    ax.set_yscale('log')
-    ax.set_ylim((.05, 1.))
-    y_ticks = [.05, .1, .2, .5, 1.]
-    ax.set_yticks(y_ticks)
-    ax.set_yticklabels(['{:.2f}'.format(y) for y in y_ticks])
-
-    ax_var.set_yscale('log')
-    ax_var.set_ylim((1e4, np.sum(scaler.var_)))
-    y_var_ticks = [1e4, 5e4, 1e5, 5e5, 1e6, 5e6]
-    ax_var.set_yticks(y_var_ticks)
-    ax_var.set_yticklabels(['{0:0.0f} x 10³'.format(y / 1000) for y in y_var_ticks])
-
-    ax.grid(True)
-    ax.set_xlabel('#features')
-    ax.set_ylabel('Silhouette score s')
-    fig.tight_layout()
-    fig.savefig(os.path.join(directory, 'mnist-kmeans-silhouette-n_features{0}.pdf'.format(np.max(n_features_list))))
+    # save results to csv
+    with open(os.path.join(directory, 'kmeans{0:.0f}_silhouette_features.csv'.format(k)), 'w') as f:
+        f.write(','.join(dict_results.keys()) + '\n')
+        for row in list(map(list, zip(*dict_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
     return
 
 
@@ -897,7 +840,7 @@ def main(out_path=os.path.join(os.getcwd(), 'preprocessing-mnist'), function_nam
         'plot_covariance': plot_covariance,
         'plot_imbalance': plot_imbalance,
         'plot_img_cluster': plot_img_cluster,
-        'plot_silhouette_dimension_reduction': plot_silhouette_dimension_reduction,
+        'plot_silhouette_n_clusters': plot_silhouette_n_clusters,
         'plot_silhouette_subset': plot_silhouette_subset,
         'plot_silhouette_kcluster': plot_silhouette_kcluster,
         'plot_silhouette_features': plot_silhouette_features

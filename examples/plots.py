@@ -12,7 +12,7 @@ import pandas
 
 from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 import matplotlib
-matplotlib.use('pgf')
+# matplotlib.use('pgf')
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap, Normalize
 
@@ -199,19 +199,12 @@ def plot_pca():
 
     # plot
     lines = []
-    # i would really like to do this in the constructor, but matplotlib is a fucking inpatient bastard, which will
-    # corrupt every single try of cloning a x-axis for the purpose of a secondary y - either do it the retarded
-    # matplotlib way or leave it - why even build it into the subplot constructor if this library isn't able to
-    # handle this shit properly?
-    # - i mean: why the hell isn't the user allowed or able to switch the label position to secondary? this is just
-    # retarded! this whole twinx is fucking retarded, fuck you, fuck everything, now i have to handle this in a whole
-    # lot of functions and other retarded fucked up and messy style - so yeah - fuck it!
 
     lines += ax_error.plot(
         df['pca_n_components'],
         1 - df['score'],
         color=tud_colors['lightblue'],
-        label='error rate'
+        label='test set error rate'
     )
 
     ax_error.set_yticks(error_yticks)
@@ -239,7 +232,7 @@ def plot_pca():
     fig.tight_layout()
 
     filename = 'plot_pca'
-    fig.savefig(os.path.join('/home/michael/PycharmProjects/PyRCN/examples/plots/', '{0}.pdf'.format(filename)), format='pdf')
+    fig.savefig(os.path.join('./plots/', '{0}.pdf'.format(filename)), format='pdf')
     fig.savefig(os.path.join(os.environ['PGFPATH'], '{0}.pgf'.format(filename)), format='pgf')
     return
 
@@ -271,32 +264,23 @@ def plot_hyperparameters():
 
     n_rows = df_tanh2000.shape[0]
 
-    fig, axs = plt.subplots(nrows=3, ncols=2, figsize=(6., 8.))  # , gridspec_kw={'hspace': .7, 'left': .15, 'right': .98, 'bottom': .2})  # , subplot_kw={'projection': '3d'})
+    fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(6., 4.), gridspec_kw={'hspace': 1.1, 'wspace': 1.1, 'left': .1, 'right': .95, 'bottom': .18, 'top': .92})  # , subplot_kw={'projection': '3d'})
 
-    df_tanh2000.attrs.update({'titlestr': 'tanh, $m=2000$'})
-    df_relu500.attrs.update({'titlestr': 'ReLU, $m=500$'})
-    df_relu2000.attrs.update({'titlestr': 'ReLU, $m=2000$'})
-    df_tanh2000pca.attrs.update({'titlestr': 'PCA50, tanh, $m=2000$'})
-    df_relu500pca.attrs.update({'titlestr': 'PCA50, ReLU, $m=500$'})
-    df_relu2000pca.attrs.update({'titlestr': 'PCA50, ReLU, $m=2000$'})
+    df_tanh2000.attrs.update({'titlestr': 'tanh\n$m=2000$'})
+    df_relu500.attrs.update({'titlestr': 'ReLU\n$m=500$'})
+    df_relu2000.attrs.update({'titlestr': 'ReLU\n$m=2000$'})
+    df_tanh2000pca.attrs.update({'titlestr': 'PCA50, tanh\n$m=2000$'})
+    df_relu500pca.attrs.update({'titlestr': 'PCA50, ReLU\n$m=500$'})
+    df_relu2000pca.attrs.update({'titlestr': 'PCA50, ReLU\n$m=2000$'})
 
     df_dict = {
         0: df_tanh2000,
-        2: df_relu500,
-        4: df_relu2000,
-        1: df_tanh2000pca,
-        3: df_relu500pca,
+        1: df_relu500,
+        2: df_relu2000,
+        3: df_tanh2000pca,
+        4: df_relu500pca,
         5: df_relu2000pca
     }
-
-    """
-    axs[0][0].set_title('tanh, $m=2000$')
-    axs[0][1].set_title('ReLU, $m=500$')
-    axs[0][2].set_title('ReLU, $m=2000$')
-    axs[1][0].set_title('PCA50, tanh, $m=2000$')
-    axs[1][1].set_title('PCA50, ReLU, $m=500$')
-    axs[1][2].set_title('PCA50, ReLU, $m=2000$')
-    """
 
     # colormap
     # cm = ListedColormap(np.linspace(start=tud_colors['red'], stop=tud_colors['lightgreen'], num=255))
@@ -308,7 +292,7 @@ def plot_hyperparameters():
 
     for row in range(axs.shape[0]):
         for col in range(axs.shape[1]):
-            df_loop = df_dict[row*2 + col]
+            df_loop = df_dict[row*3 + col]
             ax = axs[row][col]
             # ax = axs[col][row]
 
@@ -330,7 +314,7 @@ def plot_hyperparameters():
                 interpolation='none'
             )
 
-            fig.colorbar(im, ax=ax, use_gridspec=True)  #spacing='proportional')
+            fig.colorbar(im, ax=ax, use_gridspec=True, shrink=.9)  #spacing='proportional')
 
             # ax.set_xticks(np.log10(X_ticks))
             ax.set_xticks(range(mesh_shape[0]))
@@ -346,12 +330,12 @@ def plot_hyperparameters():
             # annotate
             y = np.argmax(Z_value) // len(Z_value)
             x = np.argmax(Z_value) % len(Z_value)
-            ax.annotate('{0:0.1f}%'.format(np.max(Z_value)), xy=(x, y), c=(1., 1., 1., 1.), horizontalalignment='center', fontsize='xx-small', fontstretch='ultra-condensed')
+            ax.annotate('{0:0.1f}%'.format(np.max(Z_value)), xy=(x, y), c=(1., 1., 1., 1.), horizontalalignment='center', verticalalignment='center', fontsize='xx-small', fontstretch='ultra-condensed')
 
             ax.set_title(df_loop.attrs['titlestr'])
 
     # fig.colorbar(surf, shrink=0.5, aspect=5)
-    fig.tight_layout()
+    # fig.tight_layout()
     fig.savefig(os.path.join(directory, 'hyperparameter-relu-tanh.pdf'), format='pdf')
     fig.savefig(os.path.join(os.environ['PGFPATH'], 'hyperparameter-relu-tanh.pgf'), format='pgf')  # pgf
     #plt.show()
@@ -483,6 +467,353 @@ def plot_hidden_layer_size():
     plt.savefig(os.path.join(os.environ['PGFPATH'], 'hidden_layer_size.pgf'), format='pgf')
 
 
+def plot_significance():
+    directory = './plots'
+    filepath = './mnist-elm/significance.xlsx'
+    df = pandas.read_excel(filepath, sheet_name='data')
+
+    list_type = df['type'].unique()
+    print(list_type)
+
+    list_error_rates = [df[df.type == i_type].mean_error_rate.values for i_type in list_type]
+    labels = ['Random', 'Euclidean', 'Euclidean\n(activation)', 'Cosine', 'Cosine\n(normed)', 'Cosine\n(average)']
+
+    fig, ax = plt.subplots(figsize=(4, 3), gridspec_kw={'bottom': .3})
+    dict_bplot = ax.boxplot(
+        [error_rate * 100 for error_rate in list_error_rates],
+        labels=labels,
+        patch_artist=True,
+        boxprops={'facecolor': tud_colors['lightblue'], 'alpha': 1., 'color': tud_colors['gray']},
+        medianprops={'color': tud_colors['darkblue']},
+        flierprops={'markeredgecolor': tud_colors['orange'], 'marker': 'x', 'alpha': .7},
+        whiskerprops={'color': tud_colors['gray'], 'alpha': 1.},
+        capprops={'color': tud_colors['gray'], 'alpha': 1.},
+    )
+    ax.xaxis.set_tick_params(rotation=45)
+    ax.set_ylabel('error rate [%]')
+    ax.grid(axis='y')
+    # plt.show()
+    fig.savefig(os.path.join('./plots/', 'boxplot.pdf'), format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'boxplot.pgf'), format='pgf')
+
+
+def plot_hls_error_rate():
+    directory = '/home/michael/PycharmProjects/PyRCN/examples/plots'
+    filepath = './plots/hls.csv'
+    df = pandas.read_csv(filepath)
+
+    df.sort_values(by='hls', ascending=True, inplace=True)
+
+    # concatenate name, hls, pca
+    df['identifier'] = df['name'].map(str) + df['pca'].map(lambda pca: '{0:.0f}'.format(pca) if not np.isnan(pca) else '')
+
+    list_identifier = list(df['identifier'].unique())
+    print(list_identifier)
+
+    # remove labels
+    list_identifier.remove('stacked')
+    list_identifier.remove('reference-ELM')
+    list_identifier.remove('reference-BP')
+    list_identifier.remove('original100')
+    list_identifier.remove('elm_pca100')
+    list_identifier.remove('minibatch100')
+
+    list_identifier = ['elm_basic', 'elm_pca50', 'original50', 'minibatch50']
+    dict_linespecs = {
+        'elm_basic': {
+            'label': 'random ELM',
+            'linestyle': '--',
+            'color': tud_colors['red'],
+            'alpha': .7,
+        },
+        'elm_pca50': {
+            'label': 'random ELM (PCA50)',
+            'linestyle': '-',
+            'color': tud_colors['lightgreen'],
+            'alpha': .7,
+        },
+        'original50': {
+            'label': 'K-Means ELM (PCA50)',
+            'linestyle': (0, (5, 5)),
+            'color': tud_colors['lightblue'],
+            'alpha': .7,
+            'cluster_color': tud_colors['darkblue'],
+            'cluster_linestyle': (0, (3, 4)),
+            'cluster_label': 'K-Means fit time',
+        },
+        'minibatch50': {
+            'label': 'Minibatch ELM (PCA50)',
+            'linestyle': (0, (1, 1)),
+            'color': tud_colors['lightpurple'],
+            'alpha': .7,
+            'cluster_color': tud_colors['darkpurple'],
+            'cluster_linestyle': (0, (1, 3)),
+            'cluster_label': 'Minibatch fit time',
+        }
+    }
+
+    fig, ax = plt.subplots(figsize=(5, 4), gridspec_kw={'bottom': .15, 'left': .15})
+
+    lines = []
+    for identifier in list_identifier:
+        lines += ax.plot(
+            df[df.identifier == identifier].hls,
+            100 * df[df.identifier == identifier].error_rate,
+            label=dict_linespecs[identifier]['label'],
+            linestyle=dict_linespecs[identifier]['linestyle'],
+            color=dict_linespecs[identifier]['color'],
+            alpha=dict_linespecs[identifier]['alpha'],
+        )
+
+    ax.set_xlim([20, 16000])
+    ax.set_xscale('log')
+    ax.set_xticks([1e2, 1e3, 1e4])
+    ax.set_xlabel('hidden layer size')
+
+    ax.set_yscale('log')
+    ax.set_yticks([2., 5., 10.])
+    ax.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [2., 5., 10.]])
+    ax.set_ylabel('error rate [%]')
+
+    ax.grid(which='both', axis='both')
+    ax.legend()
+    # plt.show()
+    fig.savefig(os.path.join(directory, 'hls_error_rate.pdf'), format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'hls_error_rate.pgf'), format='pgf')
+
+
+def plot_hls_error_rate_pcacompare():
+    directory = '/home/michael/PycharmProjects/PyRCN/examples/plots'
+    filepath = './plots/hls.csv'
+    df = pandas.read_csv(filepath)
+
+    df.sort_values(by='hls', ascending=True, inplace=True)
+
+    # concatenate name, hls, pca
+    df['identifier'] = df['name'].map(str) + df['pca'].map(lambda pca: '{0:.0f}'.format(pca) if not np.isnan(pca) else '')
+
+    list_identifier = list(df['identifier'].unique())
+    print(list_identifier)
+
+    # remove labels
+    list_identifier.remove('stacked')
+    list_identifier.remove('reference-ELM')
+    list_identifier.remove('reference-BP')
+    list_identifier.remove('original100')
+    list_identifier.remove('elm_pca100')
+    list_identifier.remove('minibatch100')
+
+    list_identifier = ['minibatch50', 'original100', 'minibatch100', 'original50', 'elm_pca100', 'elm_pca50']
+    dicts_identifier = {
+        'elm_pca50': {
+            'label': 'Random ELM (PCA50)',
+            'linestyle': (0, (3, 5, 1, 5, 1, 5)),
+            'color': tud_colors['lightgreen'],
+            'alpha': .7,
+        },
+        'elm_pca100': {
+            'label': 'Random ELM (PCA100)',
+            'linestyle': (0, (3, 1, 1, 1, 1, 1)),
+            'color': tud_colors['darkgreen'],
+            'alpha': .7,
+        },
+        'original50': {
+            'label': 'K-Means ELM (PCA50)',
+            'linestyle': (0, (5, 5)),
+            'color': tud_colors['lightblue'],
+            'alpha': .7,
+        },
+        'original100': {
+            'label': 'K-Means ELM (PCA100)',
+            'linestyle': (0, (3, 4)),
+            'color': tud_colors['darkblue'],
+            'alpha': .7,
+        },
+        'minibatch50': {
+            'label': 'Minibatch ELM (PCA50)',
+            'linestyle': (0, (1, 1)),
+            'color': tud_colors['lightpurple'],
+            'alpha': .7,
+        },
+        'minibatch100': {
+            'label': 'Minibatch ELM (PCA50)',
+            'linestyle': (0, (1, 3)),
+            'color': tud_colors['darkpurple'],
+            'alpha': .7,
+        }
+    }
+
+    fig, ax = plt.subplots(figsize=(5, 4), gridspec_kw={'bottom': .15, 'left': .15})
+
+    lines = []
+    for identifier in dicts_identifier:
+        lines += ax.plot(
+            df[df.identifier == identifier].hls,
+            100 * df[df.identifier == identifier].error_rate,
+            label=dicts_identifier[identifier]['label'],
+            linestyle=dicts_identifier[identifier]['linestyle'],
+            color=dicts_identifier[identifier]['color'],
+            alpha=dicts_identifier[identifier]['alpha'],
+        )
+
+    ax.set_xlim([20, 16000])
+    ax.set_xscale('log')
+    ax.set_xticks([1e2, 1e3, 1e4])
+    ax.set_xlabel('hidden layer size')
+
+    ax.set_yscale('log')
+    ax.set_yticks([2., 5., 10.])
+    ax.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [2., 5., 10.]])
+    ax.set_ylabel('error rate [%]')
+
+    ax.grid(which='both', axis='both')
+    ax.legend()
+    # plt.show()
+    fig.savefig(os.path.join(directory, 'hls_error_rate_pca.pdf'), format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'hls_error_rate_pca.pgf'), format='pgf')
+
+
+def plot_hls_fittime():
+    directory = '/home/michael/PycharmProjects/PyRCN/examples/plots'
+    filepath = './plots/hls.csv'
+    df = pandas.read_csv(filepath)
+
+    df.sort_values(by='hls', ascending=True, inplace=True)
+
+    # concatenate name, hls, pca
+    df['identifier'] = df['name'].map(str) + df['pca'].map(lambda pca: '{0:.0f}'.format(pca) if not np.isnan(pca) else '')
+
+    list_identifier = list(df['identifier'].unique())
+    print(list_identifier)
+
+    # remove labels
+    list_identifier.remove('stacked')
+    list_identifier.remove('reference-ELM')
+    list_identifier.remove('reference-BP')
+    list_identifier.remove('original100')
+    list_identifier.remove('elm_pca100')
+    list_identifier.remove('minibatch100')
+
+    list_identifier = ['elm_basic', 'elm_pca50', 'original50', 'minibatch50']
+    dict_linespecs = {
+        'elm_basic': {
+            'label': 'random ELM',
+            'linestyle': '--',
+            'color': tud_colors['red'],
+            'alpha': .7,
+        },
+        'elm_pca50': {
+            'label': 'random ELM (PCA50)',
+            'linestyle': '-',
+            'color': tud_colors['lightgreen'],
+            'alpha': .7,
+        },
+        'original50': {
+            'label': 'K-Means ELM (PCA50)',
+            'linestyle': (0, (5, 5)),
+            'color': tud_colors['lightblue'],
+            'alpha': .7,
+            'cluster_color': tud_colors['darkblue'],
+            'cluster_linestyle': (0, (3, 4)),
+            'cluster_label': 'K-Means fit time',
+        },
+        'minibatch50': {
+            'label': 'Minibatch ELM (PCA50)',
+            'linestyle': (0, (1, 1)),
+            'color': tud_colors['lightpurple'],
+            'alpha': .7,
+            'cluster_color': tud_colors['darkpurple'],
+            'cluster_linestyle': (0, (1, 3)),
+            'cluster_label': 'Minibatch fit time',
+        }
+    }
+
+    fig, ax = plt.subplots(figsize=(5, 4), gridspec_kw={'bottom': .15, 'left': .15})
+
+    lines = []
+    for identifier in list_identifier:
+        lines += ax.plot(
+            df[df.identifier == identifier].hls,
+            df[df.identifier == identifier].fit_time,
+            label=dict_linespecs[identifier]['label'],
+            linestyle=dict_linespecs[identifier]['linestyle'],
+            color=dict_linespecs[identifier]['color'],
+            alpha=dict_linespecs[identifier]['alpha'],
+        )
+
+        if identifier in ['minibatch50', 'original100', 'minibatch100', 'original50']:
+            lines += ax.plot(
+                df[df.identifier == identifier].hls,
+                1. * df[df.identifier == identifier].kmeans_fit_time,
+                label=dict_linespecs[identifier]['cluster_label'],
+                linestyle=dict_linespecs[identifier]['cluster_linestyle'],
+                color=dict_linespecs[identifier]['cluster_color'],
+                alpha=dict_linespecs[identifier]['alpha'],
+            )
+
+    ax.set_xlim([20, 16000])
+    ax.set_xscale('log')
+    ax.set_xticks([1e2, 1e3, 1e4])
+    ax.set_xlabel('hidden layer size')
+
+    ax.set_ylim([3e-1, 1e3])
+    ax.set_yscale('log')
+    # ax.set_yticks([2., 5., 10.])
+    # ax.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [2., 5., 10.]])
+    ax.set_ylabel('fit time [s]')
+
+    ax.grid(which='both', axis='both')
+    ax.legend()
+    # plt.show()
+    fig.savefig(os.path.join(directory, 'hls_fittime.pdf'), format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'hls_fittime.pgf'), format='pgf')
+
+
+def plot_silhouette():
+    dict_results = pandas.read_csv('filepath')
+
+    # plot
+    fig = plt.figure(figsize=(7, 5))
+    ax = plt.axes()
+    ax_var = ax.twinx()
+
+    lines_var = []
+    lines_var += ax_var.plot(dict_results['nfeatures'], dict_results['explainvar_random'], linestyle='dashed', color=tud_colors['lightpurple'])
+    lines_var += ax_var.plot(dict_results['nfeatures'], dict_results['explainvar_maxvar'], linestyle='dashed', color=tud_colors['lightgreen'])
+    lines_var += ax_var.plot(dict_results['nfeatures'], dict_results['explainvar_pca'], linestyle='dashed', color=tud_colors['lightblue'])
+
+    lines = []
+    lines += ax.plot(dict_results['nfeatures'], dict_results['silhouette_random'], color=tud_colors['lightpurple'])
+    lines += ax.plot(dict_results['nfeatures'], dict_results['silhouette_maxvar'], color=tud_colors['lightgreen'])
+    lines += ax.plot(dict_results['nfeatures'], dict_results['silhouette_pca'], color=tud_colors['lightblue'])
+
+    ax.legend(lines, ['random', 'sorted $\sigma^2$', 'pca expl. $\sigma^2$'], loc='center right')
+    ax.set_xscale('log')
+    ax.set_xlim((np.min(dict_results['nfeatures']), np.max(dict_results['nfeatures'])))
+    x_ticks = [1, 2, 5, 10, 20, 50, 100, 200, 500]
+    ax.set_xticks(ticks=x_ticks)
+    ax.set_xticklabels(['{:d}'.format(y) for y in x_ticks])
+
+    ax.set_yscale('log')
+    ax.set_ylim((.05, 1.))
+    y_ticks = [.05, .1, .2, .5, 1.]
+    ax.set_yticks(y_ticks)
+    ax.set_yticklabels(['{:.2f}'.format(y) for y in y_ticks])
+
+    ax_var.set_yscale('log')
+    ax_var.set_ylim((1e4, 6e4))
+    y_var_ticks = [1e4, 5e4, 1e5, 5e5, 1e6, 5e6]
+    ax_var.set_yticks(y_var_ticks)
+    ax_var.set_yticklabels(['{0:0.0f} x 10³'.format(y / 1000) for y in y_var_ticks])
+
+    ax.grid(True)
+    ax.set_xlabel('#features')
+    ax.set_ylabel('Silhouette score s')
+    fig.tight_layout()
+    fig.savefig(os.path.join(directory, 'mnist-kmeans-silhouette-n_features{0}.pdf'.format(np.max(dict_results['nfeatures']))))
+    return
+
+
 def main():
     if not os.path.exists(directory):
         os.makedirs(directory)
@@ -494,6 +825,10 @@ def main():
     # plot_hidden_layer_size()
     # plot_ridge()
     # plot_pca()
+    plot_significance()
+    # plot_hls_error_rate()
+    # plot_hls_error_rate_pcacompare()
+    # plot_hls_fittime()
     return
 
 
