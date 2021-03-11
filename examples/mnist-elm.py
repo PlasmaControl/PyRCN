@@ -1174,7 +1174,7 @@ def silhouette_subset(directory, *args, **kwargs):
         # random inits
         clusterer = KMeans(n_clusters=k, n_init=10, random_state=42)
 
-        for subset_size in subset_sizes[2:4]:
+        for subset_size in subset_sizes:
             # split on subset size
             dict_results['subset_size'].append(subset_size)
             X_train, X_test, y_train, y_test = train_test_split(
