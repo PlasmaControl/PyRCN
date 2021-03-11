@@ -29,6 +29,7 @@ from sklearn.linear_model import Ridge
 
 from pyrcn.util import new_logger, argument_parser, get_mnist
 from pyrcn.base import InputToNode, ACTIVATIONS, BatchIntrinsicPlasticity, PredefinedWeightsInputToNode
+from pyrcn.cluster import KCluster
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier
 
@@ -986,6 +987,312 @@ def significance(directory):
         print('Missing privileges: {0}'.format(e))
 
 
+def silhouette_n_clusters(directory, *args, **kwargs):
+    logger = new_logger('plot_silhouette_n_clusters', directory)
+    logger.info('entering')
+    X, y = get_mnist(directory)
+
+    scaler = StandardScaler().fit(X)
+    X /= 255.
+
+    pca = PCA(n_components=50, whiten=False, random_state=42).fit(X)
+    min_var = 3088.6875
+
+    # variance threshold
+    X_var_threshold = X[..., scaler.var_ > min_var]
+
+    # pca
+    X_pca = pca.transform(X)
+
+    # n_clusters
+    k = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 200, 500, 1000, 2000, 4000]
+
+    # n_init
+    n_init = 10
+
+    dict_results = {
+        'n_clusters': [],
+        'n_init': [],
+        'variance_threshold': [],
+        'pca_n_components': [],
+        'pca_explained_variance': [],
+        'pca_explained_variance_ratio': [],
+        'silhouette_original': [],
+        'silhouette_variance_threshold': [],
+        'silhouette_pca': [],
+        'fittime_original': [],
+        'fittime_variance_threshold': [],
+        'fittime_pca': [],
+        'inertia_original': [],
+        'inertia_variance_threshold': [],
+        'inertia_pca': [],
+        'n_iter_original': [],
+        'n_iter_variance_threshold': [],
+        'n_iter_pca': []
+    }
+
+    for n_clusters in k:
+        dict_results['n_clusters'].append(n_clusters)
+        dict_results['n_init'].append(n_init)
+        dict_results['variance_threshold'].append(min_var)
+        dict_results['pca_n_components'].append(pca.n_components_)
+        dict_results['pca_explained_variance'].append(np.sum(pca.explained_variance_))
+        dict_results['pca_explained_variance_ratio'].append(np.sum(pca.explained_variance_ratio_))
+
+        clusterer = KMeans(n_clusters=n_clusters, init='k-means++', n_init=n_init, random_state=42)
+
+        # original
+        t = time.time()
+        clusterer.fit(X)
+        dict_results['fittime_original'].append(time.time() - t)
+        dict_results['inertia_original'].append(clusterer.inertia_)
+        dict_results['n_iter_original'].append(clusterer.n_iter_)
+        dict_results['silhouette_original'].append(
+            silhouette_score(X, clusterer.predict(X), metric='euclidean', random_state=42))
+
+        # var threshold
+        t = time.time()
+        clusterer.fit(X_var_threshold)
+        dict_results['fittime_variance_threshold'].append(time.time() - t)
+        dict_results['inertia_variance_threshold'].append(clusterer.inertia_)
+        dict_results['n_iter_variance_threshold'].append(clusterer.n_iter_)
+        dict_results['silhouette_variance_threshold'].append(
+            silhouette_score(X_var_threshold, clusterer.predict(X_var_threshold), metric='euclidean', random_state=42))
+
+        # pca
+        t = time.time()
+        clusterer.fit(X_pca)
+        dict_results['fittime_pca'].append(time.time() - t)
+        dict_results['inertia_pca'].append(clusterer.inertia_)
+        dict_results['n_iter_pca'].append(clusterer.n_iter_)
+        dict_results['silhouette_pca'].append(
+            silhouette_score(X_pca, clusterer.predict(X_pca), metric='euclidean', random_state=42))
+
+        logger.info('n_clusters = {0}, pca kmeans score: {1}'.format(n_clusters, dict_results['silhouette_pca'][-1]))
+
+    # save results to csv
+    with open(os.path.join(directory, 'silhouette_n_clusters.csv'), 'w') as f:
+        f.write(','.join(dict_results.keys()) + '\n')
+        for row in list(map(list, zip(*dict_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
+    return
+
+
+def silhouette_kcluster(directory, *args, **kwargs):
+    logger = new_logger('plot_silhouette_kcluster', directory)
+    logger.info('entering')
+    X, y = get_mnist(directory)
+
+    X /= 255.
+
+    scaler = StandardScaler().fit(X)
+    pca = PCA(n_components=50, whiten=False, random_state=42).fit(X)
+
+    # PCA preprocessed
+    X_pca = pca.transform(X)
+
+    k = [10, 15, 20, 25, 30, 35, 50, 100, 200]
+
+    dict_results = {
+        'n_clusters': [],
+        'pca_n_components': [],
+        'pca_expl_var': [],
+        'pca_expl_var_ratio': [],
+        'silhouette_kcosine': [],
+        'silhouette_kmeans': [],
+        'fittime_kcosine': [],
+        'fittime_kmeans': []
+    }
+
+    for n_clusters in k:
+        dict_results['n_clusters'].append(n_clusters)
+        dict_results['pca_n_components'].append(pca.n_components_)
+        dict_results['pca_expl_var'].append(np.sum(pca.explained_variance_))
+        dict_results['pca_expl_var_ratio'].append(np.sum(pca.explained_variance_ratio_))
+
+        # kmeans
+        clusterer_euclid = KMeans(n_clusters=n_clusters, random_state=42)
+        t = time.time()
+        clusterer_euclid.fit(X_pca)
+        dict_results['fittime_kmeans'].append(time.time() - t)
+        dict_results['silhouette_kmeans'].append(
+            silhouette_score(X_pca, clusterer_euclid.predict(X_pca), metric='euclidean', random_state=42))
+
+        # kcosine
+        clusterer_cosine = KCluster(n_clusters=n_clusters, metric='cosine', random_state=42)
+        t = time.time()
+        clusterer_cosine.fit(X_pca)
+        dict_results['fittime_kcosine'].append(time.time() - t)
+        dict_results['silhouette_kcosine'].append(
+            silhouette_score(X_pca, clusterer_cosine.predict(X_pca), metric='cosine', random_state=42))
+
+    # save results to csv
+    with open(os.path.join(directory, 'silhouette_kcluster.csv'), 'w') as f:
+        f.write(','.join(dict_results.keys()) + '\n')
+        for row in list(map(list, zip(*dict_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
+    return
+
+
+def silhouette_subset(directory, *args, **kwargs):
+    logger = new_logger('plot_silhouette_subset', directory)
+    logger.info('entering')
+    X, y = get_mnist(directory)
+
+    X /= 255.
+
+    pca = PCA(n_components=50, whiten=False, random_state=42)
+
+    # preprocessing
+    X_pca = pca.fit_transform(X)
+
+    # define subset sizes
+    subset_sizes = [250, 500, 1000, 2000, 4000, 8000, 16000, 32000, 60000]
+
+    # number of centroids
+    k_list = [20]
+
+    dict_results = {
+        'subset_size': [],
+        'k': [],
+        'n_init': [],
+        'silhouette_raninit': [],
+        'silhouette_preinit': [],
+        'fittime_raninit': [],
+        'fittime_preinit': [],
+        'scoretime_raninit': [],
+        'scoretime_preinit': []
+    }
+
+    for k in k_list:
+        # preinit
+        # initial training set
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_pca, y, random_state=42, train_size=subset_sizes[0], shuffle=True, stratify=y)
+        clusterer_init = KMeans(n_clusters=k, random_state=42, init='k-means++', n_init=10).fit(X_train)
+
+        # random inits
+        clusterer = KMeans(n_clusters=k, n_init=10, random_state=42)
+
+        for subset_size in subset_sizes[2:4]:
+            # split on subset size
+            dict_results['subset_size'].append(subset_size)
+            X_train, X_test, y_train, y_test = train_test_split(
+                X_pca, y, random_state=42, train_size=subset_size, shuffle=True, stratify=y)
+
+            # train preinit
+            t = time.time()
+            clusterer_init = KMeans(n_clusters=k, random_state=42, n_init=1, init=clusterer_init.cluster_centers_)
+            clusterer_init.fit_predict(X_train)
+            dict_results['fittime_preinit'].append(time.time() - t)
+
+            # score preinit
+            t = time.time()
+            dict_results['silhouette_preinit'].append(
+                silhouette_score(X_train, clusterer_init.predict(X_train), metric='euclidean', random_state=42))
+            dict_results['scoretime_preinit'].append(time.time() - t)
+
+            # train randinit
+            t = time.time()
+            clusterer.fit(X_train)
+            dict_results['fittime_raninit'].append(time.time() - t)
+
+            # score raninit
+            t = time.time()
+            dict_results['silhouette_raninit'].append(
+                silhouette_score(X_train, clusterer.predict(X_train), metric='euclidean', random_state=42))
+            dict_results['scoretime_raninit'].append(time.time() - t)
+
+            # store results
+            dict_results['k'].append(k)
+            dict_results['n_init'].append(clusterer.n_init)
+
+            logger.info('silhouette (preinit) at subset size {1}: {0}'.format(dict_results['silhouette_preinit'][-1], dict_results['subset_size'][-1]))
+
+    # save results to csv
+    with open(os.path.join(directory, 'silhouette_kmeans_subset_size.csv'), 'w') as f:
+        f.write(','.join(dict_results.keys()) + '\n')
+        for row in list(map(list, zip(*dict_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
+    return
+
+
+def silhouette_features(directory, *args, **kwargs):
+    logger = new_logger('plot_silhouette_features', directory)
+    logger.info('entering')
+    X, y = get_mnist(directory)
+
+    X /= 255.
+
+    scaler = StandardScaler().fit(X)
+    pca = PCA(whiten=False, random_state=42).fit(X)
+
+    X_pca = pca.transform(X)
+
+    # sort scaler variances
+    variance_indices = np.argsort(scaler.var_)[::-1]
+
+    n_features_list = [1, 2, 3, 4, 5, 5, 6, 7, 8, 9, 10, 15, 20, 25, 30, 35, 40, 50, 60, 70, 80, 90, 100, 200, 300, 400, 500, 600, 700, 784]
+
+    rs = np.random.RandomState(42)
+
+    k = 20
+
+    dict_results = {
+        'nfeatures': [],
+        'fittime_random': [],
+        'fittime_maxvar': [],
+        'fittime_pca': [],
+        'silhouette_random': [],
+        'silhouette_maxvar': [],
+        'silhouette_pca': [],
+        'explainvar_random': [],
+        'explainvar_maxvar': [],
+        'explainvar_pca': [],
+        'explvarrat_random': [],
+        'explvarrat_maxvar': [],
+        'explvarrat_pca': [],
+        'n_clusters': [],
+    }
+
+    for n_features in n_features_list:
+        clusterer = KMeans(n_clusters=k, random_state=42)
+        dict_results['nfeatures'].append(n_features)
+        dict_results['n_clusters'].append(clusterer.n_clusters)
+
+        indices = rs.choice(X.shape[1], size=n_features)
+        t = time.time()
+        pred = clusterer.fit_predict(X[:, indices])
+        dict_results['fittime_random'].append(time.time() - t)
+        dict_results['silhouette_random'].append(silhouette_score(X[:, indices], pred, metric='euclidean', random_state=42))
+        dict_results['explainvar_random'].append(np.sum(scaler.var_[indices]))
+        dict_results['explvarrat_random'].append(np.sum(scaler.var_[indices]) / np.sum(scaler.var_))
+
+        t = time.time()
+        indices = variance_indices[:n_features]
+        pred = clusterer.fit_predict(X[:, indices])
+        dict_results['fittime_maxvar'].append(time.time() - t)
+        dict_results['silhouette_maxvar'].append(silhouette_score(X[:, indices], pred, metric='euclidean', random_state=42))
+        dict_results['explainvar_maxvar'].append(np.sum(scaler.var_[indices]))
+        dict_results['explvarrat_maxvar'].append(np.sum(scaler.var_[indices]) / np.sum(scaler.var_))
+
+        t = time.time()
+        pred = clusterer.fit_predict(X_pca[:, :n_features])
+        dict_results['fittime_pca'].append(time.time() - t)
+        dict_results['silhouette_pca'].append(silhouette_score(X_pca[:, :n_features], pred, metric='euclidean', random_state=42))
+        dict_results['explainvar_pca'].append(np.sum(pca.explained_variance_[:n_features]))
+        dict_results['explvarrat_pca'].append(np.sum(pca.explained_variance_ratio_[:n_features]))
+
+        logger.info('pca silhouette at n_features={1:.0f}: {0}'.format(dict_results['silhouette_pca'][-1], n_features))
+
+    # save results to csv
+    with open(os.path.join(directory, 'silhouette_kmeans{0:.0f}_features.csv'.format(k)), 'w') as f:
+        f.write(','.join(dict_results.keys()) + '\n')
+        for row in list(map(list, zip(*dict_results.values()))):
+            f.write(','.join(map(str, row)) + '\n')
+    return
+
+
 def main(directory, params):
     # workdir
     if not os.path.isdir(directory):
@@ -1017,6 +1324,10 @@ def main(directory, params):
         'elm_coates': elm_coates,
         'elm_coates_stacked': elm_coates_stacked,
         'significance': significance,
+        'silhouette_n_clusters': silhouette_n_clusters,
+        'silhouette_subset': silhouette_subset,
+        'silhouette_kcluster': silhouette_kcluster,
+        'silhouette_features': silhouette_features
     }
 
     # run specified programs
