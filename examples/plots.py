@@ -3,18 +3,13 @@ Plots for numerous reasons
 """
 import os
 
-import scipy
 import numpy as np
-import time
 
 import pickle
 import pandas
 
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
-import matplotlib
-# matplotlib.use('pgf')
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap, Normalize
+from matplotlib.colors import ListedColormap
 
 from pyrcn.util import tud_colors
 
@@ -116,7 +111,7 @@ def plot_activation_mean():
     lines[4].set_linestyle(':')
     lines[5].set_linestyle(':')
 
-    ax.legend(lines, ('$f_x, \mu = 0$', '$f_y, \mu = 0$', '$f_x, \mu = -.25$', '$f_y, \mu = -.25$','$f_x, \mu = -.5$', '$f_y, \mu = -.75$'), bbox_to_anchor=(1, .5), loc="center left")
+    ax.legend(lines, ('$f_x, \mu = 0$', '$f_y, \mu = 0$', '$f_x, \mu = -.25$', '$f_y, \mu = -.25$','$f_x, \mu = -.5$', '$f_y, \mu = -.5$'), bbox_to_anchor=(1, .5), loc="center left")
     fig.tight_layout()
     fig.savefig(os.path.join(os.environ['PGFPATH'], 'plot-distribution-mean.pgf'), format='pgf')
     fig.savefig(os.path.join(directory, 'plot-distribution-mean.pdf'), format='pdf')
@@ -330,7 +325,7 @@ def plot_hyperparameters():
             # annotate
             y = np.argmax(Z_value) // len(Z_value)
             x = np.argmax(Z_value) % len(Z_value)
-            ax.annotate('{0:0.1f}%'.format(np.max(Z_value)), xy=(x, y), c=(1., 1., 1., 1.), horizontalalignment='center', verticalalignment='center', fontsize='xx-small', fontstretch='ultra-condensed')
+            ax.annotate('{0:0.1f}%'.format(np.max(Z_value)), xy=(x, y), c=(0., 0., 0., .7), horizontalalignment='center', verticalalignment='center', fontsize='xx-small', fontstretch='ultra-condensed')
 
             ax.set_title(df_loop.attrs['titlestr'])
 
@@ -472,16 +467,30 @@ def plot_significance():
     filepath = './mnist-elm/significance.xlsx'
     df = pandas.read_excel(filepath, sheet_name='data')
 
-    list_type = df['type'].unique()
-    print(list_type)
+    print(df['type'].unique())
+    list_type = [
+        'pca+random+activation',
+        'pca+kmeans+cosine',
+        'pca+kmeans+cosine+norm',
+        'pca+avg+kmeans+cosine',
+        'pca+kmeans+euclidean',
+        'pca+kmeans+euclidean+activation'
+    ]
+    list_labels = [
+        'Random',
+        'Cosine',
+        'Cosine\n(normed)',
+        'Cosine\n(average)',
+        'Euclidean',
+        'Euclidean\n(activation)'
+    ]
 
     list_error_rates = [df[df.type == i_type].mean_error_rate.values for i_type in list_type]
-    labels = ['Random', 'Euclidean', 'Euclidean\n(activation)', 'Cosine', 'Cosine\n(normed)', 'Cosine\n(average)']
 
     fig, ax = plt.subplots(figsize=(4, 3), gridspec_kw={'bottom': .3})
     dict_bplot = ax.boxplot(
         [error_rate * 100 for error_rate in list_error_rates],
-        labels=labels,
+        labels=list_labels,
         patch_artist=True,
         boxprops={'facecolor': tud_colors['lightblue'], 'alpha': 1., 'color': tud_colors['gray']},
         medianprops={'color': tud_colors['darkblue']},
@@ -769,48 +778,313 @@ def plot_hls_fittime():
     fig.savefig(os.path.join(os.environ['PGFPATH'], 'hls_fittime.pgf'), format='pgf')
 
 
-def plot_silhouette():
-    dict_results = pandas.read_csv('filepath')
+def plot_silhouette_n_clusters():
+    filepath = os.path.abspath('./plots/silhouette_n_clusters.csv')
+    df = pandas.read_csv(filepath)
 
-    # plot
-    fig = plt.figure(figsize=(7, 5))
-    ax = plt.axes()
-    ax_var = ax.twinx()
+    df.sort_values('n_clusters', ascending=True)
+    print(df.keys())
+    keys = [
+        'n_clusters',
+        'n_init',
+        'variance_threshold',
+        'pca_n_components',
+        'pca_explained_variance',
+        'pca_explained_variance_ratio',
+        'silhouette_original',
+        'silhouette_variance_threshold',
+        'silhouette_pca',
+        'fittime_original',
+        'fittime_variance_threshold',
+        'fittime_pca',
+        'inertia_original',
+        'inertia_variance_threshold',
+        'inertia_pca',
+        'n_iter_original',
+        'n_iter_variance_threshold',
+        'n_iter_pca'
+    ]
 
-    lines_var = []
-    lines_var += ax_var.plot(dict_results['nfeatures'], dict_results['explainvar_random'], linestyle='dashed', color=tud_colors['lightpurple'])
-    lines_var += ax_var.plot(dict_results['nfeatures'], dict_results['explainvar_maxvar'], linestyle='dashed', color=tud_colors['lightgreen'])
-    lines_var += ax_var.plot(dict_results['nfeatures'], dict_results['explainvar_pca'], linestyle='dashed', color=tud_colors['lightblue'])
+    fig, ax_score = plt.subplots(figsize=(5., 3.), gridspec_kw={'left': .15, 'right': .85, 'bottom': .2, 'top': .8})
+
+    ax_score.set_xlim([np.min(df['n_clusters'].values), np.max(df['n_clusters'].values)])
+    ax_score.set_xlabel(r'\#centroids')
+    ax_score.set_xscale('log')
+    ax_score.set_xticks([5, 10, 20, 50, 100, 200, 500, 1000, 2000, 4000])
+    ax_score.set_xticklabels(['{0:.0f}'.format(xtick) for xtick in [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 4000]])
+    ax_score.grid(axis='x', which='both')
 
     lines = []
-    lines += ax.plot(dict_results['nfeatures'], dict_results['silhouette_random'], color=tud_colors['lightpurple'])
-    lines += ax.plot(dict_results['nfeatures'], dict_results['silhouette_maxvar'], color=tud_colors['lightgreen'])
-    lines += ax.plot(dict_results['nfeatures'], dict_results['silhouette_pca'], color=tud_colors['lightblue'])
 
-    ax.legend(lines, ['random', 'sorted $\sigma^2$', 'pca expl. $\sigma^2$'], loc='center right')
-    ax.set_xscale('log')
-    ax.set_xlim((np.min(dict_results['nfeatures']), np.max(dict_results['nfeatures'])))
-    x_ticks = [1, 2, 5, 10, 20, 50, 100, 200, 500]
-    ax.set_xticks(ticks=x_ticks)
-    ax.set_xticklabels(['{:d}'.format(y) for y in x_ticks])
+    lines += ax_score.plot(df['n_clusters'].values, 100*df['silhouette_original'].values, color=tud_colors['lightpurple'], alpha=.7)
+    lines += ax_score.plot(df['n_clusters'].values, 100*df['silhouette_variance_threshold'].values, color=tud_colors['lightgreen'], alpha=.7)
+    lines += ax_score.plot(df['n_clusters'].values, 100*df['silhouette_pca'].values, color=tud_colors['lightblue'], alpha=.7)
 
-    ax.set_yscale('log')
-    ax.set_ylim((.05, 1.))
-    y_ticks = [.05, .1, .2, .5, 1.]
-    ax.set_yticks(y_ticks)
-    ax.set_yticklabels(['{:.2f}'.format(y) for y in y_ticks])
+    ax_time = ax_score.twinx()
 
-    ax_var.set_yscale('log')
-    ax_var.set_ylim((1e4, 6e4))
-    y_var_ticks = [1e4, 5e4, 1e5, 5e5, 1e6, 5e6]
-    ax_var.set_yticks(y_var_ticks)
-    ax_var.set_yticklabels(['{0:0.0f} x 10³'.format(y / 1000) for y in y_var_ticks])
+    lines += ax_time.plot(df['n_clusters'].values, df['fittime_original'].values, color=tud_colors['lightpurple'], alpha=.7, linestyle='--')
+    lines += ax_time.plot(df['n_clusters'].values, df['fittime_variance_threshold'].values, color=tud_colors['lightgreen'], alpha=.7, linestyle='--')
+    lines += ax_time.plot(df['n_clusters'].values, df['fittime_pca'].values, color=tud_colors['lightblue'], alpha=.7, linestyle='--')
 
-    ax.grid(True)
-    ax.set_xlabel('#features')
-    ax.set_ylabel('Silhouette score s')
-    fig.tight_layout()
-    fig.savefig(os.path.join(directory, 'mnist-kmeans-silhouette-n_features{0}.pdf'.format(np.max(dict_results['nfeatures']))))
+    ax_score.set_ylabel('silhouette score [%]')
+    ax_score.set_yscale('log')
+    ax_score.grid(axis='y', which='major')
+    ax_score.set_ylim([1, 10])
+    ax_score.set_yticks([1, 2, 5, 10])
+    ax_score.set_yticks([], minor=True)
+    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [1, 2, 5, 10]])
+    ax_time.set_ylabel('fit time [s]')
+    ax_time.set_yscale('log')
+
+    ax_score.legend(lines[:3], [
+        'original',
+        'variance\nthreshold = {0:.1f}'.format(df['variance_threshold'][0]),
+        'PCA, expl.\nvar ratio = {0:.1f}%'.format(100 * df['pca_explained_variance_ratio'][0])
+    ], bbox_to_anchor=(-0.2, 1.05, 1.4, 0), loc="lower left", mode="expand", ncol=3)
+
+    # plt.show()
+    fig.savefig('./plots/plot_silhouette_n_clusters.pdf', format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'plot_silhouette_n_clusters.pgf'), format='pgf')
+
+
+def silhouette_kmeans_features():
+    filepath = os.path.abspath('./plots/silhouette_kmeans20_features.csv')
+    df = pandas.read_csv(filepath)
+
+    print(df.keys())
+    keys = [
+        'nfeatures',
+        'fittime_random',
+        'fittime_maxvar',
+        'fittime_pca',
+        'silhouette_random',
+        'silhouette_maxvar',
+        'silhouette_pca',
+        'explainvar_random',
+        'explainvar_maxvar',
+        'explainvar_pca',
+        'explvarrat_random',
+        'explvarrat_maxvar',
+        'explvarrat_pca',
+        'n_clusters'
+    ]
+    print(np.unique(df['n_clusters'].values))
+
+    df.sort_values('nfeatures', ascending=True)
+
+    fig, ax_score = plt.subplots(figsize=(5., 3.), gridspec_kw={'left': .15, 'right': .85, 'top': .8, 'bottom': .2})
+
+    ax_score.set_xlim([np.min(df['nfeatures'].values), np.max(df['nfeatures'].values)])
+    ax_score.set_xscale('log')
+    ax_score.set_xticks([1, 2, 5, 10, 20, 50, 100, 200, 500, 784])
+    ax_score.set_xticklabels(['{0:.0f}'.format(xtick) for xtick in [1, 2, 5, 10, 20, 50, 100, 200, 500, 784]])
+    ax_score.grid(axis='x', which='both')
+    ax_score.set_xlabel(r'\#features')
+
+    ax_variance = ax_score.twinx()
+
+    lines = []
+    lines += ax_score.plot(df['nfeatures'].values, 100*df['silhouette_random'].values, color=tud_colors['lightpurple'], linestyle='-', alpha=.7)
+    lines += ax_score.plot(df['nfeatures'].values, 100*df['silhouette_maxvar'].values, color=tud_colors['lightgreen'], linestyle='-', alpha=.7)
+    lines += ax_score.plot(df['nfeatures'].values, 100*df['silhouette_pca'].values, color=tud_colors['lightblue'], linestyle='-', alpha=.7)
+    lines += ax_variance.plot(df['nfeatures'].values, 100*df['explvarrat_random'].values, color=tud_colors['lightpurple'], linestyle='--', alpha=.7)
+    lines += ax_variance.plot(df['nfeatures'].values, 100*df['explvarrat_maxvar'].values, color=tud_colors['lightgreen'], linestyle='--', alpha=.7)
+    lines += ax_variance.plot(df['nfeatures'].values, 100*df['explvarrat_pca'].values, color=tud_colors['lightblue'], linestyle='--', alpha=.7)
+
+    ax_score.set_yscale('log')
+    ax_score.set_ylim([5, 100])
+    ax_score.set_yticks([5, 10, 20, 50, 100])
+    ax_score.set_yticks([], minor=True)
+    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [5, 10, 20, 50, 100]])
+    ax_score.set_ylabel('silhouette score [%]')
+
+    ax_variance.set_yscale('log')
+    ax_variance.set_ylim([1, 100])
+    ax_variance.set_yticks([1, 2, 5, 10, 20, 50, 100])
+    ax_variance.set_yticks([], minor=True)
+    ax_variance.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [1, 2, 5, 10, 20, 50, 100]])
+    ax_variance.grid(axis='y', which='both')
+    ax_variance.set_ylabel('explained variance ratio [%]')
+
+    ax_score.legend(lines[:3], ['random', 'maximal\nvariance', 'principal\ncomponents'], bbox_to_anchor=(-0.2, 1.05, 1.4, 0), loc="lower left", mode="expand", ncol=3)
+    # plt.show()
+    fig.savefig('./plots/silhouette_kmeans_features.pdf', format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'silhouette_kmeans_features.pgf'), format='pgf')
+
+
+def plot_silhouette_subset():
+    filepath = os.path.abspath('./plots/silhouette_kmeans_subset_size.csv')
+    df = pandas.read_csv(filepath)
+
+    print(df.keys())
+    keys = [
+        'subset_size',
+        'k',
+        'n_init',
+        'silhouette_raninit',
+        'silhouette_preinit',
+        'fittime_raninit',
+        'fittime_preinit',
+        'scoretime_raninit',
+        'scoretime_preinit'
+    ]
+    print(np.unique(df['k'].values))
+
+    df.sort_values('subset_size', ascending=True)
+
+    fig, ax_score = plt.subplots(figsize=(5., 3.), gridspec_kw={'left': .15, 'right': .85, 'top': .8, 'bottom': .2})
+
+    ax_score.set_xlim([np.min(df['subset_size'].values), np.max(df['subset_size'].values)])
+    ax_score.set_xscale('log')
+    ax_score.set_xticks([250, 500, 1000, 2000, 4000, 8000, 16000, 32000, 60000])
+    ax_score.set_xticklabels(['{0:.0f}'.format(xtick) for xtick in [250, 500, 1000, 2000, 4000, 8000, 16000, 32000, 60000]])
+    ax_score.grid(axis='x', which='both')
+    ax_score.set_xlabel(r'subset size')
+
+    ax_time = ax_score.twinx()
+
+    lines = []
+    lines += ax_score.plot(df['subset_size'].values, 100*df['silhouette_raninit'].values, color=tud_colors['lightpurple'], linestyle='-', alpha=.7)
+    lines += ax_score.plot(df['subset_size'].values, 100*df['silhouette_preinit'].values, color=tud_colors['lightblue'], linestyle='-', alpha=.7)
+    lines += ax_time.plot(df['subset_size'].values, df['fittime_raninit'].values, color=tud_colors['lightpurple'], linestyle='--', alpha=.7)
+    lines += ax_time.plot(df['subset_size'].values, df['fittime_preinit'].values, color=tud_colors['lightblue'], linestyle='--', alpha=.7)
+    lines += ax_time.plot(df['subset_size'].values, df['scoretime_preinit'].values, color=tud_colors['gray'], linestyle='-.', alpha=.5)
+
+    ax_score.set_yscale('log')
+    ax_score.set_ylim([8, 11])
+    ax_score.set_yticks([8, 9, 10, 11])
+    ax_score.set_yticks([], minor=True)
+    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [8, 9, 10, 11]])
+    ax_score.grid(axis='y', which='both')
+    ax_score.set_ylabel('silhouette score [%]')
+
+    ax_time.set_yscale('log')
+    ax_time.set_ylabel('time [s]')
+
+    ax_score.legend([lines[idx] for idx in [0, 1, 4]], [
+        '{0:.0f} random inits'.format(int(np.unique(df['n_init'].values))),
+        'preinit',
+        'score time'
+    ], bbox_to_anchor=(-0.2, 1.05, 1.4, 0), loc="lower left", mode="expand", ncol=3)
+    # plt.show()
+    fig.savefig('./plots/plot_silhouette_subset.pdf', format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'plot_silhouette_subset.pgf'), format='pgf')
+
+
+def plot_silhouette_kcluster():
+    filepath = os.path.abspath('./plots/silhouette_kcluster.csv')
+    df = pandas.read_csv(filepath)
+
+    print(df.keys())
+    keys = [
+        'n_clusters',
+        'pca_n_components',
+        'pca_expl_var',
+        'pca_expl_var_ratio',
+        'silhouette_kcosine',
+        'silhouette_kmeans',
+        'fittime_kcosine',
+        'fittime_kmeans'
+    ]
+    print(np.unique(df['pca_n_components'].values))
+
+    df.sort_values('n_clusters', ascending=True)
+
+    fig, ax_score = plt.subplots(figsize=(5., 3.), gridspec_kw={'left': .15, 'right': .85, 'top': .8, 'bottom': .2})
+
+    ax_score.set_xlim([np.min(df['n_clusters'].values), np.max(df['n_clusters'].values)])
+    ax_score.set_xscale('log')
+    ax_score.set_xticks([10, 20, 50, 100, 200])
+    ax_score.set_xticklabels(['{0:.0f}'.format(xtick) for xtick in [10, 20, 50, 100, 200]])
+    ax_score.grid(axis='x', which='both')
+    ax_score.set_xlabel(r'\#centroids')
+
+    ax_time = ax_score.twinx()
+
+    lines = []
+    lines += ax_score.plot(df['n_clusters'].values, 100*df['silhouette_kcosine'].values, color=tud_colors['lightpurple'], linestyle='-', alpha=.7)
+    lines += ax_score.plot(df['n_clusters'].values, 100*df['silhouette_kmeans'].values, color=tud_colors['lightblue'], linestyle='-', alpha=.7)
+    lines += ax_time.plot(df['n_clusters'].values, df['fittime_kcosine'].values, color=tud_colors['lightpurple'], linestyle='--', alpha=.7)
+    lines += ax_time.plot(df['n_clusters'].values, df['fittime_kmeans'].values, color=tud_colors['lightblue'], linestyle='--', alpha=.7)
+
+    ax_score.set_yscale('log')
+    ax_score.set_ylim([7, 20])
+    ax_score.set_yticks([7, 10, 15, 20])
+    ax_score.set_yticks([], minor=True)
+    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [7, 10, 15, 20]])
+    ax_score.grid(axis='y', which='both')
+    ax_score.set_ylabel('silhouette score [%]')
+
+    ax_time.set_yscale('log')
+    ax_time.set_ylabel('time [s]')
+
+    ax_score.legend(lines[:2], [
+        'kcosine',
+        'kmeans'
+    ], bbox_to_anchor=(.1, 1.05, .8, 0), loc="lower left", mode="expand", ncol=3)
+    # plt.show()
+    fig.savefig('./plots/plot_silhouette_kcluster.pdf', format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'plot_silhouette_kcluster.pgf'), format='pgf')
+
+
+def plot_kmeans_subset_phenomen():
+    keys = ['n_clusters', 'silhouette_original', 'n_iter_original']
+
+    df_2k = pandas.read_csv('./mnist-elm/silhouette_n_clusters_subset2k.csv').set_index('n_clusters')
+    df_5k = pandas.read_csv('./mnist-elm/silhouette_n_clusters_subset5k.csv').set_index('n_clusters')
+    df_10k = pandas.read_csv('./mnist-elm/silhouette_n_clusters_subset10k.csv').set_index('n_clusters')
+
+    # force suffix
+    df_2k.columns = df_2k.columns.map(lambda x: str(x) + '_2k')
+
+    df = df_10k.join(df_5k, lsuffix='_10k', rsuffix='_5k').join(df_2k)
+
+    print(df.keys())
+
+    df.sort_index(ascending=True, inplace=True)
+
+    fig, ax_score = plt.subplots(figsize=(5., 3.), gridspec_kw={'left': .15, 'right': .85, 'top': .8, 'bottom': .2})
+
+    # df.index = df['n_clusters_2k']
+    ax_score.set_xlim([np.min(df.index.values), np.max(df.index.values)])
+    ax_score.set_xscale('log')
+    ax_score.set_xlim([5, 2000])
+    ax_score.set_xticks([5, 10, 20, 50, 100, 200, 500, 1000, 2000])
+    ax_score.set_xticklabels(['{0:.0f}'.format(xtick) for xtick in [5, 10, 20, 50, 100, 200, 500, 1000, 2000]])
+    ax_score.grid(axis='x', which='both')
+    ax_score.set_xlabel(r'\#centroids')
+
+    ax_niter = ax_score.twinx()
+
+    lines = []
+    lines += ax_score.plot(df.index.values, 100 * df['silhouette_original_2k'].values, color=tud_colors['lightpurple'], linestyle='-', alpha=.7)
+    lines += ax_score.plot(df.index.values, 100 * df['silhouette_original_5k'].values, color=tud_colors['lightblue'], linestyle='-', alpha=.7)
+    lines += ax_score.plot(df.index.values, 100 * df['silhouette_original_10k'].values, color=tud_colors['lightgreen'], linestyle='-', alpha=.7)
+
+    lines += ax_niter.plot(df.index.values, df['n_iter_original_2k'].values, color=tud_colors['lightpurple'], linestyle='--', alpha=.7)
+    lines += ax_niter.plot(df.index.values, df['n_iter_original_5k'].values, color=tud_colors['lightblue'], linestyle='--', alpha=.7)
+    lines += ax_niter.plot(df.index.values, df['n_iter_original_10k'].values, color=tud_colors['lightgreen'], linestyle='--', alpha=.7)
+
+    ax_score.grid(axis='y', which='both')
+    ax_score.set_ylabel('silhouette score [%]')
+
+    ax_niter.set_yscale('log')
+    ax_niter.set_ylabel(r'\#iterations')
+
+    ax_score.legend(lines[:3], [
+        '2000',
+        '5000',
+        '10000'
+    ], bbox_to_anchor=(.1, 1.05, .8, 0), loc="lower left", mode="expand", ncol=3)
+    # plt.show()
+    fig.savefig('./plots/plot_kmeans_subset_phenomen.pdf', format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'plot_kmeans_subset_phenomen.pgf'), format='pgf')
+
+
+def plot_cluster_critical():
+    cluster_centers = np.load('./cluster_critical.npy', allow_pickle=True)
+
+    plt.imsave('./centroid4.png', cluster_centers[99, ...].reshape(28, 28), cmap=plt.cm.gray_r)
     return
 
 
@@ -819,16 +1093,22 @@ def main():
         os.makedirs(directory)
 
     # plot_activation_variance()
-    # plot_activation_mean()
+    plot_activation_mean()
     # plot_hyperparameters()
     # plot_preprocessed()
     # plot_hidden_layer_size()
     # plot_ridge()
     # plot_pca()
-    plot_significance()
+    # plot_significance()
     # plot_hls_error_rate()
     # plot_hls_error_rate_pcacompare()
     # plot_hls_fittime()
+    # plot_silhouette_n_clusters()
+    # silhouette_kmeans_features()
+    # plot_silhouette_subset()
+    # plot_silhouette_kcluster()
+    # plot_kmeans_subset_phenomen()
+    # plot_cluster_critical()
     return
 
 

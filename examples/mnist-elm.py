@@ -110,7 +110,7 @@ def elm_hyperparameters(directory):
     }
 
     estimator = ELMClassifier(input_to_nodes=InputToNode(), regressor=Ridge())
-    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=-1)
+    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=-1, scoring='accuracy')
     cv.fit(X_train, y_train)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
@@ -132,7 +132,7 @@ def elm_hyperparameters(directory):
         'random_state': [42]
     }
 
-    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=-1)
+    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=-1, scoring='accuracy')
     cv.fit(X_train, y_train)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
@@ -154,7 +154,7 @@ def elm_hyperparameters(directory):
         'random_state': [42]
     }
 
-    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=1)
+    cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=1, scoring='accuracy')
     cv.fit(X_train, y_train)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
@@ -178,6 +178,9 @@ def elm_basic(directory):
     # encode labels
     label_encoder = LabelEncoder().fit(y)
     y_encoded = label_encoder.transform(y)
+
+    # train test split
+    X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, train_size=train_size, random_state=42)
 
     param_grid = [{
             'input_to_nodes__hidden_layer_size': [500, 2000],
@@ -210,10 +213,10 @@ def elm_basic(directory):
         n_jobs=1,
         verbose=2,
         refit=False,
-        cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
+        cv=StratifiedShuffleSplit(n_splits=1, test_size=1/7, random_state=42))
 
     # run!
-    cv.fit(X, y_encoded)
+    cv.fit(X_train, y_train)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
     # refine results
@@ -222,7 +225,7 @@ def elm_basic(directory):
 
     # save results
     try:
-        with open(os.path.join(directory, '{0}.csv'.format(self_name)), 'w') as f:
+        with open(os.path.join(directory, 'elm_basic.csv'), 'w') as f:
             f.write(','.join(cv_results.keys()) + '\n')
             for row in list(map(list, zip(*cv_results.values()))):
                 f.write(','.join(map(str, row)) + '\n')
@@ -244,7 +247,7 @@ def elm_pca(directory):
     X /= 255.
 
     # split train test
-    X_train, X_test, y_train, y_test = X[:train_size, :], X[train_size:, :], y_encoded[:train_size], y_encoded[train_size:]
+    X_train, X_test, y_train, y_test = train_test_split(X[:train_size], y[:train_size], train_size=50000, random_state=42)
 
     # prepare parameter grids
     param_grid_basic = {
@@ -330,6 +333,9 @@ def elm_preprocessed(directory):
     X_preprocessed = pca.transform(X)
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
+    # train test split
+    X_train, X_test, y_train, y_test = train_test_split(X_preprocessed, y_encoded, train_size=train_size, random_state=42)
+
     # prepare parameter grid
     param_grid = [{
             'input_to_nodes__hidden_layer_size': [500, 2000],
@@ -364,10 +370,10 @@ def elm_preprocessed(directory):
         n_jobs=1,
         verbose=2,
         refit=False,
-        cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])  # split train test (dataset size = 70k)
+        cv=StratifiedShuffleSplit(n_splits=1, test_size=1/7, random_state=42))
 
     # run!
-    cv.fit(X_preprocessed, y_encoded)
+    cv.fit(X_train, y_train)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
 
     # refine results
@@ -376,7 +382,7 @@ def elm_preprocessed(directory):
 
     # save results
     try:
-        with open(os.path.join(directory, '{0}.csv'.format(self_name)), 'w') as f:
+        with open(os.path.join(directory, 'elm_preprocessed.csv'), 'w') as f:
             f.write(','.join(cv_results.keys()) + '\n')
             for row in list(map(list, zip(*cv_results.values()))):
                 f.write(','.join(map(str, row)) + '\n')
@@ -385,7 +391,7 @@ def elm_preprocessed(directory):
 
 
 def elm_random_state(directory):
-    self_name = 'elm_preprocessed_relu_rs'
+    self_name = 'elm_random_state'
     logger = new_logger(self_name, directory=directory)
     X, y = get_mnist(directory)
     logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
@@ -393,17 +399,19 @@ def elm_random_state(directory):
     label_encoder = LabelEncoder().fit(y)
     y_encoded = label_encoder.transform(y)
 
-    pca = PCA(n_components=200).fit(X)
-    X_preprocessed = pca.transform(X) / 255.
+    X /= 255.
+
+    pca = PCA(n_components=50).fit(X)
+    X_preprocessed = pca.transform(X)
     logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
 
     # prepare parameter grid
     param_grid = [{
             'input_to_nodes__hidden_layer_size': [2000],
-            'input_to_nodes__input_scaling': [1/400],
-            'input_to_nodes__bias_scaling': [40/400],
+            'input_to_nodes__input_scaling': [1.],
+            'input_to_nodes__bias_scaling': [0.],
             'input_to_nodes__activation': ['relu'],
-            'input_to_nodes__random_state': np.random.randint(low=1, high=2**8-1, size=10),
+            'input_to_nodes__random_state': np.random.randint(low=1, high=2**16-1, size=10),
             'regressor__alpha': [1e-5],
             'regressor__random_state': [42],
             'random_state': [42]
@@ -992,6 +1000,9 @@ def silhouette_n_clusters(directory, *args, **kwargs):
     logger.info('entering')
     X, y = get_mnist(directory)
 
+    label_encoder = LabelEncoder().fit(y)
+    y_encoded = label_encoder.transform(y)
+
     scaler = StandardScaler().fit(X)
     X /= 255.
 
@@ -999,16 +1010,18 @@ def silhouette_n_clusters(directory, *args, **kwargs):
     min_var = 3088.6875
 
     # reduce train size
-    X = X[:10000, ...]
+    # X = X[:10000, ...]
+    X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, train_size=2000, random_state=42)
 
     # variance threshold
-    X_var_threshold = X[..., scaler.var_ > min_var]
+    X_var_threshold = X_train[..., scaler.var_ > min_var]
 
     # pca
-    X_pca = pca.transform(X)
+    X_pca = pca.transform(X_train)
 
     # n_clusters
-    k = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 200, 500, 1000, 2000, 4000]
+    k = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 200, 500, 1000, 2000]  # , 4000]
+    k = [200]
 
     # n_init
     n_init = 10
@@ -1046,12 +1059,15 @@ def silhouette_n_clusters(directory, *args, **kwargs):
 
         # original
         t = time.time()
-        clusterer.fit(X)
+        clusterer.fit(X_train)
         dict_results['fittime_original'].append(time.time() - t)
         dict_results['inertia_original'].append(clusterer.inertia_)
         dict_results['n_iter_original'].append(clusterer.n_iter_)
         dict_results['silhouette_original'].append(
-            silhouette_score(X, clusterer.predict(X), metric='euclidean', random_state=42))
+            silhouette_score(X_train, clusterer.predict(X_train), metric='euclidean', random_state=42))
+
+        np.save('./cluster_critical.npy', clusterer.cluster_centers_)
+        return
 
         # var threshold
         t = time.time()
@@ -1072,6 +1088,7 @@ def silhouette_n_clusters(directory, *args, **kwargs):
             silhouette_score(X_pca, clusterer.predict(X_pca), metric='euclidean', random_state=42))
 
         logger.info('n_clusters = {0}, pca kmeans score: {1}'.format(n_clusters, dict_results['silhouette_pca'][-1]))
+        logger.info('n_clusters = {0}'.format(n_clusters))
 
     # save results to csv
     with open(os.path.join(directory, 'silhouette_n_clusters.csv'), 'w') as f:

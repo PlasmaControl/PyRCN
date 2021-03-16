@@ -354,8 +354,6 @@ def plot_imbalance(directory):
     X, y = get_mnist(directory)
     logger.info('successfully fetched {0} datapoints'.format(X.shape[0]))
 
-    # y_hist = []
-    # [y_hist.append([idx, np.sum(y.astype(int) == idx), np.sum(y[:60000].astype(int) == idx), np.sum(y[60000:].astype(int) == idx)]) for idx in range(10)]
     tp_y_unique = np.unique(y.astype(int), return_counts=True)
     y_unique = tp_y_unique[0][np.argsort(tp_y_unique[0])]
     y_counts = tp_y_unique[1][np.argsort(tp_y_unique[0])]
@@ -369,11 +367,9 @@ def plot_imbalance(directory):
     y_test_counts = tp_y_test[1][np.argsort(tp_y_test[0])]
     # y_hist_arr = np.array(y_hist, dtype=float)
 
-    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6., 2))
+    fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(6., 2.1))
 
     bar_width = .9
-
-    # bars_y = ax.bar(y_hist_arr[:, 0], y_hist_arr[:, 1], label='dataset', color=tud_colors['lightblue'])  # , edgecolor=[(rgba*0.2) for rgba in tud_colors['lightblue']], hatch='x')  # , width=.9)
 
     bars_train = ax.bar(y_train_unique, y_train_counts, label='train', color=tud_colors['gray'], width=bar_width)  #, edgecolor=['darkgreen'], hatch='//')  # , width=.7)
     bars_test = ax.bar(y_test_unique, y_test_counts, bottom=y_train_counts, label='test', color=tud_colors['lightblue'], width=bar_width)  #, edgecolor=tud_colors['darkpurple'], hatch='\\\\')  # , width=.5)
@@ -386,10 +382,12 @@ def plot_imbalance(directory):
     ax.set_xlim([-.5, 9.5])
     ax.set_xticks(y_unique)
     ax.set_xticklabels(['{0:.0f}'.format(idx) for idx in y_unique])
+    ax.set_xlabel('label')
 
     ax.set_ylim([0, 8000])
     ax.set_yticks([7000], minor=True)
     ax.grid(which='minor', axis='y', alpha=.7, linestyle='--', color=tud_colors['lightgreen'])
+    ax.set_ylabel(r'\#occurrences')
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
@@ -456,7 +454,6 @@ def plot_covariance(directory, *args, **kwargs):
     for idx in [0, 1, 2, 3, 4, 5, 20, 50, 100, 200, 400, 600, 701, 783]:
         filepath = os.path.join(directory, '{0}{1}.png'.format('mnist-covariance-eig', idx))
         plt.imsave(filepath, cov_v_ordered.T[idx, ...].reshape(28, 28), cmap=plt.cm.gray_r)
-    return
 
     fig.tight_layout()
     # fig.show()
@@ -467,7 +464,7 @@ def plot_covariance(directory, *args, **kwargs):
     plt.imsave(os.path.join(directory, 'mnist-pca-components.png'), cov_v_ordered.T, cmap=plt.cm.gray_r)
     plt.imsave(os.path.join(directory, 'mnist-covariance-db.png'), np.resize(20 * np.log10(np.abs(cov) + 1.), (X.shape[1], X.shape[1])), cmap=plt.cm.gray_r)
     plt.imsave(os.path.join(directory, 'mnist-covariance-pca-db.png'), np.resize(20 * np.log10(np.abs(cov_PCA) + 1.), (n_components, n_components)), cmap=plt.cm.gray_r)
-    plt.imsave(os.path.join(directory, 'mnist-pca-components-db.png'), 20 * np.log10(np.abs(cov_v_ordered.T) + 1.), cmap=plt.cm.gray_r)
+    plt.imsave(os.path.join(directory, 'mnist-pca-components-db.png'), 20 * np.log10(np.abs(cov_v_ordered.T) + 1.), cmap=plt.cm.gray_r, vmax=.5)
     return
 
 
