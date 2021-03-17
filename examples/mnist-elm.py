@@ -1011,7 +1011,7 @@ def silhouette_n_clusters(directory, *args, **kwargs):
 
     # reduce train size
     # X = X[:10000, ...]
-    X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, train_size=2000, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, train_size=10000, random_state=42)
 
     # variance threshold
     X_var_threshold = X_train[..., scaler.var_ > min_var]
@@ -1020,7 +1020,7 @@ def silhouette_n_clusters(directory, *args, **kwargs):
     X_pca = pca.transform(X_train)
 
     # n_clusters
-    k = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 200, 500, 1000, 2000]  # , 4000]
+    k = [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 25, 30, 40, 50, 60, 70, 80, 90, 100, 200, 500, 1000, 2000, 4000]
     k = [200]
 
     # n_init
@@ -1067,7 +1067,6 @@ def silhouette_n_clusters(directory, *args, **kwargs):
             silhouette_score(X_train, clusterer.predict(X_train), metric='euclidean', random_state=42))
 
         np.save('./cluster_critical.npy', clusterer.cluster_centers_)
-        return
 
         # var threshold
         t = time.time()
@@ -1076,7 +1075,7 @@ def silhouette_n_clusters(directory, *args, **kwargs):
         dict_results['inertia_variance_threshold'].append(clusterer.inertia_)
         dict_results['n_iter_variance_threshold'].append(clusterer.n_iter_)
         dict_results['silhouette_variance_threshold'].append(
-            silhouette_score(X_var_threshold, clusterer.predict(X_var_threshold), metric='euclidean', random_state=42))
+            silhouette_score(X_train, clusterer.predict(X_var_threshold), metric='euclidean', random_state=42))
 
         # pca
         t = time.time()
@@ -1085,7 +1084,7 @@ def silhouette_n_clusters(directory, *args, **kwargs):
         dict_results['inertia_pca'].append(clusterer.inertia_)
         dict_results['n_iter_pca'].append(clusterer.n_iter_)
         dict_results['silhouette_pca'].append(
-            silhouette_score(X_pca, clusterer.predict(X_pca), metric='euclidean', random_state=42))
+            silhouette_score(X_train, clusterer.predict(X_pca), metric='euclidean', random_state=42))
 
         logger.info('n_clusters = {0}, pca kmeans score: {1}'.format(n_clusters, dict_results['silhouette_pca'][-1]))
         logger.info('n_clusters = {0}'.format(n_clusters))
@@ -1136,7 +1135,7 @@ def silhouette_kcluster(directory, *args, **kwargs):
         clusterer_euclid.fit(X_pca)
         dict_results['fittime_kmeans'].append(time.time() - t)
         dict_results['silhouette_kmeans'].append(
-            silhouette_score(X_pca, clusterer_euclid.predict(X_pca), metric='euclidean', random_state=42))
+            silhouette_score(X, clusterer_euclid.predict(X_pca), metric='euclidean', random_state=42))
 
         # kcosine
         clusterer_cosine = KCluster(n_clusters=n_clusters, metric='cosine', random_state=42)
@@ -1144,7 +1143,7 @@ def silhouette_kcluster(directory, *args, **kwargs):
         clusterer_cosine.fit(X_pca)
         dict_results['fittime_kcosine'].append(time.time() - t)
         dict_results['silhouette_kcosine'].append(
-            silhouette_score(X_pca, clusterer_cosine.predict(X_pca), metric='cosine', random_state=42))
+            silhouette_score(X, clusterer_cosine.predict(X_pca), metric='cosine', random_state=42))
 
     # save results to csv
     with open(os.path.join(directory, 'silhouette_kcluster.csv'), 'w') as f:
@@ -1244,6 +1243,8 @@ def silhouette_features(directory, *args, **kwargs):
 
     X /= 255.
 
+    X = X[:10000, ...]
+
     scaler = StandardScaler().fit(X)
     pca = PCA(whiten=False, random_state=42).fit(X)
 
@@ -1284,7 +1285,7 @@ def silhouette_features(directory, *args, **kwargs):
         t = time.time()
         pred = clusterer.fit_predict(X[:, indices])
         dict_results['fittime_random'].append(time.time() - t)
-        dict_results['silhouette_random'].append(silhouette_score(X[:, indices], pred, metric='euclidean', random_state=42))
+        dict_results['silhouette_random'].append(silhouette_score(X, pred, metric='euclidean', random_state=42))
         dict_results['explainvar_random'].append(np.sum(scaler.var_[indices]))
         dict_results['explvarrat_random'].append(np.sum(scaler.var_[indices]) / np.sum(scaler.var_))
 
@@ -1292,14 +1293,14 @@ def silhouette_features(directory, *args, **kwargs):
         indices = variance_indices[:n_features]
         pred = clusterer.fit_predict(X[:, indices])
         dict_results['fittime_maxvar'].append(time.time() - t)
-        dict_results['silhouette_maxvar'].append(silhouette_score(X[:, indices], pred, metric='euclidean', random_state=42))
+        dict_results['silhouette_maxvar'].append(silhouette_score(X, pred, metric='euclidean', random_state=42))
         dict_results['explainvar_maxvar'].append(np.sum(scaler.var_[indices]))
         dict_results['explvarrat_maxvar'].append(np.sum(scaler.var_[indices]) / np.sum(scaler.var_))
 
         t = time.time()
         pred = clusterer.fit_predict(X_pca[:, :n_features])
         dict_results['fittime_pca'].append(time.time() - t)
-        dict_results['silhouette_pca'].append(silhouette_score(X_pca[:, :n_features], pred, metric='euclidean', random_state=42))
+        dict_results['silhouette_pca'].append(silhouette_score(X, pred, metric='euclidean', random_state=42))
         dict_results['explainvar_pca'].append(np.sum(pca.explained_variance_[:n_features]))
         dict_results['explvarrat_pca'].append(np.sum(pca.explained_variance_ratio_[:n_features]))
 
