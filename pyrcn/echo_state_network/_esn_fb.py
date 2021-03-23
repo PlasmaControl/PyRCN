@@ -10,17 +10,18 @@ import sys
 import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
-from pyrcn.base import InputToNode, NodeToNode
+from pyrcn.base import InputToNode, FeedbackNodeToNode
 from pyrcn.linear_model import IncrementalRegression
+from pyrcn.echo_state_network import ESNRegressor
 from sklearn.utils import check_random_state
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import FeatureUnion
 
 
-class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
+class ESNFeedbackRegressor(ESNRegressor):
     """
-    Echo State Network regressor.
+    Echo State Network Feedback regressor.
 
     This model optimizes the mean squared error loss function using linear regression.
 
@@ -41,22 +42,18 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
     chunk_size : int, default=None
         if X.shape[0] > chunk_size, calculate results incrementally with partial_fit
     random_state : int, RandomState instance, default=None
-    use_input_for_regression : bool, default=False
-        Concatenate X and hidden_layer_state to compute linear regression.
     """
     def __init__(self,
                  input_to_node=InputToNode(),
-                 node_to_node=NodeToNode(),
+                 node_to_node=FeedbackNodeToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
                  chunk_size=None,
-                 random_state=None,
-                 use_input_for_regression=False):
-        self.input_to_node = input_to_node
-        self.node_to_node = node_to_node
-        self._regressor = regressor
-        self.use_input_for_regression = use_input_for_regression
-        self._chunk_size = chunk_size
-        self.random_state = random_state
+                 random_state=None):
+        super().__init__(input_to_node=input_to_node,
+                         node_to_node=node_to_node,
+                         regressor=regressor,
+                         chunk_size=chunk_size,
+                         random_state=random_state)
 
     def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, postpone_inverse=False):
         """
@@ -98,12 +95,11 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             hidden_layer_state = self._node_to_node.fit_transform(hidden_layer_state)
             pass
 
-        if self.use_input_for_regression:
-            hidden_layer_state = np.concatenate((X, hidden_layer_state), axis=1)
-
         # regression
         if self._regressor:
             self._regressor.partial_fit(hidden_layer_state, y, postpone_inverse=postpone_inverse)
+        if not postpone_inverse:
+            self._node_to_node._output_weights = np.vstack((self._regressor.coef_.T, self._regressor.intercept_))
         return self
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
@@ -127,16 +123,13 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._validate_hyperparameters()
         self._validate_data(X, y, multi_output=True)
         self._input_to_node.fit(X)
-        self._node_to_node.fit(self._input_to_node.transform(X))
+        self._node_to_node.fit(self._input_to_node.transform(X), y=y)
         self._regressor = self._regressor.__class__()
 
         if self._chunk_size is None or self._chunk_size > X.shape[0]:
             # input_to_node
             hidden_layer_state = self._input_to_node.transform(X)
-            hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
-
-            if self.use_input_for_regression:
-                hidden_layer_state = np.concatenate((X, hidden_layer_state), axis=1)
+            hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y)
 
             # regression
             self._regressor.fit(hidden_layer_state, y)
@@ -146,7 +139,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             chunks = list(range(0, X.shape[0], self._chunk_size))
             # postpone inverse calculation for chunks n-1
             for idx in chunks[:-1]:
-                ESNRegressor.partial_fit(
+                ESNFeedbackRegressor.partial_fit(
                     self,
                     X=X[idx:idx + self._chunk_size, ...],
                     y=y[idx:idx + self._chunk_size, ...],
@@ -155,7 +148,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                     postpone_inverse=True
                 )
             # last chunk, calculate inverse and bias
-            ESNRegressor.partial_fit(
+            ESNFeedbackRegressor.partial_fit(
                 self,
                 X=X[chunks[-1]:, ...],
                 y=y[chunks[-1]:, ...],
@@ -165,6 +158,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             )
         else:
             raise ValueError('chunk_size invalid {0}'.format(self._chunk_size))
+        self._node_to_node._output_weights = np.vstack((self._regressor.coef_.T, self._regressor.intercept_))
         return self
 
     def predict(self, X):
@@ -185,9 +179,6 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
         hidden_layer_state = self._input_to_node.transform(X)
         hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
-
-        if self.use_input_for_regression:
-            hidden_layer_state = np.concatenate((X, hidden_layer_state), axis=1)
 
         return self._regressor.predict(hidden_layer_state)
 
@@ -339,138 +330,3 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         -------
         """
         self._chunk_size = chunk_size
-
-
-class ESNClassifier(ESNRegressor, ClassifierMixin):
-    """Echo State Network classifier.
-
-    This model optimizes the mean squared error loss function using linear regression.
-
-    Parameters
-    ----------
-    input_to_node : iterable
-        List of (name, transform) tuples (implementing fit/transform) that are
-        chained, in the order in which they are chained, with the last object
-        an estimator.
-    node_to_node : iterable
-        List of (name, transform) tuples (implementing fit/transform) that are
-        chained, in the order in which they are chained, with the last object
-        an estimator.
-    regressor : object, default=IncrementalRegression(alpha=.0001)
-        Regressor object such as derived from ``RegressorMixin``. This
-        regressor will automatically be cloned each time prior to fitting.
-        regressor cannot be None, omit argument if in doubt
-    chunk_size : int, default=None
-        if X.shape[0] > chunk_size, calculate results incrementally with partial_fit
-    random_state : int, RandomState instance, default=None
-    use_input_for_regression : bool, default=False
-        Concatenate X and hidden_layer_state to compute linear regression.
-    """
-    def __init__(self,
-                 input_to_node=InputToNode(),
-                 node_to_node=NodeToNode(),
-                 regressor=IncrementalRegression(alpha=.0001),
-                 chunk_size=None,
-                 random_state=None,
-                 use_input_for_regression=False):
-        super().__init__(input_to_node=input_to_node, node_to_node=node_to_node, regressor=regressor,
-                         chunk_size=chunk_size, random_state=random_state,
-                         use_input_for_regression=use_input_for_regression)
-        self._encoder = None
-
-    def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, postpone_inverse=False):
-        """Fits the classifier partially.
-
-        Parameters
-        ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_classes)
-            The targets to predict.
-        classes : array of shape (n_classes,), default=None
-            Classes across all calls to partial_fit.
-            Can be obtained via `np.unique(y_all)`, where y_all is the
-            target vector of the entire dataset.
-            This argument is required for the first call to partial_fit
-            and can be omitted in the subsequent calls.
-            Note that y doesn't need to contain all labels in `classes`.
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. ``-1`` means using all processors.
-            See :term:`Glossary <n_jobs>` for more details.
-        transformer_weights : ignored
-        postpone_inverse : bool, default False
-
-        Returns
-        -------
-        self : returns a trained ESNClassifier model
-        """
-        self._validate_data(X, y, multi_output=True)
-
-        if self._encoder is None:
-            self._encoder = LabelBinarizer().fit(classes)
-
-        return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None,
-                                   postpone_inverse=postpone_inverse)
-
-    def fit(self, X, y, n_jobs=None, transformer_weights=None):
-        """Fits the regressor.
-
-        Parameters
-        ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_classes)
-            The targets to predict.
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. ``-1`` means using all processors.
-            See :term:`Glossary <n_jobs>` for more details.
-        transformer_weights : ignored
-
-        Returns
-        -------
-        self : Returns a traines ESNClassifier model.
-        """
-        self._validate_data(X, y, multi_output=True)
-        self._encoder = LabelBinarizer().fit(y)
-
-        return super().fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None)
-
-    def predict(self, X):
-        """Predict the classes using the trained ESN classifier.
-
-        Parameters
-        ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-        Returns
-        -------
-        y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
-            The predicted classes.
-        """
-        return self._encoder.inverse_transform(super().predict(X), threshold=.0)
-
-    def predict_proba(self, X):
-        """Predict the probability estimated using the trained ESN classifier.
-
-        Parameters
-        ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-            The input data.
-        Returns
-        -------
-        y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
-            The predicted probability estimated.
-        """
-        # for single dim proba use np.amax
-        return np.maximum(super().predict(X), 1e-5)
-
-    def predict_log_proba(self, X):
-        """Predict the logarithmic probability estimated using the trained ESN classifier.
-
-        Parameters
-        ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-            The input data.
-        Returns
-        -------
-        y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
-            The predicted logarithmic probability estimated.
-        """
-        return np.log(self.predict_proba(X=X))

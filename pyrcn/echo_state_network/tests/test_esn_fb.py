@@ -13,7 +13,7 @@ from sklearn.linear_model import Ridge
 
 from pyrcn.base import InputToNode, FeedbackNodeToNode
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.echo_state_network import ESNFeedbackClassifier, ESNFeedbackRegressor
+from pyrcn.echo_state_network import ESNFeedbackRegressor
 
 
 X_iris, y_iris = load_iris(return_X_y=True)
@@ -25,8 +25,8 @@ def test_esn_fb_regressor_jobs():
     y = np.hstack((np.sin(X).reshape(-1, 1), np.cos(X).reshape(-1, 1)))
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=10, random_state=42)
     esn = ESNFeedbackRegressor(
-        input_to_nodes=[('default', InputToNode(bias_scaling=10.))],
-        nodes_to_nodes=[('default', FeedbackNodeToNode(spectral_radius=0.0, feedback_scaling=0.))],
+        input_to_node=InputToNode(bias_scaling=10.),
+        node_to_node=FeedbackNodeToNode(spectral_radius=0.0),
         regressor=Ridge(alpha=.0001),
         random_state=42)
     esn.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
