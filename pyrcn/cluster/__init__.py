@@ -1,5 +1,5 @@
 """
-The :mod:`pyrcn` module includes various reservoir computing algorithms.
+The :mod:`pyrcn.elm` module includes a Cluster Algorithm compareable to KMeans.
 """
 
 # See https://github.com/TUD-STKS/PyRCN for complete
@@ -9,9 +9,7 @@ The :mod:`pyrcn` module includes various reservoir computing algorithms.
 #         the pyrcn community. ELM are copyright of their respective owners.
 # License: BSD 3-Clause (C) TU Dresden 2020
 
-from pyrcn import extreme_learning_machine, base, util
+from pyrcn.cluster._kcluster import KCluster
 
-__all__ = ['extreme_learning_machine',
-           'base',
-           'util'
+__all__ = ['KCluster'
            ]
