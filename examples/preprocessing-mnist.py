@@ -75,6 +75,42 @@ def plot_pooling(directory, *args, **kwargs):
     return
 
 
+def plot_poster(directory, *args, **kwargs):
+    X, y = get_mnist(directory)
+
+    X /= 255.
+
+    # scale for imsave
+    def scale01(X):
+        return (X - np.min(X)) / (np.max(X) - np.min(X))
+
+    # preprocessing
+    pca = PCA(n_components=50).fit(X)
+    clusterer = KMeans(n_clusters=20).fit(X[:10000, :])
+
+    # save images
+    # example
+    plt.imsave(os.path.join(os.environ['IMGPATH'], 'example-mnist.png'), X[example_image_idx, :].reshape(28, 28), cmap=plt.cm.gray_r, format='png')
+
+    # pca component
+    pca_component = scale01(pca.components_[2, :]).reshape(28, 28)
+    pca_example = scale01(np.matmul(X[example_image_idx, :].reshape(1, -1), np.matmul(pca.components_.T, pca.components_))).reshape(28, 28)
+
+    plt.imsave(os.path.join(os.environ['IMGPATH'], 'pca-component3.png'), pca_component, cmap=plt.cm.gray_r, format='png')
+    plt.imsave(os.path.join(os.environ['IMGPATH'], 'pca50-mnist.png'), pca_example, cmap=plt.cm.gray_r, format='png')
+
+    # kmeans centroids
+    for idx in [0, 4, 9, 14, 19]:
+        kmeans_centroid = scale01(clusterer.cluster_centers_[idx, ...]).reshape(28, 28)
+        plt.imsave(os.path.join(os.environ['IMGPATH'], 'kmeans-centroid{0}.png'.format(idx)), kmeans_centroid, cmap=plt.cm.gray_r, format='png')
+
+    # input weights
+    T = np.load(os.path.join(os.environ['DATAPATH'], 'pca50+kmeans200_matrix.npy'), allow_pickle=True)
+    for idx in [0, 49, 99, 149, 199]:
+        input_weight = scale01(T[:, idx]).reshape(28, 28)
+        plt.imsave(os.path.join(os.environ['IMGPATH'], 'input-weight{0}.png'.format(idx)), input_weight, cmap=plt.cm.gray_r, format='png')
+
+
 def plot_historgram(directory, *args, **kwargs):
     logger = new_logger('plot_historgram', directory)
     logger.info('entering')
@@ -523,6 +559,7 @@ def main(out_path=os.path.join(os.getcwd(), 'preprocessing-mnist'), function_nam
     function_dict = {
         'labels': plot_labels,
         'plot_pooling': plot_pooling,
+        'plot_poster': plot_poster,
         'histogram': plot_historgram,
         'var': plot_var,
         'normalized': plot_normalized,

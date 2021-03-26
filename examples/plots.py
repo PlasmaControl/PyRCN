@@ -167,7 +167,8 @@ def plot_ridge():
 
 
 def plot_pca():
-    df = pandas.read_csv('/home/michael/PycharmProjects/PyRCN/examples/experiments/elm_pca.csv')
+    filepath = os.path.abspath('./experiments/elm_pca.csv')
+    df = pandas.read_csv(filepath)
     df.sort_values(by='pca_n_components', inplace=True)
 
     xticks = [10, 20, 50, 100, 200, 500, 784]
@@ -336,6 +337,107 @@ def plot_hyperparameters():
     #plt.show()
 
 
+def plot_hyperparameters_poster():
+    filepath = os.path.join('./mnist-elm', 'elm_basic.csv')
+    df = pandas.read_csv(filepath, sep=',')
+    df_tanh2000 = df[
+        (df['param_input_to_nodes__activation'] == 'tanh') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+    df_relu500 = df[
+        (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 500)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+    df_relu2000 = df[
+        (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+
+    filepath = os.path.join('./mnist-elm', 'elm_preprocessed.csv')
+    df = pandas.read_csv(filepath, sep=',')
+    df_tanh2000pca = df[
+        (df['param_input_to_nodes__activation'] == 'tanh') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+    df_relu500pca = df[
+        (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 500)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+    df_relu2000pca = df[
+        (df['param_input_to_nodes__activation'] == 'relu') & (df['param_input_to_nodes__hidden_layer_size'] == 2000)
+    ].sort_values(by=['param_input_to_nodes__bias_scaling', 'param_input_to_nodes__input_scaling'], axis=0, ascending=[False, True])
+
+    n_rows = df_tanh2000.shape[0]
+
+    fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(4., 2.2), gridspec_kw={'hspace': 1.1, 'wspace': 1.1, 'left': .15, 'right': .95, 'bottom': .25, 'top': .92})  # , subplot_kw={'projection': '3d'})
+    axs.resize((1, 2))
+
+    df_tanh2000.attrs.update({'titlestr': 'tanh\n$m=2000$'})
+    df_relu500.attrs.update({'titlestr': 'ReLU\n$m=500$'})
+    df_relu2000.attrs.update({'titlestr': 'ReLU\n$m=2000$'})
+    df_tanh2000pca.attrs.update({'titlestr': 'PCA50, tanh\n$m=2000$'})
+    df_relu500pca.attrs.update({'titlestr': 'PCA50, ReLU\n$m=500$'})
+    df_relu2000pca.attrs.update({'titlestr': 'PCA50, ReLU\n$m=2000$'})
+
+    df_dict = {
+        0: df_tanh2000pca,
+        1: df_relu2000pca
+    }
+
+    # colormap
+    # cm = ListedColormap(np.linspace(start=tud_colors['red'], stop=tud_colors['lightgreen'], num=255))
+    n_upper = 20
+    color_array = np.zeros((255, 4))
+    color_array[: 255 - n_upper, :] += np.linspace(start=tud_colors['red'], stop=(1., 1., 1., 1.), num=255 - n_upper)
+    color_array[255 - n_upper:, :] += np.linspace(start=(1., 1., 1., 1.), stop=tud_colors['darkgreen'], num=n_upper)
+    cm = ListedColormap(color_array)
+
+    for row in range(axs.shape[0]):
+        for col in range(axs.shape[1]):
+            df_loop = df_dict[col]
+            ax = axs[row][col]
+            # ax = axs[col][row]
+
+            X_ticks = np.sort(df_loop['param_input_to_nodes__input_scaling'].unique())  # ascending
+            Y_ticks = np.sort(df_loop['param_input_to_nodes__bias_scaling'].unique())[::-1]  # descending
+
+            mesh_shape = (len(X_ticks), len(Y_ticks))
+
+            Z_value = df_loop['mean_test_score'].values.reshape(mesh_shape)*100
+            # norm = Normalize(vmin=np.mean(Z_value), clip=True) # -np.std(Z_value)
+
+            # surf = ax.plot_surface(
+            im = ax.imshow(
+                # np.log10(df_loop['param_input_to_nodes__bias_scaling'].values.reshape(mesh_shape)),
+                # np.log10(df_loop['param_input_to_nodes__input_scaling'].values.reshape(mesh_shape)),
+                Z_value,
+                cmap=cm,  # matplotlib.cm.coolwarm
+                # norm=norm
+                interpolation='none'
+            )
+
+            fig.colorbar(im, ax=ax, use_gridspec=True, shrink=.5)  #spacing='proportional')
+
+            # ax.set_xticks(np.log10(X_ticks))
+            ax.set_xticks(range(mesh_shape[0]))
+            ax.set_xticklabels(['{0:3.3f}'.format(x) for x in X_ticks])
+            ax.tick_params(axis='x', labelrotation=90)
+            ax.set_xlabel('input scaling')
+
+            # ax.set_yticks(np.log10(Y_ticks))
+            ax.set_yticks(range(mesh_shape[1]))
+            ax.set_yticklabels(['{0:0.3f}'.format(y) for y in Y_ticks])
+            ax.set_ylabel('bias scaling')
+
+            # annotate
+            y = np.argmax(Z_value) // len(Z_value)
+            x = np.argmax(Z_value) % len(Z_value)
+            ax.annotate('{0:0.1f}%'.format(np.max(Z_value)), xy=(x, y), c=(0., 0., 0., .7), horizontalalignment='center', verticalalignment='center', fontsize='xx-small', fontstretch='ultra-condensed')
+
+            ax.set_title(df_loop.attrs['titlestr'])
+
+    # fig.colorbar(surf, shrink=0.5, aspect=5)
+    # fig.tight_layout()
+    fig.savefig(os.path.join(directory, 'hyperparameter-poster.pdf'), format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'hyperparameter-poster.pgf'), format='pgf')  # pgf
+    #plt.show()
+
+
 def plot_preprocessed():
     filepath = os.path.join('./mnist-elm', 'elm_preprocessed_relu.csv')
     df = pandas.read_csv(filepath, sep=',')
@@ -392,12 +494,12 @@ def plot_preprocessed():
 
     # fig.colorbar(surf, shrink=0.5, aspect=5)
     fig.tight_layout()
-    fig.savefig('/home/michael/Dokumente/Studium/TUD/DA/elm_preprocessed_relu-compare.pdf', format='pdf')
+    fig.savefig('./plots/elm_preprocessed_relu-compare.pdf', format='pdf')
     plt.show()
 
 
 def plot_hidden_layer_size():
-    df = pandas.read_excel(os.path.join('/home/michael/Dokumente/Studium/TUD/DA/hpc-scratch/elm_hidden_layer_size_pca.xlsx'), sheet_name='pca-kmeans-results')
+    df = pandas.read_excel(os.path.join(os.environ['DATAPATH'], 'elm_hidden_layer_size_pca.xlsx'), sheet_name='pca-kmeans-results')
 
     list_data = [
         {
@@ -507,8 +609,8 @@ def plot_significance():
 
 
 def plot_hls_error_rate():
-    directory = '/home/michael/PycharmProjects/PyRCN/examples/plots'
-    filepath = './plots/hls.csv'
+    directory = os.path.abspath('./plots/')
+    filepath = os.path.abspath('./plots/hls.csv')
     df = pandas.read_csv(filepath)
 
     df.sort_values(by='hls', ascending=True, inplace=True)
@@ -591,9 +693,103 @@ def plot_hls_error_rate():
     fig.savefig(os.path.join(os.environ['PGFPATH'], 'hls_error_rate.pgf'), format='pgf')
 
 
+def plot_hls_error_rate_poster():
+    directory = os.path.abspath('./plots/')
+    filepath = os.path.abspath('./plots/hls.csv')
+    df = pandas.read_csv(filepath)
+
+    df.sort_values(by='hls', ascending=True, inplace=True)
+
+    # concatenate name, hls, pca
+    df['identifier'] = df['name'].map(str) + df['pca'].map(lambda pca: '{0:.0f}'.format(pca) if not np.isnan(pca) else '')
+
+    list_identifier = list(df['identifier'].unique())
+    print(list_identifier)
+
+    # remove labels
+    list_identifier.remove('stacked')
+    list_identifier.remove('reference-ELM')
+    list_identifier.remove('reference-BP')
+    list_identifier.remove('original100')
+    list_identifier.remove('elm_pca100')
+    list_identifier.remove('minibatch100')
+
+    list_identifier = ['reference-ELM', 'elm_basic', 'elm_pca50', 'original50', 'minibatch50']
+    dict_linespecs = {
+        'reference-ELM': {
+            'label': 'ELM (Chazal et. al.)',
+            'linestyle': '--',
+            'color': tud_colors['red'],
+            'alpha': .7,
+        },
+        'elm_basic': {
+            'label': 'random ELM',
+            'linestyle': '--',
+            'color': tud_colors['orange'],
+            'alpha': .7,
+        },
+        'elm_pca50': {
+            'label': 'random ELM (PCA50)',
+            'linestyle': '-',
+            'color': tud_colors['lightgreen'],
+            'alpha': .7,
+        },
+        'original50': {
+            'label': 'K-Means ELM (PCA50)',
+            'linestyle': (0, (5, 5)),
+            'color': tud_colors['lightblue'],
+            'alpha': .7,
+            'cluster_color': tud_colors['darkblue'],
+            'cluster_linestyle': (0, (3, 4)),
+            'cluster_label': 'K-Means fit time',
+        },
+        'minibatch50': {
+            'label': 'Minibatch ELM (PCA50)',
+            'linestyle': (0, (1, 1)),
+            'color': tud_colors['lightpurple'],
+            'alpha': .7,
+            'cluster_color': tud_colors['darkpurple'],
+            'cluster_linestyle': (0, (1, 3)),
+            'cluster_label': 'Minibatch fit time',
+        }
+    }
+
+    fig, ax = plt.subplots(figsize=(4, 3), gridspec_kw={'bottom': .18, 'left': .16, 'top': .7})
+
+    lines = []
+    for identifier in list_identifier:
+        lines += ax.plot(
+            df[df.identifier == identifier].hls,
+            100 * df[df.identifier == identifier].error_rate,
+            label=dict_linespecs[identifier]['label'],
+            linestyle=dict_linespecs[identifier]['linestyle'],
+            color=dict_linespecs[identifier]['color'],
+            alpha=dict_linespecs[identifier]['alpha'],
+        )
+
+    ax.set_xlim([100, 16000])
+    ax.set_xscale('log')
+    ax.set_xticks([1e2, 1e3, 1e4])
+    ax.set_xlabel('hidden layer size')
+
+    ax.set_yscale('log')
+    ax.set_ylim([1.0, 10.])
+    ax.set_yticks([1., 2., 5., 10.], minor=False)
+    ax.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [1., 2., 5., 10.]])
+    ax.set_yticklabels(['' for tick in ax.get_yticks(minor=True)], minor=True)
+    ax.set_ylabel('error rate [%]')
+
+    ax.grid(which='both', axis='both')
+    ax.legend()
+    ax.legend(bbox_to_anchor=(-0.23, 1.05, 1.38, 0), loc="lower left", mode="expand", ncol=2)
+    # plt.show()
+    fig.savefig(os.path.join(directory, 'hls_error_rate_poster.pdf'), format='pdf')
+    fig.savefig(os.path.join(os.environ['PGFPATH'], 'hls_error_rate_poster.pgf'), format='pgf')
+
+
 def plot_hls_error_rate_pcacompare():
-    directory = '/home/michael/PycharmProjects/PyRCN/examples/plots'
-    filepath = './plots/hls.csv'
+    directory = os.path.abspath('./plots/')
+    filepath = os.path.abspath('./plots/hls.csv')
     df = pandas.read_csv(filepath)
 
     df.sort_values(by='hls', ascending=True, inplace=True)
@@ -683,8 +879,8 @@ def plot_hls_error_rate_pcacompare():
 
 
 def plot_hls_fittime():
-    directory = '/home/michael/PycharmProjects/PyRCN/examples/plots'
-    filepath = './plots/hls.csv'
+    directory = os.path.abspath('./plots/')
+    filepath = os.path.abspath('./plots/hls.csv')
     df = pandas.read_csv(filepath)
 
     df.sort_values(by='hls', ascending=True, inplace=True)
@@ -827,12 +1023,12 @@ def plot_silhouette_n_clusters():
     lines += ax_time.plot(df['n_clusters'].values, df['fittime_pca'].values, color=tud_colors['lightblue'], alpha=.7, linestyle='--')
 
     ax_score.set_ylabel('silhouette score [%]')
-    ax_score.set_yscale('log')
+    # ax_score.set_yscale('log')
     ax_score.grid(axis='y', which='major')
-    ax_score.set_ylim([1, 10])
-    ax_score.set_yticks([1, 2, 5, 10])
+    ax_score.set_ylim([0, 8])
+    ax_score.set_yticks([0, 2, 4, 6, 8])
     ax_score.set_yticks([], minor=True)
-    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [1, 2, 5, 10]])
+    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [0, 2, 4, 6, 8]])
     ax_time.set_ylabel('fit time [s]')
     ax_time.set_yscale('log')
 
@@ -848,7 +1044,7 @@ def plot_silhouette_n_clusters():
 
 
 def silhouette_kmeans_features():
-    filepath = os.path.abspath('./plots/silhouette_kmeans20_features.csv')
+    filepath = os.path.abspath('./mnist-elm/silhouette_kmeans20_features.csv')
     df = pandas.read_csv(filepath)
 
     print(df.keys())
@@ -891,11 +1087,11 @@ def silhouette_kmeans_features():
     lines += ax_variance.plot(df['nfeatures'].values, 100*df['explvarrat_maxvar'].values, color=tud_colors['lightgreen'], linestyle='--', alpha=.7)
     lines += ax_variance.plot(df['nfeatures'].values, 100*df['explvarrat_pca'].values, color=tud_colors['lightblue'], linestyle='--', alpha=.7)
 
-    ax_score.set_yscale('log')
-    ax_score.set_ylim([5, 100])
-    ax_score.set_yticks([5, 10, 20, 50, 100])
-    ax_score.set_yticks([], minor=True)
-    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [5, 10, 20, 50, 100]])
+    # ax_score.set_yscale('log')
+    ax_score.set_ylim([0, 10])
+    ax_score.set_yticks([0, 2, 4, 6, 8, 10])
+    # ax_score.set_yticks([], minor=True)
+    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [0, 2, 4, 6, 8, 10]])
     ax_score.set_ylabel('silhouette score [%]')
 
     ax_variance.set_yscale('log')
@@ -950,7 +1146,7 @@ def plot_silhouette_subset():
     lines += ax_time.plot(df['subset_size'].values, df['fittime_preinit'].values, color=tud_colors['lightblue'], linestyle='--', alpha=.7)
     lines += ax_time.plot(df['subset_size'].values, df['scoretime_preinit'].values, color=tud_colors['gray'], linestyle='-.', alpha=.5)
 
-    ax_score.set_yscale('log')
+    # ax_score.set_yscale('log')
     ax_score.set_ylim([8, 11])
     ax_score.set_yticks([8, 9, 10, 11])
     ax_score.set_yticks([], minor=True)
@@ -1007,11 +1203,11 @@ def plot_silhouette_kcluster():
     lines += ax_time.plot(df['n_clusters'].values, df['fittime_kcosine'].values, color=tud_colors['lightpurple'], linestyle='--', alpha=.7)
     lines += ax_time.plot(df['n_clusters'].values, df['fittime_kmeans'].values, color=tud_colors['lightblue'], linestyle='--', alpha=.7)
 
-    ax_score.set_yscale('log')
-    ax_score.set_ylim([7, 20])
-    ax_score.set_yticks([7, 10, 15, 20])
+    # ax_score.set_yscale('log')
+    ax_score.set_ylim([7, 17])
+    ax_score.set_yticks([10, 15])
     ax_score.set_yticks([], minor=True)
-    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [7, 10, 15, 20]])
+    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [10, 15]])
     ax_score.grid(axis='y', which='both')
     ax_score.set_ylabel('silhouette score [%]')
 
@@ -1024,7 +1220,7 @@ def plot_silhouette_kcluster():
     ], bbox_to_anchor=(.1, 1.05, .8, 0), loc="lower left", mode="expand", ncol=3)
     # plt.show()
     fig.savefig('./plots/plot_silhouette_kcluster.pdf', format='pdf')
-    fig.savefig(os.path.join(os.environ['PGFPATH'], 'plot_silhouette_kcluster.pgf'), format='pgf')
+    # fig.savefig(os.path.join(os.environ['PGFPATH'], 'plot_silhouette_kcluster.pgf'), format='pgf')
 
 
 def plot_kmeans_subset_phenomen():
@@ -1048,9 +1244,9 @@ def plot_kmeans_subset_phenomen():
     # df.index = df['n_clusters_2k']
     ax_score.set_xlim([np.min(df.index.values), np.max(df.index.values)])
     ax_score.set_xscale('log')
-    ax_score.set_xlim([5, 2000])
-    ax_score.set_xticks([5, 10, 20, 50, 100, 200, 500, 1000, 2000])
-    ax_score.set_xticklabels(['{0:.0f}'.format(xtick) for xtick in [5, 10, 20, 50, 100, 200, 500, 1000, 2000]])
+    ax_score.set_xlim([50, 2000])
+    ax_score.set_xticks([50, 100, 200, 500, 1000, 2000])
+    ax_score.set_xticklabels(['{0:.0f}'.format(xtick) for xtick in [50, 100, 200, 500, 1000, 2000]])
     ax_score.grid(axis='x', which='both')
     ax_score.set_xlabel(r'\#centroids')
 
@@ -1067,6 +1263,9 @@ def plot_kmeans_subset_phenomen():
 
     ax_score.grid(axis='y', which='both')
     ax_score.set_ylabel('silhouette score [%]')
+    ax_score.set_yticks([0, 2, 4, 6, 8, 10])
+    ax_score.set_yticks([], minor=True)
+    ax_score.set_yticklabels(['{0:.0f}%'.format(ytick) for ytick in [0, 2, 4, 6, 8, 10]])
 
     ax_niter.set_yscale('log')
     ax_niter.set_ylabel(r'\#iterations')
@@ -1093,14 +1292,16 @@ def main():
         os.makedirs(directory)
 
     # plot_activation_variance()
-    plot_activation_mean()
+    # plot_activation_mean()
     # plot_hyperparameters()
+    # plot_hyperparameters_poster()
     # plot_preprocessed()
     # plot_hidden_layer_size()
     # plot_ridge()
     # plot_pca()
     # plot_significance()
     # plot_hls_error_rate()
+    plot_hls_error_rate_poster()
     # plot_hls_error_rate_pcacompare()
     # plot_hls_fittime()
     # plot_silhouette_n_clusters()

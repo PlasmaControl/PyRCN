@@ -94,11 +94,11 @@ def main():
         ax_barchart.set_ylim([-1., 1.])
 
     # plt.tight_layout()
-    plt.savefig("mnist-kmeans-centroids-cos-similarity-pca50.pdf")  # plt.show()
+    plt.savefig('mnist-kmeans-centroids-cos-similarity-pca50.pdf')  # plt.show()
     plt.savefig(os.path.join(os.environ['PGFPATH'], 'mnist-pca50-kmeans-centroids-cos-similarity.pgf'), format='pgf')
     runtime.append(time.time())
     print('plotting: {0} s'.format(np.diff(runtime[-2:])))
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
