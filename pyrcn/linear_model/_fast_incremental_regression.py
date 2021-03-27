@@ -1,8 +1,8 @@
 """
-Incremental regression
+Fast Incremental regression
 """
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Michael Schindler <michael.schindler@maschindler.de>
+# Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Azarakhsh Jalalvand <azarakhsh.jalalvand@ugent.be>
 # License: BSD 3 clause
 
 import sys
@@ -15,13 +15,12 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
 
 
-class IncrementalRegression(BaseEstimator, RegressorMixin):
+class FastIncrementalRegression(BaseEstimator, RegressorMixin):
     """
-    Linear regression.
+    Fast Linear regression.
 
     This linear regression algorithm is able to perform a linear regression
     with the L2 regularization and iterative fit. [1]_
-
     .. [1] https://ieeexplore.ieee.org/document/4012031
 
     References
@@ -109,7 +108,6 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
             # self._output_weights += np.matmul(P, self._xTy - np.matmul(self._K, self._output_weights))
         return self
 
-
     def fit(self, X, y):
         """
         Fits the regressor.
@@ -171,7 +169,9 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         return X_preprocessed
 
     def __sizeof__(self):
-        """Returns the size of the object in bytes.
+        """
+        Returns the size of the object in bytes.
+
         Returns
         -------
         size : int
@@ -185,7 +185,9 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
 
     @property
     def coef_(self):
-        """Returns the output weights without intercept. Compatibility to sklearn.linear_model.Ridge.
+        """
+        Returns the output weights without intercept. Compatibility to sklearn.linear_model.Ridge.
+
         Returns
         -------
         coef_ : array, shape (n_features,) or (n_targets, n_features)
@@ -202,7 +204,9 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
 
     @property
     def intercept_(self):
-        """Returns the intercept of output output weights. Compatibility to sklearn.linear_model.Ridge.
+        """
+        Returns the intercept of output output weights. Compatibility to sklearn.linear_model.Ridge.
+
         Returns
         -------
         intercept_ : float | array, shape = (n_targets,)

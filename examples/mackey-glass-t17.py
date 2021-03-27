@@ -28,6 +28,8 @@ from IPython.display import set_matplotlib_formats
 set_matplotlib_formats('png', 'pdf')
 
 from pyrcn.echo_state_network import ESNRegressor
+from pyrcn.linear_model import IncrementalRegression
+from pyrcn.base import InputToNode, NodeToNode
 
 
 # Load the dataset
@@ -66,24 +68,27 @@ data = data / (data.max() - data.min())
 initLen = 100 # number of time steps during which internal activations are washed-out during training
 # we consider trainLen including the warming-up period (i.e. internal activations that are washed-out when training)
 trainLen = initLen + 1900 # number of time steps during which we train the network
-testLen = 2000 # number of time steps during which we tests/run the network
+testLen = 2000 # number of time steps during which we test/run the network
 
 
 # Echo State Network preparation
 
-# In[6]:
+# In[10]:
 
 
-esn = ESNRegressor(k_in=1, input_scaling=1.0, spectral_radius=1.2, bias=0.0, ext_bias=False, leakage=1.0,
-                   reservoir_size=500, k_res=10, wash_out=0, reservoir_activation='tanh', bi_directional=False,
-                   teacher_scaling=1., teacher_shift=0., solver='ridge', beta=1e-4, random_state=0)
+base_input_to_nodes = InputToNode(hidden_layer_size=500, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0)
+base_nodes_to_nodes = NodeToNode(hidden_layer_size=500, spectral_radius=1.2, leakage=1.0, bias_scaling=0.0, k_rec=10)
+
+esn = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
+                   nodes_to_nodes=[('default', base_nodes_to_nodes)],
+                   regressor=IncrementalRegression(alpha=1e-4), random_state=10)
 
 
 # Training and Prediction. Be careful, this can take a longer time!!!
 # 
-# The lowest MSE obtained with this settings were \num{5.97e-06} for the training set and \num{43.1e-06} for the tests set.
+# The lowest MSE obtained with this settings were \num{5.97e-06} for the training set and \num{43.1e-06} for the test set.
 
-# In[7]:
+# In[11]:
 
 
 train_in = data[None,0:trainLen]
@@ -107,7 +112,7 @@ print("Test MSE:\t{0}".format(test_err))
 
 # Prediction of the training set.
 
-# In[8]:
+# In[12]:
 
 
 plt.figure()
@@ -117,10 +122,10 @@ plt.xlabel("n")
 plt.ylabel("X[n]")
 
 
-# Prediction of the tests set.
+# Prediction of the test set.
 # 
 
-# In[9]:
+# In[13]:
 
 
 plt.figure()
@@ -128,4 +133,10 @@ plt.plot(test_out)
 plt.plot(test_pred)
 plt.xlabel("n")
 plt.ylabel("X[n]")
+
+
+# In[ ]:
+
+
+
 

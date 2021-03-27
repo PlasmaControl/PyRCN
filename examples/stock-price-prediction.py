@@ -27,12 +27,13 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
-get_ipython().run_line_magic('matplotlib', 'inline')
 
 from IPython.display import set_matplotlib_formats
 set_matplotlib_formats('png', 'pdf')
 
 from pyrcn.echo_state_network import ESNRegressor
+from pyrcn.linear_model import IncrementalRegression
+from pyrcn.base import InputToNode, NodeToNode
 
 
 # ## Loading and visualizing stock prices
@@ -105,9 +106,12 @@ future_total = len(prices) - train_len
 # In[7]:
 
 
-esn = ESNRegressor(k_in=1, input_scaling=0.6, spectral_radius=0.9, bias=0.0, ext_bias=False, leakage=1.0,
-                   reservoir_size=100, k_res=10, reservoir_activation='tanh', bi_directional=False,
-                   teacher_scaling=1., teacher_shift=0., solver='ridge', beta=1e-8, random_state=0)
+base_input_to_nodes = InputToNode(hidden_layer_size=100, activation='identity', k_in=1, input_scaling=0.6, bias_scaling=0.0)
+base_nodes_to_nodes = NodeToNode(hidden_layer_size=100, spectral_radius=0.9, leakage=1.0, bias_scaling=0.0, k_rec=10)
+
+esn = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
+                   nodes_to_nodes=[('default', base_nodes_to_nodes)],
+                   regressor=IncrementalRegression(alpha=1e-8), random_state=10)
 
 
 # Training and Prediction.
@@ -131,7 +135,7 @@ print("Train MSE:\t{0}".format(train_err))
 print("Test MSE:\t{0}".format(test_err))
 
 
-# We see that the ESN even captures the downward trend in the tests set, although it has not seen any longer downward movement during the training.
+# We see that the ESN even captures the downward trend in the test set, although it has not seen any longer downward movement during the training.
 
 # In[9]:
 
