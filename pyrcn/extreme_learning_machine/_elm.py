@@ -112,7 +112,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._input_to_node.fit(X)
         self._regressor = self._regressor.__class__()
 
-        if self._chunk_size is None or self._chunk_size > X.shape[0]:
+        if self._chunk_size is None or self._chunk_size >= X.shape[0]:
             # input_to_node
             hidden_layer_state = self._input_to_node.transform(X)
 
@@ -347,7 +347,8 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None)
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
-        """Fits the regressor.
+        """
+        Fits the regressor.
 
         Parameters
         ----------
