@@ -22,37 +22,20 @@ from sklearn.exceptions import NotFittedError
 
 from sklearn.preprocessing import StandardScaler
 
-<<<<<<< HEAD
-=======
 if scipy.__version__ == '0.9.0' or scipy.__version__ == '0.10.1':
     from scipy.sparse.linalg import eigs as eigens
 else:
     from scipy.sparse.linalg.eigen.arpack import eigs as eigens
 
 
->>>>>>> origin/dev
 if parse_version(sklearn.__version__) < parse_version('0.24.0'):
     from sklearn.utils import check_array
 
     def validate_data(self, X, y=None, *args, **kwargs):
         warnings.warn('Due to scikit version, _validate_data(X, y) returns check_array(X), y.', DeprecationWarning)
-<<<<<<< HEAD
         if y:
             return check_array(X, accept_sparse=True, **kwargs), y
         else:
-=======
-        if y is not None:
-            if 'accept_sparse' in kwargs:
-                del kwargs['accept_sparse']
-            if 'multi_output' in kwargs:
-                del kwargs['multi_output']
-            if 'y_numeric' in kwargs:
-                del kwargs['y_numeric']
-            return check_array(X, accept_sparse=True, **kwargs), y
-        else:
-            if 'accept_sparse' in kwargs:
-                del kwargs['accept_sparse']
->>>>>>> origin/dev
             return check_array(X, accept_sparse=True, **kwargs)
 
     setattr(BaseEstimator, '_validate_data', validate_data)
@@ -118,33 +101,12 @@ def inplace_relu_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-<<<<<<< HEAD
-    np.negative(np.log(1 - X, out=X), out=X)
-
-
-def inplace_relu_inverse(X):
-    """Compute the relu inverse function inplace.
-
-    The relu function is not invertible!
-    This is an approximation assuming $x = f^{-1}(y=0) = 0$. It is valid in $x \in [0, \infty]$.
-
-    Parameters
-    ----------
-    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
-        The input data.
-    """
-=======
->>>>>>> origin/dev
     ACTIVATIONS['relu'](X)
 
 
 def inplace_bounded_relu_inverse(X):
-<<<<<<< HEAD
-    """Compute the bounded relu inverse function inplace.
-=======
     """
     Compute the bounded relu inverse function inplace.
->>>>>>> origin/dev
 
     The bounded relu function is not invertible!
     This is an approximation assuming $x = f^{-1}(y=0) = 0$ and $x = f^{-1}(y=1) = 1$. It is valid in $x \in [0, 1]$.
@@ -218,12 +180,8 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self.activation = activation
         self.input_scaling = input_scaling
         self.bias_scaling = bias_scaling
-<<<<<<< HEAD
         self.random_state = random_state
-=======
         self.k_in = k_in
-        self.random_state = check_random_state(random_state)
->>>>>>> origin/dev
 
         self._input_weights = None
         self._bias = None
@@ -279,12 +237,8 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _uniform_random_input_weights(n_features_in: int, hidden_layer_size: int, fan_in: int, random_state):
-<<<<<<< HEAD
-        """Returns uniform random input weights in range [-1, 1]
-=======
         """
         Returns uniform random input weights in range [-1, 1]
->>>>>>> origin/dev
 
         Parameters
         ----------
@@ -314,12 +268,8 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _uniform_random_bias(hidden_layer_size: int, random_state):
-<<<<<<< HEAD
-        """Returns uniform random bias in range [-1, 1].
-=======
         """
         Returns uniform random bias in range [-1, 1].
->>>>>>> origin/dev
 
         Parameters
         ----------
@@ -334,12 +284,8 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _node_inputs(X, input_weights, input_scaling, bias, bias_scaling):
-<<<<<<< HEAD
-        """Returns the node inputs scaled by input_scaling, multiplied by input_weights and bias added.
-=======
         """
         Returns the node inputs scaled by input_scaling, multiplied by input_weights and bias added.
->>>>>>> origin/dev
 
         Parameters
         ----------
@@ -376,18 +322,10 @@ class InputToNode(BaseEstimator, TransformerMixin):
         if self.activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
                              "activations are %s." % (self.activation, ACTIVATIONS))
-<<<<<<< HEAD
-
-    def __sizeof__(self):
-        """Returns the size of the object in bytes.
-=======
-        if self.k_in is not None and self.k_in <= 0:
-            raise ValueError("k_in must be > 0, got %d." % self.k_in)
 
     def __sizeof__(self):
         """
         Returns the size of the object in bytes.
->>>>>>> origin/dev
 
         Returns
         -------
@@ -400,7 +338,6 @@ class InputToNode(BaseEstimator, TransformerMixin):
             self._hidden_layer_state.nbytes + \
             sys.getsizeof(self.random_state)
 
-<<<<<<< HEAD
     @property
     def input_weights(self):
         """Returns the input weights.
@@ -421,8 +358,6 @@ class InputToNode(BaseEstimator, TransformerMixin):
         """
         return self._bias
 
-=======
->>>>>>> origin/dev
 
 class BatchIntrinsicPlasticity(InputToNode):
     def __init__(
@@ -476,11 +411,7 @@ class BatchIntrinsicPlasticity(InputToNode):
             np.add(np.multiply(self._scaler.transform(s), self._m), self._c, out=s)
             ACTIVATIONS[self.activation](s)
             return s
-<<<<<<< HEAD
-    
-=======
 
->>>>>>> origin/dev
     def _fit_neumann(self, X, y=None):
         super().fit(X, y=None)
 
@@ -506,11 +437,7 @@ class BatchIntrinsicPlasticity(InputToNode):
             if bound_high == np.inf:
                 bound_high = t_max
 
-<<<<<<< HEAD
             t = (t - t_min)*(bound_high - bound_low)/(t_max - t_min) + bound_low
-=======
-            t = (t - t_min) * (bound_high - bound_low) / (t_max - t_min) + bound_low
->>>>>>> origin/dev
 
             t.sort()
             ACTIVATIONS_INVERSE[self.activation](t)
@@ -545,7 +472,6 @@ class BatchIntrinsicPlasticity(InputToNode):
             raise ValueError('The selected algorithm ist unknown, got {0}'.format(self.algorithm))
 
 
-<<<<<<< HEAD
 class PredefinedWeightsInputToNode(InputToNode):
     def __init__(
             self,
@@ -564,7 +490,33 @@ class PredefinedWeightsInputToNode(InputToNode):
         self.predefined_input_weights = predefined_input_weights
 
     def fit(self, X, y=None):
-=======
+        self._validate_hyperparameters()
+        self._validate_data(X, y)
+        self._check_n_features(X, reset=True)
+
+        if self.random_state is None:
+            self.random_state = np.random.RandomState()
+        elif isinstance(self.random_state, (int, np.integer)):
+            self.random_state = np.random.RandomState(self.random_state)
+        elif isinstance(self.random_state, np.random.RandomState):
+            pass
+        else:
+            raise ValueError('random_state is not valid, got {0}.'.format(self.random_state))
+
+        if self.predefined_input_weights is None:
+            raise ValueError('predefined_input_weights have to be defined, use InputToNode class!')
+
+        if self.predefined_input_weights.shape[0] != X.shape[1]:
+            raise ValueError('X has not the expected shape {0}, given {1}.'.format(
+                self.predefined_input_weights.shape[0], X.shape[1]))
+
+        self._input_weights = self.predefined_input_weights
+        self._bias = self._uniform_random_bias(
+            hidden_layer_size=self.hidden_layer_size,
+            random_state=self.random_state)
+        return self
+
+
 class NodeToNode(BaseEstimator, TransformerMixin):
     """
     NodeToNode class for reservoir computing modules (e.g. ESN)
@@ -631,34 +583,10 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         -------
         self
         """
->>>>>>> origin/dev
         self._validate_hyperparameters()
         self._validate_data(X, y)
         self._check_n_features(X, reset=True)
 
-<<<<<<< HEAD
-        if self.random_state is None:
-            self.random_state = np.random.RandomState()
-        elif isinstance(self.random_state, (int, np.integer)):
-            self.random_state = np.random.RandomState(self.random_state)
-        elif isinstance(self.random_state, np.random.RandomState):
-            pass
-        else:
-            raise ValueError('random_state is not valid, got {0}.'.format(self.random_state))
-
-        if self.predefined_input_weights is None:
-            raise ValueError('predefined_input_weights have to be defined, use InputToNode class!')
-
-        if self.predefined_input_weights.shape[0] != X.shape[1]:
-            raise ValueError('X has not the expected shape {0}, given {1}.'.format(
-                self.predefined_input_weights.shape[0], X.shape[1]))
-
-        self._input_weights = self.predefined_input_weights
-        self._bias = self._uniform_random_bias(
-            hidden_layer_size=self.hidden_layer_size,
-            random_state=self.random_state)
-        return self
-=======
         if self.k_rec is not None:
             self.sparsity = self.k_rec / X.shape[1]
         self._recurrent_weights = self._normal_random_recurrent_weights(
@@ -948,4 +876,3 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
                              "activations are %s." % (self.activation, ACTIVATIONS))
         if self.k_rec is not None and self.k_rec <= 0:
             raise ValueError("k_rec must be > 0, got %d." % self.k_rec)
->>>>>>> origin/dev

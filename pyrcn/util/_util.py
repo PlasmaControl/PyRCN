@@ -2,7 +2,7 @@
 The :mod:`pyrcn.util` contains utilities for runnung, testing and analyzing the reservoir computing modules
 """
 
-# Author: Michael Schindler <michael.schindler@maschindler.de>
+# Author: Peter Steiner <peter.steiner@tu-dresden.de>, Michael Schindler <michael.schindler@maschindler.de>
 # License: BSD 3 clause
 
 import sys

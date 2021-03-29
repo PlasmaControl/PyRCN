@@ -76,7 +76,7 @@ The package is structured in the following way:
 
 # Getting Started
 
-PyRCN includes currently two variants of Echo State Networks (ESNs): The ESNClassifier and the ESNRegressor.
+PyRCN includes currently variants of Echo State Networks (ESNs) and Extreme Learning Machines (ELMs): Regressors and Classifiers.
 
 Basic example for the ESNClassifier:
 
@@ -116,25 +116,53 @@ Fore more advanced examples, please have a look at our [Automatic Music Transcri
 If you use PyRCN, please cite the following publication:
 
 ```latex
-@INPROCEEDINGS{src:Steiner-20c,  
+@INPROCEEDINGS{src:Steiner-21c,  
     author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone Peter Birkholz},  
-    booktitle={2020 25th International Conference on Pattern Recognition (ICPR)},   
-    title={PyRCN: Exploration and Application of ESNs},  
-    year={2020},  
+    booktitle={The International Joint Conference on Neural Networks},   
+    title={PyRCN: Exploration and Application of ESNs},
+    year={2021},
     note={submitted},
 }
 ```
 
 # References
+Glottal Closure Instant Detection using Echo State Networks
+
+```latex
+@InProceedings{src:Steiner-21a,
+	title = {Glottal Closure Instant Detection using Echo State Networkss},
+	author = {Peter Steiner and Ian S. Howard and Peter Birkholz},
+	year = {2021},
+	pages = {161--168},
+	keywords = {Oral},
+	booktitle = {Studientexte zur Sprachkommunikation: Elektronische Sprachsignalverarbeitung 2021},
+	editor = {Stefan Hillmann and Benjamin Weiss and Thilo Michael and Sebastian Möller},
+	publisher = {TUDpress, Dresden},
+	isbn = {978-3-95908-227-3}
+} 
+```
+
+Cluster-based Input Weight Initialization for Echo State Networks
+
+```latex
+@misc{src:Steiner-21b,
+    title={Cluster-based Input Weight Initialization for Echo State Networks},
+    author={Peter Steiner and Azarakhsh Jalalvand and Peter Birkholz},
+    year={2021},
+    eprint={2103.04710},
+    archivePrefix={arXiv},
+    primaryClass={cs.LG}
+}
+´´´
 
 PyRCN: Exploration and Application of ESNs
 
 ```latex
-@INPROCEEDINGS{src:Steiner-21,  
-    author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone Peter Birkholz},
-    booktitle = {2021 International Joint Conference on Neural Networks, {IJCNN} 2021,Shenzhen, China, July 18-22, 2021},
-    title={PyRCN: Exploration and Application of ESNs},  
-    year={2021},  
+@INPROCEEDINGS{src:Steiner-21c,  
+    author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone Peter Birkholz},  
+    booktitle={The International Joint Conference on Neural Networks},   
+    title={PyRCN: Exploration and Application of ESNs},
+    year={2021},
     note={submitted},
 }
 ```

@@ -2,7 +2,7 @@
 Incremental regression
 """
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Michael Schindler <michael.schindler@maschindler.de>
+# Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Azarakhsh Jalalvand <azarakhsh.jalalvand@ugent.be>
 # License: BSD 3 clause
 
 import sys
@@ -16,20 +16,15 @@ from sklearn.exceptions import NotFittedError
 
 
 class IncrementalRegression(BaseEstimator, RegressorMixin):
-    """
-    Linear regression.
-
+    """Linear regression.
     This linear regression algorithm is able to perform a linear regression
     with the L2 regularization and iterative fit. [1]_
-
     .. [1] https://ieeexplore.ieee.org/document/4012031
-
     References
     ----------
     N. Liang, G. Huang, P. Saratchandran and N. Sundararajan,
     "A Fast and Accurate Online Sequential Learning Algorithm for Feedforward Networks,"
     in IEEE Transactions on Neural Networks, vol. 17, no. 6, pp. 1411-1423, Nov. 2006, doi: 10.1109/TNN.2006.880583.
-
     Parameters
     ----------
     alpha : float, default=1.0
@@ -38,7 +33,6 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         Fits a constant offset if True. Use this if input values are not average free.
     normalize : bool, default=False
         Performs a preprocessing normalization if True.
-
     Attributes
     ----------
     coef_ : array, shape (n_features,) or (n_targets, n_features)
@@ -58,9 +52,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self._output_weights = None
 
     def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True, postpone_inverse=False):
-        """
-        Fits the regressor partially.
-
+        """Fits the regressor partially.
         Parameters
         ----------
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
@@ -71,7 +63,6 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
             Begin a new fit, drop prior fits.
         validate: bool, default=True
             Validate input data if True.
-
         Returns
         -------
         self
@@ -109,16 +100,12 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
             # self._output_weights += np.matmul(P, self._xTy - np.matmul(self._K, self._output_weights))
         return self
 
-
     def fit(self, X, y):
-        """
-        Fits the regressor.
-
+        """Fits the regressor.
         Parameters
         ----------
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
         y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
-
         Returns
         -------
         self
@@ -127,13 +114,10 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         return self
 
     def predict(self, X):
-        """
-        Predicts output y according to input X.
-
+        """Predicts output y according to input X.
         Parameters
         ----------
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-
         Returns
         -------
         Y : ndarray of shape (n_samples,) or (n_samples, n_targets)
@@ -144,15 +128,12 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         return safe_sparse_dot(self._preprocessing(X, partial_normalize=False), self._output_weights)
 
     def _preprocessing(self, X, partial_normalize=True):
-        """
-        Applies preprocessing on the input data X.
-
+        """Applies preprocessing on the input data X.
         Parameters
         ----------
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
         partial_normalize : bool, default=True
             Partial fits the normalization transformer on this sample if True.
-
         Returns
         -------
         X_preprocessed : {ndarray, sparse matrix} of shape (n_samples, n_features) or (n_samples, n_features+1)
