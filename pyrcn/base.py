@@ -159,13 +159,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
         Scales the input weight matrix.
     bias_scaling : float, default=1.
         Scales the input bias of the activation.
-<<<<<<< HEAD
-    random_state : Union(int, RandomState instance), default=None, default=None
-=======
     k_in : int, default=None.
         input weights per node. By default, it is None. If set, it overrides sparsity.
     random_state : {None, int, RandomState}, default=None
->>>>>>> origin/dev
     """
     def __init__(self,
                  hidden_layer_size=500,
