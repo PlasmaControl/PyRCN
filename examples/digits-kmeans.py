@@ -95,7 +95,7 @@ def main():
 
     # plt.tight_layout()
     plt.savefig('mnist-kmeans-centroids-cos-similarity-pca50.pdf')  # plt.show()
-    plt.savefig(os.path.join(os.environ['PGFPATH'], 'mnist-pca50-kmeans-centroids-cos-similarity.pgf'), format='pgf')
+    # plt.savefig(os.path.join(os.environ['PGFPATH'], 'mnist-pca50-kmeans-centroids-cos-similarity.pgf'), format='pgf')
     runtime.append(time.time())
     print('plotting: {0} s'.format(np.diff(runtime[-2:])))
 

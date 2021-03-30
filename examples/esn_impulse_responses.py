@@ -16,10 +16,6 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
-get_ipython().run_line_magic('matplotlib', 'inline')
-
-from IPython.display import set_matplotlib_formats
-set_matplotlib_formats('png', 'pdf')
 
 from pyrcn.echo_state_network import ESNRegressor
 from sklearn.linear_model import Ridge
@@ -42,6 +38,7 @@ plt.ylim([0, 1])
 plt.xlabel('n')
 plt.ylabel('X[n]')
 plt.grid()
+plt.show()
 
 
 # At first, show the impact of different input scaling factors.
@@ -75,6 +72,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # What happens if we increase the input scaling factor?
@@ -104,6 +102,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # Let's keep the input scaling factor fixed to 1.0 for the next experiments. Echo State Networks have two ways to
@@ -136,6 +135,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # It is interesting to increase the spectral radius. Therefore, we set it to 0.9.
@@ -165,6 +165,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # We can try to further increase the spectral radius. Therefore, we set it to 1.0.
@@ -197,6 +198,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # For some use cases, the reservoir should behave more non-linear. Therefore, we can play around with the bias. Here, we
@@ -229,6 +231,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # Finally, let us observe the impact of the leakage. Leaky integration is the other way to incorporate past information
@@ -259,6 +262,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # If we would like to incorporate future information into the reservoir, we can pass our input samples for- and backward
@@ -292,6 +296,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # The ESN from the Mackey-Glass dataset with a reduced number of neurons
@@ -321,6 +326,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # The ESN from the Stock-Price dataset with a reduced number of neurons
@@ -350,6 +356,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # The ESN from the Multipitch dataset with a reduced number of neurons
@@ -379,6 +386,7 @@ plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+plt.show()
 
 
 # In[ ]:

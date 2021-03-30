@@ -26,7 +26,6 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
-get_ipython().run_line_magic('matplotlib', 'inline')
 
 from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.linear_model import IncrementalRegression
@@ -40,7 +39,7 @@ from pyrcn.base import InputToNode, NodeToNode
 # In[ ]:
 
 
-dataset_path = os.path.normpath(r"C:\Temp\MusicPrediction\Piano-midi.de.pickle")
+dataset_path = os.path.normpath(r"E:\MusicPrediction\Piano-midi.de.pickle")
 dataset = load(dataset_path)
 training_set = dataset['train']
 validation_set = dataset['valid']
@@ -70,7 +69,7 @@ print("Shape of first sequences in the training, validation and test set: {0}, {
 # 
 # We follow the way proposed in the introductory paper of PyRCN to optimize hyper-parameters sequentially.
 # 
-# We start to jointly optimize input_scaling and spectral_radius and therefore deactivate bias connections and leaky integration. This is our base_reg.
+# We start to jointly optimize input_scaling and spectral_radius and therefore deactivate bias connections and leaky integration. This is our base_esn.
 # 
 # We define the search space for input_scaling and spectral_radius. This is done using best practice and background information from the literature: The spectral radius, the largest absolute eigenvalue of the reservoir matrix, is often smaller than 1. Thus, we can search in a space between 0.0 (e.g. no recurrent connections) and 1.0 (maximum recurrent connections). It is usually recommended to tune the input_scaling factor between 0.1 and 1.0. However, as this is strongly task-dependent, we decided to slightly increase the search space.
 
@@ -91,14 +90,14 @@ param_grid = {'input_to_node__hidden_layer_size': [50],
     'regressor__alpha': [1e-3],
     'random_state': [42] }
 
-base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression())
+base_esn = ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression())
 
 
 # ## Optimize input_scaling and spectral_radius
 # 
 # We use the ParameterGrid from scikit-learn, which converts the grid parameters defined before into a list of dictionaries for each parameter combination. 
 # 
-# We loop over each entry of the Parameter Grid, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and validation set.  
+# We loop over each entry of the Parameter Grid, set the parameters in esn and fit our model on the training data. Afterwards, we report the MSE on the training and validation set.  
 # 
 #     The lowest training MSE: 0.000238243207656839; parameter combination: {'input_scaling': 0.4, 'spectral_radius': 0.5}
 #     The lowest validation MSE: 0.000223548432343247; parameter combination: {'input_scaling': 0.4, 'spectral_radius': 0.5}
@@ -126,7 +125,7 @@ for params in ParameterGrid(param_grid):
         err_train.append(mean_squared_error(X[1:, :], y_pred))
     err_test = []
     for X in validation_set:
-        y_pred = reg.predict(X=X[:-1, :])
+        y_pred = esn.predict(X=X[:-1, :])
         err_test.append(mean_squared_error(X[1:, :], y_pred))
     print('{0}\t{1}'.format(np.mean(err_train), np.mean(err_test)))
 
@@ -161,7 +160,7 @@ base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(),
 
 # ## Optimize bias and leakage
 # 
-# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and validation set.  
+# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in esn and fit our model on the training data. Afterwards, we report the MSE on the training and validation set.  
 # 
 #     The lowest training MSE: 0.000229618469284352; parameter combination: {'bias': 0.8, 'leakage': 0.2}
 #     The lowest validation MSE: 0.000213898523704083; parameter combination: {'bias': 0.1, 'leakage': 0.2}
@@ -185,7 +184,7 @@ for params in ParameterGrid(param_grid):
         err_train.append(mean_squared_error(X[1:, :], y_pred))
     err_test = []
     for X in validation_set:
-        y_pred = reg.predict(X=X[:-1, :])
+        y_pred = esn.predict(X=X[:-1, :])
         err_test.append(mean_squared_error(X[1:, :], y_pred))
     print('{0}\t{1}'.format(np.mean(err_train), np.mean(err_test)))
 
@@ -220,7 +219,7 @@ base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(),
 
 # ## Optimize beta
 # 
-# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and test set.  
+# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in esn and fit our model on the training data. Afterwards, we report the MSE on the training and test set.  
 # 
 #     The lowest training MSE: 0.00012083938686566446; parameter combination: {'beta': 5e-4}
 #     The lowest validation MSE: 0.00011885985457347002; parameter combination: {'beta': 5e-3}
@@ -244,7 +243,7 @@ for params in ParameterGrid(param_grid):
         err_train.append(mean_squared_error(X[1:, :], y_pred))
     err_test = []
     for X in validation_set:
-        y_pred = reg.predict(X=X[:-1, :])
+        y_pred = esn.predict(X=X[:-1, :])
         err_test.append(mean_squared_error(X[1:, :], y_pred))
     print('{0}\t{1}'.format(np.mean(err_train), np.mean(err_test)))
 
@@ -297,15 +296,15 @@ for params in ParameterGrid(param_grid):
     esn = clone(base_esn)
     esn.set_params(**params)
     esn.node_to_node.hidden_layer_size = params["input_to_node__hidden_layer_size"]
-    reg.finalize()
+    esn.finalize()
     err_train = []
     for X in training_set + validation_set:
-        y_pred = reg.predict(X=X[:-1, :], keep_reservoir_state=False)
+        y_pred = esn.predict(X=X[:-1, :], keep_reservoir_state=False)
         y_pred_bin = np.asarray(y_pred > 0.1, dtype=int)
         err_train.append(accuracy_score(y_true=X[1:, :], y_pred=y_pred_bin))
     err_test = []
     for X in test_set:
-        y_pred = reg.predict(X=X[:-1, :], keep_reservoir_state=False)
+        y_pred = esn.predict(X=X[:-1, :], keep_reservoir_state=False)
         print(np.sum(y_pred, axis=0))
         y_pred_bin = np.asarray(y_pred > 0.1, dtype=int)
         err_test.append(accuracy_score(y_true=X[1:, :], y_pred=y_pred_bin))

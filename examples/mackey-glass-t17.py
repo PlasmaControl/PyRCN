@@ -22,10 +22,6 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
-get_ipython().run_line_magic('matplotlib', 'inline')
-
-from IPython.display import set_matplotlib_formats
-set_matplotlib_formats('png', 'pdf')
 
 from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.linear_model import IncrementalRegression
@@ -37,7 +33,7 @@ from pyrcn.base import InputToNode, NodeToNode
 # In[ ]:
 
 
-data = np.loadtxt("./dataset/MackeyGlass_t17.txt")
+data = np.loadtxt("examples/dataset/MackeyGlass_t17.txt")
 
 
 # The first 500 samples are visualized.
@@ -50,6 +46,7 @@ plt.plot(data[:500])
 plt.xlabel("n")
 plt.ylabel("X[n]")
 plt.grid()
+plt.show()
 
 
 # Standardization -> From here on, we have a numpy array!!!
@@ -120,6 +117,7 @@ plt.plot(train_out)
 plt.plot(train_pred)
 plt.xlabel("n")
 plt.ylabel("X[n]")
+plt.show()
 
 
 # Prediction of the test set.
@@ -133,6 +131,7 @@ plt.plot(test_out)
 plt.plot(test_pred)
 plt.xlabel("n")
 plt.ylabel("X[n]")
+plt.show()
 
 
 # In[ ]:

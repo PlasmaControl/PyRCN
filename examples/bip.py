@@ -116,7 +116,6 @@ def main():
 
     plt.tight_layout()
     plt.savefig(os.path.join(directory, 'bip-transformations.pgf'), format='pgf')
-    # plt.show()
 
 
 if __name__ == "__main__":

@@ -99,17 +99,17 @@ def elm_hyperparameters(directory):
     X_train, X_test, y_train, y_test = X[:train_size, :], X[train_size:, :], y_encoded[:train_size], y_encoded[train_size:]
 
     param_grid = {
-        'input_to_nodes__hidden_layer_size': [2000],
-        'input_to_nodes__input_scaling': np.logspace(start=-2, stop=2, base=10, num=7),
-        'input_to_nodes__bias_scaling': np.logspace(start=-2, stop=2, base=10, num=7),
-        'input_to_nodes__activation': ['tanh'],
-        'input_to_nodes__random_state': [42],
+        'input_to_node__hidden_layer_size': [2000],
+        'input_to_node__input_scaling': np.logspace(start=-2, stop=2, base=10, num=7),
+        'input_to_node__bias_scaling': np.logspace(start=-2, stop=2, base=10, num=7),
+        'input_to_node__activation': ['tanh'],
+        'input_to_node__random_state': [42],
         'regressor__alpha': [1e-5],
         'regressor__random_state': [42],
         'random_state': [42]
     }
 
-    estimator = ELMClassifier(input_to_nodes=InputToNode(), regressor=Ridge())
+    estimator = ELMClassifier(input_to_node=InputToNode(), regressor=Ridge())
     cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=-1, scoring='accuracy')
     cv.fit(X_train, y_train)
     logger.info('best parameters: {0} (score: {1})'.format(cv.best_params_, cv.best_score_))
@@ -122,11 +122,11 @@ def elm_hyperparameters(directory):
             f.write(','.join(map(str, row)) + '\n')
 
     param_grid = {
-        'input_to_nodes__hidden_layer_size': [500, 1000, 2000, 4000],
-        'input_to_nodes__input_scaling': [cv.best_params_['input_to_nodes__input_scaling']],
-        'input_to_nodes__bias_scaling': [cv.best_params_['input_to_nodes__bias_scaling']],
-        'input_to_nodes__activation': ['tanh', 'relu', 'bounded_relu', 'logistic', 'identity'],
-        'input_to_nodes__random_state': [42],
+        'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000],
+        'input_to_node__input_scaling': [cv.best_params_['input_to_node__input_scaling']],
+        'input_to_node__bias_scaling': [cv.best_params_['input_to_node__bias_scaling']],
+        'input_to_node__activation': ['tanh', 'relu', 'bounded_relu', 'logistic', 'identity'],
+        'input_to_node__random_state': [42],
         'regressor__alpha': [1e-5],
         'regressor__random_state': [42],
         'random_state': [42]
@@ -144,11 +144,11 @@ def elm_hyperparameters(directory):
             f.write(','.join(map(str, row)) + '\n')
 
     param_grid = {
-        'input_to_nodes__hidden_layer_size': [cv.best_params_['input_to_nodes__hidden_layer_size']],
-        'input_to_nodes__input_scaling': [cv.best_params_['input_to_nodes__input_scaling']],
-        'input_to_nodes__bias_scaling': [cv.best_params_['input_to_nodes__bias_scaling']],
-        'input_to_nodes__activation': [cv.best_params_['input_to_nodes__activation']],
-        'input_to_nodes__random_state': [42],
+        'input_to_node__hidden_layer_size': [cv.best_params_['input_to_node__hidden_layer_size']],
+        'input_to_node__input_scaling': [cv.best_params_['input_to_node__input_scaling']],
+        'input_to_node__bias_scaling': [cv.best_params_['input_to_node__bias_scaling']],
+        'input_to_node__activation': [cv.best_params_['input_to_node__activation']],
+        'input_to_node__random_state': [42],
         'regressor__alpha': [.00001, .001, .1],
         'regressor__random_state': [42],
         'random_state': [42]
@@ -183,21 +183,21 @@ def elm_basic(directory):
     X_train, X_test, y_train, y_test = train_test_split(X, y_encoded, train_size=train_size, random_state=42)
 
     param_grid = [{
-            'input_to_nodes__hidden_layer_size': [500, 2000],
-            'input_to_nodes__input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
-            'input_to_nodes__bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
-            'input_to_nodes__activation': ['relu'],
-            'input_to_nodes__random_state': [42],
+            'input_to_node__hidden_layer_size': [500, 2000],
+            'input_to_node__input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+            'input_to_node__bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+            'input_to_node__activation': ['relu'],
+            'input_to_node__random_state': [42],
             'regressor__alpha': [1e-5],
             'regressor__random_state': [42],
             'random_state': [42]
         },
         {
-            'input_to_nodes__hidden_layer_size': [2000],
-            'input_to_nodes__input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
-            'input_to_nodes__bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
-            'input_to_nodes__activation': ['tanh'],
-            'input_to_nodes__random_state': [42],
+            'input_to_node__hidden_layer_size': [2000],
+            'input_to_node__input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+            'input_to_node__bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+            'input_to_node__activation': ['tanh'],
+            'input_to_node__random_state': [42],
             'regressor__alpha': [1e-5],
             'regressor__random_state': [42],
             'random_state': [42]
@@ -205,7 +205,7 @@ def elm_basic(directory):
     ]
 
     # prepare grid search
-    estimator = ELMClassifier(input_to_nodes=InputToNode(), regressor=Ridge())
+    estimator = ELMClassifier(input_to_node=InputToNode(), regressor=Ridge())
     cv = GridSearchCV(
         estimator=estimator,
         param_grid=param_grid,
@@ -251,11 +251,11 @@ def elm_pca(directory):
 
     # prepare parameter grids
     param_grid_basic = {
-            'input_to_nodes__hidden_layer_size': 2000,
-            'input_to_nodes__input_scaling': 1.,
-            'input_to_nodes__bias_scaling': 0.,
-            'input_to_nodes__activation': 'relu',
-            'input_to_nodes__random_state': 42,
+            'input_to_node__hidden_layer_size': 2000,
+            'input_to_node__input_scaling': 1.,
+            'input_to_node__bias_scaling': 0.,
+            'input_to_node__activation': 'relu',
+            'input_to_node__random_state': 42,
             'regressor__alpha': 1e-5,
             'regressor__random_state': 42,
             'random_state': 42
