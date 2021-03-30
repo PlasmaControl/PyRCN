@@ -51,8 +51,8 @@ plt.grid()
 # In[3]:
 
 
-esn = ESNRegressor(input_to_nodes=[('default', InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=0.1, bias_scaling=0.0))],
-                   nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=50, spectral_radius=0.0, leakage=1.0, bias_scaling=0.0, k_rec=10))],
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=0.1, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=0.0, leakage=1.0, bias_scaling=0.0, k_rec=10),
                    regressor=Ridge(alpha=1e-6), random_state=10)
 
 esn.fit(X=X, y=y)
@@ -63,14 +63,14 @@ _ = esn.predict(X=X)
 # 
 # The absolute values of the reservoir states lie between 0 and 0.1.
 
-# In[4]:
+# In[5]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -79,11 +79,11 @@ plt.grid()
 
 # What happens if we increase the input scaling factor?
 
-# In[5]:
+# In[7]:
 
 
-esn = ESNRegressor(input_to_nodes=[('default', InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0))],
-                   nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=50, spectral_radius=0.0, leakage=1.0, bias_scaling=0.0, k_rec=10))],
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=0.0, leakage=1.0, bias_scaling=0.0, k_rec=10),
                    regressor=Ridge(alpha=1e-6), random_state=10)
 
 esn.fit(X=X, y=y)
@@ -92,14 +92,14 @@ _ = esn.predict(X=X)
 
 # Each reservoir state still has only one non-zero value at $n=5$ as before, just with higher activations up to 0.8. The $\tanh$ non-linearity is damping the reservoir states so that they cannot reach 1.  
 
-# In[6]:
+# In[8]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -111,11 +111,11 @@ plt.grid()
 # 
 # Next, let us analyze the spectral radius. Therefore, we set it to 0.3 in the following example.
 
-# In[7]:
+# In[9]:
 
 
-esn = ESNRegressor(input_to_nodes=[('default', InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0))],
-                   nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=50, spectral_radius=0.3, leakage=1.0, bias_scaling=0.0, k_rec=10))],
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=0.3, leakage=1.0, bias_scaling=0.0, k_rec=10),
                    regressor=Ridge(alpha=1e-6), random_state=10)
 
 esn.fit(X=X, y=y)
@@ -124,14 +124,14 @@ _ = esn.predict(X=X)
 
 # We can observe that the impulse responses are starting at n=5 and decaying until reaching zero after a short time. Obviously, the reservoir states are decaying rather fast, because the recurrent connections are small compared to the input scaling. 
 
-# In[8]:
+# In[10]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -140,11 +140,11 @@ plt.grid()
 
 # It is interesting to increase the spectral radius. Therefore, we set it to 0.9.
 
-# In[9]:
+# In[11]:
 
 
-esn = ESNRegressor(input_to_nodes=[('default', InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0))],
-                   nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=50, spectral_radius=0.9, leakage=1.0, bias_scaling=0.0, k_rec=10))],
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=0.9, leakage=1.0, bias_scaling=0.0, k_rec=10),
                    regressor=Ridge(alpha=1e-6), random_state=10)
 
 esn.fit(X=X, y=y)
@@ -153,14 +153,14 @@ _ = esn.predict(X=X)
 
 # The values are still bounded between [0.8, 0.8], but the reservoir states are active over a longer time now ($n\approx 30$).
 
-# In[10]:
+# In[12]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -169,11 +169,11 @@ plt.grid()
 
 # We can try to further increase the spectral radius. Therefore, we set it to 1.0.
 
-# In[11]:
+# In[13]:
 
 
-esn = ESNRegressor(input_to_nodes=[('default', InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0))],
-                   nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=50, spectral_radius=1.0, leakage=1.0, bias_scaling=0.0, k_rec=10))],
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=1.0, leakage=1.0, bias_scaling=0.0, k_rec=10),
                    regressor=Ridge(alpha=1e-6), random_state=10)
 
 esn.fit(X=X, y=y)
@@ -185,14 +185,14 @@ _ = esn.predict(X=X)
 # 
 # We can see that the reservoir states are decaying very slowly, and they are oscillating with a resonance frequency. For many tasks, it is indeed necessary to preserve the echo state property of reservoir and keep $\rho < 1$. However in some cases, such as time-series prediction in this paper, the spectral radius can be larger than 1. 
 
-# In[12]:
+# In[14]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -204,11 +204,11 @@ plt.grid()
 # 
 # The spectral radius is decreased to 0.9 in order to fulfil the Echo State Property.
 
-# In[13]:
+# In[15]:
 
 
-esn = ESNRegressor(input_to_nodes=[('default', InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0))],
-                   nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=50, spectral_radius=0.9, leakage=1.0, bias_scaling=0.2, k_rec=10))],
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=0.9, leakage=1.0, bias_scaling=0.2, k_rec=10),
                    regressor=Ridge(alpha=1e-6), random_state=10)
 
 esn.fit(X=X, y=y)
@@ -217,14 +217,14 @@ _ = esn.predict(X=X)
 
 # Two impacts of the bias scaling can be mainly observed: (1) The absolute value of the stable states of the reservoir neurons is approximately distributed from 0 to 0.2 and each neuron has its own stable state. When new information from the input is passed to the reservoir neurons, this is the excitation point. (2) Before the impulse arrives in the reservoir ($n=5$), the states are approaching their stable state. Due to the spectral radius, each reservoir neuron is connected to other neurons and thus feeds the constant bias through the network, until each neuron has reached its final state.
 
-# In[14]:
+# In[16]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -234,11 +234,11 @@ plt.grid()
 # Finally, let us observe the impact of the leakage. Leaky integration is the other way to incorporate past information
 # into the reservoir. This works by keeping the previous reservoir states over a longer time.
 
-# In[15]:
+# In[17]:
 
 
-esn = ESNRegressor(input_to_nodes=[('default', InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0))],
-                   nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=50, spectral_radius=0.9, leakage=0.3, bias_scaling=0.0, k_rec=10))],
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=0.9, leakage=0.3, bias_scaling=0.0, k_rec=10),
                    regressor=Ridge(alpha=1e-6), random_state=10)
 
 esn.fit(X=X, y=y)
@@ -247,14 +247,14 @@ _ = esn.predict(X=X)
 
 # The leakage behaves in the same way for all nodes in the reservoir and acts like a low-pass filter. The magnitude is strongly damped, and all reservoir states are decaying exponentially over a longer time. Due to the spectral radius, all neurons have individual decaying times.
 
-# In[16]:
+# In[18]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -264,11 +264,11 @@ plt.grid()
 # If we would like to incorporate future information into the reservoir, we can pass our input samples for- and backward
 # through the reservoir. Therefore, we set bidirectional to True.
 
-# In[17]:
+# In[19]:
 
 
-esn = ESNRegressor(input_to_nodes=[('default', InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0))],
-                   nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=50, spectral_radius=0.9, leakage=0.3, bias_scaling=0.0, k_rec=10, bi_directional=True))],
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=0.9, leakage=0.3, bias_scaling=0.0, k_rec=10, bi_directional=True),
                    regressor=Ridge(alpha=1e-6), random_state=10)
 
 esn.fit(X=X, y=y)
@@ -280,14 +280,14 @@ _ = esn.predict(X=X)
 # Because of the additional backward-pass, the number of reservoir states is doubled, and we can see that they decay in
 # both, forward and backward direction. This is especially useful for some classification tasks.
 
-# In[18]:
+# In[20]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:110, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -296,11 +296,11 @@ plt.grid()
 
 # The ESN from the Mackey-Glass dataset with a reduced number of neurons
 
-# In[22]:
+# In[21]:
 
 
-esn = ESNRegressor(input_to_nodes=[('default', InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0))],
-                   nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=50, spectral_radius=1.2, leakage=1.0, bias_scaling=0.0, k_rec=10, bi_directional=False))],
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=1.2, leakage=1.0, bias_scaling=0.0, k_rec=10, bi_directional=False),
                    regressor=Ridge(alpha=1e-6), random_state=10)
 
 esn.fit(X=X, y=y)
@@ -309,14 +309,14 @@ _ = esn.predict(X=X)
 
 # Visualization of the Mackey-Glass-ESN
 
-# In[23]:
+# In[22]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -325,11 +325,11 @@ plt.grid()
 
 # The ESN from the Stock-Price dataset with a reduced number of neurons
 
-# In[24]:
+# In[23]:
 
 
-esn = ESNRegressor(input_to_nodes=[('default', InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=0.6, bias_scaling=0.0))],
-                   nodes_to_nodes=[('default', NodeToNode(hidden_layer_size=50, spectral_radius=0.9, leakage=1.0, bias_scaling=0.0, k_rec=10, bi_directional=False))],
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=0.6, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=0.9, leakage=1.0, bias_scaling=0.0, k_rec=10, bi_directional=False),
                    regressor=Ridge(alpha=1e-6), random_state=10)
 
 esn.fit(X=X, y=y)
@@ -338,14 +338,14 @@ _ = esn.predict(X=X)
 
 # Visualization of the Stock-Price-ESN
 
-# In[25]:
+# In[24]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node.transformer_list[0][1]._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -354,28 +354,35 @@ plt.grid()
 
 # The ESN from the Multipitch dataset with a reduced number of neurons
 
-# In[ ]:
+# In[25]:
 
 
-esn = ESNRegressor(k_in=1, input_scaling=0.6, spectral_radius=0.2, bias=0.7, ext_bias=False, leakage=0.3,
-                   reservoir_size=50, k_res=10, reservoir_activation='tanh', bi_directional=False,
-                   teacher_scaling=1., teacher_shift=0., solver='ridge', beta=1e-8, random_state=0)
+esn = ESNRegressor(input_to_node=InputToNode(hidden_layer_size=50, activation='identity', k_in=1, input_scaling=0.6, bias_scaling=0.0),
+                   node_to_node=NodeToNode(hidden_layer_size=50, spectral_radius=0.2, leakage=0.3, bias_scaling=0.0, k_rec=10, bi_directional=False),
+                   regressor=Ridge(alpha=1e-8), random_state=10)
 
 esn.fit(X=X, y=y, n_jobs=0)
-_ = esn.predict(X=X, keep_reservoir_state=True)
+_ = esn.predict(X=X)
 
 
 # Visualization of the Multipitch-ESN
 
-# In[ ]:
+# In[26]:
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn.reservoir_state[:50, 1:].T),vmin=0, vmax=1)
-plt.xlim([0, esn.reservoir_state[:50, 1:].shape[0]])
-plt.ylim([0, esn.reservoir_state.shape[1] - 1])
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+
+plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
+
+
+# In[ ]:
+
+
+
 

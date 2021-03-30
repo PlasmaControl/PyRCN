@@ -12,7 +12,7 @@
 # \dot{y}(t) = \alpha y(t-\tau) / (1 + y(t - \tau)^{\beta}) - \gamma y(t)
 # \end{align}
 
-# In[1]:
+# In[ ]:
 
 
 import numpy as np
@@ -34,7 +34,7 @@ from pyrcn.base import InputToNode, NodeToNode
 
 # Load the dataset
 
-# In[2]:
+# In[ ]:
 
 
 data = np.loadtxt("./dataset/MackeyGlass_t17.txt")
@@ -42,7 +42,7 @@ data = np.loadtxt("./dataset/MackeyGlass_t17.txt")
 
 # The first 500 samples are visualized.
 
-# In[3]:
+# In[ ]:
 
 
 plt.figure()
@@ -54,7 +54,7 @@ plt.grid()
 
 # Standardization -> From here on, we have a numpy array!!!
 
-# In[4]:
+# In[ ]:
 
 
 data = data / (data.max() - data.min())
@@ -62,7 +62,7 @@ data = data / (data.max() - data.min())
 
 # Define Train/Test lengths
 
-# In[5]:
+# In[ ]:
 
 
 initLen = 100 # number of time steps during which internal activations are washed-out during training
@@ -73,14 +73,14 @@ testLen = 2000 # number of time steps during which we test/run the network
 
 # Echo State Network preparation
 
-# In[10]:
+# In[ ]:
 
 
 base_input_to_nodes = InputToNode(hidden_layer_size=500, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0)
 base_nodes_to_nodes = NodeToNode(hidden_layer_size=500, spectral_radius=1.2, leakage=1.0, bias_scaling=0.0, k_rec=10)
 
-esn = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
-                   nodes_to_nodes=[('default', base_nodes_to_nodes)],
+esn = ESNRegressor(input_to_node=base_input_to_nodes,
+                   node_to_node=base_nodes_to_nodes,
                    regressor=IncrementalRegression(alpha=1e-4), random_state=10)
 
 
@@ -88,7 +88,7 @@ esn = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
 # 
 # The lowest MSE obtained with this settings were \num{5.97e-06} for the training set and \num{43.1e-06} for the test set.
 
-# In[11]:
+# In[ ]:
 
 
 train_in = data[None,0:trainLen]
@@ -112,7 +112,7 @@ print("Test MSE:\t{0}".format(test_err))
 
 # Prediction of the training set.
 
-# In[12]:
+# In[ ]:
 
 
 plt.figure()
@@ -125,7 +125,7 @@ plt.ylabel("X[n]")
 # Prediction of the test set.
 # 
 
-# In[13]:
+# In[ ]:
 
 
 plt.figure()

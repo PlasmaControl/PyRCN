@@ -532,7 +532,8 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
     spectral_radius : float, default=1.
         Scales the input weight matrix.
-    leakage : float, default=1.
+    
+       : float, default=1.
         parameter to determine the degree of leaky integration.
     bias_scaling : float, default=1.
         Scales the input bias of the activation.
