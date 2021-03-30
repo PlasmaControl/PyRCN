@@ -28,15 +28,15 @@ else:
     from scipy.sparse.linalg.eigen.arpack import eigs as eigens
 
 
-if parse_version(sklearn.__version__) < parse_version('0.24.0'):
+if parse_version(sklearn.__version__) < parse_version('0.23.1'):
     from sklearn.utils import check_array
 
     def validate_data(self, X, y=None, *args, **kwargs):
         warnings.warn('Due to scikit version, _validate_data(X, y) returns check_array(X), y.', DeprecationWarning)
         if y:
-            return check_array(X, accept_sparse=True, **kwargs), y
+            return check_array(X, **kwargs), y
         else:
-            return check_array(X, accept_sparse=True, **kwargs)
+            return check_array(X, **kwargs)
 
     setattr(BaseEstimator, '_validate_data', validate_data)
 
@@ -180,7 +180,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self.k_in = k_in
 
         self._input_weights = None
-        self._bias = None
+        self._bias_weights = None
         self._hidden_layer_state = None
 
     def fit(self, X, y=None):
@@ -206,7 +206,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
             hidden_layer_size=self.hidden_layer_size,
             fan_in=np.rint(self.hidden_layer_size * self.sparsity).astype(int),
             random_state=self.random_state)
-        self._bias = self._uniform_random_bias(
+        self._bias_weights = self._uniform_random_bias(
             hidden_layer_size=self.hidden_layer_size,
             random_state=self.random_state)
         return self
@@ -223,11 +223,11 @@ class InputToNode(BaseEstimator, TransformerMixin):
         -------
         Y: ndarray of size (n_samples, hidden_layer_size)
         """
-        if self._input_weights is None or self._bias is None:
+        if self._input_weights is None or self._bias_weights is None:
             raise NotFittedError(self)
 
         self._hidden_layer_state = InputToNode._node_inputs(
-            X, self._input_weights, self.input_scaling, self._bias, self.bias_scaling)
+            X, self._input_weights, self.input_scaling, self._bias_weights, self.bias_scaling)
         ACTIVATIONS[self.activation](self._hidden_layer_state)
         return self._hidden_layer_state
 
@@ -329,7 +329,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         Object memory in bytes.
         """
         return object.__sizeof__(self) + \
-            self._bias.nbytes + \
+            self._bias_weights.nbytes + \
             self._input_weights.nbytes + \
             self._hidden_layer_state.nbytes + \
             sys.getsizeof(self.random_state)
@@ -352,7 +352,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         -------
         bias : ndarray of size (hidden_layer_size)
         """
-        return self._bias
+        return self._bias_bias_weights
 
 
 class BatchIntrinsicPlasticity(InputToNode):
@@ -403,7 +403,7 @@ class BatchIntrinsicPlasticity(InputToNode):
 
         if self.algorithm == 'dresden':
             s = BatchIntrinsicPlasticity._node_inputs(
-                X, self._input_weights, self.input_scaling, self._bias, self.bias_scaling)
+                X, self._input_weights, self.input_scaling, self._bias_weights, self.bias_scaling)
             np.add(np.multiply(self._scaler.transform(s), self._m), self._c, out=s)
             ACTIVATIONS[self.activation](s)
             return s
@@ -412,7 +412,7 @@ class BatchIntrinsicPlasticity(InputToNode):
         super().fit(X, y=None)
 
         s = np.sort(BatchIntrinsicPlasticity._node_inputs(
-            X, self._input_weights, self.input_scaling, self._bias, self.bias_scaling), axis=0)
+            X, self._input_weights, self.input_scaling, self._bias_weights, self.bias_scaling), axis=0)
 
         phi = np.transpose(np.stack((s, np.ones(s.shape)), axis=2), axes=(1, 0, 2))
 
@@ -443,7 +443,7 @@ class BatchIntrinsicPlasticity(InputToNode):
         v = safe_sparse_dot(np.linalg.pinv(phi), t)
 
         np.multiply(self._input_weights, v[:, 0], out=self._input_weights)
-        self._bias += v[:, 1]
+        self._bias_weights += v[:, 1]
         return self
 
     def _fit_dresden(self, X, y=None):
@@ -453,7 +453,7 @@ class BatchIntrinsicPlasticity(InputToNode):
         super().fit(X, y=None)
 
         s = BatchIntrinsicPlasticity._node_inputs(
-            X, self._input_weights, self.input_scaling, self._bias, self.bias_scaling)
+            X, self._input_weights, self.input_scaling, self._bias_weights, self.bias_scaling)
 
         self._scaler = StandardScaler().fit(s)
 
@@ -507,7 +507,7 @@ class PredefinedWeightsInputToNode(InputToNode):
                 self.predefined_input_weights.shape[0], X.shape[1]))
 
         self._input_weights = self.predefined_input_weights
-        self._bias = self._uniform_random_bias(
+        self._bias_weights = self._uniform_random_bias(
             hidden_layer_size=self.hidden_layer_size,
             random_state=self.random_state)
         return self
@@ -560,10 +560,10 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self.bias_scaling = bias_scaling
         self.bi_directional = bi_directional
         self.k_rec = k_rec
-        self.random_state = check_random_state(random_state)
+        self.random_state = random_state
 
         self._recurrent_weights = None
-        self._bias = None
+        self._bias_weights = None
         self._hidden_layer_state = None
 
     def fit(self, X, y=None):
@@ -590,7 +590,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             hidden_layer_size=self.hidden_layer_size,
             fan_in=np.rint(self.hidden_layer_size * self.sparsity).astype(int),
             random_state=self.random_state)
-        self._bias = self._uniform_random_bias(
+        self._bias_weights = self._uniform_random_bias(
             hidden_layer_size=self.hidden_layer_size,
             random_state=self.random_state)
         return self
@@ -606,7 +606,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         -------
         Y: ndarray of size (n_samples, hidden_layer_size)
         """
-        if self._recurrent_weights is None or self._bias is None:
+        if self._recurrent_weights is None or self._bias_weights is None:
             raise NotFittedError(self)
 
         if self.bi_directional:
@@ -622,7 +622,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         for sample in range(X.shape[0]):
             a = X[sample, :]
             b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
-            c = self._bias * self.bias_scaling
+            c = self._bias_weights * self.bias_scaling
             hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c)
             hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                  + self.leakage * hidden_layer_state[sample + 1, :]
@@ -630,6 +630,21 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _normal_random_recurrent_weights(n_features_in: int, hidden_layer_size: int, fan_in: int, random_state):
+        """
+        Returns normally distributed random reservoir weights
+
+        Parameters
+        ----------
+        n_features_in : int
+        hidden_layer_size : int
+        fan_in : int
+            Determines how many features are mapped to one neuron.
+        random_state : numpy.RandomState
+
+        Returns
+        -------
+        normal_random_input_weights : ndarray of size (hidden_layer_size, hidden_layer_size)
+        """
         if n_features_in != hidden_layer_size:
             raise ValueError("Dimensional mismatch: n_features must match hidden_layer_size, got %s !=%s." %
                              (n_features_in, hidden_layer_size))
@@ -653,6 +668,18 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _uniform_random_bias(hidden_layer_size: int, random_state):
+        """
+        Returns uniform random bias in range [-1, 1].
+
+        Parameters
+        ----------
+        hidden_layer_size : int
+        random_state : numpy.RandomState
+
+        Returns
+        -------
+        uniform_random_bias : ndarray of size (hidden_layer_size)
+        """
         return random_state.uniform(low=-1., high=1., size=hidden_layer_size)
 
     def _validate_hyperparameters(self):
@@ -663,6 +690,8 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         -------
 
         """
+        self.random_state = check_random_state(self.random_state)
+
         if self.hidden_layer_size <= 0:
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
         if self.spectral_radius < 0.:
@@ -735,7 +764,7 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
 
         self._recurrent_weights = None
         self._output_weights = None
-        self._bias = None
+        self._bias_weights = None
         self._feedback = None
         self._hidden_layer_state = None
 
@@ -763,7 +792,7 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
             hidden_layer_size=self.hidden_layer_size,
             fan_in=np.rint(self.hidden_layer_size * self.sparsity).astype(int),
             random_state=self.random_state)
-        self._bias = self._uniform_random_bias(
+        self._bias_weights = self._uniform_random_bias(
             hidden_layer_size=self.hidden_layer_size,
             random_state=self.random_state)
         self._feedback = self._uniform_random_feedback(
@@ -783,7 +812,7 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
         -------
         Y: ndarray of size (n_samples, hidden_layer_size)
         """
-        if self._recurrent_weights is None or self._bias is None:
+        if self._recurrent_weights is None or self._bias_weights is None:
             raise NotFittedError(self)
 
         if self.bi_directional:
@@ -800,7 +829,7 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
             for sample in range(X.shape[0]):
                 a = X[sample, :]
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
-                c = self._bias * self.bias_scaling
+                c = self._bias_weights * self.bias_scaling
                 d = safe_sparse_dot(self._feedback, y[sample, :]) * self.feedback_scaling
                 hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c + d)
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
@@ -810,7 +839,7 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
             for sample in range(X.shape[0]):
                 a = X[sample, :]
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
-                c = self._bias * self.bias_scaling
+                c = self._bias_weights * self.bias_scaling
                 d = safe_sparse_dot(self._feedback, y_pred) * self.feedback_scaling
                 hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c + d)
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \

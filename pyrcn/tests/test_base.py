@@ -91,3 +91,12 @@ def test_bip():
     statistic, pvalue = scipy.stats.ks_1samp(y_test, scipy.stats.uniform.cdf)
     assert statistic < pvalue
     print("Kolmogorov-Smirnov does not reject H_0: y is uniformly distributed in [-.75, .75]")
+
+
+if __name__ == "__main__":
+    test_input_to_node_dense()
+    test_input_to_node_sparse()
+    test_node_to_node_dense()
+    test_node_to_node_sparse()
+    test_transform_bounded_relu()
+    test_bip()

@@ -26,7 +26,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     Parameters
     ----------
-    input_to_nodes : iterable, default=[('default', InputToNode())]
+    input_to_node : iterable, default=[('default', InputToNode())]
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.
@@ -39,11 +39,11 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
     random_state : int, RandomState instance, default=None
     """
     def __init__(self,
-                 input_to_nodes=InputToNode(),
+                 input_to_node=InputToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
                  chunk_size=None,
                  random_state=None):
-        self.input_to_nodes = input_to_nodes
+        self.input_to_node = input_to_node
         self.random_state = random_state
         self._chunk_size = chunk_size
         self._regressor = regressor
@@ -173,11 +173,11 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         """
         self.random_state = check_random_state(self.random_state)
 
-        if not (hasattr(self.input_to_nodes, "fit") and hasattr(self.input_to_nodes, "fit_transform") and hasattr(
-                self.input_to_nodes, "transform")):
-            raise TypeError("All input_to_nodes should be transformers "
+        if not (hasattr(self.input_to_node, "fit") and hasattr(self.input_to_node, "fit_transform") and hasattr(
+                self.input_to_node, "transform")):
+            raise TypeError("All input_to_node should be transformers "
                             "and implement fit and transform "
-                            "'%s' (type %s) doesn't" % (self.input_to_nodes, type(self.input_to_nodes)))
+                            "'%s' (type %s) doesn't" % (self.input_to_node, type(self.input_to_node)))
 
         if self._chunk_size is not None and (not isinstance(self._chunk_size, int) or self._chunk_size < 0):
             raise ValueError('Invalid value for chunk_size, got {0}'.format(self._chunk_size))
@@ -226,24 +226,24 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._regressor = regressor
 
     @property
-    def input_to_nodes(self):
+    def input_to_node(self):
         """
-        Returns the input_to_nodes list or the input_to_node Transformer.
+        Returns the input_to_node list or the input_to_node Transformer.
 
         Returns
         -------
-        input_to_nodes : Transformer or [Transformer]
+        input_to_node : Transformer or [Transformer]
         """
         return self._input_to_node
 
-    @input_to_nodes.setter
-    def input_to_nodes(self, input_to_nodes, n_jobs=None, transformer_weights=None):
+    @input_to_node.setter
+    def input_to_node(self, input_to_node, n_jobs=None, transformer_weights=None):
         """
-        Sets the input_to_nodes list or the input_to_nodes Transformer.
+        Sets the input_to_node list or the input_to_node Transformer.
 
         Parameters
         ----------
-        input_to_nodes : Transformer or [Transformer]
+        input_to_node : Transformer or [Transformer]
         n_jobs : int, default=None
         Number of jobs to run in parallel.
         None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
@@ -255,15 +255,15 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         Returns
         -------
         """
-        if hasattr(input_to_nodes, '__iter__'):
-            # Feature Union of list of input_to_nodes
+        if hasattr(input_to_node, '__iter__'):
+            # Feature Union of list of input_to_node
             self._input_to_node = FeatureUnion(
-                transformer_list=input_to_nodes,
+                transformer_list=input_to_node,
                 n_jobs=n_jobs,
                 transformer_weights=transformer_weights)
         else:
             # single input_to_node
-            self._input_to_node = input_to_nodes
+            self._input_to_node = input_to_node
 
     @property
     def chunk_size(self):
@@ -299,7 +299,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
 
     Parameters
     ----------
-    input_to_nodes : iterable, default=[('default', InputToNode())]
+    input_to_node : iterable, default=[('default', InputToNode())]
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.
@@ -312,21 +312,28 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
     random_state : int, RandomState instance, default=None
     """
     def __init__(self,
-                 input_to_nodes=InputToNode(),
+                 input_to_node=InputToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
                  chunk_size=None,
                  random_state=None):
-        super().__init__(input_to_nodes=input_to_nodes, regressor=regressor, chunk_size=chunk_size, random_state=random_state)
+        super().__init__(input_to_node=input_to_node, regressor=regressor, chunk_size=chunk_size, random_state=random_state)
         self._encoder = None
 
-    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, postpone_inverse=False):
-        """Fits the regressor partially.
+    def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, postpone_inverse=False):
+        """Fits the classifier partially.
 
         Parameters
         ----------
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
         y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_classes)
             The targets to predict.
+        classes : array of shape (n_classes,), default=None
+            Classes across all calls to partial_fit.
+            Can be obtained via `np.unique(y_all)`, where y_all is the
+            target vector of the entire dataset.
+            This argument is required for the first call to partial_fit
+            and can be omitted in the subsequent calls.
+            Note that y doesn't need to contain all labels in `classes`.
         n_jobs : int, default=None
             The number of jobs to run in parallel. ``-1`` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
@@ -342,9 +349,10 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         self._validate_data(X, y, multi_output=True)
 
         if self._encoder is None:
-            self._encoder = LabelBinarizer().fit(y)
+            self._encoder = LabelBinarizer().fit(classes)
 
-        return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None)
+        return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None,
+                                   postpone_inverse=postpone_inverse)
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
         """
@@ -400,7 +408,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         """
         # for single dim proba use np.amax
         # predicted_positive = np.subtract(predicted.T, np.min(predicted, axis=1))
-        predicted_positive = np.clip(super().predict(X), a_min=0, a_max=None).T
+        predicted_positive = np.clip(super().predict(X), a_min=1e-5, a_max=None).T
         return np.divide(predicted_positive, np.sum(predicted_positive, axis=0)).T
 
     def predict_log_proba(self, X):

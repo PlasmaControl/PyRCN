@@ -18,11 +18,11 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'PyRCN'
-copyright = '2020, Peter Steiner, Azarakhsh Jalalvand'
+copyright = '2021, Peter Steiner, Azarakhsh Jalalvand'
 author = 'Peter Steiner, Azarakhsh Jalalvand'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.3'
+release = '0.0.8'
 
 
 # -- General configuration ---------------------------------------------------

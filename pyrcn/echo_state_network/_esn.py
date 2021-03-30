@@ -41,20 +41,16 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
     chunk_size : int, default=None
         if X.shape[0] > chunk_size, calculate results incrementally with partial_fit
     random_state : int, RandomState instance, default=None
-    use_input_for_regression : bool, default=False
-        Concatenate X and hidden_layer_state to compute linear regression.
     """
     def __init__(self,
                  input_to_node=InputToNode(),
                  node_to_node=NodeToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
                  chunk_size=None,
-                 random_state=None,
-                 use_input_for_regression=False):
+                 random_state=None):
         self.input_to_node = input_to_node
         self.node_to_node = node_to_node
         self._regressor = regressor
-        self.use_input_for_regression = use_input_for_regression
         self._chunk_size = chunk_size
         self.random_state = random_state
 
@@ -98,9 +94,6 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             hidden_layer_state = self._node_to_node.fit_transform(hidden_layer_state)
             pass
 
-        if self.use_input_for_regression:
-            hidden_layer_state = np.concatenate((X, hidden_layer_state), axis=1)
-
         # regression
         if self._regressor:
             self._regressor.partial_fit(hidden_layer_state, y, postpone_inverse=postpone_inverse)
@@ -134,9 +127,6 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             # input_to_node
             hidden_layer_state = self._input_to_node.transform(X)
             hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
-
-            if self.use_input_for_regression:
-                hidden_layer_state = np.concatenate((X, hidden_layer_state), axis=1)
 
             # regression
             self._regressor.fit(hidden_layer_state, y)
@@ -185,9 +175,6 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
         hidden_layer_state = self._input_to_node.transform(X)
         hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
-
-        if self.use_input_for_regression:
-            hidden_layer_state = np.concatenate((X, hidden_layer_state), axis=1)
 
         return self._regressor.predict(hidden_layer_state)
 
@@ -363,19 +350,15 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
     chunk_size : int, default=None
         if X.shape[0] > chunk_size, calculate results incrementally with partial_fit
     random_state : int, RandomState instance, default=None
-    use_input_for_regression : bool, default=False
-        Concatenate X and hidden_layer_state to compute linear regression.
     """
     def __init__(self,
                  input_to_node=InputToNode(),
                  node_to_node=NodeToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
                  chunk_size=None,
-                 random_state=None,
-                 use_input_for_regression=False):
+                 random_state=None):
         super().__init__(input_to_node=input_to_node, node_to_node=node_to_node, regressor=regressor,
-                         chunk_size=chunk_size, random_state=random_state,
-                         use_input_for_regression=use_input_for_regression)
+                         chunk_size=chunk_size, random_state=random_state)
         self._encoder = None
 
     def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, postpone_inverse=False):
@@ -397,7 +380,9 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
             The number of jobs to run in parallel. ``-1`` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
-        postpone_inverse : bool, default False
+        postpone_inverse : bool, default=False
+            If output weights have not been fitted yet, regressor might be hinted at
+            postponing inverse calculation. Refer to IncrementalRegression for details.
 
         Returns
         -------
@@ -447,7 +432,8 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         return self._encoder.inverse_transform(super().predict(X), threshold=.0)
 
     def predict_proba(self, X):
-        """Predict the probability estimated using the trained ESN classifier.
+        """
+        Predict the probability estimated using the trained ESN classifier.
 
         Parameters
         ----------
@@ -459,7 +445,9 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
             The predicted probability estimated.
         """
         # for single dim proba use np.amax
-        return np.maximum(super().predict(X), 1e-5)
+        # predicted_positive = np.subtract(predicted.T, np.min(predicted, axis=1))
+        predicted_positive = np.clip(super().predict(X), a_min=1e-5, a_max=None).T
+        return np.divide(predicted_positive, np.sum(predicted_positive, axis=0)).T
 
     def predict_log_proba(self, X):
         """Predict the logarithmic probability estimated using the trained ESN classifier.

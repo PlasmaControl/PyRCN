@@ -9,10 +9,12 @@ The :mod:`pyrcn` module includes various reservoir computing algorithms.
 # Peter Steiner <peter.steiner@tu-dresden.de>. ELMs and ESNs are copyright of their respective owners.
 # License: BSD 3-Clause (C) TU Dresden 2020
 
-from pyrcn import extreme_learning_machine, echo_state_network, base, util
+from pyrcn import extreme_learning_machine, echo_state_network, base, preprocessing, postprocessing, util
 
 __all__ = ['extreme_learning_machine',
            'echo_state_network',
            'base',
+           'preprocessing',
+           'postprocessing',
            'util'
            ]

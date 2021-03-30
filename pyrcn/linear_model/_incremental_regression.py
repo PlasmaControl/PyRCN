@@ -16,15 +16,18 @@ from sklearn.exceptions import NotFittedError
 
 
 class IncrementalRegression(BaseEstimator, RegressorMixin):
-    """Linear regression.
+    """
+    Linear regression.
     This linear regression algorithm is able to perform a linear regression
-    with the L2 regularization and iterative fit. [1]_
+    with the L2 regularization and iterative fit. [1]
     .. [1] https://ieeexplore.ieee.org/document/4012031
+    
     References
     ----------
     N. Liang, G. Huang, P. Saratchandran and N. Sundararajan,
     "A Fast and Accurate Online Sequential Learning Algorithm for Feedforward Networks,"
     in IEEE Transactions on Neural Networks, vol. 17, no. 6, pp. 1411-1423, Nov. 2006, doi: 10.1109/TNN.2006.880583.
+    
     Parameters
     ----------
     alpha : float, default=1.0
@@ -33,6 +36,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         Fits a constant offset if True. Use this if input values are not average free.
     normalize : bool, default=False
         Performs a preprocessing normalization if True.
+    
     Attributes
     ----------
     coef_ : array, shape (n_features,) or (n_targets, n_features)
