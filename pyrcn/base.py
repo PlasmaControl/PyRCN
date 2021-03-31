@@ -762,12 +762,21 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
         parameter to determine the degree of leaky integration.
     bias_scaling : float, default=1.
         Scales the input bias of the activation.
-    feedback_scaling : float, default=1.
-        Scales the feedback of the activation.
+    teacher_scaling : float, default=1.
+        Factor applied to the target signal
+    teacher_shift: float, default=0.
+        Additive term applied to the target signal
     bi_directional : bool, default=False
         Whether to work in bidirectional mode.
     k_rec : int, default=None.
         recurrent weights per node. By default, it is None. If set, it overrides sparsity.
+    output_activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
+        This element represents the activation function in the hidden layer.
+            - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
+            - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
+            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
     random_state : {None, int, RandomState}, default=None
     """
     def __init__(self,
@@ -777,9 +786,11 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
                  spectral_radius=1.,
                  leakage=1.,
                  bias_scaling=1.,
-                 feedback_scaling=1.,
+                 teacher_scaling=1.,
+                 teacher_shift=1.,
                  bi_directional=False,
                  k_rec=None,
+                 output_activation='tanh',
                  random_state=None):
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
@@ -787,9 +798,12 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
         self.spectral_radius = spectral_radius
         self.leakage = leakage
         self.bias_scaling = bias_scaling
-        self.feedback_scaling = feedback_scaling
+        self.teacher_scaling = teacher_scaling
+        self.teacher_shift = teacher_shift
         self.bi_directional = bi_directional
         self.k_rec = k_rec
+        self.output_activation = output_activation
+        self.inverse_output_activation = "inplace_" + output_activation + ""
         self.random_state = check_random_state(random_state)
 
         self._recurrent_weights = None
@@ -860,21 +874,21 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
                 a = X[sample, :]
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
                 c = self._bias_weights * self.bias_scaling
-                d = safe_sparse_dot(self._feedback, y[sample, :]) * self.feedback_scaling
+                d = safe_sparse_dot(self._feedback, y[sample, :]) * self.teacher_scaling + self.teacher_shift
                 hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c + d)
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                      + self.leakage * hidden_layer_state[sample + 1, :]
         else:
-            y_pred = np.zeros(shape=(self._feedback.shape[1], ))
+            self._y_pred = np.zeros(shape=(X.shape[0] + 1, self._feedback.shape[1]))
             for sample in range(X.shape[0]):
                 a = X[sample, :]
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
                 c = self._bias_weights * self.bias_scaling
-                d = safe_sparse_dot(self._feedback, y_pred) * self.feedback_scaling
-                hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c + d)
+                d = safe_sparse_dot(self._feedback, self._y_pred[sample, :]) * self.teacher_scaling + self.teacher_shift
+                hidden_layer_state[sample + 1, :] = ACTIVATIONS[self.activation](a + b + c + d)
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                      + self.leakage * hidden_layer_state[sample + 1, :]
-                y_pred = safe_sparse_dot(np.hstack((hidden_layer_state[sample + 1, :], 1)), self._output_weights)
+                self._y_pred[sample + 1, :] = safe_sparse_dot(np.hstack((hidden_layer_state[sample + 1, :], 1)), self._output_weights)
         return hidden_layer_state[1:, :]
 
     @staticmethod

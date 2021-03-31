@@ -129,7 +129,7 @@ class ESNFeedbackRegressor(ESNRegressor):
         if self._chunk_size is None or self._chunk_size > X.shape[0]:
             # input_to_node
             hidden_layer_state = self._input_to_node.transform(X)
-            hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y)
+            hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift)
 
             # regression
             self._regressor.fit(hidden_layer_state, y)
@@ -180,7 +180,8 @@ class ESNFeedbackRegressor(ESNRegressor):
         hidden_layer_state = self._input_to_node.transform(X)
         hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
 
-        return self._regressor.predict(hidden_layer_state)
+        # return self._regressor.predict(hidden_layer_state)
+        return self._node_to_node._y_pred
 
     def _validate_hyperparameters(self):
         """Validates the hyperparameters.

@@ -64,10 +64,10 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
-plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
+plt.xlim([0, 100])
+plt.ylim([0, esn._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -94,9 +94,9 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.xlim([0, 100])
 plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
@@ -127,9 +127,9 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.xlim([0, 100])
 plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
@@ -157,9 +157,9 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.xlim([0, 100])
 plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
@@ -190,9 +190,9 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.xlim([0, 100])
 plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
@@ -223,9 +223,9 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.xlim([0, 100])
 plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
@@ -254,9 +254,9 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.xlim([0, 100])
 plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
@@ -288,9 +288,9 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.xlim([0, 100])
 plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
@@ -318,9 +318,9 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.xlim([0, 100])
 plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
@@ -348,9 +348,9 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.xlim([0, 100])
 plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
@@ -378,9 +378,9 @@ _ = esn.predict(X=X)
 
 
 plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:50, 1:].T),vmin=0, vmax=1)
+im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=1)
 
-plt.xlim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[0]])
+plt.xlim([0, 100])
 plt.ylim([0, esn._node_to_node._hidden_layer_state[:50, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
