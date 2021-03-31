@@ -10,7 +10,7 @@ import sys
 import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
-from pyrcn.base import InputToNode, FeedbackNodeToNode
+from pyrcn.base import InputToNode, FeedbackNodeToNode, ACTIVATIONS
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNRegressor
 from sklearn.utils import check_random_state
@@ -129,10 +129,10 @@ class ESNFeedbackRegressor(ESNRegressor):
         if self._chunk_size is None or self._chunk_size > X.shape[0]:
             # input_to_node
             hidden_layer_state = self._input_to_node.transform(X)
-            hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift)
+            hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y)
 
             # regression
-            self._regressor.fit(hidden_layer_state, y)
+            self._regressor.fit(hidden_layer_state, ACTIVATIONS[self.node_to_node.inverse_output_activation](y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift))
 
         elif self._chunk_size < X.shape[0]:
             # setup chunk list
@@ -181,7 +181,7 @@ class ESNFeedbackRegressor(ESNRegressor):
         hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
 
         # return self._regressor.predict(hidden_layer_state)
-        return self._node_to_node._y_pred
+        return (ACTIVATIONS[self.node_to_node.output_activation]((self._node_to_node._y_pred) - self.node_to_node.teacher_shift) / self.node_to_node.teacher_scaling)
 
     def _validate_hyperparameters(self):
         """Validates the hyperparameters.
