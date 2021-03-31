@@ -469,12 +469,41 @@ class BatchIntrinsicPlasticity(InputToNode):
 
 
 class PredefinedWeightsInputToNode(InputToNode):
+    """
+    PredefinedInputToNode class for reservoir computing modules (e.g. ELM)
+
+    Parameters
+    ----------
+    predefined_input_weights : np.ndarray
+        A set of predefined input weights.
+    hidden_layer_size : int, default=None
+        Sets the number of nodes in hidden layer. This is ignored here and derived from predefined_input_weights.
+    sparsity : float, default=None.
+        Quotient of input weights per node (k_in) and number of input features (n_features). This is ignored here.
+    activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
+        This element represents the activation function in the hidden layer.
+            - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
+            - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
+            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
+    input_scaling : float, default=1.
+        Scales the input weight matrix.
+    bias_scaling : float, default=1.
+        Scales the input bias of the activation.
+    k_in : int, default=None.
+        input weights per node. By default, it is None. If set, it overrides sparsity. This is ignored here.
+    random_state : {None, int, RandomState}, default=None
+    """
     def __init__(
             self,
             predefined_input_weights,
+            hidden_layer_size=None,
+            sparsity=None,
             activation='relu',
             input_scaling=1.,
             bias_scaling=0.,
+            k_in=None,
             random_state=None):
         super().__init__(
             hidden_layer_size=predefined_input_weights.shape[1],
