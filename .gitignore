@@ -123,6 +123,7 @@ celerybeat.pid
 .venv
 env/
 venv/
+venv-hpc-compat/
 ENV/
 env.bak/
 venv.bak/
@@ -149,3 +150,7 @@ dmypy.json
 .pytype/
 
 # End of https://www.toptal.com/developers/gitignore/api/jupyternotebooks,python
+/.vs
+/MusicNet/models
+/MusicNet
+/onset_detection

@@ -27,10 +27,6 @@ from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
-get_ipython().run_line_magic('matplotlib', 'inline')
-
-from IPython.display import set_matplotlib_formats
-set_matplotlib_formats('png', 'pdf')
 
 from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.linear_model import IncrementalRegression
@@ -49,7 +45,7 @@ from pyrcn.base import InputToNode, NodeToNode
 # In[2]:
 
 
-time_series = pd.read_csv(filepath_or_buffer="./dataset/GC=F.csv")
+time_series = pd.read_csv(filepath_or_buffer="examples/dataset/GC=F.csv")
 time_series.head()
 
 
@@ -77,6 +73,7 @@ plt.figure()
 time_series.plot(x='Date', y='Close', legend=False, grid=True)
 plt.xlabel("Timestamp")
 plt.ylabel("Price")
+plt.show()
 
 
 # We pre-processed the dataset by removing undefined values, namely, weekends and public holidays. The remaining values were normalized to be in a range of $[0 1]$.
@@ -110,8 +107,8 @@ future_total = len(prices) - train_len
 base_input_to_nodes = InputToNode(hidden_layer_size=100, activation='identity', k_in=1, input_scaling=0.6, bias_scaling=0.0)
 base_nodes_to_nodes = NodeToNode(hidden_layer_size=100, spectral_radius=0.9, leakage=1.0, bias_scaling=0.0, k_rec=10)
 
-esn = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
-                   nodes_to_nodes=[('default', base_nodes_to_nodes)],
+esn = ESNRegressor(input_to_node=base_input_to_nodes,
+                   node_to_node=base_nodes_to_nodes,
                    regressor=IncrementalRegression(alpha=1e-8), random_state=10)
 
 
@@ -151,6 +148,6 @@ plt.plot(scaler.inverse_transform(prices_pred), label='Predicted')
 plt.xlabel("Timestamp")
 plt.ylabel("Price")
 plt.legend()
-
+plt.show()
 
 # Disclaimer: We are signal processing experts, not financial advisors. Do not use any of the models presented herein to steer your investments.

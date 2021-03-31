@@ -1,0 +1,128 @@
+"""
+Example for BatchIntrinsicPlasticity
+"""
+import os
+import scipy
+import numpy as np
+
+import matplotlib
+matplotlib.use('pgf')
+import matplotlib.pyplot as plt
+
+from pyrcn.base import InputToNode, BatchIntrinsicPlasticity
+
+
+tud_colors = {
+    'darkblue': (0 / 255., 48 / 255., 94 / 255.),
+    'gray': (114 / 255., 120 / 255., 121 / 255.),
+    'lightblue': (0 / 255., 106 / 255., 179 / 255.),
+    'darkgreen': (0 / 255., 125 / 255., 64 / 255.),
+    'lightgreen': (106 / 255., 176 / 255., 35 / 255.),
+    'darkpurple': (84 / 255., 55 / 255., 138 / 255.),
+    'lightpurple': (147 / 255., 16 / 255., 126 / 255.),
+    'orange': (238 / 255., 127 / 255., 0 / 255.),
+    'red': (181 / 255., 28 / 255., 28 / 255.)
+}
+
+
+directory = os.path.join(os.getcwd(), 'bip')
+
+
+def main():
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
+    rs = np.random.RandomState(42)
+
+    algorithm = 'dresden'
+    sample_size = (1000, 1)
+
+    i2n_uniform = BatchIntrinsicPlasticity(hidden_layer_size=1, activation='tanh', random_state=rs, distribution='uniform', algorithm=algorithm)
+    i2n_exponential = BatchIntrinsicPlasticity(hidden_layer_size=1, activation='tanh', random_state=rs, distribution='exponential', algorithm=algorithm)
+    i2n_normal = BatchIntrinsicPlasticity(hidden_layer_size=1, activation='tanh', random_state=rs, distribution='normal', algorithm=algorithm)
+
+    X_uniform = rs.uniform(size=sample_size)
+    X_exponential = rs.exponential(size=sample_size)
+    X_normal = rs.normal(size=sample_size)
+
+    def exponential(x, lam):
+        return lam * np.exp(-lam * x)
+
+    def gaussian(x, mu, sig):
+        return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.))) / np.sqrt(2. * np.pi) / sig
+
+    # X_uniform = np.linspace(start=-1., stop=1., num=1000).reshape(-1, 1)
+    # X_exponential = exponential(X_uniform + 1., 1)
+    # X_normal = gaussian(X_uniform, 0, 1)
+
+    """
+        y_uni_exp = i2n_exponential.fit_transform(X_uniform)
+        y_exp_exp = i2n_exponential.fit_transform(X_exponential)
+        y_norm_exp = i2n_exponential.fit_transform(X_normal)
+    
+        y_uni_uni = i2n_uniform.fit_transform(X_uniform)
+        y_exp_uni = i2n_uniform.fit_transform(X_exponential)
+        y_norm_uni = i2n_uniform.fit_transform(X_normal)
+    
+        y_uni_norm = i2n_normal.fit_transform(X_uniform)
+        y_exp_norm = i2n_normal.fit_transform(X_exponential)
+        y_norm_norm = i2n_normal.fit_transform(X_normal)
+    """
+
+    # display distributions
+    fig, axs = plt.subplots(3, 4, figsize=(6, 4))
+    # plt.ylabel('f_x')
+    # plt.xlabel('f_y')
+    # fig.suptitle('BIP transformations')
+
+    bins = 20
+
+    axs[0, 0].hist(i2n_exponential.fit_transform(X_exponential), bins=bins, density=True, color=tud_colors['lightblue'])
+    axs[0, 0].set_xlim((-1., 1.))
+    axs[0, 0].set_ylim((0., 3.))
+    axs[0, 1].hist(i2n_normal.fit_transform(X_exponential), bins=bins, density=True, color=tud_colors['lightgreen'])
+    axs[0, 1].set_xlim((-1., 1.))
+    axs[0, 1].set_ylim((0., 3.))
+    axs[0, 2].hist(i2n_uniform.fit_transform(X_exponential), bins=bins, density=True, color=tud_colors['lightpurple'])
+    axs[0, 2].set_xlim((-1., 1.))
+    axs[0, 2].set_ylim((0., 3.))
+
+    axs[1, 0].hist(i2n_exponential.fit_transform(X_normal), bins=bins, density=True, color=tud_colors['lightblue'])
+    axs[1, 0].set_xlim((-1., 1.))
+    axs[1, 0].set_ylim((0., 1.5))
+    axs[1, 1].hist(i2n_normal.fit_transform(X_normal), bins=bins, density=True, color=tud_colors['lightgreen'])
+    axs[1, 1].set_xlim((-1., 1.))
+    axs[1, 1].set_ylim((0., 1.5))
+    axs[1, 2].hist(i2n_uniform.fit_transform(X_normal), bins=bins, density=True, color=tud_colors['lightpurple'])
+    axs[1, 2].set_xlim((-1., 1.))
+    axs[1, 2].set_ylim((0., 1.5))
+
+    axs[2, 0].hist(i2n_exponential.fit_transform(X_uniform), bins=bins, density=True, color=tud_colors['lightblue'])
+    axs[2, 0].set_xlim((-1., 1.))
+    axs[2, 0].set_ylim((0., 2.5))
+    axs[2, 1].hist(i2n_normal.fit_transform(X_uniform), bins=bins, density=True, color=tud_colors['lightgreen'])
+    axs[2, 1].set_xlim((-1., 1.))
+    axs[2, 1].set_ylim((0., 2.5))
+    axs[2, 2].hist(i2n_uniform.fit_transform(X_uniform), bins=bins, density=True, color=tud_colors['lightpurple'])
+    axs[2, 2].set_xlim((-1., 1.))
+    axs[2, 2].set_ylim((0., 2.5))
+
+    axs[0, 3].hist(X_exponential, bins=bins, color=tud_colors['gray'])
+    axs[0, 3].set_title('exponential')
+    axs[1, 3].hist(X_normal, bins=bins, color=tud_colors['gray'])
+    axs[1, 3].set_title('normal')
+    axs[2, 3].hist(X_uniform, bins=bins, color=tud_colors['gray'])
+    axs[2, 3].set_title('uniform')
+
+    plt.tight_layout()
+    plt.savefig(os.path.join(directory, 'bip-transformations.pgf'), format='pgf')
+
+
+if __name__ == "__main__":
+    main()
+
+"""
+statistic, pvalue = scipy.stats.ks_1samp(y_test, scipy.stats.uniform.cdf)
+assert statistic < pvalue
+print("Kolmogorov-Smirnov does not reject H_0: y is uniformly distributed in [-.75, .75]")
+"""

@@ -11,24 +11,22 @@
 # 
 # This tutorial requires the Python modules numpy, scikit-learn, matplotlib and pyrcn.
 
-# In[1]:
+# In[ ]:
 
 
 import numpy as np
 from sklearn.datasets import load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import ParameterGrid
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.base import clone
-from sklearn.metrics import mean_squared_error, classification_report, confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import zero_one_loss, classification_report, confusion_matrix, ConfusionMatrixDisplay
 
 from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
-get_ipython().run_line_magic('matplotlib', 'inline')
 
-from pyrcn.echo_state_network import ESNRegressor
+from pyrcn.echo_state_network import ESNClassifier
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.base import InputToNode, NodeToNode
 
@@ -37,7 +35,7 @@ from pyrcn.base import InputToNode, NodeToNode
 # 
 # The dataset is already part of scikit-learn and consists of 1797 8x8 images. We are using the dataloader from scikit-learn.
 
-# In[2]:
+# In[ ]:
 
 
 digits = load_digits()
@@ -54,12 +52,10 @@ print("Shape of digits {0}".format(data[0].shape))
 # 
 # We treat each image as a sequence of 8 feature vectors with 8 dimensions.
 
-# In[3]:
+# In[ ]:
 
 
-# Split data into train and test subsets
-enc = OneHotEncoder(sparse=False)
-y = enc.fit_transform(X=digits.target.reshape(-1, 1))
+y = digits.target
 X_train, X_test, y_train, y_test = train_test_split(data, y, test_size=0.5, shuffle=False)
 print("Number of digits in training set: {0}".format(len(X_train)))
 print("Shape of digits in training set: {0}".format(X_train[0].shape))
@@ -79,29 +75,34 @@ print("Shape of output in test set: {0}".format(y_test[0].shape))
 # 
 # We define the search space for input_scaling and spectral_radius. This is done using best practice and background information from the literature: The spectral radius, the largest absolute eigenvalue of the reservoir matrix, is often smaller than 1. Thus, we can search in a space between 0.0 (e.g. no recurrent connections) and 1.0 (maximum recurrent connections). It is usually recommended to tune the input_scaling factor between 0.1 and 1.0. However, as this is strongly task-dependent, we decided to slightly increase the search space.
 
-# In[4]:
+# In[ ]:
 
 
-base_input_to_nodes = InputToNode(hidden_layer_size=50, activation='identity', k_in=5, input_scaling=0.1, bias_scaling=0.0)
-base_nodes_to_nodes = NodeToNode(hidden_layer_size=50, spectral_radius=0.0, leakage=1.0, bias_scaling=0.0, k_rec=5)
+param_grid = {'input_to_node__hidden_layer_size': [50],
+    'input_to_node__input_scaling': np.linspace(start=0.1, stop=1, num=10),
+    'input_to_node__bias_scaling': [0.0],
+    'input_to_node__activation': ['identity'],
+    'input_to_node__random_state': [42],
+    'node_to_node__hidden_layer_size': [50],
+    'node_to_node__leakage': [1.0],
+    'node_to_node__spectral_radius': np.linspace(start=0.0, stop=1, num=11),
+    'node_to_node__bias_scaling': [0.0],
+    'node_to_node__activation': ['tanh'],
+    'node_to_node__random_state': [42],
+    'regressor__alpha': [1e-3],
+    'random_state': [42] }
 
-base_reg = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
-                   nodes_to_nodes=[('default', base_nodes_to_nodes)],
-                   regressor=IncrementalRegression(alpha=1e-3), random_state=10)
-
-grid = {'input_scaling': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], 
-        'spectral_radius': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-       }
+base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression())
 
 
 # ## Optimize input_scaling and spectral_radius
 # 
 # We use the ParameterGrid from scikit-learn, which converts the grid parameters defined before into a list of dictionaries for each parameter combination. 
 # 
-# We loop over each entry of the Parameter Grid, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and test set.  
+# We loop over each entry of the Parameter Grid, set the parameters in reg and fit our model on the training data. Afterwards, we report the error rates on the training and test set.  
 # 
-#     The lowest training MSE: 0.073020616; parameter combination: {'input_scaling': 0.1, 'spectral_radius': 1.0}
-#     The lowest test MSE: 0.075575493; parameter combination: {'input_scaling': 0.1, 'spectral_radius': 1.0}
+#     The lowest training error rate: 0.536330735; parameter combination: {'input_scaling': 0.1, 'spectral_radius': 1.0}
+#     The lowest test error rate: 0.588987764; parameter combination: {'input_scaling': 0.1, 'spectral_radius': 1.0}
 # 
 # We use the best parameter combination from the training set, because we do not want to overfit on the test set.
 # 
@@ -109,32 +110,26 @@ grid = {'input_scaling': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1,
 # 
 # However, as this is computationally expensive, we can deactivate computing output weights after each sequence by setting "update_output_weights" to False. Now, we simply collect sufficient statistics for the later linear regression. To finish the training process, we call finalize() after passing all sequences through the ESN.
 
-# In[5]:
+# In[ ]:
 
 
-for params in ParameterGrid(grid):
+for params in ParameterGrid(param_grid):
     print(params)
-    input_to_nodes = clone(base_input_to_nodes)
-    nodes_to_nodes = clone(base_nodes_to_nodes)
-    
-    input_to_nodes.set_params(**{'input_scaling': params['input_scaling']})
-    nodes_to_nodes.set_params(**{'spectral_radius': params['spectral_radius']})
-    reg = ESNRegressor(input_to_nodes=[('default', input_to_nodes)],
-                       nodes_to_nodes=[('default', nodes_to_nodes)],
-                       regressor=IncrementalRegression(alpha=5e-3), random_state=10)
+    esn = clone(base_esn)
+    esn.set_params(**params)
     for X, y in zip(X_train, y_train):
-        y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        reg.partial_fit(X=X, y=y)
+        y = np.repeat(y, repeats=8, axis=0)
+        esn.partial_fit(X=X, y=y.reshape(-1, 1), classes=range(10))
     err_train = []
     for X, y in zip(X_train, y_train):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X)
-        err_train.append(mean_squared_error(y, y_pred))
+        y_pred = esn.predict(X=X)
+        err_train.append(zero_one_loss(y, y_pred))
     err_test = []
     for X, y in zip(X_test, y_test):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X)
-        err_test.append(mean_squared_error(y, y_pred))
+        y_pred = esn.predict(X=X)
+        err_test.append(zero_one_loss(y, y_pred))
     print('{0}\t{1}'.format(np.mean(err_train), np.mean(err_test)))
 
 
@@ -146,57 +141,57 @@ for params in ParameterGrid(grid):
 # 
 # We define the search space for bias and leakage. This is again done using best practice and background information from the literature: The bias often lies in a similar value range as the input scaling. Thus we use exactly the same search space as before. The leakage, the parameter of the leaky integration is defined in (0.0, 1.0]. Thus, we tune the leakage between 0.1 and 1.0.
 
-# In[6]:
+# In[ ]:
 
 
-base_input_to_nodes = InputToNode(hidden_layer_size=50, activation='identity', k_in=5, input_scaling=0.1, bias_scaling=0.0)
-base_nodes_to_nodes = NodeToNode(hidden_layer_size=50, spectral_radius=1.0, leakage=1.0, bias_scaling=0.0, k_rec=5)
+param_grid = {'input_to_node__hidden_layer_size': [50],
+    'input_to_node__input_scaling': [0.1],
+    'input_to_node__bias_scaling': [0.0],
+    'input_to_node__activation': ['identity'],
+    'input_to_node__random_state': [42],
+    'node_to_node__hidden_layer_size': [50],
+    'node_to_node__leakage': np.linspace(0.1, 1, 10),
+    'node_to_node__spectral_radius': [1.0],
+    'node_to_node__bias_scaling': np.linspace(0, 1, 11),
+    'node_to_node__activation': ['tanh'],
+    'node_to_node__random_state': [42],
+    'regressor__alpha': [1e-3],
+    'random_state': [42] }
 
-base_reg = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
-                   nodes_to_nodes=[('default', base_nodes_to_nodes)],
-                   regressor=IncrementalRegression(alpha=5e-3), random_state=10)
-
-grid = {'bias_scaling': [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5], 
-        'leakage': [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-       }
+base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression())
 
 
 # ## Optimize bias and leakage
 # 
-# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and test set.  
+# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in reg and fit our model on the training data. Afterwards, we report the error rate on the training and test set.  
 # 
-#     The lowest training MSE: 0.055032596; parameter combination: {'bias_scaling': 1.2, 'leakage': 0.1}
-#     The lowest test MSE: 0.062002998; parameter combination: {'bias_scaling': 1.5, 'leakage': 0.2}
+#     The lowest training error rate: 0.311804009; parameter combination: {'bias_scaling': 1.0, 'leakage': 0.1}
+#     The lowest test error rate: 0.38320356; parameter combination: {'bias_scaling': 0.6, 'leakage': 0.2}
 # 
 # We use the best parameter combination from the training set, because we do not want to overfit on the test set.
 # 
 # Note that the bias differs a lot between training and test set. A reason can be that the training set does not completely represent the test set. This should actually be investigated by comparing several train_test_splits, maybe even with other sample sizes.
 
-# In[7]:
+# In[ ]:
 
 
-for params in ParameterGrid(grid):
+for params in ParameterGrid(param_grid):
     print(params)
-    input_to_nodes = clone(base_input_to_nodes)
-    nodes_to_nodes = clone(base_nodes_to_nodes)
-    
-    nodes_to_nodes.set_params(**params)
-    reg = ESNRegressor(input_to_nodes=[('default', input_to_nodes)],
-                       nodes_to_nodes=[('default', nodes_to_nodes)],
-                       regressor=IncrementalRegression(alpha=5e-3), random_state=10)
+    esn = clone(base_esn)
+    esn.set_params(**params)
     for X, y in zip(X_train, y_train):
-        y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        reg.partial_fit(X=X, y=y)
+        y = np.repeat(y, repeats=8, axis=0)
+        esn.partial_fit(X=X, y=y.reshape(-1, 1), classes=range(10))
     err_train = []
     for X, y in zip(X_train, y_train):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X)
-        err_train.append(mean_squared_error(y, y_pred))
+        y_pred = esn.predict(X=X)
+        err_train.append(zero_one_loss(y, y_pred))
     err_test = []
     for X, y in zip(X_test, y_test):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X)
-        err_test.append(mean_squared_error(y, y_pred))
+        y_pred = esn.predict(X=X)
+        err_test.append(zero_one_loss(y, y_pred))
     print('{0}\t{1}'.format(np.mean(err_train), np.mean(err_test)))
 
 
@@ -208,53 +203,55 @@ for params in ParameterGrid(grid):
 # 
 # Typically, it is rather difficult to find a proper search range. Here, we use a very rough logarithmic search space.
 
-# In[8]:
+# In[ ]:
 
 
-base_input_to_nodes = InputToNode(hidden_layer_size=50, activation='identity', k_in=5, input_scaling=0.1, bias_scaling=0.0)
-base_nodes_to_nodes = NodeToNode(hidden_layer_size=50, spectral_radius=1.0, leakage=0.1, bias_scaling=1.2, k_rec=5)
+param_grid = {'input_to_node__hidden_layer_size': [50],
+    'input_to_node__input_scaling': [0.1],
+    'input_to_node__bias_scaling': [0.0],
+    'input_to_node__activation': ['identity'],
+    'input_to_node__random_state': [42],
+    'node_to_node__hidden_layer_size': [50],
+    'node_to_node__leakage': [0.1],
+    'node_to_node__spectral_radius': [1.0],
+    'node_to_node__bias_scaling': [1.0],
+    'node_to_node__activation': ['tanh'],
+    'node_to_node__random_state': [42],
+    'regressor__alpha': [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0],
+    'random_state': [42] }
 
-base_reg = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
-                   nodes_to_nodes=[('default', base_nodes_to_nodes)],
-                   regressor=IncrementalRegression(alpha=5e-3), random_state=10)
-
-grid = {'alpha': [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0], 
-       }
+base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression())
 
 
-# ## Optimize beta
+# ## Optimize alpha
 # 
-# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in reg and fit our model on the training data. Afterwards, we report the MSE on the training and test set.  
+# The optimization workflow is exactly the same as before: We define a ParameterGrid, loop over each entry, set the parameters in reg and fit our model on the training data. Afterwards, we report the error rates on the training and test set.  
 # 
-#     The lowest training MSE: 0.054966252; parameter combination: {'alpha': 0.0005}
-#     The lowest test MSE: 0.062261798; parameter combination: {'alpha': 0.05}
+#     The lowest training error rate: 0.31096882; parameter combination: {'alpha': 1e-5}
+#     The lowest test error rate: 0.396968854; parameter combination: {'alpha': 1e-5}
 # 
 # We use the best parameter combination from the test set, because the regularization is responsible to prevent overfitting on the training set. In a running system, of course, we should determine the regularization on a separate validation set.
 
-# In[9]:
+# In[ ]:
 
 
-for params in ParameterGrid(grid):
+for params in ParameterGrid(param_grid):
     print(params)
-    input_to_nodes = clone(base_input_to_nodes)
-    nodes_to_nodes = clone(base_nodes_to_nodes)
-    
-    reg = ESNRegressor(input_to_nodes=[('default', input_to_nodes)],
-                       nodes_to_nodes=[('default', nodes_to_nodes)],
-                       regressor=IncrementalRegression(alpha=5e-3).set_params(**params), random_state=10)
+    esn = clone(base_esn)
+    esn.set_params(**params)
     for X, y in zip(X_train, y_train):
-        y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        reg.partial_fit(X=X, y=y)
+        y = np.repeat(y, repeats=8, axis=0)
+        esn.partial_fit(X=X, y=y.reshape(-1, 1), classes=range(10))
     err_train = []
     for X, y in zip(X_train, y_train):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X)
-        err_train.append(mean_squared_error(y, y_pred))
+        y_pred = esn.predict(X=X)
+        err_train.append(zero_one_loss(y, y_pred))
     err_test = []
     for X, y in zip(X_test, y_test):
         y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        y_pred = reg.predict(X=X)
-        err_test.append(mean_squared_error(y, y_pred))
+        y_pred = esn.predict(X=X)
+        err_test.append(zero_one_loss(y, y_pred))
     print('{0}\t{1}'.format(np.mean(err_train), np.mean(err_test)))
 
 
@@ -268,19 +265,25 @@ for params in ParameterGrid(grid):
 # 
 # Because this is a rather small dataset, we can use rather small reservoir sizes and increase it up to 5000 neurons.
 
-# In[10]:
+# In[ ]:
 
 
-base_input_to_nodes = InputToNode(hidden_layer_size=50, activation='identity', k_in=5, input_scaling=0.1, bias_scaling=0.0)
-base_nodes_to_nodes = NodeToNode(hidden_layer_size=50, spectral_radius=1.0, leakage=0.1, bias_scaling=0.9, k_rec=5)
+param_grid = {'input_to_node__hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000, 2000, 4000, 5000],
+    'input_to_node__input_scaling': [0.1],
+    'input_to_node__bias_scaling': [0.0],
+    'input_to_node__activation': ['identity'],
+    'input_to_node__random_state': [42],
+    'node_to_node__hidden_layer_size': [50],
+    'node_to_node__leakage': [0.1],
+    'node_to_node__spectral_radius': [1.0],
+    'node_to_node__bi_directional': [False, True],
+    'node_to_node__bias_scaling': [1.0],
+    'node_to_node__activation': ['tanh'],
+    'node_to_node__random_state': [42],
+    'regressor__alpha': [1e-5],
+    'random_state': [42] }
 
-base_reg = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
-                   nodes_to_nodes=[('default', base_nodes_to_nodes)],
-                   regressor=IncrementalRegression(alpha=5e-2), random_state=10)
-
-grid = {'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000, 2000, 4000, 5000], 
-        'bi_directional': [False, True]
-       }
+base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression())
 
 
 # ## Test the ESN
@@ -296,40 +299,38 @@ grid = {'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000, 2000, 4000, 500
 # In[ ]:
 
 
-for params in ParameterGrid(grid):
+for params in ParameterGrid(param_grid):
     print(params)
-    input_to_nodes = clone(base_input_to_nodes).set_params(**{'hidden_layer_size': params['hidden_layer_size']})
-    nodes_to_nodes = clone(base_nodes_to_nodes).set_params(**params)
-    
-    reg = ESNRegressor(input_to_nodes=[('default', input_to_nodes)],
-                       nodes_to_nodes=[('default', nodes_to_nodes)],
-                       regressor=IncrementalRegression(alpha=5e-2), random_state=10)
+    esn = clone(base_esn)
+    esn.set_params(**params)
+    esn.node_to_node.hidden_layer_size = params["input_to_node__hidden_layer_size"]
     for X, y in zip(X_train, y_train):
-        y = np.repeat(np.atleast_2d(y), repeats=8, axis=0)
-        reg.partial_fit(X=X, y=y)
+        y = np.repeat(y, repeats=8, axis=0)
+        esn.partial_fit(X=X, y=y.reshape(-1, 1), classes=range(10))
+    
     Y_true_train = []
     Y_pred_train = []
     for X, y in zip(X_train, y_train):
-        y_pred = reg.predict(X=X)
-        Y_true_train.append(np.argmax(y))
-        Y_pred_train.append(np.argmax(y_pred[-1, :]))
+        y_pred = esn.predict_proba(X=X)
+        Y_true_train.append(y)
+        Y_pred_train.append(np.argmax(y_pred.sum(axis=0)))
     
     Y_true_test = []
     Y_pred_test = []
     for X, y in zip(X_test, y_test):
-        y_pred = reg.predict(X=X)
-        Y_true_test.append(np.argmax(y))
-        Y_pred_test.append(np.argmax(y_pred[-1, :]))
+        y_pred = esn.predict_proba(X=X)
+        Y_true_test.append(y)
+        Y_pred_test.append(np.argmax(y_pred.sum(axis=0)))
     cm = confusion_matrix(Y_true_train, Y_pred_train)
     cm_display = ConfusionMatrixDisplay(cm, display_labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).plot()
     print("Classification training report for estimator %s:\n%s\n"
-      % (reg, classification_report(Y_true_train, Y_pred_train)))
+      % (esn, classification_report(Y_true_train, Y_pred_train)))
     plt.show()
     
     cm = confusion_matrix(Y_true_test, Y_pred_test)
     cm_display = ConfusionMatrixDisplay(cm, display_labels=[0, 1, 2, 3, 4, 5, 6, 7, 8, 9]).plot()
     print("Classification test report for estimator %s:\n%s\n"
-      % (reg, classification_report(Y_true_test, Y_pred_test)))
+      % (esn, classification_report(Y_true_test, Y_pred_test)))
     plt.show()
 
 

@@ -13,11 +13,17 @@ Welcome to PyRCN's documentation!
 
 .. toctree::
    :maxdepth: 3
-   :caption: Included estimators
+   :caption: Included modules
 
-   PyRCN/echo_state_network/BaseEchoStateNetwork
-   PyRCN/echo_state_network/ESNClassifier
-   PyRCN/echo_state_network/ESNRegressor
+   PyRCN/base
+   PyRCN/cluster
+   PyRCN/echo_state_network
+   PyRCN/echo_state_network
+   PyRCN/extreme_learning_machine
+   PyRCN/linear_model
+   PyRCN/postprocessing
+   PyRCN/preprocessing
+   PyRCN/util
 
 .. toctree::
    :maxdepth: 2
@@ -35,7 +41,7 @@ Indices and tables
 Acknowledgements
 ----------------
 
-This research is funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
+This research was funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
 
 .. image:: logos/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg
   :height: 90

@@ -45,3 +45,8 @@ def test_compare_ridge():
 
     print("incremental: {0} ridge: {1}".format(i_reg.coef_, ridge.coef_))
     np.testing.assert_allclose(i_reg.coef_, ridge.coef_, rtol=.0001)
+
+
+if __name__ == "__main__":
+    test_linear()
+    test_compare_ridge()

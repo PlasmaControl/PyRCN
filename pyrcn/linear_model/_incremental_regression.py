@@ -2,8 +2,10 @@
 Incremental regression
 """
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Michael Schindler <michael.schindler@maschindler.de>
+# Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Azarakhsh Jalalvand <azarakhsh.jalalvand@ugent.be>
 # License: BSD 3 clause
+
+import sys
 
 import numpy as np
 import scipy
@@ -14,15 +16,18 @@ from sklearn.exceptions import NotFittedError
 
 
 class IncrementalRegression(BaseEstimator, RegressorMixin):
-    """Linear regression.
+    """
+    Linear regression.
     This linear regression algorithm is able to perform a linear regression
-    with the L2 regularization and iterative fit. [1]_
+    with the L2 regularization and iterative fit. [1]
     .. [1] https://ieeexplore.ieee.org/document/4012031
+    
     References
     ----------
     N. Liang, G. Huang, P. Saratchandran and N. Sundararajan,
     "A Fast and Accurate Online Sequential Learning Algorithm for Feedforward Networks,"
     in IEEE Transactions on Neural Networks, vol. 17, no. 6, pp. 1411-1423, Nov. 2006, doi: 10.1109/TNN.2006.880583.
+    
     Parameters
     ----------
     alpha : float, default=1.0
@@ -31,6 +36,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         Fits a constant offset if True. Use this if input values are not average free.
     normalize : bool, default=False
         Performs a preprocessing normalization if True.
+    
     Attributes
     ----------
     coef_ : array, shape (n_features,) or (n_targets, n_features)
@@ -46,10 +52,10 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self.scaler = StandardScaler(copy=False)
 
         self._K = None
-        self._P = None
+        self._xTy = None
         self._output_weights = None
 
-    def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True, update_output_weights=None):
+    def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True, postpone_inverse=False):
         """Fits the regressor partially.
         Parameters
         ----------
@@ -72,21 +78,30 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
 
         if reset:
             self._K = None
-            self._P = None
+            self._xTy = None
+            self._output_weights = None
 
         if self._K is None:
             self._K = safe_sparse_dot(X_preprocessed.T, X_preprocessed)
         else:
             self._K += safe_sparse_dot(X_preprocessed.T, X_preprocessed)
 
-        self._P = np.linalg.inv(self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
+        if self._xTy is None:
+            self._xTy = safe_sparse_dot(X_preprocessed.T, y)
+        else:
+            self._xTy += safe_sparse_dot(X_preprocessed.T, y)
+
+        # can only be postponed if output weights have not been initialized yet
+        if postpone_inverse and self._output_weights is None:
+            return self
+
+        P = np.linalg.inv(self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
 
         if self._output_weights is None:
-            self._output_weights = np.matmul(self._P, safe_sparse_dot(X_preprocessed.T, y))
+            self._output_weights = np.matmul(P, self._xTy)
         else:
-            self._output_weights += np.matmul(
-                self._P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
-
+            self._output_weights += np.matmul(P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
+            # self._output_weights += np.matmul(P, self._xTy - np.matmul(self._K, self._output_weights))
         return self
 
     def fit(self, X, y):
@@ -99,7 +114,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         -------
         self
         """
-        self.partial_fit(X, y, partial_normalize=False, reset=True, validate=True, update_output_weights=None)
+        self.partial_fit(X, y, partial_normalize=False, reset=True, validate=True)
         return self
 
     def predict(self, X):
@@ -139,6 +154,19 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
                 self.scaler.fit_transform(X_preprocessed)
 
         return X_preprocessed
+
+    def __sizeof__(self):
+        """Returns the size of the object in bytes.
+        Returns
+        -------
+        size : int
+        Object memory in bytes.
+        """
+        return object.__sizeof__(self) + \
+            self._K.nbytes + \
+            self._xTy.nbytes + \
+            self._output_weights.nbytes + \
+            sys.getsizeof(self.scaler)
 
     @property
     def coef_(self):
