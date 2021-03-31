@@ -10,7 +10,7 @@ Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger in differe
 - Incorporate Feedback
 - Better sequence handling with [sktime](http://sktime.org/)
 - A unified API to stack ESNs
-- More towards future work: Related architectures, such as Extreme Learning Machines (ELMs) and Liquid State Machines (LSMs)
+- More towards future work: Related architectures, such as Liquid State Machines (LSMs) and Perturbative Neural Networks (PNNs)
 
 PyRCN has successfully been used for several tasks:
 
@@ -35,9 +35,10 @@ PyRCn is developed using Python 3.6 or newer. It depends on the following packag
 
 - [numpy>=1.18.1](https://numpy.org/)
 - [scipy>=1.2.0](https://scipy.org/)
-- [scikit-learn>=0.22.1](https://scikit-learn.org/stable/)
+- [scikit-learn>=0.23.1](https://scikit-learn.org/stable/)
 - [joblib>=0.13.2](https://joblib.readthedocs.io)
-
+- [pandas>=1.0.0](https://pandas.pydata.org/)
+- [matplotlib](https://matplotlib.org/)
 ## Installation from PyPI
 
 The easiest and recommended way to install ``PyRCN`` is to use ``pip`` from [PyPI](https://pypi.org) :
