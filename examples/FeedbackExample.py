@@ -23,7 +23,7 @@ y_test = dataset[:, 1]
 
 input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=W_in, predefined_bias_weights=W_bias, hidden_layer_size=200, activation='identity', input_scaling=3., bias_scaling=0.01, random_state=1).fit(X=X)
 node_to_node = PredefinedWeightsFeedbackNodeToNode(predefined_recurrent_weights=W_rec.T, predefined_feedback_weights=W_fb, hidden_layer_size=200, sparsity=0.05, activation="tanh", spectral_radius=0.25, leakage=1.0, bias_scaling=0.0, teacher_scaling=1.12, teacher_shift=-0.7, bi_directional=False, output_activation="tanh", random_state=1).fit(X=input_to_node.transform(X=X), y=y.ravel())
-reg = IncrementalRegression(alpha=0.0)
+reg = IncrementalRegression(alpha=0.0, fit_intercept=False)
 
 esn = ESNFeedbackRegressor(input_to_node=input_to_node, node_to_node=node_to_node, regressor=reg, random_state=1)
 
@@ -32,7 +32,7 @@ y_pred = esn.predict(X=X_test)
 
 plt.figure(figsize=(10,1.5))
 plt.plot(X_test, label='control')
-plt.plot(y, label='target')
+plt.plot(y_test, label='target')
 plt.plot(y_pred, label='model')
 plt.title('training (excerpt)')
 plt.legend()

@@ -164,7 +164,7 @@ class ESNFeedbackRegressor(ESNRegressor):
         self._node_to_node._input_weights = self._input_to_node.input_weights
         self._node_to_node._input_scaling = self._input_to_node.input_scaling
         self._node_to_node._input_bias_scaling = self._input_to_node.bias_scaling
-        self._node_to_node._output_weights = np.vstack((self._regressor.coef_.T, self._regressor.intercept_))
+        self._node_to_node._output_weights = self._regressor.coef_.T
         return self
 
     def predict(self, X):
@@ -188,7 +188,8 @@ class ESNFeedbackRegressor(ESNRegressor):
         hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
 
         # return self._regressor.predict(hidden_layer_state)
-        return (ACTIVATIONS[self.node_to_node.output_activation]((self._node_to_node._y_pred) - self.node_to_node.teacher_shift) / self.node_to_node.teacher_scaling)
+        # return (ACTIVATIONS[self.node_to_node.output_activation]((self._node_to_node._y_pred) - self.node_to_node.teacher_shift) / self.node_to_node.teacher_scaling)
+        return ((self._node_to_node._y_pred) - self.node_to_node.teacher_shift) / self.node_to_node.teacher_scaling
 
     def _validate_hyperparameters(self):
         """Validates the hyperparameters.

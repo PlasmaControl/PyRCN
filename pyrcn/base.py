@@ -898,7 +898,7 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
                 hidden_layer_state[sample + 1, :] = ACTIVATIONS[self.activation](a + b + c + d)
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                      + self.leakage * hidden_layer_state[sample + 1, :]
-                self._y_pred[sample + 1, :] = ACTIVATIONS[self.output_activation](safe_sparse_dot(np.hstack((hidden_layer_state[sample+1, :], self._input_bias_scaling, self._X[sample] * self._input_scaling, 1)), self._output_weights))
+                self._y_pred[sample + 1, :] = ACTIVATIONS[self.output_activation](safe_sparse_dot(np.hstack((hidden_layer_state[sample+1, :], self._input_bias_scaling, self._X[sample] * self._input_scaling)), self._output_weights))
         return hidden_layer_state[:-1, :]
 
     @staticmethod
