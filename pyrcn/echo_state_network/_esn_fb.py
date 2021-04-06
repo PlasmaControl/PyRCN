@@ -10,7 +10,7 @@ import sys
 import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
-from pyrcn.base import InputToNode, FeedbackNodeToNode, ACTIVATIONS
+from pyrcn.base import InputToNode, FeedbackNodeToNode, ACTIVATIONS, ACTIVATIONS_INVERSE
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNRegressor
 from sklearn.utils import check_random_state
@@ -124,15 +124,17 @@ class ESNFeedbackRegressor(ESNRegressor):
         self._validate_data(X, y, multi_output=True)
         self._input_to_node.fit(X)
         self._node_to_node.fit(self._input_to_node.transform(X), y=y)
-        self._regressor = self._regressor.__class__()
+        # self._regressor = self._regressor.__class__()
 
         if self._chunk_size is None or self._chunk_size > X.shape[0]:
             # input_to_node
             hidden_layer_state = self._input_to_node.transform(X)
             hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y)
 
+            # scale teacher
+            y_scaled = np.arctanh(y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift)
             # regression
-            self._regressor.fit(hidden_layer_state, ACTIVATIONS[self.node_to_node.inverse_output_activation](y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift))
+            self._regressor.fit(np.hstack((hidden_layer_state, np.ones(shape=X.shape) * self._input_to_node.bias_scaling, X * self._input_to_node.input_scaling)), y_scaled)
 
         elif self._chunk_size < X.shape[0]:
             # setup chunk list
@@ -158,6 +160,10 @@ class ESNFeedbackRegressor(ESNRegressor):
             )
         else:
             raise ValueError('chunk_size invalid {0}'.format(self._chunk_size))
+        self._node_to_node._last_input = X[-1, :]
+        self._node_to_node._input_weights = self._input_to_node.input_weights
+        self._node_to_node._input_scaling = self._input_to_node.input_scaling
+        self._node_to_node._input_bias_scaling = self._input_to_node.bias_scaling
         self._node_to_node._output_weights = np.vstack((self._regressor.coef_.T, self._regressor.intercept_))
         return self
 
@@ -178,6 +184,7 @@ class ESNFeedbackRegressor(ESNRegressor):
             raise NotFittedError(self)
 
         hidden_layer_state = self._input_to_node.transform(X)
+        self._node_to_node._X = X
         hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
 
         # return self._regressor.predict(hidden_layer_state)
