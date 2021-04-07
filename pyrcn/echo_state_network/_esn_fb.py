@@ -19,9 +19,9 @@ from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import FeatureUnion
 
 
-class ESNFeedbackRegressor(ESNRegressor):
+class FeedbackESNRegressor(ESNRegressor):
     """
-    Echo State Network Feedback regressor.
+    Feedback Echo State Network regressor.
 
     This model optimizes the mean squared error loss function using linear regression.
 
@@ -31,7 +31,7 @@ class ESNFeedbackRegressor(ESNRegressor):
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.
-    node_to_node : iterable, default=[('default', NodeToNode())]
+    node_to_node : iterable, default=[('default', FeedbackNodeToNode())]
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.

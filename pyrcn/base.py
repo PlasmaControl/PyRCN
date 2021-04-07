@@ -626,12 +626,13 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             random_state=self.random_state)
         return self
 
-    def transform(self, X):
+    def transform(self, X, y=None):
         """Transforms the input matrix X.
 
         Parameters
         ----------
         X : {ndarray, sparse matrix} of size (n_samples, hidden_layer_size)
+        y : ignored
 
         Returns
         -------
@@ -645,10 +646,10 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             _hidden_layer_state_bw = np.flipud(self._pass_through_recurrent_weights(X=np.flipud(X)))
             self._hidden_layer_state = np.concatenate((_hidden_layer_state_fw, _hidden_layer_state_bw), axis=1)
         else:
-            self._hidden_layer_state = self._pass_through_recurrent_weights(X=X)
+            self._hidden_layer_state = self._pass_through_recurrent_weights(X=X, y=y)
         return self._hidden_layer_state
 
-    def _pass_through_recurrent_weights(self, X):
+    def _pass_through_recurrent_weights(self, X, y=None):
         hidden_layer_state = np.zeros(shape=(X.shape[0]+1, self.hidden_layer_size))
         for sample in range(X.shape[0]):
             a = X[sample, :]
@@ -869,31 +870,6 @@ class FeedbackNodeToNode(NodeToNode):
             random_state=self.random_state)
         return self
 
-    def transform(self, X, y=None):
-        """Transforms the input matrix X.
-
-        Parameters
-        ----------
-        X : {ndarray, sparse matrix} of size (n_samples, hidden_layer_size)
-
-        Returns
-        -------
-        Y: ndarray of size (n_samples, hidden_layer_size)
-        """
-        if self._recurrent_weights is None or self._bias_weights is None:
-            raise NotFittedError(self)
-        """
-        This can actually be removed as the feedback is hopefully only required for unidirectional ESNs
-        if self.bi_directional:
-            _hidden_layer_state_fw = self._pass_through_recurrent_weights(X=X, y=y)
-            _hidden_layer_state_bw = np.flipud(self._pass_through_recurrent_weights(X=np.flipud(X), y=np.flipud(y)))
-            self._hidden_layer_state = np.concatenate((_hidden_layer_state_fw, _hidden_layer_state_bw), axis=1)
-        else:
-            self._hidden_layer_state = self._pass_through_recurrent_weights(X=X, y=y)
-        """
-        self._hidden_layer_state = self._pass_through_recurrent_weights(X=X, y=y)
-        return self._hidden_layer_state
-
     def _pass_through_recurrent_weights(self, X, y):
         hidden_layer_state = np.zeros(shape=(X.shape[0] + 1, self.hidden_layer_size))
         if y is not None:
@@ -934,21 +910,9 @@ class FeedbackNodeToNode(NodeToNode):
         -------
 
         """
-        if self.hidden_layer_size <= 0:
-            raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
-        if self.spectral_radius < 0.:
-            raise ValueError("spectral_radius must be >= 0, got %s." % self.spectral_radius)
-        if self.leakage <= 0. or self.leakage > 1.:
-            raise ValueError("leakage must be between 0. and 1., got %s." % self.leakage)
-        if self.sparsity <= 0. or self.sparsity > 1.:
-            raise ValueError("sparsity must be between 0. and 1., got %s." % self.sparsity)
-        if self.bias_scaling < 0:
-            raise ValueError("bias must be > 0, got %s." % self.bias_scaling)
-        if self.activation not in ACTIVATIONS:
+        if self.output_activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
-                             "activations are %s." % (self.activation, ACTIVATIONS))
-        if self.k_rec is not None and self.k_rec <= 0:
-            raise ValueError("k_rec must be > 0, got %d." % self.k_rec)
+                             "activations are %s." % (self.output_activation, ACTIVATIONS))
 
     def __sizeof__(self):
         """

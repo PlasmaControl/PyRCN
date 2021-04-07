@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 
 from pyrcn.base import InputToNode, FeedbackNodeToNode
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.echo_state_network import ESNFeedbackRegressor
+from pyrcn.echo_state_network import FeedbackESNRegressor
 from joblib import load
 
 
@@ -28,7 +28,7 @@ input_to_node = InputToNode(hidden_layer_size=200, activation='identity', input_
 node_to_node = FeedbackNodeToNode(hidden_layer_size=200, sparsity=0.05, activation="tanh", spectral_radius=0.25, leakage=1.0, bias_scaling=0.0, teacher_scaling=1.12, teacher_shift=-0.7, bi_directional=False, output_activation="tanh", random_state=1)
 reg = IncrementalRegression(alpha=1e-3)
 
-esn = ESNFeedbackRegressor(input_to_node=input_to_node, node_to_node=node_to_node, regressor=reg, random_state=1)
+esn = FeedbackESNRegressor(input_to_node=input_to_node, node_to_node=node_to_node, regressor=reg, random_state=1)
 
 esn.partial_fit(X=X, y=y.reshape(-1, 1), postpone_inverse=False)
 
