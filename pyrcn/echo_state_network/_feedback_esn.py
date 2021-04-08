@@ -10,7 +10,7 @@ import sys
 import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
-from pyrcn.base import InputToNode, FeedbackNodeToNode
+from pyrcn.base import InputToNode, FeedbackNodeToNode, ACTIVATIONS, ACTIVATIONS_INVERSE
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNRegressor
 from sklearn.utils import check_random_state
@@ -19,9 +19,9 @@ from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import FeatureUnion
 
 
-class ESNFeedbackRegressor(ESNRegressor):
+class FeedbackESNRegressor(ESNRegressor):
     """
-    Echo State Network Feedback regressor.
+    Feedback Echo State Network regressor.
 
     This model optimizes the mean squared error loss function using linear regression.
 
@@ -31,7 +31,7 @@ class ESNFeedbackRegressor(ESNRegressor):
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.
-    node_to_node : iterable, default=[('default', NodeToNode())]
+    node_to_node : iterable, default=[('default', FeedbackNodeToNode())]
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.
@@ -89,15 +89,17 @@ class ESNFeedbackRegressor(ESNRegressor):
 
         # node_to_node
         try:
-            hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
+            hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y)
         except NotFittedError as e:
             print('node_to_node has not been fitted yet: {0}'.format(e))
-            hidden_layer_state = self._node_to_node.fit_transform(hidden_layer_state)
+            self._node_to_node.fit(hidden_layer_state, y=y)
+            hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y)
             pass
 
         # regression
         if self._regressor:
-            self._regressor.partial_fit(hidden_layer_state, y, postpone_inverse=postpone_inverse)
+            y_scaled = ACTIVATIONS_INVERSE[self.node_to_node.output_activation](y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift)
+            self._regressor.partial_fit(hidden_layer_state, y_scaled, postpone_inverse=postpone_inverse)
         if not postpone_inverse:
             self._node_to_node._output_weights = np.vstack((self._regressor.coef_.T, self._regressor.intercept_))
         return self
@@ -131,8 +133,10 @@ class ESNFeedbackRegressor(ESNRegressor):
             hidden_layer_state = self._input_to_node.transform(X)
             hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y)
 
+            # scale teacher
+            y_scaled = ACTIVATIONS_INVERSE[self.node_to_node.output_activation](y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift)
             # regression
-            self._regressor.fit(hidden_layer_state, y)
+            self._regressor.fit(hidden_layer_state, y_scaled)
 
         elif self._chunk_size < X.shape[0]:
             # setup chunk list
@@ -180,7 +184,7 @@ class ESNFeedbackRegressor(ESNRegressor):
         hidden_layer_state = self._input_to_node.transform(X)
         hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
 
-        return self._regressor.predict(hidden_layer_state)
+        return ((self._node_to_node._y_pred[:-1, :]) - self.node_to_node.teacher_shift) / self.node_to_node.teacher_scaling
 
     def _validate_hyperparameters(self):
         """Validates the hyperparameters.

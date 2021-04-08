@@ -45,7 +45,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         Independent term in decision function. Set to 0.0 if
         ``fit_intercept = False``.
     """
-    def __init__(self, alpha=1.0, fit_intercept=True, normalize=False):
+    def __init__(self, alpha=1e-5, fit_intercept=True, normalize=False):
         self.alpha = alpha
         self.fit_intercept = fit_intercept
         self.normalize = normalize

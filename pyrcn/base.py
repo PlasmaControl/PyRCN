@@ -50,7 +50,7 @@ def inplace_bounded_relu(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    np.minimum(np.maximum(X, 0, out=X), 1, out=X)
+    return np.minimum(np.maximum(X, 0, out=X), 1, out=X)
 
 
 def inplace_tanh_inverse(X):
@@ -62,7 +62,7 @@ def inplace_tanh_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    np.arctanh(X, out=X)
+    return np.arctanh(X, out=X)
 
 
 def inplace_identity_inverse(X):
@@ -74,7 +74,7 @@ def inplace_identity_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    ACTIVATIONS['identity'](X)
+    return ACTIVATIONS['identity'](X)
 
 
 def inplace_logistic_inverse(X):
@@ -86,7 +86,7 @@ def inplace_logistic_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    np.negative(np.log(1 - X, out=X), out=X)
+    return np.negative(np.log(1 - X, out=X), out=X)
 
 
 def inplace_relu_inverse(X):
@@ -101,7 +101,7 @@ def inplace_relu_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    ACTIVATIONS['relu'](X)
+    return ACTIVATIONS['relu'](X)
 
 
 def inplace_bounded_relu_inverse(X):
@@ -116,7 +116,7 @@ def inplace_bounded_relu_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    ACTIVATIONS['bounded_relu'](X)
+    return ACTIVATIONS['bounded_relu'](X)
 
 
 ACTIVATIONS.update({'bounded_relu': inplace_bounded_relu})
@@ -309,15 +309,17 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
         if self.hidden_layer_size <= 0:
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
-        if self.input_scaling <= 0.:
-            raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
         if self.sparsity <= 0. or self.sparsity > 1.:
             raise ValueError("sparsity must be between 0. and 1., got %s." % self.sparsity)
-        if self.bias_scaling < 0:
-            raise ValueError("bias must be > 0, got %s." % self.bias_scaling)
         if self.activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
                              "activations are %s." % (self.activation, ACTIVATIONS))
+        if self.input_scaling <= 0.:
+            raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
+        if self.bias_scaling < 0:
+            raise ValueError("bias must be > 0, got %s." % self.bias_scaling)
+        if self.k_in is not None and self.k_in <= 0:
+            raise ValueError("k_in must be > 0, got %d." % self.k_in)
 
     def __sizeof__(self):
         """
@@ -345,14 +347,14 @@ class InputToNode(BaseEstimator, TransformerMixin):
         return self._input_weights
 
     @property
-    def bias(self):
+    def bias_weights(self):
         """Returns the bias.
 
         Returns
         -------
         bias : ndarray of size (hidden_layer_size)
         """
-        return self._bias_bias_weights
+        return self._bias_weights
 
 
 class BatchIntrinsicPlasticity(InputToNode):
@@ -465,7 +467,9 @@ class BatchIntrinsicPlasticity(InputToNode):
         super()._validate_hyperparameters()
 
         if self.algorithm not in {'neumann', 'dresden'}:
-            raise ValueError('The selected algorithm ist unknown, got {0}'.format(self.algorithm))
+            raise ValueError('The selected algorithm is unknown, got {0}'.format(self.algorithm))
+        if self.distribution not in {'exponential', 'uniform', 'normal'}:
+            raise ValueError('The selected distribution is unknown, got {0}'.format(self.distribution))
 
 
 class PredefinedWeightsInputToNode(InputToNode):
@@ -478,8 +482,6 @@ class PredefinedWeightsInputToNode(InputToNode):
         A set of predefined input weights.
     hidden_layer_size : int, default=None
         Sets the number of nodes in hidden layer. This is ignored here and derived from predefined_input_weights.
-    sparsity : float, default=None.
-        Quotient of input weights per node (k_in) and number of input features (n_features). This is ignored here.
     activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
         This element represents the activation function in the hidden layer.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
@@ -499,7 +501,6 @@ class PredefinedWeightsInputToNode(InputToNode):
             self,
             predefined_input_weights,
             hidden_layer_size=None,
-            sparsity=None,
             activation='relu',
             input_scaling=1.,
             bias_scaling=0.,
@@ -536,6 +537,7 @@ class PredefinedWeightsInputToNode(InputToNode):
                 self.predefined_input_weights.shape[0], X.shape[1]))
 
         self._input_weights = self.predefined_input_weights
+
         self._bias_weights = self._uniform_random_bias(
             hidden_layer_size=self.hidden_layer_size,
             random_state=self.random_state)
@@ -561,8 +563,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
     spectral_radius : float, default=1.
         Scales the input weight matrix.
-    
-       : float, default=1.
+    leakage : float, default=1.
         parameter to determine the degree of leaky integration.
     bias_scaling : float, default=1.
         Scales the input bias of the activation.
@@ -625,12 +626,13 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             random_state=self.random_state)
         return self
 
-    def transform(self, X):
+    def transform(self, X, y=None):
         """Transforms the input matrix X.
 
         Parameters
         ----------
         X : {ndarray, sparse matrix} of size (n_samples, hidden_layer_size)
+        y : ignored
 
         Returns
         -------
@@ -644,10 +646,10 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             _hidden_layer_state_bw = np.flipud(self._pass_through_recurrent_weights(X=np.flipud(X)))
             self._hidden_layer_state = np.concatenate((_hidden_layer_state_fw, _hidden_layer_state_bw), axis=1)
         else:
-            self._hidden_layer_state = self._pass_through_recurrent_weights(X=X)
+            self._hidden_layer_state = self._pass_through_recurrent_weights(X=X, y=y)
         return self._hidden_layer_state
 
-    def _pass_through_recurrent_weights(self, X):
+    def _pass_through_recurrent_weights(self, X, y=None):
         hidden_layer_state = np.zeros(shape=(X.shape[0]+1, self.hidden_layer_size))
         for sample in range(X.shape[0]):
             a = X[sample, :]
@@ -724,22 +726,58 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
         if self.hidden_layer_size <= 0:
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
-        if self.spectral_radius < 0.:
-            raise ValueError("spectral_radius must be >= 0, got %s." % self.spectral_radius)
-        if self.leakage <= 0. or self.leakage > 1.:
-            raise ValueError("leakage must be between 0. and 1., got %s." % self.leakage)
         if self.sparsity <= 0. or self.sparsity > 1.:
             raise ValueError("sparsity must be between 0. and 1., got %s." % self.sparsity)
-        if self.bias_scaling < 0:
-            raise ValueError("bias must be > 0, got %s." % self.bias_scaling)
         if self.activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
                              "activations are %s." % (self.activation, ACTIVATIONS))
+        if self.spectral_radius < 0.:
+            raise ValueError("spectral_radius must be >= 0, got %s." % self.spectral_radius)
+        if self.bias_scaling < 0:
+            raise ValueError("bias must be > 0, got %s." % self.bias_scaling)
+        if self.leakage <= 0. or self.leakage > 1.:
+            raise ValueError("leakage must be between 0. and 1., got %s." % self.leakage)
+        if self.bi_directional or self.leakage > 1.:
+            raise ValueError("leakage must be between 0. and 1., got %s." % self.leakage)
         if self.k_rec is not None and self.k_rec <= 0:
             raise ValueError("k_rec must be > 0, got %d." % self.k_rec)
 
+    def __sizeof__(self):
+        """
+        Returns the size of the object in bytes.
 
-class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
+        Returns
+        -------
+        size : int
+        Object memory in bytes.
+        """
+        return object.__sizeof__(self) + \
+            self._bias_weights.nbytes + \
+            self._recurrent_weights.nbytes + \
+            self._hidden_layer_state.nbytes + \
+            sys.getsizeof(self.random_state)
+
+    @property
+    def recurrent_weights(self):
+        """Returns the recurrent weights.
+
+        Returns
+        -------
+        recurrent_weights : ndarray of size (hidden_layer_size, hidden_layer_size)
+        """
+        return self._recurrent_weights
+
+    @property
+    def bias_weights(self):
+        """Returns the bias.
+
+        Returns
+        -------
+        bias : ndarray of size (hidden_layer_size)
+        """
+        return self._bias_weights
+
+class FeedbackNodeToNode(NodeToNode):
     """
     FeedbackNodeToNode class for reservoir computing modules (e.g. ESN)
 
@@ -762,12 +800,21 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
         parameter to determine the degree of leaky integration.
     bias_scaling : float, default=1.
         Scales the input bias of the activation.
-    feedback_scaling : float, default=1.
-        Scales the feedback of the activation.
-    bi_directional : bool, default=False
-        Whether to work in bidirectional mode.
+    teacher_scaling : float, default=1.
+        Factor applied to the target signal
+    teacher_shift: float, default=0.
+        Additive term applied to the target signal
+    bi_directional : bool, default=None
+        Whether to work in bidirectional mode. This is ignored here.
     k_rec : int, default=None.
         recurrent weights per node. By default, it is None. If set, it overrides sparsity.
+    output_activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
+        This element represents the activation function in the hidden layer.
+            - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
+            - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
+            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
     random_state : {None, int, RandomState}, default=None
     """
     def __init__(self,
@@ -777,26 +824,30 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
                  spectral_radius=1.,
                  leakage=1.,
                  bias_scaling=1.,
-                 feedback_scaling=1.,
-                 bi_directional=False,
+                 teacher_scaling=1.,
+                 teacher_shift=1.,
+                 bi_directional=None,
                  k_rec=None,
+                 output_activation='tanh',
                  random_state=None):
-        self.hidden_layer_size = hidden_layer_size
-        self.sparsity = sparsity
-        self.activation = activation
-        self.spectral_radius = spectral_radius
-        self.leakage = leakage
-        self.bias_scaling = bias_scaling
-        self.feedback_scaling = feedback_scaling
-        self.bi_directional = bi_directional
-        self.k_rec = k_rec
+        super().__init__(
+            hidden_layer_size=hidden_layer_size,
+            sparsity=sparsity,
+            activation=activation,
+            spectral_radius=spectral_radius,
+            leakage=leakage,
+            bias_scaling=bias_scaling,
+            bi_directional=False,
+            k_rec=k_rec,
+            random_state=random_state)
+        self.teacher_scaling = teacher_scaling
+        self.teacher_shift = teacher_shift
+        self.output_activation = output_activation
         self.random_state = check_random_state(random_state)
 
-        self._recurrent_weights = None
         self._output_weights = None
-        self._bias_weights = None
-        self._feedback = None
-        self._hidden_layer_state = None
+        self._feedback_weights = None
+        self._y_pred = None
 
     def fit(self, X, y=None):
         """
@@ -811,47 +862,13 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
         -------
         self
         """
+        super().fit(X=X, y=y)
         self._validate_hyperparameters()
-        self._validate_data(X, y)
-        self._check_n_features(X, reset=True)
-
-        if self.k_rec is not None:
-            self.sparsity = self.k_rec / X.shape[1]
-        self._recurrent_weights = self._normal_random_recurrent_weights(
-            n_features_in=self.n_features_in_,
-            hidden_layer_size=self.hidden_layer_size,
-            fan_in=np.rint(self.hidden_layer_size * self.sparsity).astype(int),
-            random_state=self.random_state)
-        self._bias_weights = self._uniform_random_bias(
-            hidden_layer_size=self.hidden_layer_size,
-            random_state=self.random_state)
-        self._feedback = self._uniform_random_feedback(
+        self._feedback_weights = self._uniform_random_feedback(
             hidden_layer_size=self.hidden_layer_size,
             output_size=y.shape[1],
             random_state=self.random_state)
         return self
-
-    def transform(self, X, y=None):
-        """Transforms the input matrix X.
-
-        Parameters
-        ----------
-        X : {ndarray, sparse matrix} of size (n_samples, hidden_layer_size)
-
-        Returns
-        -------
-        Y: ndarray of size (n_samples, hidden_layer_size)
-        """
-        if self._recurrent_weights is None or self._bias_weights is None:
-            raise NotFittedError(self)
-
-        if self.bi_directional:
-            _hidden_layer_state_fw = self._pass_through_recurrent_weights(X=X, y=y)
-            _hidden_layer_state_bw = np.flipud(self._pass_through_recurrent_weights(X=np.flipud(X), y=np.flipud(y)))
-            self._hidden_layer_state = np.concatenate((_hidden_layer_state_fw, _hidden_layer_state_bw), axis=1)
-        else:
-            self._hidden_layer_state = self._pass_through_recurrent_weights(X=X, y=y)
-        return self._hidden_layer_state
 
     def _pass_through_recurrent_weights(self, X, y):
         hidden_layer_state = np.zeros(shape=(X.shape[0] + 1, self.hidden_layer_size))
@@ -860,49 +877,26 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
                 a = X[sample, :]
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
                 c = self._bias_weights * self.bias_scaling
-                d = safe_sparse_dot(self._feedback, y[sample, :]) * self.feedback_scaling
+                d = safe_sparse_dot(self._feedback_weights, y[sample, :] * self.teacher_scaling + self.teacher_shift)
                 hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c + d)
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                      + self.leakage * hidden_layer_state[sample + 1, :]
+                self._last_output = y[sample, :] * self.teacher_scaling + self.teacher_shift
         else:
-            y_pred = np.zeros(shape=(self._feedback.shape[1], ))
+            hidden_layer_state[0, :] = self._hidden_layer_state[-1, :]
+            self._y_pred = np.zeros(shape=(X.shape[0] + 1, self._feedback_weights.shape[1]))
+            self._y_pred[0, :] = self._last_output
             for sample in range(X.shape[0]):
                 a = X[sample, :]
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
                 c = self._bias_weights * self.bias_scaling
-                d = safe_sparse_dot(self._feedback, y_pred) * self.feedback_scaling
-                hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c + d)
+                d = safe_sparse_dot(self._feedback_weights, self._y_pred[sample, :])
+                hidden_layer_state[sample + 1, :] = ACTIVATIONS[self.activation](a + b + c + d)
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                      + self.leakage * hidden_layer_state[sample + 1, :]
-                y_pred = safe_sparse_dot(np.hstack((hidden_layer_state[sample + 1, :], 1)), self._output_weights)
-        return hidden_layer_state[1:, :]
-
-    @staticmethod
-    def _normal_random_recurrent_weights(n_features_in: int, hidden_layer_size: int, fan_in: int, random_state):
-        if n_features_in != hidden_layer_size:
-            raise ValueError("Dimensional mismatch: n_features must match hidden_layer_size, got %s !=%s." %
-                             (n_features_in, hidden_layer_size))
-        nr_entries = np.int32(n_features_in * fan_in)
-        weights_array = random_state.normal(loc=0., scale=1., size=nr_entries)
-
-        if fan_in < hidden_layer_size:
-            indices = np.zeros(shape=nr_entries, dtype=int)
-            indptr = np.arange(start=0, stop=(n_features_in + 1) * fan_in, step=fan_in)
-
-            for en in range(0, n_features_in * fan_in, fan_in):
-                indices[en: en + fan_in] = random_state.permutation(hidden_layer_size)[:fan_in].astype(int)
-            recurrent_weights_init = scipy.sparse.csr_matrix(
-                (weights_array, indices, indptr), shape=(n_features_in, hidden_layer_size), dtype='float64')
-        else:
-            recurrent_weights_init = weights_array.reshape((n_features_in, hidden_layer_size))
-
-        we = eigens(recurrent_weights_init, return_eigenvectors=False, k=np.minimum(10, hidden_layer_size - 2))
-
-        return recurrent_weights_init / np.amax(np.absolute(we))
-
-    @staticmethod
-    def _uniform_random_bias(hidden_layer_size: int, random_state):
-        return random_state.uniform(low=-1., high=1., size=hidden_layer_size)
+                self._y_pred[sample + 1, :] = ACTIVATIONS[self.output_activation](safe_sparse_dot(np.hstack((hidden_layer_state[sample+1, :], 1)), self._output_weights))
+                self._last_output = self._y_pred[sample, :]
+        return hidden_layer_state[:-1, :]
 
     @staticmethod
     def _uniform_random_feedback(hidden_layer_size: int, output_size: int, random_state):
@@ -916,18 +910,52 @@ class FeedbackNodeToNode(BaseEstimator, TransformerMixin):
         -------
 
         """
-        if self.hidden_layer_size <= 0:
-            raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
-        if self.spectral_radius < 0.:
-            raise ValueError("spectral_radius must be >= 0, got %s." % self.spectral_radius)
-        if self.leakage <= 0. or self.leakage > 1.:
-            raise ValueError("leakage must be between 0. and 1., got %s." % self.leakage)
-        if self.sparsity <= 0. or self.sparsity > 1.:
-            raise ValueError("sparsity must be between 0. and 1., got %s." % self.sparsity)
-        if self.bias_scaling < 0:
-            raise ValueError("bias must be > 0, got %s." % self.bias_scaling)
-        if self.activation not in ACTIVATIONS:
+        if self.output_activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
-                             "activations are %s." % (self.activation, ACTIVATIONS))
-        if self.k_rec is not None and self.k_rec <= 0:
-            raise ValueError("k_rec must be > 0, got %d." % self.k_rec)
+                             "activations are %s." % (self.output_activation, ACTIVATIONS))
+
+    def __sizeof__(self):
+        """
+        Returns the size of the object in bytes.
+
+        Returns
+        -------
+        size : int
+        Object memory in bytes.
+        """
+        return object.__sizeof__(self) + \
+            self._bias_weights.nbytes + \
+            self._recurrent_weights.nbytes + \
+            self._feedback_weights.nbytes + \
+            self._hidden_layer_state.nbytes + \
+            sys.getsizeof(self.random_state)
+
+    @property
+    def recurrent_weights(self):
+        """Returns the recurrent weights.
+
+        Returns
+        -------
+        recurrent_weights : ndarray of size (hidden_layer_size, hidden_layer_size)
+        """
+        return self._recurrent_weights
+
+    @property
+    def feedback_weights(self):
+        """Returns the feedback weights.
+
+        Returns
+        -------
+        recurrent_weights : ndarray of size (hidden_layer_size)
+        """
+        return self._feedback_weights
+
+    @property
+    def bias_weights(self):
+        """Returns the bias.
+
+        Returns
+        -------
+        bias : ndarray of size (hidden_layer_size)
+        """
+        return self._bias_weights

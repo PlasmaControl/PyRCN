@@ -18,7 +18,6 @@ Welcome to PyRCN's documentation!
    PyRCN/base
    PyRCN/cluster
    PyRCN/echo_state_network
-   PyRCN/echo_state_network
    PyRCN/extreme_learning_machine
    PyRCN/linear_model
    PyRCN/postprocessing
