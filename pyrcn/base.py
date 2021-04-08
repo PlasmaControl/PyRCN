@@ -843,7 +843,6 @@ class FeedbackNodeToNode(NodeToNode):
         self.teacher_scaling = teacher_scaling
         self.teacher_shift = teacher_shift
         self.output_activation = output_activation
-        self.random_state = check_random_state(random_state)
 
         self._output_weights = None
         self._feedback_weights = None
@@ -910,6 +909,7 @@ class FeedbackNodeToNode(NodeToNode):
         -------
 
         """
+        super()._validate_hyperparameters()
         if self.output_activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
                              "activations are %s." % (self.output_activation, ACTIVATIONS))
