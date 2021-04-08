@@ -1,5 +1,5 @@
 Feedback Echo State Network
 ===========================
 
-.. automodule:: pyrcn.echo_state_network.ESNFeedbackRegressor
+.. automodule:: pyrcn.echo_state_network.FeedbackESNRegressor
    :members:
