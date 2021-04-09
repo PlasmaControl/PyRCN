@@ -15,21 +15,23 @@
 
 
 import numpy as np
+from time import process_time
 import os
 from joblib import load
 from sklearn.model_selection import ParameterGrid
 from sklearn.preprocessing import MultiLabelBinarizer
 from sklearn.base import clone
 from sklearn.metrics import mean_squared_error
+import pandas as pd
 
 from matplotlib import pyplot as plt
 plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
 
-from pyrcn.echo_state_network import ESNRegressor
+from pyrcn.echo_state_network import FeedbackESNRegressor, ESNRegressor
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.base import InputToNode, NodeToNode
+from pyrcn.base import InputToNode, NodeToNode, FeedbackNodeToNode
 
 
 # ## Load the dataset
@@ -63,6 +65,33 @@ test_set = [mlb.fit_transform(training_set[k]) for k in range(len(test_set))]
 print("Shape of first sequences in the training, validation and test set: {0}, {1}, {2}".format(training_set[0].shape, validation_set[0].shape, test_set[0].shape))
 
 
+def optimize_esn(training_set, validation_set, params):
+    df_data = params
+    esn = clone(base_esn)
+    esn.set_params(**params)
+    t1 = process_time()
+    for X in training_set[:-1]:
+        esn.partial_fit(X=X[:-1, :], y=X[1:, :], postpone_inverse=True)
+    X = training_set[-1]
+    esn.partial_fit(X=X[:-1, :], y=X[1:, :], postpone_inverse=False)
+    df_data["Fitting Time"] = process_time() - t1
+    err_train = []
+    t1 = process_time()
+    for X in training_set:
+        y_pred = esn.predict(X=X[:-1, :])
+        err_train.append(mean_squared_error(X[1:, :], y_pred))
+    df_data["Inference Time Training"] = process_time() - t1
+    err_validation = []
+    t1 = process_time()
+    for X in validation_set:
+        y_pred = esn.predict(X=X[:-1, :])
+        err_validation.append(mean_squared_error(X[1:, :], y_pred))
+    df_data["Inference Time Validation"] = process_time() - t1
+    df_data["Training Loss"] = np.mean(err_train)
+    df_data["Validation Loss"] = np.mean(err_validation)
+    return df_data
+
+
 # ## Set up a basic ESN
 # 
 # To develop an ESN model for musical note prediction, we need to tune several hyper-parameters, e.g., input_scaling, spectral_radius, bias_scaling and leaky integration.
@@ -77,21 +106,25 @@ print("Shape of first sequences in the training, validation and test set: {0}, {
 
 
 param_grid = {'input_to_node__hidden_layer_size': [50],
-    'input_to_node__input_scaling': np.linspace(start=0.1, stop=1, num=10),
+    'input_to_node__input_scaling': [0.4],
     'input_to_node__bias_scaling': [0.0],
     'input_to_node__activation': ['identity'],
     'input_to_node__random_state': [42],
     'node_to_node__hidden_layer_size': [50],
     'node_to_node__leakage': [1.0],
-    'node_to_node__spectral_radius': np.linspace(start=0.0, stop=1, num=11),
+    'node_to_node__spectral_radius': [0.5],
     'node_to_node__bias_scaling': [0.0],
+    'node_to_node__teacher_scaling': np.linspace(start=0.1, stop=15, num=15),
+    'node_to_node__teacher_shift': np.linspace(start=-0.9, stop=0.9, num=19),
     'node_to_node__activation': ['tanh'],
+    'node_to_node__output_activation': ['tanh'],
     'node_to_node__random_state': [42],
     'regressor__alpha': [1e-3],
     'random_state': [42] }
 
-base_esn = ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression())
+base_esn = FeedbackESNRegressor(input_to_node=InputToNode(), node_to_node=FeedbackNodeToNode(), regressor=IncrementalRegression())
 
+df = pd.DataFrame(columns = list(param_grid.keys()) + ["Fitting Time", "Validation Time Training", "Validation Time Test", "Training Loss", "Validation Loss"])
 
 # ## Optimize input_scaling and spectral_radius
 # 
@@ -112,22 +145,9 @@ base_esn = ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(), 
 
 
 for params in ParameterGrid(param_grid):
-    print(params)
-    esn = clone(base_esn)
-    esn.set_params(**params)
-    for X in training_set[:-1]:
-        esn.partial_fit(X=X[:-1, :], y=X[1:, :], postpone_inverse=True)
-    X = training_set[-1]
-    esn.partial_fit(X=X[:-1, :], y=X[1:, :], postpone_inverse=False)
-    err_train = []
-    for X in training_set:
-        y_pred = esn.predict(X=X[:-1, :])
-        err_train.append(mean_squared_error(X[1:, :], y_pred))
-    err_test = []
-    for X in validation_set:
-        y_pred = esn.predict(X=X[:-1, :])
-        err_test.append(mean_squared_error(X[1:, :], y_pred))
-    print('{0}\t{1}'.format(np.mean(err_train), np.mean(err_test)))
+    df = df.append(optimize_esn(training_set, validation_set, params), ignore_index=True)
+
+
 
 
 # ## Update parameter of the basic ESN
