@@ -98,8 +98,8 @@ class FeedbackESNRegressor(ESNRegressor):
 
         # regression
         if self._regressor:
-            y_scaled = ACTIVATIONS_INVERSE[self.node_to_node.output_activation](y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift)
-
+            y_scaled = y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift
+            ACTIVATIONS_INVERSE[self.node_to_node.output_activation](y_scaled)
             self._regressor.partial_fit(hidden_layer_state, y_scaled, postpone_inverse=postpone_inverse)
         if not postpone_inverse:
             self._node_to_node._output_weights = np.vstack((self._regressor.coef_.T, self._regressor.intercept_))
@@ -135,7 +135,8 @@ class FeedbackESNRegressor(ESNRegressor):
             hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y)
 
             # scale teacher
-            y_scaled = ACTIVATIONS_INVERSE[self.node_to_node.output_activation](y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift)
+            y_scaled = y * self.node_to_node.teacher_scaling + self.node_to_node.teacher_shift
+            ACTIVATIONS_INVERSE[self.node_to_node.output_activation](y_scaled)
             # regression
             self._regressor.fit(hidden_layer_state, y_scaled)
 

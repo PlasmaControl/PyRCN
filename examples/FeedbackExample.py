@@ -25,7 +25,7 @@ X_test = dataset[:, 0].reshape(-1, 1)
 y_test = dataset[:, 1]
 
 input_to_node = InputToNode(hidden_layer_size=200, activation='identity', input_scaling=3., bias_scaling=0.01, random_state=1)
-node_to_node = FeedbackNodeToNode(hidden_layer_size=200, sparsity=0.05, activation="tanh", spectral_radius=0.25, leakage=1.0, bias_scaling=0.0, teacher_scaling=1.12, teacher_shift=-0.7, bi_directional=False, output_activation="tanh", random_state=1)
+node_to_node = FeedbackNodeToNode(hidden_layer_size=200, sparsity=0.05, activation='tanh', spectral_radius=0.25, leakage=1.0, bias_scaling=0.0, teacher_scaling=1.12, teacher_shift=-0.7, bi_directional=False, output_activation="tanh", random_state=1)
 reg = IncrementalRegression(alpha=1e-3)
 
 esn = FeedbackESNRegressor(input_to_node=input_to_node, node_to_node=node_to_node, regressor=reg, random_state=1)
