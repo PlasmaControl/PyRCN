@@ -611,7 +611,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y, multi_output=True)
+        self._validate_data(X=X, y=y, multi_output=True)
         self._check_n_features(X, reset=True)
 
         if self.k_rec is not None:
