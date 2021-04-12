@@ -50,7 +50,7 @@ def inplace_bounded_relu(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    return np.minimum(np.maximum(X, 0, out=X), 1, out=X)
+    np.minimum(np.maximum(X, 0, out=X), 1, out=X)
 
 
 def inplace_tanh_inverse(X):
@@ -62,7 +62,7 @@ def inplace_tanh_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    return np.arctanh(X, out=X)
+    np.arctanh(X, out=X)
 
 
 def inplace_identity_inverse(X):
@@ -74,7 +74,7 @@ def inplace_identity_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    return ACTIVATIONS['identity'](X)
+    ACTIVATIONS['identity'](X)
 
 
 def inplace_logistic_inverse(X):
@@ -86,7 +86,7 @@ def inplace_logistic_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    return np.negative(np.log(1 - X, out=X), out=X)
+    np.negative(np.log(1 - X, out=X), out=X)
 
 
 def inplace_relu_inverse(X):
@@ -101,7 +101,7 @@ def inplace_relu_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    return ACTIVATIONS['relu'](X)
+    ACTIVATIONS['relu'](X)
 
 
 def inplace_bounded_relu_inverse(X):
@@ -116,7 +116,7 @@ def inplace_bounded_relu_inverse(X):
     X : Union(array-like, sparse matrix), shape (n_samples, n_features)
         The input data.
     """
-    return ACTIVATIONS['bounded_relu'](X)
+    ACTIVATIONS['bounded_relu'](X)
 
 
 ACTIVATIONS.update({'bounded_relu': inplace_bounded_relu})
@@ -611,7 +611,10 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y)
+        if y is None:
+            self._validate_data(X, y)
+        else:
+            self._validate_data(X, y, multi_output=True)
         self._check_n_features(X, reset=True)
 
         if self.k_rec is not None:
@@ -655,7 +658,9 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             a = X[sample, :]
             b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
             c = self._bias_weights * self.bias_scaling
-            hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c)
+            pre_activation = a + b + c
+            ACTIVATIONS[self.activation](pre_activation)
+            hidden_layer_state[sample+1, :] = pre_activation
             hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                  + self.leakage * hidden_layer_state[sample + 1, :]
         return hidden_layer_state[1:, :]
@@ -877,7 +882,9 @@ class FeedbackNodeToNode(NodeToNode):
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
                 c = self._bias_weights * self.bias_scaling
                 d = safe_sparse_dot(self._feedback_weights, y[sample, :] * self.teacher_scaling + self.teacher_shift)
-                hidden_layer_state[sample+1, :] = ACTIVATIONS[self.activation](a + b + c + d)
+                pre_activation = a + b + c + d
+                ACTIVATIONS[self.activation](pre_activation)
+                hidden_layer_state[sample+1, :] = pre_activation
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                      + self.leakage * hidden_layer_state[sample + 1, :]
                 self._last_output = y[sample, :] * self.teacher_scaling + self.teacher_shift
@@ -890,10 +897,14 @@ class FeedbackNodeToNode(NodeToNode):
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
                 c = self._bias_weights * self.bias_scaling
                 d = safe_sparse_dot(self._feedback_weights, self._y_pred[sample, :])
-                hidden_layer_state[sample + 1, :] = ACTIVATIONS[self.activation](a + b + c + d)
+                pre_activation = a + b + c + d
+                ACTIVATIONS[self.activation](pre_activation)
+                hidden_layer_state[sample + 1, :] = pre_activation
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                      + self.leakage * hidden_layer_state[sample + 1, :]
-                self._y_pred[sample + 1, :] = ACTIVATIONS[self.output_activation](safe_sparse_dot(np.hstack((hidden_layer_state[sample+1, :], 1)), self._output_weights))
+                _y_pred = safe_sparse_dot(np.hstack((hidden_layer_state[sample+1, :], 1)), self._output_weights)
+                ACTIVATIONS[self.output_activation](_y_pred)
+                self._y_pred[sample + 1, :] = _y_pred
                 self._last_output = self._y_pred[sample, :]
         return hidden_layer_state[:-1, :]
 

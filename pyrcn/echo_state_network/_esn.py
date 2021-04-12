@@ -76,7 +76,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             raise BaseException('Regressor has no attribute partial_fit, got {0}'.format(self._regressor))
 
         self._validate_hyperparameters()
-        self._validate_data(X, y, multi_output=True)
+        self._validate_data(X=X, y=y, multi_output=True)
 
         # input_to_node
         try:
