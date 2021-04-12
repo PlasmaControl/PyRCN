@@ -117,12 +117,13 @@ Fore more advanced examples, please have a look at our [Automatic Music Transcri
 If you use PyRCN, please cite the following publication:
 
 ```latex
-@INPROCEEDINGS{src:Steiner-21c,  
-    author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone Peter Birkholz},  
-    booktitle={The International Joint Conference on Neural Networks},   
-    title={PyRCN: Exploration and Application of ESNs},
-    year={2021},
-    note={submitted},
+@misc{steiner2021pyrcn,
+      title={PyRCN: Exploration and Application of ESNs}, 
+      author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone and Peter Birkholz},
+      year={2021},
+      eprint={2103.04807},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
 }
 ```
 
@@ -131,7 +132,7 @@ Glottal Closure Instant Detection using Echo State Networks
 
 ```latex
 @InProceedings{src:Steiner-21a,
-	title = {Glottal Closure Instant Detection using Echo State Networkss},
+	title = {Glottal Closure Instant Detection using Echo State Networks},
 	author = {Peter Steiner and Ian S. Howard and Peter Birkholz},
 	year = {2021},
 	pages = {161--168},
@@ -154,7 +155,7 @@ Cluster-based Input Weight Initialization for Echo State Networks
     archivePrefix={arXiv},
     primaryClass={cs.LG}
 }
-´´´
+```
 
 PyRCN: Exploration and Application of ESNs
 
@@ -210,6 +211,7 @@ Multipitch tracking in music signals using Echo State Networks
 ```
 
 Multiple-F0 Estimation using Echo State Networks
+
 ```latex
 @inproceedings{src:Steiner-19,
   title={Multiple-F0 Estimation using Echo State Networks},
