@@ -6,4 +6,4 @@ The :mod:`pyrcn.linear_model` module implements a functionality to compute regre
 
 from pyrcn.linear_model._incremental_regression import IncrementalRegression
 
-__all__ = ['IncrementalRegression', 'FastIncrementalRegression']
+__all__ = ['IncrementalRegression']
