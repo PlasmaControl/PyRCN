@@ -1,13 +1,11 @@
-# MNIST classification using Extreme Learning Machines
-
+# MNIST classification using Extreme Learning Machines and Echo State Networks
 import numpy as np
 import time
 from scipy.stats import uniform
 from sklearn.datasets import fetch_openml
 from sklearn.linear_model import SGDRegressor, Ridge
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import RandomizedSearchCV
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, cross_val_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.utils.fixes import loguniform
 
@@ -17,77 +15,38 @@ from pyrcn.base import InputToNode
 
 
 # Load the dataset
+print("Fetching the data...", end="")
 X, y = fetch_openml('mnist_784', version=1, return_X_y=True, as_frame=False)
-
+print("...done.")
 
 # Provide standard split in training and test. Normalize to a range between [-1, 1].
-
-
+print("Scale and split...", end="")
 X = MinMaxScaler(feature_range=(-1,1)).fit_transform(X=X)
-X_train, X_test = X[:60000], X[60000:]
-y_train, y_test = y[:60000].astype(int), y[60000:].astype(int)
+X_train, X_test = X[:600], X[600:]
+y_train, y_test = y[:600].astype(int), y[600:].astype(int)
+print("...done.")
 
-# Extreme Learning Machine preparation
-param_grid = {'input_to_node__hidden_layer_size': [500],
-              'input_to_node__activation': ['tanh'],
-              'input_to_node__input_scaling': loguniform(1e-5, 1e1),
-              'input_to_node__bias_scaling': [0.0],
-              'input_to_node__k_in': [10],
-              'input_to_node__random_state': [42] }
+# Prepare sequential hyperparameter tuning
+initially_fixed_params = {
+    'hidden_layer_size': 500,
+    'activation': 'tanh',
+    'k_in': 10,
+    'random_state': 42,
+    'bias_scaling': 0.0,
+}
+step1_params = {'input_to_node__input_scaling': loguniform(1e-5, 1e1)}
+kwargs1 = {'random_state': 42, 'verbose': 1}
+step2_params = {'input_to_node__bias_scaling': range(5)}
+kwargs2 = {'verbose': 10}
+i2n = InputToNode(**initially_fixed_params)
+elm = ELMClassifier(input_to_node=i2n, regressor=Ridge())
 
-random_search = RandomizedSearchCV(ELMClassifier(input_to_node=InputToNode(), regressor=Ridge()),
-                                   param_grid, cv=StratifiedKFold(), verbose=0, 
-                                   n_jobs=-1, n_iter=24, random_state=0).fit(X=X_train, y=y_train)
-
-# Extreme Learning Machine preparation
-param_grid = {'input_to_node__hidden_layer_size': [500],
-              'input_to_node__activation': ['tanh'],
-              'input_to_node__input_scaling': [random_search.best_params_["input_to_node__input_scaling"]],
-              'input_to_node__bias_scaling': uniform(loc=0, scale=5e0),
-              'input_to_node__k_in': [10],
-              'input_to_node__random_state': [42] }
-
-random_search = RandomizedSearchCV(ELMClassifier(input_to_node=InputToNode(), regressor=Ridge()),
-                                   param_grid, cv=StratifiedKFold(), verbose=0, 
-                                   n_jobs=-1, n_iter=24, random_state=0).fit(X=X_train, y=y_train)
-
-# Extreme Learning Machine preparation
-param_grid = {'input_to_node__hidden_layer_size': [500],
-              'input_to_node__activation': ['tanh'],
-              'input_to_node__input_scaling': [random_search.best_params_["input_to_node__input_scaling"]],
-              'input_to_node__bias_scaling': [random_search.best_params_["input_to_node__bias_scaling"]],
-              'input_to_node__k_in': [10],
-              'input_to_node__random_state': [42],
-              'regressor__alpha': loguniform(1e-5, 1e1),}
-
-random_search = RandomizedSearchCV(ELMClassifier(input_to_node=InputToNode(), regressor=Ridge()),
-                                   param_grid, cv=StratifiedKFold(), verbose=0, 
-                                   n_jobs=-1, n_iter=24, random_state=0).fit(X=X_train, y=y_train)
-
-param_grid = {'input_to_node__hidden_layer_size': [500],
-              'input_to_node__activation': ['tanh'],
-              'input_to_node__input_scaling': [random_search.best_params_["input_to_node__input_scaling"]],
-              'input_to_node__bias_scaling': [random_search.best_params_["input_to_node__bias_scaling"]],
-              'input_to_node__k_in': [10],
-              'input_to_node__random_state': [42],
-              'regressor__alpha': [random_search.best_params_["regressor__alpha"]],}
+from pyrcn.model_selection import SequentialSearch
+# The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
+searches = [('step1', RandomizedSearchCV, step1_params, kwargs1),
+            ('step2', GridSearchCV, step2_params, kwargs2)]  # Note that we pass functors, not instances (no '()')!
 
 
-grid_search = GridSearchCV(ELMClassifier(input_to_node=InputToNode(), regressor=Ridge()),
-                             param_grid, cv=StratifiedKFold(n_splits=2), verbose=0, n_jobs=1).fit(X=X_train, y=y_train)
-print(grid_search.best_score_)
-print(grid_search.refit_time_)
-print(grid_search.best_estimator_.__sizeof__())
-
-grid_search = GridSearchCV(ELMClassifier(input_to_node=InputToNode(), regressor=IncrementalRegression()),
-                             param_grid, cv=StratifiedKFold(n_splits=2), verbose=0, n_jobs=1).fit(X=X_train, y=y_train)
-print(grid_search.best_score_)
-print(grid_search.refit_time_)
-print(grid_search.best_estimator_.__sizeof__())
-
-grid_search = GridSearchCV(ELMClassifier(input_to_node=InputToNode(), regressor=IncrementalRegression(), chunk_size=6000),
-                             param_grid, cv=StratifiedKFold(n_splits=2), verbose=0, n_jobs=1).fit(X=X_train, y=y_train)
-print(grid_search.best_score_)
-print(grid_search.refit_time_)
-print(grid_search.best_estimator_.__sizeof__())
-
+elm_opt = SequentialSearch(elm, searches=searches).fit(X_train, y_train)
+print(cross_val_score(elm, X_test, y_test, verbose=10, n_jobs=-1))
+print("...done.")
