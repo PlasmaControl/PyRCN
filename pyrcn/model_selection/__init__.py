@@ -9,6 +9,6 @@ parameters of an estimator.
 # Authors: Simon Stone <simon.stone@tu-dresden.de>
 # License: BSD 3 clause
 
-from pyrcn.model_selection._search import SequentialSearch
+from pyrcn.model_selection._search import SequentialSearchCV
 
-__all__ = ['SequentialSearch']
+__all__ = ['SequentialSearchCV']

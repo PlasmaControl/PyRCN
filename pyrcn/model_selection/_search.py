@@ -10,7 +10,7 @@ from sklearn.model_selection._search import BaseSearchCV
 import numpy as np
 
 
-class SequentialSearch(BaseSearchCV):
+class SequentialSearchCV(BaseSearchCV):
     """
     A series of searches on hyper-parameters.
     """
@@ -21,6 +21,10 @@ class SequentialSearch(BaseSearchCV):
         self.searches = searches
         self.best_estimator_ = None
 
+    def _run_search(self, evaluate_candidates):
+        """ Run all the searches """
+        evaluate_candidates(self.searches)
+
     def fit(self, X, y=None, *, groups=None, **fit_params):
         """
         TODO
@@ -29,19 +33,35 @@ class SequentialSearch(BaseSearchCV):
         :param y:
         :return:
         """
-        for name, search, params, *kwargs in self.searches:
-            if len(kwargs) == 1:
-                result = search(self.estimator, params, refit=True, **kwargs[0]).fit(X, y)
-            else:
-                result = search(self.estimator, params, refit=True).fit(X, y)
-                # TODO
-                """
-                Add all attributes of the search result object as a dictionary to a results dictionary:
-                self.results = { 'step1': results_dict_from_step1, 'step2': results_dict_from_step2, ...}       
-                """
+        def evaluate_candidates(searches):
+            self.cv_results_ = {}
+            self.best_estimator_ = {}
+            self.best_score_ = {}
+            self.best_params_ = {}
+            self.best_index_ = {}
+            self.scorer_ = {}
+            self.n_splits_ = {}
+            self.refit_time_ = {}
+            self.multimetric_ = {}
+            for name, search, params, *kwargs in searches:
+                if len(kwargs) == 1:
+                    result = search(self.estimator, params, refit=True, **kwargs[0]).fit(X, y)
+                else:
+                    result = search(self.estimator, params, refit=True).fit(X, y)
+                # Save the attributes of the intermediate search results
+                # TODO: Is it possible to make a call to, e.g., self.cv_results_ return the final cv_results_?
+                # If not, do we maybe need something like self.intermediate_cv_results_ to avoid confusion?
+                self.cv_results_[name] = result.cv_results_
+                self.best_estimator_[name] = result.best_estimator_
+                self.best_score_[name] = result.best_score_
+                self.best_params_[name] = result.best_params_
+                self.best_index_[name] = result.best_index_
+                self.scorer_[name] = result.scorer_
+                self.n_splits_[name] = result.n_splits_
+                self.refit_time_[name] = result.refit_time_
+                self.multimetric_[name] = result.multimetric_
 
-            self.estimator = result.best_estimator_
-        self.best_estimator_ = self.estimator
-
+                self.estimator = result.best_estimator_
+        self._run_search(evaluate_candidates)
         return self
 
