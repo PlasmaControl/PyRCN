@@ -47,6 +47,6 @@ searches = [('step1', RandomizedSearchCV, step1_params, kwargs1),
             ('step2', GridSearchCV, step2_params, kwargs2)]  # Note that we pass functors, not instances (no '()')!
 
 
-elm_opt = SequentialSearch(elm, searches=searches).fit(X_train, y_train)
+elm_opt = SequentialSearchCV(elm, searches=searches).fit(X_train, y_train)
 print(cross_val_score(elm, X_test, y_test, verbose=10, n_jobs=-1))
 print("...done.")
