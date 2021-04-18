@@ -18,12 +18,18 @@ class SequentialSearch(BaseSearchCV):
                  pre_dispatch='2*n_jobs', error_score=np.nan, return_train_score=True):
         super().__init__(estimator, scoring=scoring, n_jobs=n_jobs, refit=refit, cv=cv, verbose=verbose,
                          pre_dispatch=pre_dispatch, error_score=error_score, return_train_score=return_train_score)
-        if isinstance(searches, list):
-            self.searches = searches
-        else:
-            self.searches = list(searches)
+
+        self.searches = searches
         self.best_estimator_ = None
-        self.results = {}
+        self.results_ = {}
+        self.best_estimators_ = {}
+        self.best_scores_ = {}
+        self.best_parameters_ = {}
+        self.best_indices_ = {}
+        self.scorers_ = {}
+        self.numbers_of_splits_ = {}
+        self.refit_times_ = {}
+        self.multimetrics_ = {}
 
     def fit(self, X, y=None, *, groups=None, **fit_params):
         """
@@ -45,20 +51,29 @@ class SequentialSearch(BaseSearchCV):
         **fit_params : dict of str -> object
             Parameters passed to the ``fit`` method of the estimator
         """
-        for step, name, search, params, *kwargs in enumerate(self.searches):
+        for step, (name, search, params, *kwargs) in enumerate(self.searches):
             if len(kwargs) == 1:
                 result = search(self.estimator, params, refit=True, **kwargs[0]).fit(X, y, groups, **fit_params)
             else:
                 result = search(self.estimator, params, refit=True).fit(X, y)
-                self.results['step'+str(step)] = cv_results_
-                # TODO
-                """
-                Add all attributes of the search result object as a dictionary to a results dictionary:
-                self.results = { 'step1': results_dict_from_step1, 'step2': results_dict_from_step2, ...}       
-                """
+            # TODO
+            """
+            Add all attributes of the search result object as a dictionary to a results dictionary:
+            self.results_ = { 'step1': results_dict_from_step1, 'step2': results_dict_from_step2, ...}       
+            """
+            self.results_['step'+str(step)] = result.cv_results_
+            self.best_estimators_['step'+str(step)] = result.best_estimator_
+            self.best_scores_['step'+str(step)] = result.best_score_
+            self.best_parameters_['step'+str(step)] = result.best_params_
+            self.best_indices_['step'+str(step)] = result.best_index_
+            self.scorers_['step'+str(step)] = result.scorer_
+            self.numbers_of_splits_['step'+str(step)] = result.n_splits_
+            self.refit_times_['step'+str(step)] = result.refit_time_
+            self.multimetrics_['step'+str(step)] = result.multimetric_
 
             self.estimator = result.best_estimator_
-        self.best_estimator_ = self.estimator
+        if self.refit:
+            self.best_estimator_ = self.estimator
 
         return self
 
