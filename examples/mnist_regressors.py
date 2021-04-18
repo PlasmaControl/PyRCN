@@ -9,6 +9,7 @@ from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, cross_val_
 from sklearn.model_selection import StratifiedKFold
 from sklearn.utils.fixes import loguniform
 
+from pyrcn.model_selection import SequentialSearch
 from pyrcn.extreme_learning_machine import ELMClassifier
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.base import InputToNode
@@ -41,7 +42,6 @@ kwargs2 = {'verbose': 10}
 i2n = InputToNode(**initially_fixed_params)
 elm = ELMClassifier(input_to_node=i2n, regressor=Ridge())
 
-from pyrcn.model_selection import SequentialSearchCV
 # The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', RandomizedSearchCV, step1_params, kwargs1),
             ('step2', GridSearchCV, step2_params, kwargs2)]  # Note that we pass functors, not instances (no '()')!

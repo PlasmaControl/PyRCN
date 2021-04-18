@@ -1,18 +1,4 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # Timeseries prediction of the Mackey-Glass Equation with ESNs 
-# 
-# ## Introduction
-# 
-# The Mackey-Glass system is essentially the differential equation, where we set the parameters to $\alpha = 0.2$, $\beta = 10$, $\gamma = 0.1$ and the time delay $\tau = 17$ in  order to have a mildly chaotic attractor. 
-# 
-# \begin{align}
-# \label{eq:MackeyGlass}
-# \dot{y}(t) = \alpha y(t-\tau) / (1 + y(t - \tau)^{\beta}) - \gamma y(t)
-# \end{align}
-
-
+# import required packages
 import numpy as np
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error
@@ -29,31 +15,31 @@ from pyrcn.base import InputToNode, NodeToNode
 from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.extreme_learning_machine import ELMRegressor
 from pyrcn.linear_model import IncrementalRegression
+from pyrcn.model_selection import SequentialSearch
 
-
-# Load and proprocess the dataset
+# Load the dataset
 X = np.loadtxt("./examples/dataset/MackeyGlass_t17.txt")
-X = MinMaxScaler(feature_range=(-1, 1)).fit_transform(X=X.reshape(-1, 1))
+X = MinMaxScaler(feature_range=(-1, 1)).fit_transform(X=X.reshape(-1,1))
 
 # Define Train/Test lengths
-trainLen = 2000 # number of time steps during which we train the network
+trainLen = 1900 # number of time steps during which we train the network
 testLen = 2000 # number of time steps during which we test/run the network
 
-X_train = X[0:trainLen]
-y_train = X[1:trainLen+1]
-X_test = X[trainLen:trainLen+testLen]
-y_test = X[trainLen+1:trainLen+testLen+1]
+X_train = X[0:trainLen].reshape(-1, 1)
+y_train = X[1:trainLen+1].reshape(-1, 1)
+X_test = X[trainLen:trainLen+testLen].reshape(-1, 1)
+y_test = X[trainLen+1:trainLen+testLen+1].reshape(-1, 1)
 
 fig = plt.figure()
-plt.plot(X_train, label="Training input", linewidth=1)
-plt.plot(y_train, label="Training target", linewidth=1)
+plt.plot(X_train, label="Training input")
+plt.plot(y_train, label="Training target")
 plt.xlabel("n")
 plt.xlim([0, 200])
 plt.ylabel("u[n]")
 plt.grid()
 plt.legend()
 fig.set_size_inches(4, 2.5)
-plt.savefig('input_data.pdf', bbox_inches = 'tight', pad_inches = 0)
+plt.savefig('input_data.pdf', bbox_inches='tight', pad_inches=0)
 
 # initialize an ESNRegressor
 esn = ESNRegressor(input_to_node=InputToNode(),
@@ -78,29 +64,49 @@ print(mean_squared_error(y_test, y_test_pred))
 unit_impulse = np.zeros(shape=(100, 1), dtype=int)
 unit_impulse[5] = 1
 
-# Echo State Network preparation
-param_grid = {'input_to_node__hidden_layer_size': [100],
-              'input_to_node__activation': ['identity'],
-              'input_to_node__input_scaling': [0.3],
-              'input_to_node__bias_scaling': [0.0],
-              'input_to_node__k_in': [1],
-              'input_to_node__random_state': [42],
-              'node_to_node__hidden_layer_size': [100],
-              'node_to_node__activation': ['tanh'],
-              'node_to_node__spectral_radius': [0.7],
-              'node_to_node__leakage': [0.9],
-              'node_to_node__bias_scaling': [0.0],
-              'node_to_node__bi_directional': [False],
-              'node_to_node__k_rec': [10],
-              'node_to_node__wash_out': [0],
-              'node_to_node__continuation': [True],
-              'node_to_node__random_state': [42],
-              'regressor__alpha': [1e-5],
-              'random_state': [42] }
+# Echo State Network sequential hyperparameter tuning
+initially_fixed_esn_params = {'input_to_node__hidden_layer_size': 100,
+                              'input_to_node__activation': 'identity',
+                              'input_to_node__k_in': 10,
+                              'input_to_node__random_state': 42,
+                              'input_to_node__bias_scaling': 0.0,
+                              'input_to_node__k_in': 1,
+                              'input_to_node__random_state': 42,
+                              'node_to_node__hidden_layer_size': 100,
+                              'node_to_node__activation': 'tanh',
+                              'node_to_node__leakage': 1.0,
+                              'node_to_node__bias_scaling': 0.0,
+                              'node_to_node__bi_directional': False,
+                              'node_to_node__k_rec': 10,
+                              'node_to_node__wash_out': 0,
+                              'node_to_node__continuation': False,
+                              'node_to_node__random_state': 42,
+                              'regressor__alpha': 1e-5,
+                              'random_state': 42 
+}
+step1_esn_params = {'input_to_node__input_scaling': np.linspace(0.1, 2.0, 20),
+                    'node_to_node__spectral_radius': np.linspace(0.0, 1.5, 16)}
+step2_esn_params = {'node_to_node__leakage': np.linspace(0.1, 1.0, 10)}
+step3_esn_params = {'node_to_node__bias_scaling': np.linspace(0.0, 1.5, 16)}
 
 scorer = make_scorer(score_func=mean_squared_error, greater_is_better=False)
 
+kwargs = {'verbose': 10,
+          'scoring': scorer,
+          'n_jobs': 2}
+
+esn = ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=Ridge()).set_params(**initially_fixed_esn_params)
+
+
 ts_split = TimeSeriesSplit()
+searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
+            ('step2', GridSearchCV, step2_esn_params, kwargs),
+            ('step3', GridSearchCV, step3_esn_params, kwargs)]
+
+
+sequential_search = SequentialSearch(esn, searches=searches).fit(X_train, y_train)
+
+print(sequential_search)
 grid_search = GridSearchCV(ESNRegressor(), cv=ts_split, param_grid=param_grid, scoring=scorer, n_jobs=-1).fit(X=X_train, y=y_train)
 
 grid_search.best_params_

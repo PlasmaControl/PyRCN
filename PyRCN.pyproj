@@ -1,0 +1,154 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{0ec599dd-8f46-4c9a-a19a-068ac7f9ae8d}</ProjectGuid>
+    <ProjectHome />
+    <StartupFile>examples\mackey-glass-t17.py</StartupFile>
+    <SearchPath />
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <ProjectTypeGuids>{888888a0-9f3d-457c-b088-3a5042f75d52}</ProjectTypeGuids>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <InterpreterId>Global|PythonCore|3.8</InterpreterId>
+    <TestFramework>Pytest</TestFramework>
+    <IsWindowsApplication>False</IsWindowsApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'" />
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'" />
+  <PropertyGroup>
+    <VisualStudioVersion Condition=" '$(VisualStudioVersion)' == '' ">10.0</VisualStudioVersion>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Include="docs\logos\Logo-STKS.jpg" />
+    <Content Include="docs\logos\Logo_IDLab_White.png" />
+    <Content Include="docs\logos\logo_UGent_EN_RGB_2400_color-on-white.png" />
+    <Content Include="docs\logos\SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg" />
+    <Content Include="docs\logos\TUD_Logo_HKS41_114.png" />
+    <Content Include="docs\requirements.txt" />
+    <Content Include="PyRCN.egg-info\dependency_links.txt" />
+    <Content Include="PyRCN.egg-info\requires.txt" />
+    <Content Include="PyRCN.egg-info\SOURCES.txt" />
+    <Content Include="PyRCN.egg-info\top_level.txt" />
+    <Content Include="requirements.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="build\lib\pyrcn\base.py" />
+    <Compile Include="build\lib\pyrcn\cluster\_kcluster.py" />
+    <Compile Include="build\lib\pyrcn\cluster\__init__.py" />
+    <Compile Include="build\lib\pyrcn\echo_state_network\tests\test_esn.py" />
+    <Compile Include="build\lib\pyrcn\echo_state_network\tests\test_esn_fb.py" />
+    <Compile Include="build\lib\pyrcn\echo_state_network\tests\__init__.py" />
+    <Compile Include="build\lib\pyrcn\echo_state_network\_esn.py" />
+    <Compile Include="build\lib\pyrcn\echo_state_network\_esn_fb.py" />
+    <Compile Include="build\lib\pyrcn\echo_state_network\__init__.py" />
+    <Compile Include="build\lib\pyrcn\extreme_learning_machine\tests\test_elm.py" />
+    <Compile Include="build\lib\pyrcn\extreme_learning_machine\tests\__init__.py" />
+    <Compile Include="build\lib\pyrcn\extreme_learning_machine\_elm.py" />
+    <Compile Include="build\lib\pyrcn\extreme_learning_machine\__init__.py" />
+    <Compile Include="build\lib\pyrcn\linear_model\tests\test_incremental_regression.py" />
+    <Compile Include="build\lib\pyrcn\linear_model\tests\__init__.py" />
+    <Compile Include="build\lib\pyrcn\linear_model\_incremental_regression.py" />
+    <Compile Include="build\lib\pyrcn\linear_model\__init__.py" />
+    <Compile Include="build\lib\pyrcn\postprocessing\_normal_distribution.py" />
+    <Compile Include="build\lib\pyrcn\postprocessing\__init__.py" />
+    <Compile Include="build\lib\pyrcn\preprocessing\_coates.py" />
+    <Compile Include="build\lib\pyrcn\preprocessing\__init__.py" />
+    <Compile Include="build\lib\pyrcn\tests\test_base.py" />
+    <Compile Include="build\lib\pyrcn\tests\__init__.py" />
+    <Compile Include="build\lib\pyrcn\util\_util.py" />
+    <Compile Include="build\lib\pyrcn\util\__init__.py" />
+    <Compile Include="build\lib\pyrcn\__init__.py" />
+    <Compile Include="docs\conf.py" />
+    <Compile Include="examples\bip.py" />
+    <Compile Include="examples\compare_datasets.py" />
+    <Compile Include="examples\digits-kmeans.py" />
+    <Compile Include="examples\digits-last-state.py" />
+    <Compile Include="examples\digits.py" />
+    <Compile Include="examples\esn_impulse_responses.py" />
+    <Compile Include="examples\experiments.py" />
+    <Compile Include="examples\FeedbackExample.py" />
+    <Compile Include="examples\gci_detection.py" />
+    <Compile Include="examples\input-to-node.py" />
+    <Compile Include="examples\mackey-glass-t17.py" />
+    <Compile Include="examples\mnist-elm.py" />
+    <Compile Include="examples\mnist_regressors.py" />
+    <Compile Include="examples\musical_note_prediction.py" />
+    <Compile Include="examples\plots.py" />
+    <Compile Include="examples\preprocessing-mnist.py" />
+    <Compile Include="examples\stock-price-prediction.py" />
+    <Compile Include="examples\test-modules.py" />
+    <Compile Include="examples\whitening.py" />
+    <Compile Include="pyrcn\base.py" />
+    <Compile Include="pyrcn\cluster\_kcluster.py" />
+    <Compile Include="pyrcn\cluster\__init__.py" />
+    <Compile Include="pyrcn\echo_state_network\tests\test_esn.py" />
+    <Compile Include="pyrcn\echo_state_network\tests\test_esn_fb.py" />
+    <Compile Include="pyrcn\echo_state_network\tests\__init__.py" />
+    <Compile Include="pyrcn\echo_state_network\_esn.py" />
+    <Compile Include="pyrcn\echo_state_network\_feedback_esn.py" />
+    <Compile Include="pyrcn\echo_state_network\__init__.py" />
+    <Compile Include="pyrcn\extreme_learning_machine\tests\test_elm.py" />
+    <Compile Include="pyrcn\extreme_learning_machine\tests\__init__.py" />
+    <Compile Include="pyrcn\extreme_learning_machine\_elm.py" />
+    <Compile Include="pyrcn\extreme_learning_machine\__init__.py" />
+    <Compile Include="pyrcn\linear_model\tests\test_incremental_regression.py" />
+    <Compile Include="pyrcn\linear_model\tests\__init__.py" />
+    <Compile Include="pyrcn\linear_model\_incremental_regression.py" />
+    <Compile Include="pyrcn\linear_model\__init__.py" />
+    <Compile Include="pyrcn\model_selection\_search.py" />
+    <Compile Include="pyrcn\model_selection\__init__.py" />
+    <Compile Include="pyrcn\postprocessing\_normal_distribution.py" />
+    <Compile Include="pyrcn\postprocessing\__init__.py" />
+    <Compile Include="pyrcn\preprocessing\tests\test_coates.py" />
+    <Compile Include="pyrcn\preprocessing\_coates.py" />
+    <Compile Include="pyrcn\preprocessing\__init__.py" />
+    <Compile Include="pyrcn\tests\test_base.py" />
+    <Compile Include="pyrcn\tests\__init__.py" />
+    <Compile Include="pyrcn\util\tests\test_util.py" />
+    <Compile Include="pyrcn\util\_util.py" />
+    <Compile Include="pyrcn\util\__init__.py" />
+    <Compile Include="pyrcn\__init__.py" />
+    <Compile Include="setup.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="build\" />
+    <Folder Include="build\lib\" />
+    <Folder Include="build\lib\pyrcn" />
+    <Folder Include="build\lib\pyrcn\cluster" />
+    <Folder Include="build\lib\pyrcn\echo_state_network" />
+    <Folder Include="build\lib\pyrcn\echo_state_network\tests" />
+    <Folder Include="build\lib\pyrcn\extreme_learning_machine" />
+    <Folder Include="build\lib\pyrcn\extreme_learning_machine\tests" />
+    <Folder Include="build\lib\pyrcn\linear_model" />
+    <Folder Include="build\lib\pyrcn\linear_model\tests" />
+    <Folder Include="build\lib\pyrcn\postprocessing" />
+    <Folder Include="build\lib\pyrcn\preprocessing" />
+    <Folder Include="build\lib\pyrcn\tests" />
+    <Folder Include="build\lib\pyrcn\util" />
+    <Folder Include="docs" />
+    <Folder Include="docs\logos" />
+    <Folder Include="examples" />
+    <Folder Include="pyrcn" />
+    <Folder Include="PyRCN.egg-info" />
+    <Folder Include="pyrcn\cluster" />
+    <Folder Include="pyrcn\echo_state_network" />
+    <Folder Include="pyrcn\echo_state_network\tests" />
+    <Folder Include="pyrcn\extreme_learning_machine" />
+    <Folder Include="pyrcn\extreme_learning_machine\tests" />
+    <Folder Include="pyrcn\linear_model" />
+    <Folder Include="pyrcn\linear_model\tests" />
+    <Folder Include="pyrcn\model_selection" />
+    <Folder Include="pyrcn\postprocessing" />
+    <Folder Include="pyrcn\preprocessing" />
+    <Folder Include="pyrcn\preprocessing\tests" />
+    <Folder Include="pyrcn\tests" />
+    <Folder Include="pyrcn\util" />
+    <Folder Include="pyrcn\util\tests" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|PythonCore|3.8" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+</Project>

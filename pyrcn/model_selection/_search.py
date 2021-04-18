@@ -2,7 +2,7 @@
 SearchCV pipeline for incremental hyper-parameter search
 """
 
-# Authors: Simon Stone <simon.stone@tu-dresden.de>
+# Authors: Simon Stone <simon.stone@tu-dresden.de>, Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
 
@@ -64,4 +64,3 @@ class SequentialSearchCV(BaseSearchCV):
                 self.estimator = result.best_estimator_
         self._run_search(evaluate_candidates)
         return self
-
