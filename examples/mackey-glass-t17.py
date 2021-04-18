@@ -1,5 +1,6 @@
 # import required packages
 import numpy as np
+from joblib import dump, load
 from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import make_scorer
@@ -15,7 +16,7 @@ from pyrcn.base import InputToNode, NodeToNode
 from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.extreme_learning_machine import ELMRegressor
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.model_selection import SequentialSearch
+from pyrcn.model_selection import SequentialSearchCV
 
 # Load the dataset
 X = np.loadtxt("./examples/dataset/MackeyGlass_t17.txt")
@@ -84,16 +85,16 @@ initially_fixed_esn_params = {'input_to_node__hidden_layer_size': 100,
                               'regressor__alpha': 1e-5,
                               'random_state': 42 
 }
-step1_esn_params = {'input_to_node__input_scaling': np.linspace(0.1, 2.0, 20),
+step1_esn_params = {'input_to_node__input_scaling': np.linspace(0.1, 5.0, 50),
                     'node_to_node__spectral_radius': np.linspace(0.0, 1.5, 16)}
 step2_esn_params = {'node_to_node__leakage': np.linspace(0.1, 1.0, 10)}
 step3_esn_params = {'node_to_node__bias_scaling': np.linspace(0.0, 1.5, 16)}
 
 scorer = make_scorer(score_func=mean_squared_error, greater_is_better=False)
 
-kwargs = {'verbose': 10,
+kwargs = {'verbose': 5,
           'scoring': scorer,
-          'n_jobs': 2}
+          'n_jobs': -1}
 
 esn = ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=Ridge()).set_params(**initially_fixed_esn_params)
 
@@ -104,20 +105,42 @@ searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
             ('step3', GridSearchCV, step3_esn_params, kwargs)]
 
 
-sequential_search = SequentialSearch(esn, searches=searches).fit(X_train, y_train)
+sequential_search = SequentialSearchCV(esn, searches=searches).fit(X_train, y_train)
+dump(sequential_search, "sequential_search_esn.joblib")
 
-print(sequential_search)
-grid_search = GridSearchCV(ESNRegressor(), cv=ts_split, param_grid=param_grid, scoring=scorer, n_jobs=-1).fit(X=X_train, y=y_train)
+esn_step1 = sequential_search.all_best_estimator_["step1"]
+esn_step2 = sequential_search.all_best_estimator_["step2"]
+esn_step3 = sequential_search.all_best_estimator_["step3"]
 
-grid_search.best_params_
-
-esn = grid_search.best_estimator_
-
-esn.predict(X=unit_impulse)
+esn_step1.predict(X=unit_impulse)
 fig = plt.figure()
-im = plt.imshow(np.abs(esn._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
+im = plt.imshow(np.abs(esn_step1._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
 plt.xlim([0, 100])
-plt.ylim([0, esn._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
+plt.ylim([0, esn_step1._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
+plt.grid()
+fig.set_size_inches(2, 1.25)
+plt.savefig('InputScaling_SpectralRadius.pdf', bbox_inches = 'tight', pad_inches = 0)
+
+esn_step2.predict(X=unit_impulse)
+fig = plt.figure()
+im = plt.imshow(np.abs(esn_step2._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
+plt.xlim([0, 100])
+plt.ylim([0, esn_step2._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
+plt.grid()
+fig.set_size_inches(2, 1.25)
+plt.savefig('Leakage.pdf', bbox_inches = 'tight', pad_inches = 0)
+
+esn_step3.predict(X=unit_impulse)
+fig = plt.figure()
+im = plt.imshow(np.abs(esn_step3._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
+plt.xlim([0, 100])
+plt.ylim([0, esn_step3._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -125,30 +148,60 @@ plt.grid()
 fig.set_size_inches(2, 1.25)
 plt.savefig('BiasScalingESN.pdf', bbox_inches = 'tight', pad_inches = 0)
 
-# Extreme Learning Machine preparation
-param_grid = {'input_to_node__hidden_layer_size': [100],
-              'input_to_node__activation': ['tanh'],
-              'input_to_node__input_scaling': [0.1],
-              'input_to_node__bias_scaling': np.linspace(0.0, 1.5, 16),
-              'input_to_node__k_in': [1],
-              'input_to_node__random_state': [42] }
+
+# Extreme Learning Machine sequential hyperparameter tuning
+initially_fixed_elm_params = {'input_to_node__hidden_layer_size': 100,
+                              'input_to_node__activation': 'tanh',
+                              'input_to_node__k_in': 10,
+                              'input_to_node__random_state': 42,
+                              'input_to_node__bias_scaling': 0.0,
+                              'input_to_node__k_in': 1,
+                              'input_to_node__random_state': 42,
+                              'regressor__alpha': 1e-5,
+                              'random_state': 42 
+}
+step1_elm_params = {'input_to_node__input_scaling': np.linspace(0.1, 5.0, 50)}
+step2_elm_params = {'input_to_node__bias_scaling': np.linspace(0.0, 1.5, 16)}
 
 scorer = make_scorer(score_func=mean_squared_error, greater_is_better=False)
 
+kwargs = {'verbose': 10,
+          'scoring': scorer,
+          'n_jobs': -1}
+
+elm = ELMRegressor(input_to_node=InputToNode(), regressor=Ridge()).set_params(**initially_fixed_elm_params)
+
+
 ts_split = TimeSeriesSplit()
-grid_search = GridSearchCV(ELMRegressor(), cv=ts_split, param_grid=param_grid, scoring=scorer, n_jobs=-1).fit(X=X_train, y=y_train)
+searches = [('step1', GridSearchCV, step1_elm_params, kwargs),
+            ('step2', GridSearchCV, step2_elm_params, kwargs)]
 
-grid_search.best_params_
 
-elm = grid_search.best_estimator_
+sequential_search = SequentialSearchCV(elm, searches=searches).fit(X_train, y_train)
+dump(sequential_search, "sequential_search_elm.joblib")
 
-elm.predict(X=unit_impulse)
+elm_step1 = sequential_search.all_best_estimator_["step1"]
+elm_step2 = sequential_search.all_best_estimator_["step2"]
+
+elm_step1.predict(X=unit_impulse)
 fig = plt.figure()
-im = plt.imshow(np.abs(elm._input_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
+im = plt.imshow(np.abs(elm_step1._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
 plt.xlim([0, 100])
-plt.ylim([0, elm._input_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
+plt.ylim([0, elm_step1._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
 plt.xlabel('n')
-plt.ylabel('R\'[n]')
+plt.ylabel('R[n]')
+plt.colorbar(im)
+plt.grid()
+fig.set_size_inches(2, 1.25)
+plt.savefig('InputScaling.pdf', bbox_inches = 'tight', pad_inches = 0)
+
+elm_step2.predict(X=unit_impulse)
+fig = plt.figure()
+im = plt.imshow(np.abs(elm_step2._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
+plt.xlim([0, 100])
+plt.ylim([0, elm_step2._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
 plt.colorbar(im)
 plt.grid()
 fig.set_size_inches(2, 1.25)

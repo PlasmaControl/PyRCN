@@ -9,7 +9,7 @@ from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, cross_val_
 from sklearn.model_selection import StratifiedKFold
 from sklearn.utils.fixes import loguniform
 
-from pyrcn.model_selection import SequentialSearch
+from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.extreme_learning_machine import ELMClassifier
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.base import InputToNode
