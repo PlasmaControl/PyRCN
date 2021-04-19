@@ -330,11 +330,18 @@ class InputToNode(BaseEstimator, TransformerMixin):
         size : int
         Object memory in bytes.
         """
-        return object.__sizeof__(self) + \
-            self._bias_weights.nbytes + \
-            self._input_weights.nbytes + \
-            self._hidden_layer_state.nbytes + \
-            sys.getsizeof(self.random_state)
+        if scipy.sparse.issparse(self._input_weights):
+            return object.__sizeof__(self) + \
+                self._bias_weights.nbytes + \
+                self._input_weights.todense().nbytes + \
+                self._hidden_layer_state.nbytes + \
+                sys.getsizeof(self.random_state)
+        else:
+            return object.__sizeof__(self) + \
+                self._bias_weights.nbytes + \
+                self._input_weights.nbytes + \
+                self._hidden_layer_state.nbytes + \
+                sys.getsizeof(self.random_state)
 
     @property
     def input_weights(self):
@@ -480,8 +487,6 @@ class PredefinedWeightsInputToNode(InputToNode):
     ----------
     predefined_input_weights : np.ndarray
         A set of predefined input weights.
-    hidden_layer_size : int, default=None
-        Sets the number of nodes in hidden layer. This is ignored here and derived from predefined_input_weights.
     activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
         This element represents the activation function in the hidden layer.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
@@ -493,18 +498,14 @@ class PredefinedWeightsInputToNode(InputToNode):
         Scales the input weight matrix.
     bias_scaling : float, default=1.
         Scales the input bias of the activation.
-    k_in : int, default=None.
-        input weights per node. By default, it is None. If set, it overrides sparsity. This is ignored here.
     random_state : {None, int, RandomState}, default=None
     """
     def __init__(
             self,
             predefined_input_weights,
-            hidden_layer_size=None,
             activation='relu',
             input_scaling=1.,
             bias_scaling=0.,
-            k_in=None,
             random_state=None):
         super().__init__(
             hidden_layer_size=predefined_input_weights.shape[1],
@@ -571,6 +572,10 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         Whether to work in bidirectional mode.
     k_rec : int, default=None.
         recurrent weights per node. By default, it is None. If set, it overrides sparsity.
+    wash_out : int, default=0.
+        number of initial states to omit for training. By default, it is not omit any data.
+    continuation : bool, default=False
+        whether to save the last reservoir state for later continuation.
     random_state : {None, int, RandomState}, default=None
     """
     def __init__(self,
@@ -582,6 +587,8 @@ class NodeToNode(BaseEstimator, TransformerMixin):
                  bias_scaling=1.,
                  bi_directional=False,
                  k_rec=None,
+                 wash_out=0,
+                 continuation=True,
                  random_state=None):
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
@@ -591,6 +598,8 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self.bias_scaling = bias_scaling
         self.bi_directional = bi_directional
         self.k_rec = k_rec
+        self.wash_out = wash_out
+        self.continuation = continuation
         self.random_state = random_state
 
         self._recurrent_weights = None
@@ -654,6 +663,8 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
     def _pass_through_recurrent_weights(self, X, y=None):
         hidden_layer_state = np.zeros(shape=(X.shape[0]+1, self.hidden_layer_size))
+        if self.continuation and self._hidden_layer_state is not None:
+            hidden_layer_state[0, :] = self._hidden_layer_state[-1, :]
         for sample in range(X.shape[0]):
             a = X[sample, :]
             b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
@@ -756,11 +767,18 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         size : int
         Object memory in bytes.
         """
-        return object.__sizeof__(self) + \
-            self._bias_weights.nbytes + \
-            self._recurrent_weights.nbytes + \
-            self._hidden_layer_state.nbytes + \
-            sys.getsizeof(self.random_state)
+        if scipy.sparse.issparse(self._input_weights):
+            return object.__sizeof__(self) + \
+                self._bias_weights.nbytes + \
+                self._recurrent_weights.todense().nbytes + \
+                self._hidden_layer_state.nbytes + \
+                sys.getsizeof(self.random_state)
+        else:
+            return object.__sizeof__(self) + \
+                self._bias_weights.nbytes + \
+                self._recurrent_weights.nbytes + \
+                self._hidden_layer_state.nbytes + \
+                sys.getsizeof(self.random_state)
 
     @property
     def recurrent_weights(self):
@@ -877,6 +895,8 @@ class FeedbackNodeToNode(NodeToNode):
     def _pass_through_recurrent_weights(self, X, y):
         hidden_layer_state = np.zeros(shape=(X.shape[0] + 1, self.hidden_layer_size))
         if y is not None:
+            if self.continuation and self._hidden_layer_state is not None:
+                hidden_layer_state[0, :] = self._hidden_layer_state[-1, :]
             for sample in range(X.shape[0]):
                 a = X[sample, :]
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
@@ -934,12 +954,20 @@ class FeedbackNodeToNode(NodeToNode):
         size : int
         Object memory in bytes.
         """
-        return object.__sizeof__(self) + \
-            self._bias_weights.nbytes + \
-            self._recurrent_weights.nbytes + \
-            self._feedback_weights.nbytes + \
-            self._hidden_layer_state.nbytes + \
-            sys.getsizeof(self.random_state)
+        if scipy.sparse.issparse(self._input_weights):
+            return object.__sizeof__(self) + \
+                self._bias_weights.nbytes + \
+                self._recurrent_weights.todense().nbytes + \
+                self._feedback_weights.nbytes + \
+                self._hidden_layer_state.nbytes + \
+                sys.getsizeof(self.random_state)
+        else:
+            return object.__sizeof__(self) + \
+                self._bias_weights.nbytes + \
+                self._recurrent_weights.nbytes + \
+                self._feedback_weights.nbytes + \
+                self._hidden_layer_state.nbytes + \
+                sys.getsizeof(self.random_state)
 
     @property
     def recurrent_weights(self):

@@ -96,7 +96,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
         # regression
         if self._regressor:
-            self._regressor.partial_fit(hidden_layer_state, y, postpone_inverse=postpone_inverse)
+            self._regressor.partial_fit(hidden_layer_state[self.node_to_node.wash_out:, :], y[self.node_to_node.wash_out:, :], postpone_inverse=postpone_inverse)
         return self
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
@@ -129,7 +129,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
 
             # regression
-            self._regressor.fit(hidden_layer_state, y)
+            self._regressor.fit(hidden_layer_state[self.node_to_node.wash_out:, :], y[self.node_to_node.wash_out:, :])
 
         elif self._chunk_size < X.shape[0]:
             # setup chunk list
@@ -277,9 +277,18 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         """Returns the node_to_node list or the input_to_node Transformer.
         Returns
         -------
-        input_to_node : Transformer or [Transformer]
+        node_to_node : Transformer or [Transformer]
         """
         return self._node_to_node
+
+    @property
+    def hidden_layer_state(self):
+        """Returns the hidden_layer_state, e.g. the resevoir state over time.
+        Returns
+        -------
+        hidden_layer_state : np.ndarray
+        """
+        return self._node_to_node._hidden_layer_state
 
     @node_to_node.setter
     def node_to_node(self, node_to_node, n_jobs=None, transformer_weights=None):

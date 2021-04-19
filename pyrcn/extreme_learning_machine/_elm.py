@@ -236,6 +236,15 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         """
         return self._input_to_node
 
+    @property
+    def hidden_layer_state(self):
+        """Returns the hidden_layer_state, e.g. the resevoir state over time.
+        Returns
+        -------
+        hidden_layer_state : np.ndarray
+        """
+        return self._input_to_node._hidden_layer_state
+
     @input_to_node.setter
     def input_to_node(self, input_to_node, n_jobs=None, transformer_weights=None):
         """
