@@ -277,9 +277,18 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         """Returns the node_to_node list or the input_to_node Transformer.
         Returns
         -------
-        input_to_node : Transformer or [Transformer]
+        node_to_node : Transformer or [Transformer]
         """
         return self._node_to_node
+
+    @property
+    def hidden_layer_state(self):
+        """Returns the hidden_layer_state, e.g. the resevoir state over time.
+        Returns
+        -------
+        hidden_layer_state : np.ndarray
+        """
+        return self._node_to_node._hidden_layer_state
 
     @node_to_node.setter
     def node_to_node(self, node_to_node, n_jobs=None, transformer_weights=None):

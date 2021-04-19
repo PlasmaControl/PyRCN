@@ -83,7 +83,7 @@ initially_fixed_esn_params = {'input_to_node__hidden_layer_size': 100,
                               'node_to_node__continuation': False,
                               'node_to_node__random_state': 42,
                               'regressor__alpha': 1e-5,
-                              'random_state': 42 
+                              'random_state': 42 }
 }
 step1_esn_params = {'input_to_node__input_scaling': np.linspace(0.1, 5.0, 50),
                     'node_to_node__spectral_radius': np.linspace(0.0, 1.5, 16)}
@@ -105,18 +105,18 @@ searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
             ('step3', GridSearchCV, step3_esn_params, kwargs)]
 
 
-sequential_search = SequentialSearchCV(esn, searches=searches).fit(X_train, y_train)
-dump(sequential_search, "sequential_search_esn.joblib")
+sequential_search_esn = SequentialSearchCV(esn, searches=searches).fit(X_train, y_train)
+dump(sequential_search_esn, "sequential_search_esn.joblib")
 
-esn_step1 = sequential_search.all_best_estimator_["step1"]
-esn_step2 = sequential_search.all_best_estimator_["step2"]
-esn_step3 = sequential_search.all_best_estimator_["step3"]
+esn_step1 = sequential_search_esn.all_best_estimator_["step1"]
+esn_step2 = sequential_search_esn.all_best_estimator_["step2"]
+esn_step3 = sequential_search_esn.all_best_estimator_["step3"]
 
 esn_step1.predict(X=unit_impulse)
 fig = plt.figure()
-im = plt.imshow(np.abs(esn_step1._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
+im = plt.imshow(np.abs(esn_step1.hidden_layer_state[:, 1:].T),vmin=0, vmax=1.0)
 plt.xlim([0, 100])
-plt.ylim([0, esn_step1._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
+plt.ylim([0, esn_step1.hidden_layer_state.shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -126,9 +126,9 @@ plt.savefig('InputScaling_SpectralRadius.pdf', bbox_inches = 'tight', pad_inches
 
 esn_step2.predict(X=unit_impulse)
 fig = plt.figure()
-im = plt.imshow(np.abs(esn_step2._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
+im = plt.imshow(np.abs(esn_step2.hidden_layer_state.T),vmin=0, vmax=1.0)
 plt.xlim([0, 100])
-plt.ylim([0, esn_step2._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
+plt.ylim([0, esn_step2.hidden_layer_state.shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -136,11 +136,24 @@ plt.grid()
 fig.set_size_inches(2, 1.25)
 plt.savefig('Leakage.pdf', bbox_inches = 'tight', pad_inches = 0)
 
+esn_step2_1 = esn_step2.set_params(**{"node_to_node__leakage": 0.1}).fit(X_train, y_train)
+fig = plt.figure()
+im = plt.imshow(np.abs(esn_step2_1.hidden_layer_state.T),vmin=0, vmax=1.0)
+plt.xlim([0, 100])
+plt.ylim([0, esn_step2_1.hidden_layer_state.shape[1] - 1])
+plt.xlabel('n')
+plt.ylabel('R[n]')
+plt.colorbar(im)
+plt.grid()
+fig.set_size_inches(2, 1.25)
+plt.savefig('Leakage_low.pdf', bbox_inches = 'tight', pad_inches = 0)
+
+
 esn_step3.predict(X=unit_impulse)
 fig = plt.figure()
-im = plt.imshow(np.abs(esn_step3._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
+im = plt.imshow(np.abs(esn_step3.hidden_layer_state.T),vmin=0, vmax=0.3)
 plt.xlim([0, 100])
-plt.ylim([0, esn_step3._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
+plt.ylim([0, esn_step3.hidden_layer_state.shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -177,17 +190,17 @@ searches = [('step1', GridSearchCV, step1_elm_params, kwargs),
             ('step2', GridSearchCV, step2_elm_params, kwargs)]
 
 
-sequential_search = SequentialSearchCV(elm, searches=searches).fit(X_train, y_train)
-dump(sequential_search, "sequential_search_elm.joblib")
+sequential_search_elm = SequentialSearchCV(elm, searches=searches).fit(X_train, y_train)
+dump(sequential_search_elm, "sequential_search_elm.joblib")
 
-elm_step1 = sequential_search.all_best_estimator_["step1"]
-elm_step2 = sequential_search.all_best_estimator_["step2"]
+elm_step1 = sequential_search_elm.all_best_estimator_["step1"]
+elm_step2 = sequential_search_elm.all_best_estimator_["step2"]
 
 elm_step1.predict(X=unit_impulse)
 fig = plt.figure()
-im = plt.imshow(np.abs(elm_step1._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
+im = plt.imshow(np.abs(elm_step1.hidden_layer_state.T),vmin=0, vmax=1.0)
 plt.xlim([0, 100])
-plt.ylim([0, elm_step1._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
+plt.ylim([0, elm_step1.hidden_layer_state.shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -197,9 +210,9 @@ plt.savefig('InputScaling.pdf', bbox_inches = 'tight', pad_inches = 0)
 
 elm_step2.predict(X=unit_impulse)
 fig = plt.figure()
-im = plt.imshow(np.abs(elm_step2._node_to_node._hidden_layer_state[:, 1:].T),vmin=0, vmax=0.3)
+im = plt.imshow(np.abs(elm_step2.hidden_layer_state.T),vmin=0, vmax=1.0)
 plt.xlim([0, 100])
-plt.ylim([0, elm_step2._node_to_node._hidden_layer_state[:, 1:].shape[1] - 1])
+plt.ylim([0, elm_step2.hidden_layer_state.shape[1] - 1])
 plt.xlabel('n')
 plt.ylabel('R[n]')
 plt.colorbar(im)
@@ -207,11 +220,8 @@ plt.grid()
 fig.set_size_inches(2, 1.25)
 plt.savefig('BiasScalingELM.pdf', bbox_inches = 'tight', pad_inches = 0)
 
-
-# Training and Prediction. Be careful, this can take a longer time!!!
-# 
-# The lowest MSE obtained with this settings were \num{5.97e-06} for the training set and \num{43.1e-06} for the test set.
-
+esn = sequential_search_esn.best_estimator_
+elm = sequential_search_elm.best_estimator_
 
 y_train_pred_esn = esn.predict(X=X_train)
 y_train_pred_elm = elm.predict(X=X_train)

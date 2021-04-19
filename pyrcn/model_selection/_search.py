@@ -5,9 +5,18 @@ SearchCV pipeline for incremental hyper-parameter search
 # Authors: Simon Stone <simon.stone@tu-dresden.de>, Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
-
+from sklearn.base import BaseEstimator
 from sklearn.model_selection._search import BaseSearchCV
 import numpy as np
+
+
+class GridEvaluationCV(BaseEstimator):
+    """
+    A train_test evaluation on a series of hyper-parameters
+    """
+    def __init__(self, estimator, params, scoring=None, n_jobs=None, refit=True, cv=None, verbose=None):
+        super().__init__(self)
+
 
 
 class SequentialSearchCV(BaseSearchCV):
