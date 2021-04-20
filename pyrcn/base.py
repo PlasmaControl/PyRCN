@@ -663,7 +663,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
     def _pass_through_recurrent_weights(self, X, y=None):
         hidden_layer_state = np.zeros(shape=(X.shape[0]+1, self.hidden_layer_size))
-        if self.continuation and self._hidden_layer_state is not None:
+        if self.continuation and self._hidden_layer_state is not None and not self.bi_directional:
             hidden_layer_state[0, :] = self._hidden_layer_state[-1, :]
         for sample in range(X.shape[0]):
             a = X[sample, :]

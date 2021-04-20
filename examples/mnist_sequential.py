@@ -70,15 +70,15 @@ step3_esn_params = {'node_to_node__bias_scaling': np.linspace(0.0, 1.5, 16)}
 
 base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression()).set_params(**initially_fixed_params)
 
-acc_scores = Parallel(n_jobs=4, verbose=10)(delayed(optimize_esn)(base_esn, params, X_train, y_train) for params in ParameterGrid(step1_esn_params))
+acc_scores = Parallel(n_jobs=2, verbose=10)(delayed(optimize_esn)(base_esn, params, X_train, y_train) for params in ParameterGrid(step1_esn_params))
 base_esn.set_params(**ParameterGrid(step1_esn_params)[np.argmax(acc_scores)])
 final_fixed_params.update(ParameterGrid(step1_esn_params)[np.argmax(acc_scores)])
 
-acc_scores = Parallel(n_jobs=4, verbose=10)(delayed(optimize_esn)(base_esn, params, X_train, y_train) for params in ParameterGrid(step2_esn_params))
+acc_scores = Parallel(n_jobs=2, verbose=10)(delayed(optimize_esn)(base_esn, params, X_train, y_train) for params in ParameterGrid(step2_esn_params))
 base_esn.set_params(**ParameterGrid(step1_esn_params)[np.argmax(acc_scores)])
 final_fixed_params.update(ParameterGrid(step2_esn_params)[np.argmax(acc_scores)])
 
-acc_scores = Parallel(n_jobs=4, verbose=10)(delayed(optimize_esn)(base_esn, params, X_train, y_train) for params in ParameterGrid(step3_esn_params))
+acc_scores = Parallel(n_jobs=2, verbose=10)(delayed(optimize_esn)(base_esn, params, X_train, y_train) for params in ParameterGrid(step3_esn_params))
 base_esn.set_params(**ParameterGrid(step1_esn_params)[np.argmax(acc_scores)])
 final_fixed_params.update(ParameterGrid(step3_esn_params)[np.argmax(acc_scores)])
 
