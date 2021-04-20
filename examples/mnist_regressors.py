@@ -7,7 +7,7 @@ from sklearn.base import clone
 from sklearn.datasets import fetch_openml
 from sklearn.linear_model import SGDRegressor, Ridge
 from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, StratifiedKFold, ParameterGrid
+from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, StratifiedKFold, ParameterGrid, cross_validate
 from sklearn.utils.fixes import loguniform
 from sklearn.metrics import accuracy_score
 
@@ -51,7 +51,6 @@ elm = ELMClassifier(input_to_node=InputToNode(), regressor=Ridge()).set_params(*
 searches = [('step1', RandomizedSearchCV, step1_params, kwargs1),
             ('step2', GridSearchCV, step2_params, kwargs2)]  # Note that we pass functors, not instances (no '()')!
 
-
 sequential_search = SequentialSearchCV(elm, searches=searches).fit(X_train, y_train)
 
 final_fixed_params = initially_fixed_params
@@ -62,10 +61,11 @@ base_elm_ridge = ELMClassifier(input_to_node=InputToNode(), regressor=Ridge()).s
 base_elm_inc = ELMClassifier(input_to_node=InputToNode(), regressor=IncrementalRegression()).set_params(**final_fixed_params)
 base_elm_inc_chunk = clone(base_elm_inc).set_params(chunk_size=6000)
 
-param_grid = {'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000, 8000, 16000]}
+param_grid = {'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000, 8000, 16000, 32000]}
 
-print("Estimator\tFit time\tInference time\tAccuracy score\tSize[Bytes]")
+print("CV results\tFit time\tInference time\tAccuracy score\tSize[Bytes]")
 for params in ParameterGrid(param_grid):
+    elm_ridge_cv = cross_validate(clone(base_elm_ridge).set_params(**params), X=X_train, y=y_train)
     t1 = time.time()
     elm_ridge = clone(base_elm_ridge).set_params(**params).fit(X_train, y_train)
     t_fit = time.time() - t1
@@ -73,7 +73,8 @@ for params in ParameterGrid(param_grid):
     t1 = time.time()
     acc_score = accuracy_score(y_test, elm_ridge.predict(X_test))
     t_inference = time.time() - t1
-    print("{0}\t{1}\t{2}\t{3}\t{4}".format(elm_ridge, t_fit, t_inference, acc_score, mem_size))
+    print("{0}\t{1}\t{2}\t{3}\t{4}".format(elm_ridge_cv, t_fit, t_inference, acc_score, mem_size))
+    elm_inc_cv = cross_validate(clone(base_elm_inc).set_params(**params), X=X_train, y=y_train)
     t1 = time.time()
     elm_inc = clone(base_elm_inc).set_params(**params).fit(X_train, y_train)
     t_fit = time.time() - t1
@@ -81,7 +82,8 @@ for params in ParameterGrid(param_grid):
     t1 = time.time()
     acc_score = accuracy_score(y_test, elm_inc.predict(X_test))
     t_inference = time.time() - t1
-    print("{0}\t{1}\t{2}\t{3}\t{4}".format(elm_inc, t_fit, t_inference, acc_score, mem_size))
+    print("{0}\t{1}\t{2}\t{3}\t{4}".format(elm_inc_cv, t_fit, t_inference, acc_score, mem_size))
+    elm_inc_chunk_cv = cross_validate(clone(base_elm_inc_chunk).set_params(**params), X=X_train, y=y_train)
     t1 = time.time()
     elm_inc_chunk = clone(base_elm_inc_chunk).set_params(**params).fit(X_train, y_train)
     t_fit = time.time() - t1
@@ -89,4 +91,4 @@ for params in ParameterGrid(param_grid):
     t1 = time.time()
     acc_score = accuracy_score(y_test, elm_inc_chunk.predict(X_test))
     t_inference = time.time() - t1
-    print("{0}\t{1}\t{2}\t{3}\t{4}".format(elm_inc_chunk, t_fit, t_inference, acc_score, mem_size))
+    print("{0}\t{1}\t{2}\t{3}\t{4}".format(elm_inc_chunk_cv, t_fit, t_inference, acc_score, mem_size))

@@ -16,6 +16,8 @@ class GridEvaluationCV(BaseEstimator):
     """
     def __init__(self, estimator, params, scoring=None, n_jobs=None, refit=True, cv=None, verbose=None):
         super().__init__(self)
+        self.estimator = estimator
+        self.params = params
 
 
 
