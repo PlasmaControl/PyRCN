@@ -753,8 +753,8 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             raise ValueError("bias must be > 0, got %s." % self.bias_scaling)
         if self.leakage <= 0. or self.leakage > 1.:
             raise ValueError("leakage must be between 0. and 1., got %s." % self.leakage)
-        if self.bi_directional or self.leakage > 1.:
-            raise ValueError("leakage must be between 0. and 1., got %s." % self.leakage)
+        if self.bi_directional not in [False, True]:
+            raise ValueError("leakage must be either False or True,, got %s." % self.bi_directional)
         if self.k_rec is not None and self.k_rec <= 0:
             raise ValueError("k_rec must be > 0, got %d." % self.k_rec)
 

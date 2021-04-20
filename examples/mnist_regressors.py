@@ -54,7 +54,6 @@ searches = [('step1', RandomizedSearchCV, step1_params, kwargs1),
 
 sequential_search = SequentialSearchCV(elm, searches=searches).fit(X_train, y_train)
 
-sequential_search = load("sequential_search_mnist_elm.joblib")
 final_fixed_params = initially_fixed_params
 final_fixed_params.update(sequential_search.all_best_params_["step1"])
 final_fixed_params.update(sequential_search.all_best_params_["step2"])
@@ -63,7 +62,7 @@ base_elm_ridge = ELMClassifier(input_to_node=InputToNode(), regressor=Ridge()).s
 base_elm_inc = ELMClassifier(input_to_node=InputToNode(), regressor=IncrementalRegression()).set_params(**final_fixed_params)
 base_elm_inc_chunk = clone(base_elm_inc).set_params(chunk_size=6000)
 
-param_grid = {'input_to_node__hidden_layer_size': [32000]}
+param_grid = {'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000, 8000, 16000]}
 
 print("Estimator\tFit time\tInference time\tAccuracy score\tSize[Bytes]")
 for params in ParameterGrid(param_grid):
