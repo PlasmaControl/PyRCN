@@ -767,7 +767,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         size : int
         Object memory in bytes.
         """
-        if scipy.sparse.issparse(self._input_weights):
+        if scipy.sparse.issparse(self._recurrent_weights):
             return object.__sizeof__(self) + \
                 self._bias_weights.nbytes + \
                 self._recurrent_weights.todense().nbytes + \

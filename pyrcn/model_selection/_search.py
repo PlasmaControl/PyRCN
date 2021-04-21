@@ -5,8 +5,8 @@ SearchCV pipeline for incremental hyper-parameter search
 # Authors: Simon Stone <simon.stone@tu-dresden.de>, Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
-from sklearn.base import BaseEstimator
-from sklearn.model_selection._search import BaseSearchCV
+from sklearn.base import BaseEstimator, clone
+from sklearn.model_selection._search import BaseSearchCV, GridSearchCV, ParameterGrid
 import numpy as np
 
 
@@ -19,6 +19,50 @@ class GridEvaluationCV(BaseEstimator):
         self.estimator = estimator
         self.params = params
 
+    def fit(self, X, y=None, *, groups=None, **fit_params):
+        """
+        TODO
+        :param groups:
+        :param X:
+        :param y:
+        :return:
+        """
+        self.all_cv_results_ = {}
+        self.all_best_estimator_ = {}
+        self.all_best_score_ = {}
+        self.all_best_params_ = {}
+        self.all_best_index_ = {}
+        self.all_scorer_ = {}
+        self.all_n_splits_ = {}
+        self.all_refit_time_ = {}
+        self.all_multimetric_ = {}
+        for params in ParameterGrid(self.params):
+            estimator = clone(self.estimator).set_params(**params)
+            result = GridSearchCV.fit
+
+        def evaluate_candidates(searches):
+
+            for name, search, params, *kwargs in searches:
+                if len(kwargs) == 1:
+                    result = search(self.estimator, params, refit=True, **kwargs[0]).fit(X, y)
+                else:
+                    result = search(self.estimator, params, refit=True).fit(X, y)
+                # Save the attributes of the intermediate search results
+                # TODO: Should we add a flag to just keep the results of the final optimization step?
+                # This would make the object smaller but we cannot check plausibility of previous optimization steps.
+                self.all_cv_results_[name] = result.cv_results_
+                self.all_best_estimator_[name] = result.best_estimator_
+                self.all_best_score_[name] = result.best_score_
+                self.all_best_params_[name] = result.best_params_
+                self.all_best_index_[name] = result.best_index_
+                self.all_scorer_[name] = result.scorer_
+                self.all_n_splits_[name] = result.n_splits_
+                self.all_refit_time_[name] = result.refit_time_
+                self.all_multimetric_[name] = result.multimetric_
+
+                self.estimator = result.best_estimator_
+        self._run_search(evaluate_candidates)
+        return self
 
 
 class SequentialSearchCV(BaseSearchCV):
