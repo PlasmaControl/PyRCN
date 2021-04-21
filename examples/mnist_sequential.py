@@ -1,6 +1,7 @@
 # MNIST classification using Echo State Networks
 
 import numpy as np
+from random import randint, seed
 import time
 from joblib import Parallel, delayed
 from sklearn.base import clone
@@ -26,22 +27,31 @@ def optimize_esn(clf, X_train, y_train):
 
 # Load the dataset
 X, y = fetch_openml('mnist_784', version=1, return_X_y=True, as_frame=False)
-
 # Provide standard split in training and test. Normalize to a range between [-1, 1].
 X = MinMaxScaler(feature_range=(-1,1)).fit_transform(X=X)
 y = y.astype(int)
-X_train = np.empty(shape=(60000,), dtype=object)
+np.random.seed(42)
+n_corrupt = 120
+idx_corrupt = np.random.randint(low=0, high=60000, size=n_corrupt)
+X_train = np.empty(shape=(60000 + n_corrupt,), dtype=object)
 X_test = np.empty(shape=(10000,), dtype=object)
-y_train = np.empty(shape=(60000,), dtype=object)
+y_train = np.empty(shape=(60000 + n_corrupt,), dtype=object)
 y_test = np.empty(shape=(10000,), dtype=object)
 for k, (seq, label) in enumerate(zip(X[:60000], y[:60000])):
     X_train[k] = seq.reshape(28, 28).T
     y_train[k] = np.repeat(label, repeats=28, axis=0)
+
+seed(42)
+for k, (seq, label) in enumerate(zip(X[idx_corrupt], y[idx_corrupt])):
+    n_remove = randint(1, 3)
+    idx_keep = np.random.randint(low=0, high=28, size=28-n_remove)
+    X_train[60000+k] = seq.reshape(28,28).T[np.sort(idx_keep), :]
+    y_train[60000+k] = np.repeat(label, repeats=28-n_remove, axis=0)
 for k, (seq, label) in enumerate(zip(X[60000:], y[60000:])):
     X_test[k] = seq.reshape(28, 28).T
     y_test[k] = np.repeat(label, repeats=28, axis=0)
 
-"""
+
 # Prepare sequential hyperparameter tuning
 initially_fixed_params = {'input_to_node__hidden_layer_size': 500,
                           'input_to_node__activation': 'identity',
@@ -86,6 +96,7 @@ acc_scores = Parallel(n_jobs=-1, verbose=10)(delayed(optimize_esn)
                                              for params in ParameterGrid(step3_esn_params))
 base_esn.set_params(**ParameterGrid(step1_esn_params)[np.argmax(acc_scores)])
 final_fixed_params.update(ParameterGrid(step3_esn_params)[np.argmax(acc_scores)])
+
 """
 final_fixed_params = {'input_to_node__hidden_layer_size': 500, 
                       'input_to_node__activation': 'identity', 
@@ -123,3 +134,4 @@ for params in ParameterGrid(param_grid):
     acc_score = accuracy_score(y_true, y_pred)
     t_inference = time.time() - t1
     print("{0}\t{1}\t{2}\t{3}".format(t_fit, t_inference, acc_score, mem_size))
+"""

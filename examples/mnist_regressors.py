@@ -5,7 +5,7 @@ import time
 from scipy.stats import uniform
 from sklearn.base import clone
 from sklearn.datasets import fetch_openml
-from sklearn.linear_model import SGDRegressor, Ridge
+from sklearn.linear_model import Ridge
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import RandomizedSearchCV, GridSearchCV, StratifiedKFold, ParameterGrid, cross_validate
 from sklearn.utils.fixes import loguniform
@@ -19,7 +19,6 @@ from pyrcn.base import InputToNode
 
 # Load the dataset
 X, y = fetch_openml('mnist_784', version=1, return_X_y=True, as_frame=False)
-
 # Provide standard split in training and test. Normalize to a range between [-1, 1].
 X = MinMaxScaler(feature_range=(-1,1)).fit_transform(X=X)
 X_train, X_test = X[:60000], X[60000:]
