@@ -16,6 +16,8 @@ from pyrcn.linear_model import IncrementalRegression
 from pyrcn.base import InputToNode, NodeToNode
 from pyrcn.util import SequenceToSequenceClassifier
 
+from tqdm import tqdm
+
 
 def optimize_esn(clf, X_train, y_train):
     clf.fit(X_train, y_train)
@@ -30,9 +32,9 @@ X, y = fetch_openml('mnist_784', version=1, return_X_y=True, as_frame=False)
 # Provide standard split in training and test. Normalize to a range between [-1, 1].
 X = MinMaxScaler(feature_range=(-1,1)).fit_transform(X=X)
 y = y.astype(int)
-np.random.seed(42)
-n_corrupt = 1200
-idx_corrupt = np.random.randint(low=0, high=60000, size=n_corrupt)
+# np.random.seed(42)
+n_corrupt = 0
+# idx_corrupt = np.random.randint(low=0, high=60000, size=n_corrupt)
 X_train = np.empty(shape=(60000 + n_corrupt,), dtype=object)
 X_test = np.empty(shape=(10000,), dtype=object)
 y_train = np.empty(shape=(60000 + n_corrupt,), dtype=object)
@@ -41,15 +43,15 @@ for k, (seq, label) in enumerate(zip(X[:60000], y[:60000])):
     X_train[k] = seq.reshape(28, 28).T
     y_train[k] = np.repeat(label, repeats=28, axis=0)
 
-seed(42)
-for k, (seq, label) in enumerate(zip(X[idx_corrupt], y[idx_corrupt])):
-    n_remove = randint(1, 3)
-    idx_keep = np.random.randint(low=0, high=28, size=28-n_remove)
-    X_train[60000+k] = seq.reshape(28,28).T[np.sort(idx_keep), :]
-    y_train[60000+k] = np.repeat(label, repeats=28-n_remove, axis=0)
-for k, (seq, label) in enumerate(zip(X[60000:], y[60000:])):
-    X_test[k] = seq.reshape(28, 28).T
-    y_test[k] = np.repeat(label, repeats=28, axis=0)
+# seed(42)
+# for k, (seq, label) in enumerate(zip(X[idx_corrupt], y[idx_corrupt])):
+#     n_remove = randint(1, 3)
+#     idx_keep = np.random.randint(low=0, high=28, size=28-n_remove)
+#     X_train[60000+k] = seq.reshape(28,28).T[np.sort(idx_keep), :]
+#     y_train[60000+k] = np.repeat(label, repeats=28-n_remove, axis=0)
+# for k, (seq, label) in enumerate(zip(X[60000:], y[60000:])):
+#     X_test[k] = seq.reshape(28, 28).T
+#     y_test[k] = np.repeat(label, repeats=28, axis=0)
 
 
 # Prepare sequential hyperparameter tuning
@@ -78,7 +80,7 @@ step3_esn_params = {'node_to_node__bias_scaling': np.linspace(0.0, 1.5, 16)}
 
 
 base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression()).set_params(**initially_fixed_params)
-
+"""
 acc_scores = Parallel(n_jobs=-1, verbose=10)(delayed(optimize_esn)
                                              (SequenceToSequenceClassifier(clone(base_esn), estimator_params=params), X_train, y_train) 
                                              for params in ParameterGrid(step1_esn_params))
@@ -118,20 +120,21 @@ final_fixed_params = {'input_to_node__hidden_layer_size': 500,
                       'random_state': 42}
 base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression()).set_params(**final_fixed_params)
 
-param_grid = {'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000, 8000, 16000, 32000]}
+param_grid = {'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000, 8000]}
 
-print("Fit time\tInference time\tAccuracy score\tSize[Bytes]")
-for params in ParameterGrid(param_grid):
-    params['node_to_node__hidden_layer_size'] = params['input_to_node__hidden_layer_size']
-    t1 = time.time()
-    clf = SequenceToSequenceClassifier(clone(base_esn), estimator_params=params).fit(X_train, y_train)
-    t_fit = time.time() - t1
-    mem_size = clf.estimator.__sizeof__()
-    t1 = time.time()
-    y_test_pred = clf.predict(X_test)
-    y_true = [np.argmax(np.bincount(y)) for y in y_test]
-    y_pred = [np.argmax(np.bincount(y)) for y in y_test_pred]
-    acc_score = accuracy_score(y_true, y_pred)
-    t_inference = time.time() - t1
-    print("{0}\t{1}\t{2}\t{3}".format(t_fit, t_inference, acc_score, mem_size))
-"""
+with tqdm(total=len(ParameterGrid(param_grid))) as pb:
+    print("Fit time\tInference time\tAccuracy score\tSize[Bytes]")
+    for params in ParameterGrid(param_grid):
+        params['node_to_node__hidden_layer_size'] = params['input_to_node__hidden_layer_size']
+        t1 = time.time()
+        clf = SequenceToSequenceClassifier(clone(base_esn), estimator_params=params).fit(X_train, y_train)
+        t_fit = time.time() - t1
+        mem_size = clf.estimator.__sizeof__()
+        t1 = time.time()
+        y_test_pred = clf.predict(X_test)
+        y_true = [np.argmax(np.bincount(y)) for y in y_test]
+        y_pred = [np.argmax(np.bincount(y)) for y in y_test_pred]
+        acc_score = accuracy_score(y_true, y_pred)
+        t_inference = time.time() - t1
+        print("{0}\t{1}\t{2}\t{3}".format(t_fit, t_inference, acc_score, mem_size))
+        pbar.update(1)
