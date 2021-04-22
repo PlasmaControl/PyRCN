@@ -137,4 +137,4 @@ with tqdm(total=len(ParameterGrid(param_grid))) as pb:
         acc_score = accuracy_score(y_true, y_pred)
         t_inference = time.time() - t1
         print("{0}\t{1}\t{2}\t{3}".format(t_fit, t_inference, acc_score, mem_size))
-        pbar.update(1)
+        pb.update(1)
