@@ -32,6 +32,7 @@ setuptools.setup(
         'numpy>=1.18.1',
         'scipy>=1.2.0',
         'joblib>=0.13.2',
+        'tqdm',
     ],
     python_requires='>=3.7',
 )
