@@ -48,7 +48,7 @@ elm = ELMClassifier(input_to_node=InputToNode(), regressor=Ridge()).set_params(*
 
 # The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', RandomizedSearchCV, step1_params, kwargs1),
-            ('step2', GridSearchCV, step2_params, kwargs2)]  # Note that we pass functors, not instances (no '()')!
+            ('step2', GridSearchCV, step2_params, kwargs2)]
 
 sequential_search = SequentialSearchCV(elm, searches=searches).fit(X_train, y_train)
 
