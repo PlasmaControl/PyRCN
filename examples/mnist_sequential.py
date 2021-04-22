@@ -120,7 +120,7 @@ final_fixed_params = {'input_to_node__hidden_layer_size': 500,
                       'random_state': 42}
 base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression()).set_params(**final_fixed_params)
 
-param_grid = {'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000, 8000]}
+param_grid = {'input_to_node__hidden_layer_size': [16000, 32000, 64000]}
 
 with tqdm(total=len(ParameterGrid(param_grid))) as pb:
     print("Fit time\tInference time\tAccuracy score\tSize[Bytes]")
