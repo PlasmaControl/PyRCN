@@ -49,9 +49,9 @@ for k, (seq, label) in enumerate(zip(X[:60000], y[:60000])):
 #     idx_keep = np.random.randint(low=0, high=28, size=28-n_remove)
 #     X_train[60000+k] = seq.reshape(28,28).T[np.sort(idx_keep), :]
 #     y_train[60000+k] = np.repeat(label, repeats=28-n_remove, axis=0)
-# for k, (seq, label) in enumerate(zip(X[60000:], y[60000:])):
-#     X_test[k] = seq.reshape(28, 28).T
-#     y_test[k] = np.repeat(label, repeats=28, axis=0)
+for k, (seq, label) in enumerate(zip(X[60000:], y[60000:])):
+    X_test[k] = seq.reshape(28, 28).T
+    y_test[k] = np.repeat(label, repeats=28, axis=0)
 
 
 # Prepare sequential hyperparameter tuning
@@ -120,7 +120,7 @@ final_fixed_params = {'input_to_node__hidden_layer_size': 500,
                       'random_state': 42}
 base_esn = ESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression()).set_params(**final_fixed_params)
 
-param_grid = {'input_to_node__hidden_layer_size': [16000, 32000, 64000]}
+param_grid = {'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000, 8000]}
 
 with tqdm(total=len(ParameterGrid(param_grid))) as pb:
     print("Fit time\tInference time\tAccuracy score\tSize[Bytes]")
