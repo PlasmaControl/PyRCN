@@ -31,7 +31,7 @@ X, y = fetch_openml('mnist_784', version=1, return_X_y=True, as_frame=False)
 X = MinMaxScaler(feature_range=(-1,1)).fit_transform(X=X)
 y = y.astype(int)
 np.random.seed(42)
-n_corrupt = 120
+n_corrupt = 1200
 idx_corrupt = np.random.randint(low=0, high=60000, size=n_corrupt)
 X_train = np.empty(shape=(60000 + n_corrupt,), dtype=object)
 X_test = np.empty(shape=(10000,), dtype=object)
@@ -84,19 +84,19 @@ acc_scores = Parallel(n_jobs=-1, verbose=10)(delayed(optimize_esn)
                                              for params in ParameterGrid(step1_esn_params))
 base_esn.set_params(**ParameterGrid(step1_esn_params)[np.argmax(acc_scores)])
 final_fixed_params.update(ParameterGrid(step1_esn_params)[np.argmax(acc_scores)])
-
+print(final_fixed_params)
 acc_scores = Parallel(n_jobs=-1, verbose=10)(delayed(optimize_esn)
                                              (SequenceToSequenceClassifier(clone(base_esn), estimator_params=params), X_train, y_train) 
                                              for params in ParameterGrid(step2_esn_params))
 base_esn.set_params(**ParameterGrid(step1_esn_params)[np.argmax(acc_scores)])
 final_fixed_params.update(ParameterGrid(step2_esn_params)[np.argmax(acc_scores)])
-
+print(final_fixed_params)
 acc_scores = Parallel(n_jobs=-1, verbose=10)(delayed(optimize_esn)
                                              (SequenceToSequenceClassifier(clone(base_esn), estimator_params=params), X_train, y_train) 
                                              for params in ParameterGrid(step3_esn_params))
 base_esn.set_params(**ParameterGrid(step1_esn_params)[np.argmax(acc_scores)])
 final_fixed_params.update(ParameterGrid(step3_esn_params)[np.argmax(acc_scores)])
-
+print(final_fixed_params)
 """
 final_fixed_params = {'input_to_node__hidden_layer_size': 500, 
                       'input_to_node__activation': 'identity', 
