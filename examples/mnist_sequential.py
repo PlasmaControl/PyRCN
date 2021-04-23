@@ -31,17 +31,17 @@ y_train = np.empty(shape=(60000 + n_corrupt,), dtype=object)
 y_test = np.empty(shape=(10000,), dtype=object)
 for k, (seq, label) in enumerate(zip(X[:60000], y[:60000])):
     X_train[k] = seq.reshape(28, 28).T
-    y_train[k] = np.repeat(label, repeats=28, axis=0)
+    y_train[k] = np.atleast_1d(label)
 
 seed(42)
 for k, (seq, label) in enumerate(zip(X[idx_corrupt], y[idx_corrupt])):
     n_remove = randint(1, 3)
     idx_keep = np.random.randint(low=0, high=28, size=28-n_remove)
     X_train[60000+k] = seq.reshape(28,28).T[np.sort(idx_keep), :]
-    y_train[60000+k] = np.repeat(label, repeats=28-n_remove, axis=0)
+    y_train[60000+k] = np.atleast_1d(label)
 for k, (seq, label) in enumerate(zip(X[60000:], y[60000:])):
     X_test[k] = seq.reshape(28, 28).T
-    y_test[k] = np.repeat(label, repeats=28, axis=0)
+    y_test[k] = np.atleast_1d(label)
 # Prepare sequential hyperparameter tuning
 initially_fixed_params = {'input_to_node__hidden_layer_size': 500,
                           'input_to_node__activation': 'identity',
@@ -59,7 +59,7 @@ initially_fixed_params = {'input_to_node__hidden_layer_size': 500,
                           'node_to_node__random_state': 42,
                           'regressor__alpha': 1e-5,
                           'random_state': 42}
-"""
+
 step1_esn_params = {'input_to_node__input_scaling': np.linspace(0.1, 1.0, 10),
                     'node_to_node__spectral_radius': np.linspace(0.0, 1.5, 16)}
 
@@ -72,12 +72,12 @@ searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
             ('step2', GridSearchCV, step2_esn_params, kwargs),
             ('step3', GridSearchCV, step3_esn_params, kwargs)]
 
-base_esn = SequenceToSequenceClassifier().set_params(**initially_fixed_params)
+base_esn = SeqToLabelESNClassifier().set_params(**initially_fixed_params)
 
 sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
 
 dump(sequential_search, "sequential_search_esn_mnist_no_noise.joblib")
-"""
+
 sequential_search = load("sequential_search_esn_mnist_no_noise.joblib")
 
 final_fixed_params = initially_fixed_params
@@ -85,7 +85,7 @@ final_fixed_params.update(sequential_search.all_best_params_["step1"])
 final_fixed_params.update(sequential_search.all_best_params_["step2"])
 final_fixed_params.update(sequential_search.all_best_params_["step3"])
 
-base_esn = SequenceToSequenceClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression()).set_params(**final_fixed_params)
+base_esn = SeqToLabelESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression()).set_params(**final_fixed_params)
 
 param_grid = {'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000, 8000, 16000, 32000]}
 
