@@ -13,7 +13,7 @@ import numpy as np
 from tqdm import tqdm
 
 
-class SequenceToSequenceRegressor(ESNRegressor):
+class SeqToSeqESNRegressor(ESNRegressor):
     """
     A trainer to simplify sequence-to-sequence regression.
     """
@@ -55,7 +55,7 @@ class SequenceToSequenceRegressor(ESNRegressor):
         return y_pred
 
 
-class SequenceToSequenceClassifier(ESNClassifier):
+class SeqToSeqESNClassifier(ESNClassifier):
     """
     A trainer to simplify sequence-to-sequence classification.
     """
@@ -104,7 +104,7 @@ class SequenceToSequenceClassifier(ESNClassifier):
         return y_pred
 
 
-class SequenceToSequenceFeedbackRegressor(FeedbackESNRegressor):
+class SeqToSeqESNFeedbackRegressor(FeedbackESNRegressor):
     """
     A trainer to simplify sequence-to-sequence regression with feedback.
     """

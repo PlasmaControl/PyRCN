@@ -16,11 +16,12 @@ import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse import csr_matrix
 
-from sklearn.metrics._classification import _weighted_sum
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics._classification import _weighted_sum, _check_zero_division
 from sklearn.utils.validation import check_consistent_length
 from sklearn.utils.validation import _deprecate_positional_args
-from sklearn.utils.validation import column_or_1d
-from sklearn.utils.multiclass import type_of_target
+from sklearn.utils.validation import column_or_1d, _num_samples
+from sklearn.utils.multiclass import type_of_target, unique_labels
 
 
 def _check_targets(y_true, y_pred):
@@ -58,8 +59,7 @@ def _check_targets(y_true, y_pred):
     type_pred = np.unique(all_types_pred)
 
     y_type = np.concatenate((type_true,type_pred))
-    if "binary" in y_type:
-        y_type[y_type=="binary"] = "multiclass"
+    y_type = np.array([type.replace('binary' , 'multiclass') for type in y_type])
 
     y_type = np.unique(y_type)[:]
 
@@ -159,8 +159,7 @@ def accuracy_score(y_true, y_pred, *, normalize=True, sample_weight=None):
         differing_labels = np.concatenate([count_nonzero(y_t - y_p, axis=1) for y_t, y_p in zip(y_true, y_pred)])
         score = differing_labels == 0
     else:
-        score = np.asarray([np.argmax(np.bincount(y_t)) == np.argmax(np.bincount(y_p)) for y_t, y_p in zip(y_true, y_pred)])
-
+        score = np.concatenate(y_true) == np.concatenate(y_pred)
     return _weighted_sum(score, sample_weight, normalize)
 
 
@@ -235,7 +234,7 @@ def confusion_matrix(y_true, y_pred, *, labels=None, sample_weight=None,
         raise ValueError("%s is not supported" % y_type)
 
     if labels is None:
-        labels = unique_labels(y_true, y_pred)
+        labels = unique_labels(np.concatenate(y_true), np.concatenate(y_pred))
     else:
         labels = np.asarray(labels)
         n_labels = labels.size
@@ -260,8 +259,8 @@ def confusion_matrix(y_true, y_pred, *, labels=None, sample_weight=None,
     n_labels = labels.size
     label_to_ind = {y: x for x, y in enumerate(labels)}
     # convert yt, yp into index
-    y_pred = np.array([label_to_ind.get(x, n_labels + 1) for x in y_pred])
-    y_true = np.array([label_to_ind.get(x, n_labels + 1) for x in y_true])
+    y_pred = np.array([label_to_ind.get(np.argmax(np.bincount(x)), n_labels + 1) for x in y_pred])
+    y_true = np.array([label_to_ind.get(np.argmax(np.bincount(x)), n_labels + 1) for x in y_true])
 
     # intersect y_pred, y_true with labels, eliminate items not in labels
     ind = np.logical_and(y_pred < n_labels, y_true < n_labels)
@@ -381,7 +380,7 @@ def multilabel_confusion_matrix(y_true, y_pred, *, sample_weight=None,
     if y_type not in ("binary", "multiclass", "multilabel-indicator"):
         raise ValueError("%s is not supported" % y_type)
 
-    present_labels = unique_labels(y_true, y_pred)
+    present_labels = unique_labels(np.concatenate(y_true), np.concatenate(y_pred))
     if labels is None:
         labels = present_labels
         n_labels = None
@@ -397,7 +396,9 @@ def multilabel_confusion_matrix(y_true, y_pred, *, sample_weight=None,
 
         le = LabelEncoder()
         le.fit(labels)
+        y_true = np.array([np.argmax(np.bincount(y)) for y in y_true])
         y_true = le.transform(y_true)
+        y_pred = np.array([np.argmax(np.bincount(y)) for y in y_pred])
         y_pred = le.transform(y_pred)
         sorted_labels = le.classes_
 
@@ -730,9 +731,9 @@ def matthews_corrcoef(y_true, y_pred, *, sample_weight=None):
         raise ValueError("%s is not supported" % y_type)
 
     lb = LabelEncoder()
-    lb.fit(np.hstack([y_true, y_pred]))
-    y_true = lb.transform(y_true)
-    y_pred = lb.transform(y_pred)
+    lb.fit(np.hstack([np.array([np.argmax(np.bincount(y)) for y in y_true]), np.array([np.argmax(np.bincount(y)) for y in y_pred])]))
+    y_true = np.array([lb.transform(y) for y in y_true])
+    y_pred = np.array([lb.transform(y) for y in y_pred])
 
     C = confusion_matrix(y_true, y_pred, sample_weight=sample_weight)
     t_sum = C.sum(axis=1, dtype=np.float64)
@@ -1097,7 +1098,7 @@ def _check_set_wise_labels(y_true, y_pred, average, labels, pos_label):
     y_type, y_true, y_pred = _check_targets(y_true, y_pred)
     # Convert to Python primitive type to avoid NumPy type / Python str
     # comparison. See https://github.com/numpy/numpy/issues/6784
-    present_labels = unique_labels(y_true, y_pred).tolist()
+    present_labels = unique_labels(np.concatenate(y_true), np.concatenate(y_pred)).tolist()
     if average == 'binary':
         if y_type == 'binary':
             if pos_label not in present_labels:
