@@ -60,7 +60,7 @@ initially_fixed_params = {'input_to_node__hidden_layer_size': 500,
                           'regressor__alpha': 1e-5,
                           'random_state': 42}
 
-step1_esn_params = {'input_to_node__input_scaling': np.linspace(0.1, 1.5, 15),
+step1_esn_params = {'input_to_node__input_scaling': np.linspace(0.1, 1.0, 10),
                     'node_to_node__spectral_radius': np.linspace(0.0, 1.5, 16)}
 
 step2_esn_params = {'node_to_node__leakage': np.linspace(0.1, 1.0, 10)}
