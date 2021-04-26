@@ -3,12 +3,12 @@
 import numpy as np
 from random import randint, seed
 import time
-from joblib import Parallel, delayed, dump, load
+from joblib import Parallel, delayed
 from sklearn.base import clone
 from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.metrics import make_scorer
-from sklearn.model_selection import GridSearchCV, ParameterGrid
+from sklearn.model_selection import GridSearchCV, ParameterGrid, cross_validate
 
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.echo_state_network import ESNClassifier, SeqToLabelESNClassifier
@@ -23,7 +23,7 @@ X, y = fetch_openml('mnist_784', version=1, return_X_y=True, as_frame=False)
 X = MinMaxScaler(feature_range=(-1,1)).fit_transform(X=X)
 y = y.astype(int)
 np.random.seed(42)
-n_corrupt = 0
+n_corrupt = 1800
 idx_corrupt = np.random.randint(low=0, high=60000, size=n_corrupt)
 X_train = np.empty(shape=(60000 + n_corrupt,), dtype=object)
 X_test = np.empty(shape=(10000,), dtype=object)
@@ -42,6 +42,7 @@ for k, (seq, label) in enumerate(zip(X[idx_corrupt], y[idx_corrupt])):
 for k, (seq, label) in enumerate(zip(X[60000:], y[60000:])):
     X_test[k] = seq.reshape(28, 28).T
     y_test[k] = np.atleast_1d(label)
+
 # Prepare sequential hyperparameter tuning
 initially_fixed_params = {'input_to_node__hidden_layer_size': 500,
                           'input_to_node__activation': 'identity',
@@ -76,10 +77,6 @@ base_esn = SeqToLabelESNClassifier().set_params(**initially_fixed_params)
 
 sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
 
-dump(sequential_search, "sequential_search_esn_mnist_no_noise.joblib")
-
-sequential_search = load("sequential_search_esn_mnist_no_noise.joblib")
-
 final_fixed_params = initially_fixed_params
 final_fixed_params.update(sequential_search.all_best_params_["step1"])
 final_fixed_params.update(sequential_search.all_best_params_["step2"])
@@ -90,9 +87,9 @@ base_esn = SeqToLabelESNClassifier(input_to_node=InputToNode(), node_to_node=Nod
 param_grid = {'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000, 8000, 16000, 32000]}
 
 print("CV results\tFit time\tInference time\tAccuracy score\tSize[Bytes]")
-for params in ParameterGrid(param_grid):
+for params in reversed(ParameterGrid(param_grid)):
     params["node_to_node__hidden_layer_size"] = params["input_to_node__hidden_layer_size"]
-    esn_cv = cross_validate(clone(base_esn).set_params(**params), X=X_train, y=y_train)
+    esn_cv = cross_validate(clone(base_esn).set_params(**params), X=X_train, y=y_train, scoring=make_scorer(accuracy_score), n_jobs=-1)
     t1 = time.time()
     esn = clone(base_esn).set_params(**params).fit(X_train, y_train)
     t_fit = time.time() - t1

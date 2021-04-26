@@ -17,19 +17,21 @@ from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.extreme_learning_machine import ELMRegressor
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.model_selection import SequentialSearchCV
+from pyrcn.datasets import mackey_glass
 
 # Load the dataset
-X = np.loadtxt("./examples/dataset/MackeyGlass_t17.txt")
-X = MinMaxScaler(feature_range=(-1, 1)).fit_transform(X=X.reshape(-1,1))
+X = mackey_glass(n_timesteps=20000)
+X = MinMaxScaler(feature_range=(-1, 1)).fit_transform(X=X)
 
 # Define Train/Test lengths
 trainLen = 1900 # number of time steps during which we train the network
 testLen = 2000 # number of time steps during which we test/run the network
 
-X_train = X[0:trainLen].reshape(-1, 1)
-y_train = X[1:trainLen+1].reshape(-1, 1)
-X_test = X[trainLen:trainLen+testLen].reshape(-1, 1)
-y_test = X[trainLen+1:trainLen+testLen+1].reshape(-1, 1)
+
+X_train = X[0:trainLen]
+y_train = X[1:trainLen+1]
+X_test = X[trainLen:trainLen+testLen]
+y_test = X[trainLen+1:trainLen+testLen+1]
 
 fig = plt.figure()
 plt.plot(X_train, label="Training input")
@@ -84,7 +86,7 @@ initially_fixed_esn_params = {'input_to_node__hidden_layer_size': 100,
                               'node_to_node__random_state': 42,
                               'regressor__alpha': 1e-5,
                               'random_state': 42 }
-}
+
 step1_esn_params = {'input_to_node__input_scaling': np.linspace(0.1, 5.0, 50),
                     'node_to_node__spectral_radius': np.linspace(0.0, 1.5, 16)}
 step2_esn_params = {'node_to_node__leakage': np.linspace(0.1, 1.0, 10)}
@@ -198,7 +200,7 @@ elm_step2 = sequential_search_elm.all_best_estimator_["step2"]
 
 elm_step1.predict(X=unit_impulse)
 fig = plt.figure()
-im = plt.imshow(np.abs(elm_step1.hidden_layer_state.T),vmin=0, vmax=1.0)
+im = plt.imshow(np.abs(elm_step1.hidden_layer_state.T),vmin=0, vmax=0.3)
 plt.xlim([0, 100])
 plt.ylim([0, elm_step1.hidden_layer_state.shape[1] - 1])
 plt.xlabel('n')
@@ -210,7 +212,7 @@ plt.savefig('InputScaling.pdf', bbox_inches = 'tight', pad_inches = 0)
 
 elm_step2.predict(X=unit_impulse)
 fig = plt.figure()
-im = plt.imshow(np.abs(elm_step2.hidden_layer_state.T),vmin=0, vmax=1.0)
+im = plt.imshow(np.abs(elm_step2.hidden_layer_state.T),vmin=0, vmax=0.3)
 plt.xlim([0, 100])
 plt.ylim([0, elm_step2.hidden_layer_state.shape[1] - 1])
 plt.xlabel('n')
@@ -245,7 +247,7 @@ plt.plot(y_test_pred_esn, label="ESN prediction", linewidth=1)
 plt.plot(y_test_pred_elm, label="ELM prediction", linewidth=1)
 plt.plot(y_test, label="Test target", linewidth=.5, color="black")
 plt.xlabel("n")
-plt.xlim([0, 200])
+plt.xlim([0, 100])
 plt.ylabel("u[n]")
 plt.grid()
 plt.legend()
