@@ -16,8 +16,9 @@ import numpy as np
 from scipy.sparse import coo_matrix
 from scipy.sparse import csr_matrix
 
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, LabelBinarizer
 from sklearn.metrics._classification import _weighted_sum, _check_zero_division
+from sklearn.utils import check_array
 from sklearn.utils.validation import check_consistent_length
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.utils.validation import column_or_1d, _num_samples
@@ -731,7 +732,7 @@ def matthews_corrcoef(y_true, y_pred, *, sample_weight=None):
         raise ValueError("%s is not supported" % y_type)
 
     lb = LabelEncoder()
-    lb.fit(np.hstack([np.array([np.argmax(np.bincount(y)) for y in y_true]), np.array([np.argmax(np.bincount(y)) for y in y_pred])]))
+    lb.fit(np.hstack((np.concatenate(y_true), np.concatenate(y_pred))))
     y_true = np.array([lb.transform(y) for y in y_true])
     y_pred = np.array([lb.transform(y) for y in y_pred])
 
@@ -1698,7 +1699,7 @@ def classification_report(y_true, y_pred, *, labels=None, target_names=None,
     y_type, y_true, y_pred = _check_targets(y_true, y_pred)
 
     if labels is None:
-        labels = unique_labels(y_true, y_pred)
+        labels = unique_labels(np.concatenate(y_true), np.concatenate(y_pred))
         labels_given = False
     else:
         labels = np.asarray(labels)
@@ -1707,7 +1708,7 @@ def classification_report(y_true, y_pred, *, labels=None, target_names=None,
     # labelled micro average
     micro_is_accuracy = ((y_type == 'multiclass' or y_type == 'binary') and
                          (not labels_given or
-                          (set(labels) == set(unique_labels(y_true, y_pred)))))
+                          (set(labels) == set(unique_labels(np.concatenate(y_true), np.concatenate(y_pred))))))
 
     if target_names is not None and len(labels) != len(target_names):
         if labels_given:
