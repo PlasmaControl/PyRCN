@@ -1,11 +1,9 @@
 import collections
-
 from typing import Union
-
 import numpy as np
 
-from scipy.integrate import solve_ivp
-
+from sklearn.utils.validation import _deprecate_positional_args
+from sklearn.datasets import load_digits as sklearn_load_digits
 
 def _mg_eq(xt, xtau, a=0.2, b=0.1, n=10):
     """
@@ -26,6 +24,7 @@ def _mg_rk4(xt, xtau, a, b, n, h=1.0):
     return xt + k1/6 + k2/3 + k3/3 + k4/6
 
 
+@_deprecate_positional_args
 def mackey_glass(n_timesteps: int,
                  tau: int = 17,
                  a: float = 0.2,
@@ -120,3 +119,17 @@ def mackey_glass(n_timesteps: int,
         xt = xth
 
     return X.reshape(-1, 1)
+
+
+@_deprecate_positional_args
+def load_digits(*, n_class=10, return_X_y=False, as_frame=False, as_sequence=False):
+    if as_sequence and return_X_y and not as_frame:
+        X_ori, y_ori = sklearn_load_digits(n_class=n_class, return_X_y=return_X_y, as_frame=as_frame)
+        X = np.empty(shape=(X_ori.shape[0],), dtype=object)
+        y = np.empty(shape=(X_ori.shape[0],), dtype=object)
+        for k, (X_single, y_single) in enumerate(zip(X_ori, y_ori)):
+            X[k] = X_single.reshape(8, 8).T
+            y[k] = np.atleast_1d(y_single)
+        return X, y
+    else:
+        return sklearn_load_digits(n_class=n_class, return_X_y=return_X_y, as_frame=as_frame)

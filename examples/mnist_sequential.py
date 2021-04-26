@@ -11,7 +11,7 @@ from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV, ParameterGrid, cross_validate
 
 from pyrcn.model_selection import SequentialSearchCV
-from pyrcn.echo_state_network import ESNClassifier, SeqToLabelESNClassifier
+from pyrcn.echo_state_network import SeqToLabelESNClassifier
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.base import InputToNode, NodeToNode
 from pyrcn.metrics import accuracy_score
