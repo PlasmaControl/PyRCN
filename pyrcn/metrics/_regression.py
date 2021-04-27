@@ -28,7 +28,8 @@ from scipy.sparse import coo_matrix
 from scipy.sparse import csr_matrix
 
 import sklearn.metrics
-from sklearn.utils.validation import _deprecate_positional_args
+from sklearn.utils.validation import _deprecate_positional_args, check_consistent_length, check_array, _num_samples
+from sklearn.utils.stats import _weighted_percentile
 
 
 def _check_reg_targets(y_true, y_pred, multioutput, dtype="numeric"):
@@ -58,20 +59,31 @@ def _check_reg_targets(y_true, y_pred, multioutput, dtype="numeric"):
         the dtype argument passed to check_array.
     """
     check_consistent_length(y_true, y_pred)
-    y_true = check_array(y_true, ensure_2d=False, dtype=dtype)
-    y_pred = check_array(y_pred, ensure_2d=False, dtype=dtype)
 
-    if y_true.ndim == 1:
-        y_true = y_true.reshape((-1, 1))
-
-    if y_pred.ndim == 1:
-        y_pred = y_pred.reshape((-1, 1))
-
-    if y_true.shape[1] != y_pred.shape[1]:
-        raise ValueError("y_true and y_pred have different number of output "
+    if y_true.shape != y_pred.shape:
+        raise ValueError("y_true and y_pred have different number of sequences "
                          "({0}!={1})".format(y_true.shape[1], y_pred.shape[1]))
 
-    n_outputs = y_true.shape[1]
+    y_true_out = np.empty(shape=y_true.shape, dtype=object)
+    y_pred_out = np.empty(shape=y_pred.shape, dtype=object)
+
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        y_t = check_array(y_t, ensure_2d=False, dtype=dtype)
+        y_p = check_array(y_p, ensure_2d=False, dtype=dtype)
+        if y_t.ndim == 1:
+            y_t = y_t.reshape(-1, 1)
+        if y_p.ndim == 1:
+            y_p = y_p.reshape(-1, 1)
+        if y_t.shape[1] != y_p.shape[1]:
+            raise ValueError("y_true and y_pred have different number of outputs "
+                             "({0}!={1})".format(y_t.shape[1], y_p.shape[1]))
+        y_true_out[k] = y_t
+        y_pred_out[k] = y_p
+
+    n_outputs = np.unique(y.shape[1] for y in y_true)
+    if len(n_outputs) > 1:
+        raise ValueError("y_true contains sequences with differing numbers of outputs "
+                            "({0})".format(n_outputs))
     allowed_multioutput_str = ('raw_values', 'uniform_average',
                                'variance_weighted')
     if isinstance(multioutput, str):
@@ -143,16 +155,15 @@ def mean_absolute_error(y_true, y_pred, *,
     y_type, y_true, y_pred, multioutput = _check_reg_targets(
         y_true, y_pred, multioutput)
     check_consistent_length(y_true, y_pred, sample_weight)
-    output_errors = np.average(np.abs(y_pred - y_true),
-                               weights=sample_weight, axis=0)
-    if isinstance(multioutput, str):
-        if multioutput == 'raw_values':
-            return output_errors
-        elif multioutput == 'uniform_average':
-            # pass None as weights to np.average: uniform mean
-            multioutput = None
-
-    return np.average(output_errors, weights=multioutput)
+    output_errors = np.empty(shape=y_true.shape, dtype=object)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        output_errors[k] = np.average(np.abs(y_p - y_t), 
+                                      weights=sample_weight, axis=0)
+        if isinstance(multioutput, str):
+            if multioutput == 'uniform_average':
+                # pass None as weights to np.average: uniform mean
+                output_errors[k] = np.average(output_errors[k], weights=None)
+    return np.average(output_errors, weights=None)
 
 
 def mean_absolute_percentage_error(y_true, y_pred,
@@ -208,17 +219,17 @@ def mean_absolute_percentage_error(y_true, y_pred,
         y_true, y_pred, multioutput)
     check_consistent_length(y_true, y_pred, sample_weight)
     epsilon = np.finfo(np.float64).eps
-    mape = np.abs(y_pred - y_true) / np.maximum(np.abs(y_true), epsilon)
-    output_errors = np.average(mape,
-                               weights=sample_weight, axis=0)
-    if isinstance(multioutput, str):
-        if multioutput == 'raw_values':
-            return output_errors
-        elif multioutput == 'uniform_average':
-            # pass None as weights to np.average: uniform mean
-            multioutput = None
+    output_errors = np.empty(shape=y_true.shape, dtype=object)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        mape = np.abs(y_p - y_t) / np.maximum(np.abs(y_t), epsilon)
+        output_errors[k] = np.average(mape, 
+                                      weights=sample_weight, axis=0)
+        if isinstance(multioutput, str):
+            if multioutput == 'uniform_average':
+                # pass None as weights to np.average: uniform mean
+                output_errors[k] = np.average(output_errors[k], weights=None)
 
-    return np.average(output_errors, weights=multioutput)
+    return np.average(output_errors, weights=None)
 
 
 @_deprecate_positional_args
@@ -275,20 +286,17 @@ def mean_squared_error(y_true, y_pred, *,
     y_type, y_true, y_pred, multioutput = _check_reg_targets(
         y_true, y_pred, multioutput)
     check_consistent_length(y_true, y_pred, sample_weight)
-    output_errors = np.average((y_true - y_pred) ** 2, axis=0,
-                               weights=sample_weight)
-
-    if not squared:
-        output_errors = np.sqrt(output_errors)
-
-    if isinstance(multioutput, str):
-        if multioutput == 'raw_values':
-            return output_errors
-        elif multioutput == 'uniform_average':
-            # pass None as weights to np.average: uniform mean
-            multioutput = None
-
-    return np.average(output_errors, weights=multioutput)
+    output_errors = np.empty(shape=y_true.shape, dtype=object)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        output_errors[k] = np.average((y_t - y_p) ** 2, axis=0,
+                                      weights=sample_weight)
+        if not squared:
+            output_errors[k] = np.sqrt(output_errors[k])
+        if isinstance(multioutput, str):
+            if multioutput == 'uniform_average':
+                # pass None as weights to np.average: uniform mean
+                output_errors[k] = np.average(output_errors[k], weights=None)
+    return np.average(output_errors, weights=None)
 
 
 @_deprecate_positional_args
@@ -338,13 +346,15 @@ def mean_squared_log_error(y_true, y_pred, *,
     y_type, y_true, y_pred, multioutput = _check_reg_targets(
         y_true, y_pred, multioutput)
     check_consistent_length(y_true, y_pred, sample_weight)
-
-    if (y_true < 0).any() or (y_pred < 0).any():
+    if (np.concatenate(y_true) < 0).any() or (np.concatenate(y_pred) < 0).any():
         raise ValueError("Mean Squared Logarithmic Error cannot be used when "
                          "targets contain negative values.")
-
-    return mean_squared_error(np.log1p(y_true), np.log1p(y_pred),
-                              sample_weight=sample_weight,
+    y_true_log = np.empty(shape=y_true.shape, dtype=object)
+    y_pred_log = np.empty(shape=y_pred.shape, dtype=object)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        y_true_log[k] = np.log1p(y_t)
+        y_pred_log[k] = np.log1p(y_p)
+    return mean_squared_error(y_true_log, y_pred_log, sample_weight=sample_weight,
                               multioutput=multioutput)
 
 
@@ -396,20 +406,19 @@ def median_absolute_error(y_true, y_pred, *, multioutput='uniform_average',
     """
     y_type, y_true, y_pred, multioutput = _check_reg_targets(
         y_true, y_pred, multioutput)
-    if sample_weight is None:
-        output_errors = np.median(np.abs(y_pred - y_true), axis=0)
-    else:
-        sample_weight = _check_sample_weight(sample_weight, y_pred)
-        output_errors = _weighted_percentile(np.abs(y_pred - y_true),
-                                             sample_weight=sample_weight)
-    if isinstance(multioutput, str):
-        if multioutput == 'raw_values':
-            return output_errors
-        elif multioutput == 'uniform_average':
-            # pass None as weights to np.average: uniform mean
-            multioutput = None
+    output_errors = np.empty(shape=y_true.shape, dtype=object)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        if sample_weight is None:
+            output_errors[k] = np.median(np.abs(y_t - y_p), axis=0)
+        else:
+            output_errors[k] = _weighted_percentile(np.abs(y_pred - y_true),
+                                                    sample_weight=sample_weight)
+        if isinstance(multioutput, str):
+            if multioutput == 'uniform_average':
+                # pass None as weights to np.average: uniform mean
+                output_errors[k] = np.average(output_errors[k], weights=None)
 
-    return np.average(output_errors, weights=multioutput)
+    return np.average(output_errors, weights=None)
 
 
 @_deprecate_positional_args
@@ -461,35 +470,44 @@ def explained_variance_score(y_true, y_pred, *,
         y_true, y_pred, multioutput)
     check_consistent_length(y_true, y_pred, sample_weight)
 
-    y_diff_avg = np.average(y_true - y_pred, weights=sample_weight, axis=0)
-    numerator = np.average((y_true - y_pred - y_diff_avg) ** 2,
-                           weights=sample_weight, axis=0)
+    y_diff_avg = np.empty(shape=y_true.shape, dtype=object)
+    numerator = np.empty(shape=y_true.shape, dtype=object)
+    y_true_avg = np.empty(shape=y_true.shape, dtype=object)
+    denominator = np.empty(shape=y_true.shape, dtype=object)
+    nonzero_numerator = np.empty(shape=y_true.shape, dtype=object)
+    nonzero_denominator = np.empty(shape=y_true.shape, dtype=object)
+    valid_score = np.empty(shape=y_true.shape, dtype=object)
+    output_scores = np.empty(shape=y_true.shape, dtype=object)
 
-    y_true_avg = np.average(y_true, weights=sample_weight, axis=0)
-    denominator = np.average((y_true - y_true_avg) ** 2,
-                             weights=sample_weight, axis=0)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        y_diff_avg[k] = np.average(y_t - y_p, weights=sample_weight, axis=0)
+        numerator[k] = np.average((y_t - y_p - y_diff_avg[k]) ** 2, 
+                                  weights=sample_weight, axis=0)
+        y_true_avg[k] = np.average(y_t, weights=sample_weight, axis=0)
+        denominator[k] = np.average((y_t - y_true_avg[k]) ** 2,
+                                    weights=sample_weight, axis=0)
+        nonzero_numerator[k] = numerator[k] != 0
+        nonzero_denominator[k] = denominator[k] != 0
+        valid_score[k] = nonzero_numerator[k] & nonzero_denominator[k]
+        output_scores[k] = np.ones(y_t.shape[1])
 
-    nonzero_numerator = numerator != 0
-    nonzero_denominator = denominator != 0
-    valid_score = nonzero_numerator & nonzero_denominator
-    output_scores = np.ones(y_true.shape[1])
-
-    output_scores[valid_score] = 1 - (numerator[valid_score] /
-                                      denominator[valid_score])
-    output_scores[nonzero_numerator & ~nonzero_denominator] = 0.
-    if isinstance(multioutput, str):
-        if multioutput == 'raw_values':
-            # return scores individually
-            return output_scores
-        elif multioutput == 'uniform_average':
+        output_scores[k][valid_score[k]] = 1 - (numerator[k][valid_score[k]] /
+                                             denominator[k][valid_score[k]])
+        output_scores[k][nonzero_numerator[k] & ~nonzero_denominator[k]] = 0.
+        if isinstance(multioutput, str):
+            if multioutput == 'uniform_average':
             # passing to np.average() None as weights results is uniform mean
-            avg_weights = None
-        elif multioutput == 'variance_weighted':
-            avg_weights = denominator
+                avg_weights = None
+            elif multioutput == 'variance_weighted':
+                avg_weights = denominator
+        else:
+            avg_weights = multioutput
+        output_scores[k] = np.average(output_scores[k], weights=avg_weights)
+    if multioutput == 'raw_values':
+        # return scores individually
+        return np.mean(output_scores)
     else:
-        avg_weights = multioutput
-
-    return np.average(output_scores, weights=avg_weights)
+        return np.mean([np.average(scores, weights=avg_weights) for scores in output_scores])
 
 
 @_deprecate_positional_args
@@ -579,39 +597,48 @@ def r2_score(y_true, y_pred, *, sample_weight=None,
     else:
         weight = 1.
 
-    numerator = (weight * (y_true - y_pred) ** 2).sum(axis=0,
-                                                      dtype=np.float64)
-    denominator = (weight * (y_true - np.average(
-        y_true, axis=0, weights=sample_weight)) ** 2).sum(axis=0,
-                                                          dtype=np.float64)
-    nonzero_denominator = denominator != 0
-    nonzero_numerator = numerator != 0
-    valid_score = nonzero_denominator & nonzero_numerator
-    output_scores = np.ones([y_true.shape[1]])
-    output_scores[valid_score] = 1 - (numerator[valid_score] /
-                                      denominator[valid_score])
-    # arbitrary set to zero to avoid -inf scores, having a constant
-    # y_true is not interesting for scoring a regression anyway
-    output_scores[nonzero_numerator & ~nonzero_denominator] = 0.
-    if isinstance(multioutput, str):
-        if multioutput == 'raw_values':
-            # return scores individually
-            return output_scores
-        elif multioutput == 'uniform_average':
-            # passing None as weights results is uniform mean
-            avg_weights = None
-        elif multioutput == 'variance_weighted':
-            avg_weights = denominator
-            # avoid fail on constant y or one-element arrays
-            if not np.any(nonzero_denominator):
-                if not np.any(nonzero_numerator):
-                    return 1.0
-                else:
-                    return 0.0
-    else:
-        avg_weights = multioutput
+    numerator = np.empty(shape=y_true.shape, dtype=object)
+    denominator = np.empty(shape=y_true.shape, dtype=object)
+    nonzero_numerator = np.empty(shape=y_true.shape, dtype=object)
+    nonzero_denominator = np.empty(shape=y_true.shape, dtype=object)
+    valid_score = np.empty(shape=y_true.shape, dtype=object)
+    output_scores = np.empty(shape=y_true.shape, dtype=object)
 
-    return np.average(output_scores, weights=avg_weights)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        numerator[k] = (weight * (y_t - y_p) ** 2).sum(axis=0, dtype=np.float64)
+        denominator[k] = (weight * (y_t - np.average(y_t, axis=0, weights=sample_weight)) ** 2).sum(axis=0, dtype=np.float64)
+        nonzero_numerator[k] = numerator[k] != 0
+        nonzero_denominator[k] = denominator[k] != 0
+        valid_score[k] = nonzero_denominator[k] & nonzero_numerator[k]
+        output_scores[k] = np.ones([y_t.shape[1]])
+
+        output_scores[k][valid_score[k]] = 1 - (numerator[k][valid_score[k]] / denominator[k][valid_score[k]])
+        # arbitrary set to zero to avoid -inf scores, having a constant
+        # y_true is not interesting for scoring a regression anyway
+        output_scores[k][nonzero_numerator[k] & ~nonzero_denominator[k]] = 0.
+        if isinstance(multioutput, str):
+            if multioutput == 'raw_values':
+                # return scores individually
+                output_scores[k] = output_scores[k]
+            elif multioutput == 'uniform_average':
+                # passing None as weights results is uniform mean
+                avg_weights = None
+                output_scores[k] = np.average(output_scores[k], weights=avg_weights)
+            elif multioutput == 'variance_weighted':
+                avg_weights = denominator[k]
+                # avoid fail on constant y or one-element arrays
+                if not np.any(nonzero_denominator[k]):
+                    if not np.any(nonzero_numerator[k]):
+                        output_scores[k] = 1.0
+                    else:
+                        output_scores[k] = 0.0
+                else:
+                    output_scores[k] = np.average(output_scores[k], weights=avg_weights)
+        else:
+            avg_weights = multioutput
+            output_scores[k] = np.average(output_scores[k], weights=avg_weights)
+
+    return np.average(output_scores, weights=None)
 
 
 def max_error(y_true, y_pred):

@@ -100,7 +100,7 @@ step2_esn_params = {'node_to_node__leakage': np.linspace(0.1, 1.0, 10)}
 step3_esn_params = {'node_to_node__bias_scaling': np.linspace(0.0, 1.5, 16)}
 step4_esn_params = {'regressor__alpha': [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2, 5e-2, 1e-1, 5e-1, 1e0]}
 
-kwargs = {'verbose': 1, 'n_jobs': 1, 'scoring': make_scorer(accuracy_score)}
+kwargs = {'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
 
 # The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', GridSearchCV, step1_esn_params, kwargs),

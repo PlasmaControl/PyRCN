@@ -23,13 +23,15 @@ class SeqToLabelESNClassifier(ESNClassifier):
                  regressor=IncrementalRegression(alpha=.0001),
                  chunk_size=None,
                  random_state=None,
-                 n_jobs=None):
+                 n_jobs=None,
+                 output_strategy="last_state"):
         super().__init__(input_to_node=input_to_node, 
                          node_to_node=node_to_node,
                          regressor=regressor,
                          chunk_size=chunk_size,
                          random_state=random_state)
         self.n_jobs = n_jobs
+        self.output_strategy = output_strategy
 
     def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, postpone_inverse=False):
         for X_train, y_train in tqdm(zip(X, y)):
@@ -48,7 +50,12 @@ class SeqToLabelESNClassifier(ESNClassifier):
     def predict(self, X):
         y_pred = np.empty(shape=(X.shape[0], ), dtype=object)
         for k, X_test in tqdm(enumerate(X)):
-            y_pred[k] = np.atleast_1d(np.argmax(np.bincount(super().predict(X_test))))
+            if self.output_strategy == "winner_takes_all":
+                y_pred[k] = np.atleast_1d(np.argmax(np.bincount(super().predict(X_test))))
+            elif self.output_strategy == "last_state":
+                y_pred[k] = np.atleast_1d(super().predict(X_test)[-1])
+            else:
+                raise NotImplementedError("Unknown output strategy: {0}".format(self.output_strategy))
         return y_pred
 
     def predict_proba(self, X):
