@@ -26,6 +26,7 @@ def _mg_rk4(xt, xtau, a, b, n, h=1.0):
 
 @_deprecate_positional_args
 def mackey_glass(n_timesteps: int,
+                 n_future: int = 1,
                  tau: int = 17,
                  a: float = 0.2,
                  b: float = 0.1,
@@ -41,6 +42,9 @@ def mackey_glass(n_timesteps: int,
     ----------
         n_timesteps : int
             Number of timesteps to compute.
+        n_future : int, optional
+            distance between input and target samples.
+            By default, equal to 1.
         tau : int, optional
             Time delay :math:`\\tau` of Mackey-Glass equation.
             By defaults, equal to 17. Other values can
@@ -76,8 +80,7 @@ def mackey_glass(n_timesteps: int,
         A random number generator is therefore used to produce random
         initial timesteps based on the value of the initial condition
         passed as parameter. A default seed is hard-coded to ensure
-        reproducibility in any case. It can be changed with the
-        :py:func:`reservoirpy.datasets.seed` function.
+        reproducibility in any case.
     References
     ----------
         .. [#] M. C. Mackey and L. Glass, ‘Oscillation and chaos in physiological
@@ -103,7 +106,7 @@ def mackey_glass(n_timesteps: int,
     history = collections.deque(x0 * np.ones(history_length) + 0.2 * (rs.rand(history_length) - 0.5))
     xt = x0
 
-    X = np.zeros(n_timesteps)
+    X = np.zeros(n_timesteps + 1)
 
     for i in range(0, n_timesteps):
         X[i] = xt
@@ -118,7 +121,10 @@ def mackey_glass(n_timesteps: int,
 
         xt = xth
 
-    return X.reshape(-1, 1)
+    y = X[1:].reshape(-1, 1)
+    X = X[:-1].reshape(-1, 1)
+
+    return X, y
 
 
 @_deprecate_positional_args

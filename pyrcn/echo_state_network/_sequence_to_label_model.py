@@ -6,6 +6,8 @@ Sequence-to-label model
 # License: BSD 3 clause
 
 from sklearn.preprocessing import LabelBinarizer
+from sklearn.utils.validation import _deprecate_positional_args
+
 from pyrcn.base import InputToNode, NodeToNode
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNClassifier
@@ -17,19 +19,22 @@ class SeqToLabelESNClassifier(ESNClassifier):
     """
     A trainer to simplify sequence-to-label classification.
     """
-    def __init__(self,
+    @_deprecate_positional_args
+    def __init__(self, *,
                  input_to_node=InputToNode(),
                  node_to_node=NodeToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
                  chunk_size=None,
                  random_state=None,
                  n_jobs=None,
-                 output_strategy="last_state"):
+                 output_strategy="last_state",
+                 **kwargs):
         super().__init__(input_to_node=input_to_node, 
                          node_to_node=node_to_node,
                          regressor=regressor,
                          chunk_size=chunk_size,
-                         random_state=random_state)
+                         random_state=random_state, 
+                         **kwargs)
         self.n_jobs = n_jobs
         self.output_strategy = output_strategy
 

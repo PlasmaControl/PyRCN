@@ -12,7 +12,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
 from pyrcn.base import InputToNode
 from pyrcn.linear_model import IncrementalRegression
-from sklearn.utils import check_random_state
+from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import FeatureUnion
@@ -26,7 +26,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     Parameters
     ----------
-    input_to_node : iterable, default=[('default', InputToNode())]
+    input_to_node : iterable, default=InputToNode()
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.
@@ -36,17 +36,45 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         regressor cannot be None, omit argument if in doubt
     chunk_size : int, default=None
         if X.shape[0] > chunk_size, calculate results incrementally with partial_fit
-    random_state : int, RandomState instance, default=None
+    kwargs : dict, default = None
+        keyword arguments passed to the subestimators if this is desired, default=None
     """
-    def __init__(self,
-                 input_to_node=InputToNode(),
-                 regressor=IncrementalRegression(alpha=.0001),
+    @_deprecate_positional_args
+    def __init__(self, *,
+                 input_to_node=None,
+                 regressor=None,
                  chunk_size=None,
-                 random_state=None):
-        self.input_to_node = input_to_node
-        self.random_state = random_state
+                 **kwargs):
+        if input_to_node is None:
+            i2n_params = InputToNode()._get_param_names()
+            self.input_to_node = InputToNode(**{ key: kwargs[key] for key in kwargs.keys() if key in i2n_params})
+        else:
+            i2n_params = input_to_node._get_param_names()
+            self.input_to_node = input_to_node.set_params(**{ key: kwargs[key] for key in kwargs.keys() if key in i2n_params})
+        if regressor is None:
+            reg_params = IncrementalRegression()._get_param_names()
+            self.regressor = IncrementalRegression(**{ key: kwargs[key] for key in kwargs.keys() if key in reg_params})
+        else:
+            reg_params = regressor._get_param_names()
+            self.regressor = regressor.set_params(**{ key: kwargs[key] for key in kwargs.keys() if key in reg_params})
         self._chunk_size = chunk_size
-        self._regressor = regressor
+
+    def get_params(self, deep=True):
+        if deep:
+            return {**self.input_to_node.get_params(), **{"alpha": self.regressor.get_params()["alpha"]}}
+        else:
+            return {"input_to_node": self.input_to_node, "regressor": self.regressor, "chunk_size": self.chunk_size}
+
+    def set_params(self, **parameters):
+        i2n_params = self.input_to_node._get_param_names()
+        self.input_to_node = self.input_to_node.set_params(**{ key: parameters[key] for key in parameters.keys() if key in i2n_params})
+        reg_params = self.regressor._get_param_names()
+        self.regressor = self.regressor.set_params(**{ key: parameters[key] for key in parameters.keys() if key in reg_params})
+        for parameter, value in parameters.items():
+            if parameter in self.get_params(deep=False):
+                setattr(self, parameter, value)
+
+        return self
 
     def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, postpone_inverse=False):
         """
@@ -171,8 +199,6 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         Returns
         -------
         """
-        self.random_state = check_random_state(self.random_state)
-
         if not (hasattr(self.input_to_node, "fit") and hasattr(self.input_to_node, "fit_transform") and hasattr(
                 self.input_to_node, "transform")):
             raise TypeError("All input_to_node should be transformers "
@@ -318,14 +344,15 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         regressor cannot be None, omit argument if in doubt
     chunk_size : int, default=None
         if X.shape[0] > chunk_size, calculate results incrementally with partial_fit
-    random_state : int, RandomState instance, default=None
+    kwargs : dict, default = None
+        keyword arguments passed to the subestimators if this is desired, default=None
     """
-    def __init__(self,
-                 input_to_node=InputToNode(),
-                 regressor=IncrementalRegression(alpha=.0001),
+    def __init__(self, *,
+                 input_to_node=None,
+                 regressor=None,
                  chunk_size=None,
-                 random_state=None):
-        super().__init__(input_to_node=input_to_node, regressor=regressor, chunk_size=chunk_size, random_state=random_state)
+                 **kwargs):
+        super().__init__(input_to_node=input_to_node, regressor=regressor, chunk_size=chunk_size, **kwargs)
         self._encoder = None
 
     def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, postpone_inverse=False):

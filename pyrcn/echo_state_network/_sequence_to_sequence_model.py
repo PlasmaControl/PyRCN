@@ -6,6 +6,8 @@ Sequence-to-sequence model
 # License: BSD 3 clause
 
 from sklearn.preprocessing import LabelBinarizer
+from sklearn.utils.validation import _deprecate_positional_args
+
 from pyrcn.base import InputToNode, NodeToNode, FeedbackNodeToNode
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNRegressor, ESNClassifier, FeedbackESNRegressor
@@ -17,18 +19,21 @@ class SeqToSeqESNRegressor(ESNRegressor):
     """
     A trainer to simplify sequence-to-sequence regression.
     """
-    def __init__(self,
-                 input_to_node=InputToNode(),
-                 node_to_node=NodeToNode(),
-                 regressor=IncrementalRegression(alpha=.0001),
+    @_deprecate_positional_args
+    def __init__(self, *,
+                 input_to_node=None,
+                 node_to_node=None,
+                 regressor=None,
                  chunk_size=None,
                  random_state=None,
-                 n_jobs=None):
+                 n_jobs=None,
+                 **kwargs):
         super().__init__(input_to_node=input_to_node, 
                          node_to_node=node_to_node,
                          regressor=regressor,
                          chunk_size=chunk_size,
-                         random_state=random_state)
+                         random_state=random_state,
+                         **kwargs)
         self.n_jobs = n_jobs
 
     def fit(self, X, y):
@@ -59,6 +64,7 @@ class SeqToSeqESNClassifier(ESNClassifier):
     """
     A trainer to simplify sequence-to-sequence classification.
     """
+    @_deprecate_positional_args
     def __init__(self,
                  input_to_node=InputToNode(),
                  node_to_node=NodeToNode(),
@@ -108,6 +114,7 @@ class SeqToSeqESNFeedbackRegressor(FeedbackESNRegressor):
     """
     A trainer to simplify sequence-to-sequence regression with feedback.
     """
+    @_deprecate_positional_args
     def __init__(self,
                  input_to_node=InputToNode(),
                  node_to_node=FeedbackNodeToNode(),

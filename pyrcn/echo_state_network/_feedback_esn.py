@@ -13,7 +13,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOu
 from pyrcn.base import InputToNode, FeedbackNodeToNode, ACTIVATIONS, ACTIVATIONS_INVERSE
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNRegressor
-from sklearn.utils import check_random_state
+from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import FeatureUnion
@@ -41,19 +41,23 @@ class FeedbackESNRegressor(ESNRegressor):
         regressor cannot be None, omit argument if in doubt
     chunk_size : int, default=None
         if X.shape[0] > chunk_size, calculate results incrementally with partial_fit
-    random_state : int, RandomState instance, default=None
+    kwargs : dict, default = None
+        keyword arguments passed to the subestimators if this is desired, default=None
     """
-    def __init__(self,
-                 input_to_node=InputToNode(),
-                 node_to_node=FeedbackNodeToNode(),
-                 regressor=IncrementalRegression(alpha=.0001),
+    @_deprecate_positional_args
+    def __init__(self, *,
+                 input_to_node=None,
+                 node_to_node=None,
+                 regressor=None,
                  chunk_size=None,
-                 random_state=None):
+                 **kwargs):
+        if node_to_node is None:
+            node_to_node = FeedbackNodeToNode()
         super().__init__(input_to_node=input_to_node,
                          node_to_node=node_to_node,
                          regressor=regressor,
                          chunk_size=chunk_size,
-                         random_state=random_state)
+                         kwargs=kwargs)
 
     def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, postpone_inverse=False):
         """
@@ -193,8 +197,6 @@ class FeedbackESNRegressor(ESNRegressor):
         Returns
         -------
         """
-        self.random_state = check_random_state(self.random_state)
-
         if not (hasattr(self.input_to_node, "fit") and hasattr(self.input_to_node, "fit_transform") and hasattr(
                 self.input_to_node, "transform")):
             raise TypeError("All input_to_node should be transformers "
