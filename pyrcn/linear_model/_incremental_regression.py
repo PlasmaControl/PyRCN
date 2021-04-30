@@ -13,6 +13,7 @@ from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
+from joblib import Parallel, delayed
 
 
 class IncrementalRegression(BaseEstimator, RegressorMixin):
@@ -55,7 +56,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self._xTy = None
         self._output_weights = None
 
-    def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True, postpone_inverse=False):
+    def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True, postpone_inverse=False, n_jobs=None):
         """Fits the regressor partially.
         Parameters
         ----------
@@ -98,9 +99,15 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         P = np.linalg.inv(self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
 
         if self._output_weights is None:
-            self._output_weights = np.matmul(P, self._xTy)
+            if n_jobs is None:
+                self._output_weights = np.matmul(P, self._xTy)
+            else:
+                self._output_weights = np.asarray(Parallel(n_jobs=n_jobs)(delayed(safe_sparse_dot)(P, self._xTy[:, k]) for k in range(self._xTy.shape[1]))).T
         else:
-            self._output_weights += np.matmul(P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
+            if n_jobs is None:
+                self._output_weights += np.matmul(P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
+            else:
+                self._output_weights += np.asarray(Parallel(n_jobs=n_jobs)(delayed(safe_sparse_dot)(P, safe_sparse_dot(X_preprocessed.T, (y[:, k] - safe_sparse_dot(X_preprocessed, self._output_weights[:, k])))) for k in range(self._xTy.shape[1]))).T
             # self._output_weights += np.matmul(P, self._xTy - np.matmul(self._K, self._output_weights))
         return self
 

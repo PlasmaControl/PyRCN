@@ -10,5 +10,5 @@ from pyrcn.util._util import new_logger, tud_colors, get_mnist, argument_parser
 __all__ = ['new_logger',
            'tud_colors',
            'get_mnist',
-           'argument_parser'
+           'argument_parser',
            ]

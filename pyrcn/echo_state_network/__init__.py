@@ -10,8 +10,13 @@ The :mod:`pyrcn.esn` module includes Echo State Network algorithms.
 
 from pyrcn.echo_state_network._esn import ESNClassifier, ESNRegressor
 from pyrcn.echo_state_network._feedback_esn import FeedbackESNRegressor
+from pyrcn.echo_state_network._sequence_to_sequence_model import SeqToSeqESNRegressor, SeqToSeqESNClassifier
+from pyrcn.echo_state_network._sequence_to_label_model import SeqToLabelESNClassifier
 
 __all__ = ['ESNClassifier',
            'ESNRegressor',
-           'FeedbackESNRegressor'
+           'FeedbackESNRegressor',
+           'SeqToSeqESNRegressor',
+           'SeqToSeqESNClassifier',
+           'SeqToLabelESNClassifier',
            ]

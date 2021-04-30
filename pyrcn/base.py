@@ -14,6 +14,7 @@ from pkg_resources import parse_version
 import warnings
 
 import sklearn
+from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.neural_network._base import ACTIVATIONS
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state
@@ -148,7 +149,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         Sets the number of nodes in hidden layer. Equals number of output features.
     sparsity : float, default=1.
         Quotient of input weights per node (k_in) and number of input features (n_features)
-    activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
+    input_activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
         This element represents the activation function in the hidden layer.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
             - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
@@ -163,17 +164,18 @@ class InputToNode(BaseEstimator, TransformerMixin):
         input weights per node. By default, it is None. If set, it overrides sparsity.
     random_state : {None, int, RandomState}, default=None
     """
-    def __init__(self,
+    @_deprecate_positional_args
+    def __init__(self, *,
                  hidden_layer_size=500,
                  sparsity=1.,
-                 activation='tanh',
+                 input_activation='tanh',
                  input_scaling=1.,
                  bias_scaling=1.,
                  k_in=None,
                  random_state=None):
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
-        self.activation = activation
+        self.input_activation = input_activation
         self.input_scaling = input_scaling
         self.bias_scaling = bias_scaling
         self.random_state = random_state
@@ -228,7 +230,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
         self._hidden_layer_state = InputToNode._node_inputs(
             X, self._input_weights, self.input_scaling, self._bias_weights, self.bias_scaling)
-        ACTIVATIONS[self.activation](self._hidden_layer_state)
+        ACTIVATIONS[self.input_activation](self._hidden_layer_state)
         return self._hidden_layer_state
 
     @staticmethod
@@ -311,9 +313,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
         if self.sparsity <= 0. or self.sparsity > 1.:
             raise ValueError("sparsity must be between 0. and 1., got %s." % self.sparsity)
-        if self.activation not in ACTIVATIONS:
+        if self.input_activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
-                             "activations are %s." % (self.activation, ACTIVATIONS))
+                             "activations are %s." % (self.input_activation, ACTIVATIONS))
         if self.input_scaling <= 0.:
             raise ValueError("input_scaling must be > 0, got %s." % self.input_scaling)
         if self.bias_scaling < 0:
@@ -365,16 +367,16 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
 
 class BatchIntrinsicPlasticity(InputToNode):
-    def __init__(
-            self,
+    @_deprecate_positional_args
+    def __init__(self, *,
             distribution: str = 'normal',
             algorithm: str = 'dresden',
-            activation='tanh',
+            input_activation='tanh',
             hidden_layer_size=500,
             sparsity=1.,
             random_state=None):
         super().__init__(
-            activation=activation,
+            input_activation=input_activation,
             hidden_layer_size=hidden_layer_size,
             sparsity=sparsity,
             random_state=random_state)
@@ -414,7 +416,7 @@ class BatchIntrinsicPlasticity(InputToNode):
             s = BatchIntrinsicPlasticity._node_inputs(
                 X, self._input_weights, self.input_scaling, self._bias_weights, self.bias_scaling)
             np.add(np.multiply(self._scaler.transform(s), self._m), self._c, out=s)
-            ACTIVATIONS[self.activation](s)
+            ACTIVATIONS[self.input_activation](s)
             return s
 
     def _fit_neumann(self, X, y=None):
@@ -429,12 +431,12 @@ class BatchIntrinsicPlasticity(InputToNode):
             t = BatchIntrinsicPlasticity.OUT_DISTRIBUTION[self.distribution](size=X.shape[0])
             t_min, t_max = np.min(t), np.max(t)
 
-            if self.distribution in {'uniform'} and self.activation in {'tanh', 'logistic'}:
-                bound_low = ACTIVATIONS_INVERSE_BOUNDS[self.activation][0] * .5
-                bound_high = ACTIVATIONS_INVERSE_BOUNDS[self.activation][1] * .5
+            if self.distribution in {'uniform'} and self.input_activation in {'tanh', 'logistic'}:
+                bound_low = ACTIVATIONS_INVERSE_BOUNDS[self.input_activation][0] * .5
+                bound_high = ACTIVATIONS_INVERSE_BOUNDS[self.input_activation][1] * .5
             else:
-                bound_low = ACTIVATIONS_INVERSE_BOUNDS[self.activation][0]
-                bound_high = ACTIVATIONS_INVERSE_BOUNDS[self.activation][1]
+                bound_low = ACTIVATIONS_INVERSE_BOUNDS[self.input_activation][0]
+                bound_high = ACTIVATIONS_INVERSE_BOUNDS[self.input_activation][1]
 
             if bound_low == np.inf:
                 bound_low = t_min
@@ -445,7 +447,7 @@ class BatchIntrinsicPlasticity(InputToNode):
             t = (t - t_min)*(bound_high - bound_low)/(t_max - t_min) + bound_low
 
             t.sort()
-            ACTIVATIONS_INVERSE[self.activation](t)
+            ACTIVATIONS_INVERSE[self.input_activation](t)
         else:
             raise ValueError('Not a valid activation inverse, got {0}'.format(self.distribution))
 
@@ -456,8 +458,8 @@ class BatchIntrinsicPlasticity(InputToNode):
         return self
 
     def _fit_dresden(self, X, y=None):
-        if self.activation != 'tanh':
-            raise ValueError('This algorithm is working with tanh-activation only, got {0}'.format(self.activation))
+        if self.input_activation != 'tanh':
+            raise ValueError('This algorithm is working with tanh-activation only, got {0}'.format(self.input_activation))
 
         super().fit(X, y=None)
 
@@ -487,7 +489,7 @@ class PredefinedWeightsInputToNode(InputToNode):
     ----------
     predefined_input_weights : np.ndarray
         A set of predefined input weights.
-    activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
+    input_activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
         This element represents the activation function in the hidden layer.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
             - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
@@ -500,17 +502,17 @@ class PredefinedWeightsInputToNode(InputToNode):
         Scales the input bias of the activation.
     random_state : {None, int, RandomState}, default=None
     """
-    def __init__(
-            self,
-            predefined_input_weights,
-            activation='relu',
+    @_deprecate_positional_args
+    def __init__(self,
+            predefined_input_weights, *,
+            input_activation='relu',
             input_scaling=1.,
             bias_scaling=0.,
             random_state=None):
         super().__init__(
             hidden_layer_size=predefined_input_weights.shape[1],
             sparsity=1.,
-            activation=activation,
+            input_activation=input_activation,
             input_scaling=input_scaling,
             bias_scaling=bias_scaling,
             random_state=random_state)
@@ -555,7 +557,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         Sets the number of nodes in hidden layer. Equals number of output features.
     sparsity : float, default=1.
         Quotient of input weights per node (k_in) and number of input features (n_features)
-    activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
+    reservoir_activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
         This element represents the activation function in the hidden layer.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
             - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
@@ -566,8 +568,6 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         Scales the input weight matrix.
     leakage : float, default=1.
         parameter to determine the degree of leaky integration.
-    bias_scaling : float, default=1.
-        Scales the input bias of the activation.
     bi_directional : bool, default=False
         Whether to work in bidirectional mode.
     k_rec : int, default=None.
@@ -578,13 +578,13 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         whether to save the last reservoir state for later continuation.
     random_state : {None, int, RandomState}, default=None
     """
-    def __init__(self,
+    @_deprecate_positional_args
+    def __init__(self, *,
                  hidden_layer_size=500,
                  sparsity=1.,
-                 activation='tanh',
+                 reservoir_activation='tanh',
                  spectral_radius=1.,
                  leakage=1.,
-                 bias_scaling=1.,
                  bi_directional=False,
                  k_rec=None,
                  wash_out=0,
@@ -592,10 +592,9 @@ class NodeToNode(BaseEstimator, TransformerMixin):
                  random_state=None):
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
-        self.activation = activation
+        self.reservoir_activation = reservoir_activation
         self.spectral_radius = spectral_radius
         self.leakage = leakage
-        self.bias_scaling = bias_scaling
         self.bi_directional = bi_directional
         self.k_rec = k_rec
         self.wash_out = wash_out
@@ -603,12 +602,11 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self.random_state = random_state
 
         self._recurrent_weights = None
-        self._bias_weights = None
         self._hidden_layer_state = None
 
     def fit(self, X, y=None):
         """
-        Fit the NodeToNode. Initialize input weights and bias.
+        Fit the NodeToNode. Initialize recurrent weights.
 
         Parameters
         ----------
@@ -633,9 +631,6 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             hidden_layer_size=self.hidden_layer_size,
             fan_in=np.rint(self.hidden_layer_size * self.sparsity).astype(int),
             random_state=self.random_state)
-        self._bias_weights = self._uniform_random_bias(
-            hidden_layer_size=self.hidden_layer_size,
-            random_state=self.random_state)
         return self
 
     def transform(self, X, y=None):
@@ -650,7 +645,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         -------
         Y: ndarray of size (n_samples, hidden_layer_size)
         """
-        if self._recurrent_weights is None or self._bias_weights is None:
+        if self._recurrent_weights is None:
             raise NotFittedError(self)
 
         if self.bi_directional:
@@ -663,14 +658,13 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
     def _pass_through_recurrent_weights(self, X, y=None):
         hidden_layer_state = np.zeros(shape=(X.shape[0]+1, self.hidden_layer_size))
-        if self.continuation and self._hidden_layer_state is not None:
+        if self.continuation and self._hidden_layer_state is not None and not self.bi_directional:
             hidden_layer_state[0, :] = self._hidden_layer_state[-1, :]
         for sample in range(X.shape[0]):
             a = X[sample, :]
             b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
-            c = self._bias_weights * self.bias_scaling
-            pre_activation = a + b + c
-            ACTIVATIONS[self.activation](pre_activation)
+            pre_activation = a + b
+            ACTIVATIONS[self.reservoir_activation](pre_activation)
             hidden_layer_state[sample+1, :] = pre_activation
             hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                  + self.leakage * hidden_layer_state[sample + 1, :]
@@ -714,22 +708,6 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
         return recurrent_weights_init / np.amax(np.absolute(we))
 
-    @staticmethod
-    def _uniform_random_bias(hidden_layer_size: int, random_state):
-        """
-        Returns uniform random bias in range [-1, 1].
-
-        Parameters
-        ----------
-        hidden_layer_size : int
-        random_state : numpy.RandomState
-
-        Returns
-        -------
-        uniform_random_bias : ndarray of size (hidden_layer_size)
-        """
-        return random_state.uniform(low=-1., high=1., size=hidden_layer_size)
-
     def _validate_hyperparameters(self):
         """
         Validates the hyperparameters.
@@ -744,17 +722,15 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
         if self.sparsity <= 0. or self.sparsity > 1.:
             raise ValueError("sparsity must be between 0. and 1., got %s." % self.sparsity)
-        if self.activation not in ACTIVATIONS:
+        if self.reservoir_activation not in ACTIVATIONS:
             raise ValueError("The activation_function '%s' is not supported. Supported "
-                             "activations are %s." % (self.activation, ACTIVATIONS))
+                             "activations are %s." % (self.reservoir_activation, ACTIVATIONS))
         if self.spectral_radius < 0.:
             raise ValueError("spectral_radius must be >= 0, got %s." % self.spectral_radius)
-        if self.bias_scaling < 0:
-            raise ValueError("bias must be > 0, got %s." % self.bias_scaling)
         if self.leakage <= 0. or self.leakage > 1.:
             raise ValueError("leakage must be between 0. and 1., got %s." % self.leakage)
-        if self.bi_directional or self.leakage > 1.:
-            raise ValueError("leakage must be between 0. and 1., got %s." % self.leakage)
+        if self.bi_directional not in [False, True]:
+            raise ValueError("bi_directional must be either False or True,, got %s." % self.bi_directional)
         if self.k_rec is not None and self.k_rec <= 0:
             raise ValueError("k_rec must be > 0, got %d." % self.k_rec)
 
@@ -767,15 +743,13 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         size : int
         Object memory in bytes.
         """
-        if scipy.sparse.issparse(self._input_weights):
+        if scipy.sparse.issparse(self._recurrent_weights):
             return object.__sizeof__(self) + \
-                self._bias_weights.nbytes + \
                 self._recurrent_weights.todense().nbytes + \
                 self._hidden_layer_state.nbytes + \
                 sys.getsizeof(self.random_state)
         else:
             return object.__sizeof__(self) + \
-                self._bias_weights.nbytes + \
                 self._recurrent_weights.nbytes + \
                 self._hidden_layer_state.nbytes + \
                 sys.getsizeof(self.random_state)
@@ -790,15 +764,6 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         """
         return self._recurrent_weights
 
-    @property
-    def bias_weights(self):
-        """Returns the bias.
-
-        Returns
-        -------
-        bias : ndarray of size (hidden_layer_size)
-        """
-        return self._bias_weights
 
 class FeedbackNodeToNode(NodeToNode):
     """
@@ -810,7 +775,7 @@ class FeedbackNodeToNode(NodeToNode):
         Sets the number of nodes in hidden layer. Equals number of output features.
     sparsity : float, default=1.
         Quotient of input weights per node (k_in) and number of input features (n_features)
-    activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
+    reservoir_activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
         This element represents the activation function in the hidden layer.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
             - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
@@ -821,8 +786,6 @@ class FeedbackNodeToNode(NodeToNode):
         Scales the input weight matrix.
     leakage : float, default=1.
         parameter to determine the degree of leaky integration.
-    bias_scaling : float, default=1.
-        Scales the input bias of the activation.
     teacher_scaling : float, default=1.
         Factor applied to the target signal
     teacher_shift: float, default=0.
@@ -840,13 +803,13 @@ class FeedbackNodeToNode(NodeToNode):
             - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
     random_state : {None, int, RandomState}, default=None
     """
-    def __init__(self,
+    @_deprecate_positional_args
+    def __init__(self, *,
                  hidden_layer_size=500,
                  sparsity=1.,
-                 activation='tanh',
+                 reservoir_activation='tanh',
                  spectral_radius=1.,
                  leakage=1.,
-                 bias_scaling=1.,
                  teacher_scaling=1.,
                  teacher_shift=1.,
                  bi_directional=None,
@@ -856,10 +819,9 @@ class FeedbackNodeToNode(NodeToNode):
         super().__init__(
             hidden_layer_size=hidden_layer_size,
             sparsity=sparsity,
-            activation=activation,
+            reservoir_activation=reservoir_activation,
             spectral_radius=spectral_radius,
             leakage=leakage,
-            bias_scaling=bias_scaling,
             bi_directional=False,
             k_rec=k_rec,
             random_state=random_state)
@@ -873,7 +835,7 @@ class FeedbackNodeToNode(NodeToNode):
 
     def fit(self, X, y=None):
         """
-        Fit the NodeToNode. Initialize input weights and bias.
+        Fit the NodeToNode. Initialize recurrent weights.
 
         Parameters
         ----------
@@ -900,10 +862,9 @@ class FeedbackNodeToNode(NodeToNode):
             for sample in range(X.shape[0]):
                 a = X[sample, :]
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
-                c = self._bias_weights * self.bias_scaling
-                d = safe_sparse_dot(self._feedback_weights, y[sample, :] * self.teacher_scaling + self.teacher_shift)
-                pre_activation = a + b + c + d
-                ACTIVATIONS[self.activation](pre_activation)
+                c = safe_sparse_dot(self._feedback_weights, y[sample, :] * self.teacher_scaling + self.teacher_shift)
+                pre_activation = a + b + c
+                ACTIVATIONS[self.reservoir_activation](pre_activation)
                 hidden_layer_state[sample+1, :] = pre_activation
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                      + self.leakage * hidden_layer_state[sample + 1, :]
@@ -915,10 +876,9 @@ class FeedbackNodeToNode(NodeToNode):
             for sample in range(X.shape[0]):
                 a = X[sample, :]
                 b = safe_sparse_dot(hidden_layer_state[sample, :], self._recurrent_weights) * self.spectral_radius
-                c = self._bias_weights * self.bias_scaling
-                d = safe_sparse_dot(self._feedback_weights, self._y_pred[sample, :])
-                pre_activation = a + b + c + d
-                ACTIVATIONS[self.activation](pre_activation)
+                c = safe_sparse_dot(self._feedback_weights, self._y_pred[sample, :])
+                pre_activation = a + b + c
+                ACTIVATIONS[self.reservoir_activation](pre_activation)
                 hidden_layer_state[sample + 1, :] = pre_activation
                 hidden_layer_state[sample + 1, :] = (1 - self.leakage) * hidden_layer_state[sample, :] \
                                                      + self.leakage * hidden_layer_state[sample + 1, :]
@@ -956,14 +916,12 @@ class FeedbackNodeToNode(NodeToNode):
         """
         if scipy.sparse.issparse(self._input_weights):
             return object.__sizeof__(self) + \
-                self._bias_weights.nbytes + \
                 self._recurrent_weights.todense().nbytes + \
                 self._feedback_weights.nbytes + \
                 self._hidden_layer_state.nbytes + \
                 sys.getsizeof(self.random_state)
         else:
             return object.__sizeof__(self) + \
-                self._bias_weights.nbytes + \
                 self._recurrent_weights.nbytes + \
                 self._feedback_weights.nbytes + \
                 self._hidden_layer_state.nbytes + \
@@ -988,13 +946,3 @@ class FeedbackNodeToNode(NodeToNode):
         recurrent_weights : ndarray of size (hidden_layer_size)
         """
         return self._feedback_weights
-
-    @property
-    def bias_weights(self):
-        """Returns the bias.
-
-        Returns
-        -------
-        bias : ndarray of size (hidden_layer_size)
-        """
-        return self._bias_weights
