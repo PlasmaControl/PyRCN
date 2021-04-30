@@ -77,12 +77,7 @@ base_esn = SeqToLabelESNClassifier().set_params(**initially_fixed_params)
 
 sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
 
-final_fixed_params = initially_fixed_params
-final_fixed_params.update(sequential_search.all_best_params_["step1"])
-final_fixed_params.update(sequential_search.all_best_params_["step2"])
-final_fixed_params.update(sequential_search.all_best_params_["step3"])
-
-base_esn = SeqToLabelESNClassifier(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression()).set_params(**final_fixed_params)
+base_esn = sequential_search.best_estimator_
 
 param_grid = {'input_to_node__hidden_layer_size': [500, 1000, 2000, 4000, 8000, 16000, 32000]}
 

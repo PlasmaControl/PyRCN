@@ -12,8 +12,6 @@
 # In[ ]:
 
 
-from joblib import dump, load
-
 import numpy as np
 import time
 from sklearn.base import clone
@@ -109,20 +107,14 @@ base_esn = SeqToLabelESNClassifier(output_strategy="winner_takes_all", **initial
 sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
 
 
-# ## Update parameter of the basic ESN
+# ## Use the ESN with final hyper-parameters
 # 
-# After the optimization, we define the final fixed parameters as the result of the optimization.
+# After the optimization, we extract the ESN with final hyper-parameters as the result of the optimization.
 
 # In[ ]:
 
 
-final_fixed_params = initially_fixed_params
-final_fixed_params.update(sequential_search.all_best_params_["step1"])
-final_fixed_params.update(sequential_search.all_best_params_["step2"])
-final_fixed_params.update(sequential_search.all_best_params_["step3"])
-final_fixed_params.update(sequential_search.all_best_params_["step4"])
-
-base_esn = SeqToLabelESNClassifier(output_strategy="winner_takes_all", **final_fixed_params)
+base_esn = sequential_search.best_estimator_
 
 
 # ## Test the ESN
