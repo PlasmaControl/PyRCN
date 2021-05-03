@@ -98,21 +98,21 @@ def fetch_maps_piano_dataset(*, data_origin=None, data_home=None, preprocessor=N
         raise TypeError("Invalid dataformat. Expected at least one equal dimension of all sequences.")
 
     for k in range(len(X_train)):
-        if label_type is "pitch":
+        if label_type == "pitch":
             y_train[k] = _get_pitch_labels(X_train[k], y_train[k])
-        elif label_type is "onset":
+        elif label_type == "onset":
             y_train[k] = _get_onset_labels(X_train[k], y_train[k])
-        elif label_type is "onset":
+        elif label_type == "onset":
             y_train[k] = _get_offset_labels(X_train[k], y_train[k])
         else:
             raise TypeError("Invalid label type.")
 
     for k in range(len(X_test)):
-        if label_type is "pitch":
+        if label_type == "pitch":
             y_test[k] = _get_pitch_labels(X_test[k], y_test[k])
-        elif label_type is "onset":
+        elif label_type == "onset":
             y_test[k] = _get_onset_labels(X_test[k], y_test[k])
-        elif label_type is "onset":
+        elif label_type == "onset":
             y_test[k] = _get_offset_labels(X_test[k], y_test[k])
         else:
             raise TypeError("Invalid label type.")

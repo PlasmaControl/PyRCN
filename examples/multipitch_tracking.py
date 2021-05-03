@@ -1,7 +1,6 @@
 import numpy as np
 import os
 import csv
-from intervaltree import IntervalTree
 from sklearn.base import clone
 from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
@@ -15,10 +14,8 @@ from madmom.audio.stft import ShortTimeFourierTransformProcessor
 from madmom.audio.filters import LogarithmicFilterbank
 from madmom.audio.spectrogram import FilteredSpectrogramProcessor, LogarithmicSpectrogramProcessor, SpectrogramDifferenceProcessor
 
-from pyrcn.echo_state_network import SeqToSeqESNClassifier
-from pyrcn.linear_model import IncrementalRegression
-from pyrcn.base import InputToNode, NodeToNode
 from pyrcn.util import FeatureExtractor
+from pyrcn.echo_state_network import SeqToSeqESNClassifier
 from pyrcn.datasets import fetch_maps_piano_dataset
 from pyrcn.metrics import accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
@@ -56,7 +53,7 @@ feature_extraction_pipeline = create_feature_extraction_pipeline(sr=44100, frame
 
 X_train, X_test, y_train, y_test = fetch_maps_piano_dataset(data_origin="/projects/p_transcriber/MAPS", 
                                                             data_home=None, preprocessor=feature_extraction_pipeline,
-                                                            force_preprocessing=False, label_type="pitch")
+                                                            force_preprocessing=True, label_type="pitch")
 
 
 # ESN preparation
