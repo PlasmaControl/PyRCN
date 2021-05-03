@@ -18,6 +18,7 @@ from scipy.sparse import csr_matrix
 
 from sklearn.preprocessing import LabelEncoder, LabelBinarizer
 from sklearn.metrics._classification import _weighted_sum, _check_zero_division
+from sklearn.utils.sparsefuncs import count_nonzero
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_consistent_length
 from sklearn.utils.validation import _deprecate_positional_args
@@ -48,7 +49,7 @@ def _check_targets(y_true, y_pred):
     """
     check_consistent_length(y_true, y_pred)
     all_types_true = [type_of_target(y) for y in y_true]
-    all_types_pred = [type_of_target(y.ravel()) for y in y_pred]
+    all_types_pred = [type_of_target(y) for y in y_pred]
 
     if len(np.unique(all_types_true)) > 2:
         raise ValueError("Classification metrics can't handle a mix of {0} "
@@ -97,8 +98,9 @@ def _check_targets(y_true, y_pred):
                 y_type = "multiclass"
 
     if y_type.startswith('multilabel'):
-        y_true = csr_matrix(y_true)
-        y_pred = csr_matrix(y_pred)
+        for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+            y_true[k] = csr_matrix(y_true[k])
+            y_pred[k] = csr_matrix(y_pred[k])
         y_type = 'multilabel-indicator'
 
     return y_type, y_true, y_pred

@@ -21,18 +21,16 @@ class SeqToSeqESNRegressor(ESNRegressor):
     """
     @_deprecate_positional_args
     def __init__(self, *,
-                 input_to_node=None,
-                 node_to_node=None,
-                 regressor=None,
+                 input_to_node=InputToNode(),
+                 node_to_node=NodeToNode(),
+                 regressor=IncrementalRegression(alpha=.0001),
                  chunk_size=None,
-                 random_state=None,
                  n_jobs=None,
                  **kwargs):
         super().__init__(input_to_node=input_to_node, 
                          node_to_node=node_to_node,
                          regressor=regressor,
                          chunk_size=chunk_size,
-                         random_state=random_state,
                          **kwargs)
         self.n_jobs = n_jobs
 
@@ -65,18 +63,18 @@ class SeqToSeqESNClassifier(ESNClassifier):
     A trainer to simplify sequence-to-sequence classification.
     """
     @_deprecate_positional_args
-    def __init__(self,
+    def __init__(self, *,
                  input_to_node=InputToNode(),
                  node_to_node=NodeToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
                  chunk_size=None,
-                 random_state=None,
-                 n_jobs=None):
+                 n_jobs=None,
+                 **kwargs):
         super().__init__(input_to_node=input_to_node, 
                          node_to_node=node_to_node,
                          regressor=regressor,
                          chunk_size=chunk_size,
-                         random_state=random_state)
+                         **kwargs)
         self.n_jobs = n_jobs
 
     def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, postpone_inverse=False):
@@ -85,7 +83,11 @@ class SeqToSeqESNClassifier(ESNClassifier):
         return self
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
-        classes = LabelBinarizer().fit(np.concatenate(y)).classes_
+        lab = LabelBinarizer().fit(np.concatenate(y))
+        if lab.y_type_.startswith('multilabel'):
+            classes = np.zeros(shape=(1, y[0].shape[1]))
+        else:
+            classes = lab.classes_
         for X_train, y_train in tqdm(zip(X[:-1], y[:-1])):
             super().partial_fit(X_train, y_train, classes=classes, postpone_inverse=True)
         super().partial_fit(X=X[-1], y=y[-1], postpone_inverse=False)

@@ -4,5 +4,6 @@ scipy>=1.2.0
 joblib>=0.13.2
 pandas>=1.0.0
 matplotlib
-librosa
-tqdm
+librosa>=0.8.0
+madmom>=0.16.1
+tqdm>=4.33.0
