@@ -54,7 +54,7 @@ def create_feature_extraction_pipeline(sr=44100, frame_sizes=[1024, 2048, 4096],
 # Load and preprocess the dataset
 feature_extraction_pipeline = create_feature_extraction_pipeline(sr=44100, frame_sizes=[2048], fps_hz=100)
 
-X_train, X_test, y_train, y_test = fetch_maps_piano_dataset(data_origin=r"Z:\Projekt-Musik-Datenbank\MultiPitch-Tracking", 
+X_train, X_test, y_train, y_test = fetch_maps_piano_dataset(data_origin="/projects/p_transcriber/MAPS", 
                                                             data_home=None, preprocessor=feature_extraction_pipeline,
                                                             force_preprocessing=False, label_type="pitch")
 
@@ -79,7 +79,7 @@ step1_esn_params = {'input_scaling': np.linspace(0.1, 1.0, 10),
 step2_esn_params = {'leakage': np.linspace(0.1, 1.0, 10)}
 step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
 
-kwargs = {'verbose': 1, 'n_jobs': 1, 'scoring': make_scorer(accuracy_score)}
+kwargs = {'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
 
 # The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
@@ -90,7 +90,7 @@ base_esn = SeqToSeqESNClassifier(**initially_fixed_params)
 
 sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
 
-
+dump(sequential_search, "sequential_search.joblib")
 
 # ## Train a model
 # 
