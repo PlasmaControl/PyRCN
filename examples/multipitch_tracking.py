@@ -59,7 +59,7 @@ X_train, X_test, y_train, y_test = fetch_maps_piano_dataset(data_origin="/projec
 # ESN preparation
 initially_fixed_params = {'hidden_layer_size': 500,
                           'input_activation': 'identity',
-                          'k_in': 5,
+                          'k_in': 10,
                           'bias_scaling': 0.0,
                           'reservoir_activation': 'tanh',
                           'leakage': 1.0,
@@ -70,10 +70,10 @@ initially_fixed_params = {'hidden_layer_size': 500,
                           'alpha': 1e-5,
                           'random_state': 42}
 
-step1_esn_params = {'input_scaling': np.linspace(0.1, 1.0, 10),
+step1_esn_params = {'leakage': np.linspace(0.1, 1.0, 10)}
+step2_esn_params = {'input_scaling': np.linspace(0.1, 1.0, 10),
                     'spectral_radius': np.linspace(0.0, 1.5, 16)}
 
-step2_esn_params = {'leakage': np.linspace(0.1, 1.0, 10)}
 step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
 
 kwargs = {'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
@@ -89,105 +89,25 @@ sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train,
 
 dump(sequential_search, "sequential_search.joblib")
 
-# ## Train a model
-# 
-# This might require a huge amount of time and memory. We have deactivated it for now, because we already offer pre-trained models.
-# 
-# The pipeline is clear: 
-# 
-# - Extract features and labels
-# - Pass features and labels through ESN
-# - Compute output weights and clear no more required helper variables.
-# 
-# Notice that you can pass the option "update_output_weights=False" to the call to partial_fit. If this option is passed, no output weights are computed after passing the sequence through the network. This is computationally more efficient.
-# 
-# After passing the entire sequence through the ESN, we need to call finalize() in order to compute the update weights.
-# 
-# By default, "update_output_weights=False" and it is not necessary to call finalize().
+sequential_search = load("sequential_search.joblib")
+# Use the ESN with final hyper-parameters
+base_esn = sequential_search.best_estimator_
 
-# In[5]:
+# Test the ESN
 
 
-should_train = False
+param_grid = {'hidden_layer_size': [500, 1000, 2000, 4000, 5000, 8000, 12000, 16000, 20000, 24000, 32000],
+              'bi_directional': [False, True]}
 
-if should_train:
-    train_ids, test_ids = get_dataset()
-    for fid in train_ids:
-        X, y_true = extract_features(os.path.join(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\MusicNet", 'train_data'), file_name=fid)
-        esn.partial_fit(X=X, y=y_true, update_output_weights=False)
-    esn.finalize()
-
-
-# ## Validate the ESN model
-# 
-# This might require a huge amount of time if a lot of audio files need to be analyzed. 
-# 
-# The pipeline is similar as before: 
-# 
-# - Extract features and labels
-# - Pass features through ESN and compute outputs
-# - Binarize the outputs by simply thresholding
-# - Save labels, outputs, binarized outputs for further processing, e.g. visualization or evaluation.
-
-# In[6]:
-
-
-train_ids, test_ids = get_dataset()
-X_train = []
-Y_pred_train = []
-Y_pred_bin_train = []
-Y_true_train = []
-for fid in train_ids:
-    X, y_true = extract_features(os.path.join(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\MusicNet", 'train_data'), file_name=fid)
-    X_train.append(X)
-    y_pred = esn.predict(X=X)
-    Y_true_train.append(y_true)
-    Y_pred_train.append(y_pred)
-    Y_pred_bin_train.append(np.asarray(y_pred > 0.3, dtype=int))
-
-X_test = []
-Y_pred_test = []
-Y_true_test = []
-for fid in test_ids:
-    X, y_true = extract_features(os.path.join(r"C:\Users\Steiner\Documents\Python\PyRCN\examples\dataset\MusicNet", 'test_data'), file_name=fid)
-    X_test.append(X)
-    y_pred = esn.predict(X=X)
-    Y_true_test.append(y_true)
-    Y_pred_test.append(np.asarray(y_pred > 0.3, dtype=int))
-
-
-# ## Visualization
-# 
-# We visualize inputs, labels, raw outputs and thresholded outputs in four plots, respectively. 
-
-# In[7]:
-
-
-fig, axs = plt.subplots(2, 2, figsize=(12, 6))
-
-axs[0, 0].imshow(Y_true_train[0].T, origin='lower', vmin=0, vmax=1, cmap='gray', aspect='auto')
-axs[0, 0].set_xlabel('n')
-axs[0, 0].set_ylabel('Y_true[n]')
-axs[0, 0].grid()
-axs[0, 0].set_ylim([21, 108])
-
-axs[0, 1].imshow(X_train[0].T, origin='lower', vmin=0, vmax=1, aspect='auto')
-axs[0, 1].set_xlabel('n')
-axs[0, 1].set_ylabel('X[n]')
-axs[0, 1].grid()
-
-im = axs[1, 0].imshow(Y_pred_train[0].T, origin='lower', aspect='auto')
-axs[1, 0].set_xlabel('n')
-axs[1, 0].set_ylabel('Y_pred[n]')
-axs[1, 0].grid()
-axs[1, 0].set_ylim([21, 108])
-# fig.colorbar(im, ax=axs[1, 0])
-
-axs[1, 1].imshow(Y_pred_bin_train[0].T, origin='lower', vmin=0, vmax=1, cmap='gray', aspect='auto')
-axs[1, 1].set_xlabel('n')
-axs[1, 1].set_ylabel('Y_pred_bin[n]')
-axs[1, 1].grid()
-axs[1, 1].set_ylim([21, 108])
-
-plt.tight_layout()
-
+print("CV results\tFit time\tInference time\tAccuracy score\tSize[Bytes]")
+for params in ParameterGrid(param_grid):
+    esn_cv = cross_validate(clone(base_esn).set_params(**params), X=X_train, y=y_train, scoring=make_scorer(accuracy_score), n_jobs=-1)
+    t1 = time.time()
+    esn = clone(base_esn).set_params(**params).fit(X_train, y_train)
+    t_fit = time.time() - t1
+    dump(esn, "esn_" + str(params[hidden_layer_size]) + "_" + str(params[bi_directional]) + ".joblib")
+    mem_size = esn.__sizeof__()
+    t1 = time.time()
+    acc_score = accuracy_score(y_test, esn.predict(X_test))
+    t_inference = time.time() - t1
+    print("{0}\t{1}\t{2}\t{3}\t{4}".format(esn_cv, t_fit, t_inference, acc_score, mem_size))
