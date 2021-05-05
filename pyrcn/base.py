@@ -164,7 +164,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         Scales the input bias of the activation.
     k_in : int, default=None.
         input weights per node. By default, it is None. If set, it overrides sparsity.
-    random_state : {None, int, RandomState}, default=None
+    random_state : {None, int, RandomState}, default=42
     """
     @_deprecate_positional_args
     def __init__(self, *,
@@ -174,7 +174,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
                  input_scaling=1.,
                  bias_scaling=1.,
                  k_in=None,
-                 random_state=None):
+                 random_state=42):
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
         self.input_activation = input_activation
@@ -209,10 +209,10 @@ class InputToNode(BaseEstimator, TransformerMixin):
             n_features_in=self.n_features_in_,
             hidden_layer_size=self.hidden_layer_size,
             fan_in=np.rint(self.hidden_layer_size * self.sparsity).astype(int),
-            random_state=self.random_state)
+            random_state=self._random_state)
         self._bias_weights = self._uniform_random_bias(
             hidden_layer_size=self.hidden_layer_size,
-            random_state=self.random_state)
+            random_state=self._random_state)
         return self
 
     def transform(self, X):
@@ -309,7 +309,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         -------
 
         """
-        self.random_state = check_random_state(self.random_state)
+        self._random_state = check_random_state(self.random_state)
 
         if self.hidden_layer_size <= 0:
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
@@ -339,13 +339,13 @@ class InputToNode(BaseEstimator, TransformerMixin):
                 self._bias_weights.nbytes + \
                 self._input_weights.todense().nbytes + \
                 self._hidden_layer_state.nbytes + \
-                sys.getsizeof(self.random_state)
+                sys.getsizeof(self._random_state)
         else:
             return object.__sizeof__(self) + \
                 self._bias_weights.nbytes + \
                 self._input_weights.nbytes + \
                 self._hidden_layer_state.nbytes + \
-                sys.getsizeof(self.random_state)
+                sys.getsizeof(self._random_state)
 
     @property
     def input_weights(self):
@@ -376,7 +376,7 @@ class BatchIntrinsicPlasticity(InputToNode):
             input_activation='tanh',
             hidden_layer_size=500,
             sparsity=1.,
-            random_state=None):
+            random_state=42):
         super().__init__(
             input_activation=input_activation,
             hidden_layer_size=hidden_layer_size,
@@ -502,7 +502,7 @@ class PredefinedWeightsInputToNode(InputToNode):
         Scales the input weight matrix.
     bias_scaling : float, default=1.
         Scales the input bias of the activation.
-    random_state : {None, int, RandomState}, default=None
+    random_state : {None, int, RandomState}, default=42
     """
     @_deprecate_positional_args
     def __init__(self,
@@ -510,7 +510,7 @@ class PredefinedWeightsInputToNode(InputToNode):
             input_activation='relu',
             input_scaling=1.,
             bias_scaling=0.,
-            random_state=None):
+            random_state=42):
         super().__init__(
             hidden_layer_size=predefined_input_weights.shape[1],
             sparsity=1.,
@@ -525,6 +525,7 @@ class PredefinedWeightsInputToNode(InputToNode):
         self._validate_data(X, y)
         self._check_n_features(X, reset=True)
 
+        """
         if self.random_state is None:
             self.random_state = np.random.RandomState()
         elif isinstance(self.random_state, (int, np.integer)):
@@ -533,7 +534,7 @@ class PredefinedWeightsInputToNode(InputToNode):
             pass
         else:
             raise ValueError('random_state is not valid, got {0}.'.format(self.random_state))
-
+        """
         if self.predefined_input_weights is None:
             raise ValueError('predefined_input_weights have to be defined, use InputToNode class!')
 
@@ -545,7 +546,7 @@ class PredefinedWeightsInputToNode(InputToNode):
 
         self._bias_weights = self._uniform_random_bias(
             hidden_layer_size=self.hidden_layer_size,
-            random_state=self.random_state)
+            random_state=self._random_state)
         return self
 
 
@@ -578,7 +579,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         number of initial states to omit for training. By default, it is not omit any data.
     continuation : bool, default=False
         whether to save the last reservoir state for later continuation.
-    random_state : {None, int, RandomState}, default=None
+    random_state : {None, int, RandomState}, default=42
     """
     @_deprecate_positional_args
     def __init__(self, *,
@@ -591,7 +592,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
                  k_rec=None,
                  wash_out=0,
                  continuation=True,
-                 random_state=None):
+                 random_state=42):
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
         self.reservoir_activation = reservoir_activation
@@ -632,7 +633,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             n_features_in=self.n_features_in_,
             hidden_layer_size=self.hidden_layer_size,
             fan_in=np.rint(self.hidden_layer_size * self.sparsity).astype(int),
-            random_state=self.random_state)
+            random_state=self._random_state)
         return self
 
     def transform(self, X, y=None):
@@ -707,10 +708,12 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             recurrent_weights_init = weights_array.reshape((n_features_in, hidden_layer_size))
 
         try:
-            we = eigens(recurrent_weights_init,
-                        k=np.minimum(10, hidden_layer_size - 2),
-                        which='LM',
-                        return_eigenvectors=False)
+            we = eigens(recurrent_weights_init, 
+                        k=np.minimum(10, hidden_layer_size - 2), 
+                        which='LM', 
+                        return_eigenvectors=False, 
+                        v0=random_state.normal(loc=0., scale=1., size=hidden_layer_size)
+                        )
         except ArpackNoConvergence:
             print("WARNING: No convergence! Returning possibly invalid values!!!")
             we = ArpackNoConvergence.eigenvalues
@@ -724,7 +727,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         -------
 
         """
-        self.random_state = check_random_state(self.random_state)
+        self._random_state = check_random_state(self.random_state)
 
         if self.hidden_layer_size <= 0:
             raise ValueError("hidden_layer_size must be > 0, got %s." % self.hidden_layer_size)
@@ -809,7 +812,7 @@ class FeedbackNodeToNode(NodeToNode):
             - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
             - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
             - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
-    random_state : {None, int, RandomState}, default=None
+    random_state : {None, int, RandomState}, default=42
     """
     @_deprecate_positional_args
     def __init__(self, *,
@@ -823,7 +826,7 @@ class FeedbackNodeToNode(NodeToNode):
                  bi_directional=None,
                  k_rec=None,
                  output_activation='tanh',
-                 random_state=None):
+                 random_state=42):
         super().__init__(
             hidden_layer_size=hidden_layer_size,
             sparsity=sparsity,
@@ -859,7 +862,7 @@ class FeedbackNodeToNode(NodeToNode):
         self._feedback_weights = self._uniform_random_feedback(
             hidden_layer_size=self.hidden_layer_size,
             output_size=y.shape[1],
-            random_state=self.random_state)
+            random_state=self._random_state)
         return self
 
     def _pass_through_recurrent_weights(self, X, y):

@@ -70,6 +70,17 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             self.regressor = regressor.set_params(**{ key: kwargs[key] for key in kwargs.keys() if key in reg_params})
         self._chunk_size = chunk_size
 
+    def __add__(self, other):
+        self.regressor._K = self.regressor._K + other.regressor._K
+        self.regressor._xTy = self.regressor._xTy  + other.regressor._xTy
+        return self
+
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        else:
+            return self.__add__(other)
+
     def get_params(self, deep=True):
         if deep:
             return {**self.input_to_node.get_params(), **self.node_to_node.get_params(), **{"alpha": self.regressor.get_params()["alpha"]}}
