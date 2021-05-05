@@ -25,8 +25,10 @@ from sklearn.preprocessing import StandardScaler
 
 if scipy.__version__ == '0.9.0' or scipy.__version__ == '0.10.1':
     from scipy.sparse.linalg import eigs as eigens
+    from scipy.sparse.linalg import ArpackNoConvergence
 else:
     from scipy.sparse.linalg.eigen.arpack import eigs as eigens
+    from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
 
 
 if parse_version(sklearn.__version__) < parse_version('0.23.1'):
@@ -704,8 +706,14 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         else:
             recurrent_weights_init = weights_array.reshape((n_features_in, hidden_layer_size))
 
-        we = eigens(recurrent_weights_init, return_eigenvectors=False, k=np.minimum(10, hidden_layer_size - 2))
-
+        try:
+            we = eigens(recurrent_weights_init,
+                        k=np.minimum(10, hidden_layer_size - 2),
+                        which='LM',
+                        return_eigenvectors=False)
+        except ArpackNoConvergence:
+            print("WARNING: No convergence! Returning possibly invalid values!!!")
+            we = ArpackNoConvergence.eigenvalues
         return recurrent_weights_init / np.amax(np.absolute(we))
 
     def _validate_hyperparameters(self):
