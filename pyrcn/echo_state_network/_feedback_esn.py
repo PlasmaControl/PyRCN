@@ -50,6 +50,7 @@ class FeedbackESNRegressor(ESNRegressor):
                  node_to_node=None,
                  regressor=None,
                  chunk_size=None,
+                 verbose=False,
                  **kwargs):
         if node_to_node is None:
             node_to_node = FeedbackNodeToNode()
@@ -57,6 +58,7 @@ class FeedbackESNRegressor(ESNRegressor):
                          node_to_node=node_to_node,
                          regressor=regressor,
                          chunk_size=chunk_size,
+                         verbose=verbose,
                          kwargs=kwargs)
 
     def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, postpone_inverse=False):
@@ -87,7 +89,8 @@ class FeedbackESNRegressor(ESNRegressor):
         try:
             hidden_layer_state = self._input_to_node.transform(X)
         except NotFittedError as e:
-            print('input_to_node has not been fitted yet: {0}'.format(e))
+            if self.verbose:
+                print('input_to_node has not been fitted yet: {0}'.format(e))
             hidden_layer_state = self._input_to_node.fit_transform(X)
             pass
 
@@ -95,7 +98,8 @@ class FeedbackESNRegressor(ESNRegressor):
         try:
             hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y)
         except NotFittedError as e:
-            print('node_to_node has not been fitted yet: {0}'.format(e))
+            if self.verbose:
+                print('node_to_node has not been fitted yet: {0}'.format(e))
             self._node_to_node.fit(hidden_layer_state, y=y)
             hidden_layer_state = self._node_to_node.transform(hidden_layer_state, y=y)
             pass

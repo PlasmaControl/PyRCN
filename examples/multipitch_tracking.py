@@ -4,10 +4,13 @@ import csv
 from sklearn.base import clone
 from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, ParameterGrid
 from joblib import dump, load
+import time
 
-import librosa
+# import librosa
+from madmom.audio.signal import normalize
+from madmom.io.audio import load_wave_file
 from madmom.processors import SequentialProcessor, ParallelProcessor
 from madmom.audio import SignalProcessor, FramedSignalProcessor
 from madmom.audio.stft import ShortTimeFourierTransformProcessor
@@ -15,9 +18,9 @@ from madmom.audio.filters import LogarithmicFilterbank
 from madmom.audio.spectrogram import FilteredSpectrogramProcessor, LogarithmicSpectrogramProcessor, SpectrogramDifferenceProcessor
 
 from pyrcn.util import FeatureExtractor
-from pyrcn.echo_state_network import SeqToSeqESNClassifier
+from pyrcn.echo_state_network import SeqToSeqESNRegressor, SeqToSeqESNClassifier
 from pyrcn.datasets import fetch_maps_piano_dataset
-from pyrcn.metrics import accuracy_score
+from pyrcn.metrics import accuracy_score, mean_squared_error
 from pyrcn.model_selection import SequentialSearchCV
 
 
@@ -58,16 +61,18 @@ X_train, X_test, y_train, y_test = fetch_maps_piano_dataset(data_origin="/projec
 
 # ESN preparation
 initially_fixed_params = {'hidden_layer_size': 500,
+                          'input_scaling': 0.4,
                           'input_activation': 'identity',
                           'k_in': 10,
                           'bias_scaling': 0.0,
                           'reservoir_activation': 'tanh',
-                          'leakage': 1.0,
+                          'spectral_radius': 0.1,
+                          'leakage': 0.1,
                           'bi_directional': False,
                           'k_rec': 10,
                           'wash_out': 0,
                           'continuation': False,
-                          'alpha': 1e-5,
+                          'alpha': 1e-3,
                           'random_state': 42}
 
 step1_esn_params = {'leakage': np.linspace(0.1, 1.0, 10)}
@@ -85,29 +90,30 @@ searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
 
 base_esn = SeqToSeqESNClassifier(**initially_fixed_params)
 
-sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
+try:
+    sequential_search = load("sequential_search_2.joblib")
+except FileNotFoundError:
+    sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
+    dump(sequential_search, "sequential_search_2.joblib")
 
-dump(sequential_search, "sequential_search.joblib")
-
-sequential_search = load("sequential_search.joblib")
 # Use the ESN with final hyper-parameters
 base_esn = sequential_search.best_estimator_
 
 # Test the ESN
 
-
-param_grid = {'hidden_layer_size': [500, 1000, 2000, 4000, 5000, 8000, 12000, 16000, 20000, 24000, 32000],
+param_grid = {'hidden_layer_size': [8000, 12000, 16000, 20000, 24000, 32000],
               'bi_directional': [False, True]}
 
-print("CV results\tFit time\tInference time\tAccuracy score\tSize[Bytes]")
+print("Fit time\tInference time\tAccuracy score\tSize[Bytes]")
 for params in ParameterGrid(param_grid):
-    esn_cv = cross_validate(clone(base_esn).set_params(**params), X=X_train, y=y_train, scoring=make_scorer(accuracy_score), n_jobs=-1)
+    # esn_cv = cross_validate(clone(base_esn).set_params(**params), X=X_train, y=y_train, scoring=make_scorer(accuracy_score), n_jobs=-1)
     t1 = time.time()
     esn = clone(base_esn).set_params(**params).fit(X_train, y_train)
     t_fit = time.time() - t1
-    dump(esn, "esn_" + str(params[hidden_layer_size]) + "_" + str(params[bi_directional]) + ".joblib")
+    dump(esn, "esn_" + str(params["hidden_layer_size"]) + "_" + str(params["bi_directional"]) + ".joblib")
     mem_size = esn.__sizeof__()
     t1 = time.time()
     acc_score = accuracy_score(y_test, esn.predict(X_test))
     t_inference = time.time() - t1
-    print("{0}\t{1}\t{2}\t{3}\t{4}".format(esn_cv, t_fit, t_inference, acc_score, mem_size))
+    print("{0}\t{1}\t{2}\t{3}".format(t_fit, t_inference, acc_score, mem_size))
+    # print("{0}\t{1}\t{2}\t{3}\t{4}".format(esn_cv, t_fit, t_inference, acc_score, mem_size))

@@ -77,7 +77,8 @@ initially_fixed_params = {'hidden_layer_size': 50,
                           'wash_out': 0,
                           'continuation': False,
                           'alpha': 1e-5,
-                          'random_state': 42}
+                          'random_state': 42,
+                          'output_strategy': "winner_takes_all"}
 
 step1_esn_params = {'input_scaling': np.linspace(0.1, 1.0, 10),
                     'spectral_radius': np.linspace(0.0, 1.5, 16)}
@@ -94,7 +95,7 @@ searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
             ('step3', GridSearchCV, step3_esn_params, kwargs),
             ('step4', GridSearchCV, step4_esn_params, kwargs)]
 
-base_esn = SeqToLabelESNClassifier(output_strategy="winner_takes_all", **initially_fixed_params)
+base_esn = SeqToLabelESNClassifier(**initially_fixed_params)
 
 
 # ## Optimization
@@ -133,10 +134,13 @@ for params in ParameterGrid(param_grid):
     t1 = time.time()
     esn = clone(base_esn).set_params(**params).fit(X_train, y_train)
     t_fit = time.time() - t1
+    t1 = time.time()
+    esn_par = clone(base_esn).set_params(**params).fit(X_train, y_train, n_jobs=8)
+    t_fit_par = time.time() - t1
     mem_size = esn.__sizeof__()
     t1 = time.time()
     acc_score = accuracy_score(y_test, esn.predict(X_test))
-    t_inference = time.time() - t1
+    tinference = time.time() - t1
     print("{0}\t{1}\t{2}\t{3}\t{4}".format(esn_cv, t_fit, t_inference, acc_score, mem_size))
 
 

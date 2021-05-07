@@ -40,6 +40,8 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         self.sr = None
         self.mono = None
         self.norm = None
+        self.sample_rate=None
+        self.num_channels=None
 
         self.set_params(**kwargs)
 
