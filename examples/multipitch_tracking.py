@@ -108,7 +108,7 @@ print("Fit time\tInference time\tAccuracy score\tSize[Bytes]")
 for params in ParameterGrid(param_grid):
     # esn_cv = cross_validate(clone(base_esn).set_params(**params), X=X_train, y=y_train, scoring=make_scorer(accuracy_score), n_jobs=-1)
     t1 = time.time()
-    esn = clone(base_esn).set_params(**params).fit(X_train, y_train)
+    esn = clone(base_esn).set_params(**params).fit(X_train, y_train, n_jobs=-1)
     t_fit = time.time() - t1
     dump(esn, "esn_" + str(params["hidden_layer_size"]) + "_" + str(params["bi_directional"]) + ".joblib")
     mem_size = esn.__sizeof__()
