@@ -7,6 +7,7 @@ Sequence-to-sequence model
 
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import _deprecate_positional_args
+from sklearn.base import clone
 
 from pyrcn.base import InputToNode, NodeToNode, FeedbackNodeToNode
 from pyrcn.linear_model import IncrementalRegression
@@ -31,6 +32,11 @@ class SeqToSeqESNRegressor(ESNRegressor):
                          regressor=regressor,
                          chunk_size=chunk_size,
                          **kwargs)
+        self._base_estimator = ESNRegressor(input_to_node=input_to_node,
+                                            node_to_node=node_to_node,
+                                            regressor=regressor,
+                                            chunk_size=chunk_size,
+                                            **kwargs)
 
     def fit(self, X, y, n_jobs=None):
         """
@@ -44,7 +50,7 @@ class SeqToSeqESNRegressor(ESNRegressor):
                 super().partial_fit(X_train, y_train, postpone_inverse=True)
             super().partial_fit(X[-1], y[-1], postpone_inverse=False)
         else:
-            regs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train)
+            regs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train) 
                                                       for X_train, y_train in zip(np.array_split(X[:-1], n_jobs), np.array_split(y[:-1], n_jobs)))
             final_reg = sum(regs).partial_fit(X=X[-1], y=y[-1], postpone_inverse=False)
             self.input_to_node = final_reg.input_to_node
@@ -58,7 +64,7 @@ class SeqToSeqESNRegressor(ESNRegressor):
             for X_train, y_train in zip(X, y):
                 super().partial_fit(X_train, y_train, postpone_inverse=True)
         else:
-            regs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train)
+            regs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train) 
                                                       for X_train, y_train in zip(X, y))
             final_reg = sum(regs)
             regs = None
@@ -97,13 +103,18 @@ class SeqToSeqESNClassifier(ESNClassifier):
                          regressor=regressor,
                          chunk_size=chunk_size,
                          **kwargs)
+        self._base_estimator = ESNClassifier(input_to_node=input_to_node,
+                                             node_to_node=node_to_node,
+                                             regressor=regressor,
+                                             chunk_size=chunk_size,
+                                             **kwargs)
 
     def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, postpone_inverse=False):
         if n_jobs is None:
             for X_train, y_train in zip(X, y):
                 super().partial_fit(X_train, y_train, classes=classes, postpone_inverse=True)
         else:
-            clfs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train, classes=classes)
+            clfs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train, classes=classes) 
                                                       for X_train, y_train in zip(X, y))
             final_clf = sum(clfs)
             self.input_to_node = final_clf.input_to_node
@@ -124,9 +135,9 @@ class SeqToSeqESNClassifier(ESNClassifier):
                 super().partial_fit(X_train, y_train, classes=classes, postpone_inverse=True)
             super().partial_fit(X[-1], np.repeat(y[-1], X[-1].shape[0]), classes=classes, postpone_inverse=False)
         else:
-            clfs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train, classes=classes)
+            clfs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train, classes=classes) 
                                                       for X_train, y_train in zip(np.array_split(X[:-1], n_jobs), np.array_split(y[:-1], n_jobs)))
-            final_clf = sum(clfs).partial_fit(X=X[-1], y=np.repeat(y[-1], X[-1].shape[0]), postpone_inverse=False)
+            final_clf = sum(clfs).partial_fit(X=X[-1], y=y[-1], postpone_inverse=False)
             self.input_to_node = final_clf.input_to_node
             self.node_to_node = final_clf.node_to_node
             self.regressor = final_clf.regressor

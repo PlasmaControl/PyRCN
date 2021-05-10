@@ -25,7 +25,7 @@ class SeqToLabelESNClassifier(ESNClassifier):
                  input_to_node=InputToNode(),
                  node_to_node=NodeToNode(),
                  regressor=IncrementalRegression(alpha=.0001),
-                 output_strategy="last_state",
+                 output_strategy="winner_takes_all",
                  n_jobs=None,
                  chunk_size=None,
                  **kwargs):
@@ -69,10 +69,9 @@ class SeqToLabelESNClassifier(ESNClassifier):
                 super().partial_fit(X_train, y_train, classes=classes, postpone_inverse=True)
             super().partial_fit(X[-1], np.repeat(y[-1], X[-1].shape[0]), classes=classes, postpone_inverse=False)
         else:
-            clfs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train, classes=classes)
+            clfs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train, classes=classes) 
                                                       for X_train, y_train in zip(np.array_split(X[:-1], n_jobs), np.array_split(y[:-1], n_jobs)))
             final_clf = sum(clfs).partial_fit(X=X[-1], y=np.repeat(y[-1], X[-1].shape[0]), postpone_inverse=False)
-            # sind input_to_node etc. mutables?
             self.input_to_node = final_clf.input_to_node
             self.node_to_node = final_clf.node_to_node
             self.regressor = final_clf.regressor
