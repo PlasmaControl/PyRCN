@@ -40,7 +40,7 @@ initially_fixed_esn_params = {'hidden_layer_size': 200,
                               'alpha': 1e-3
                               }
 
-param_grid = {'teacher_shift': [-0.7, -0.6, -0.5]}
+param_grid = {'teacher_shift': [-0.4, -0.3, -0.2]}
 
 base_esn = FeedbackESNRegressor(**initially_fixed_esn_params)
 
