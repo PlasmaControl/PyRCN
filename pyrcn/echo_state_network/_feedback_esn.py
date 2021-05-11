@@ -59,7 +59,7 @@ class FeedbackESNRegressor(ESNRegressor):
                          regressor=regressor,
                          chunk_size=chunk_size,
                          verbose=verbose,
-                         kwargs=kwargs)
+                         **kwargs)
 
     def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, postpone_inverse=False):
         """
