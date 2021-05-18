@@ -1,10 +1,11 @@
 import numpy as np
 import os
 import csv
+from sklearn.utils.fixes import loguniform
 from sklearn.base import clone
 from sklearn.metrics import make_scorer
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import GridSearchCV, ParameterGrid
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV, ParameterGrid
 from joblib import dump, load
 import time
 
@@ -18,7 +19,7 @@ from madmom.audio.filters import LogarithmicFilterbank
 from madmom.audio.spectrogram import FilteredSpectrogramProcessor, LogarithmicSpectrogramProcessor, SpectrogramDifferenceProcessor
 
 from pyrcn.util import FeatureExtractor
-from pyrcn.echo_state_network import SeqToSeqESNRegressor, SeqToSeqESNClassifier
+from pyrcn.echo_state_network import SeqToSeqESNClassifier
 from pyrcn.datasets import fetch_maps_piano_dataset
 from pyrcn.metrics import accuracy_score, mean_squared_error
 from pyrcn.model_selection import SequentialSearchCV
@@ -75,38 +76,43 @@ initially_fixed_params = {'hidden_layer_size': 500,
                           'alpha': 1e-3,
                           'random_state': 42}
 
-step1_esn_params = {'leakage': np.linspace(0.1, 1.0, 10)}
+step1_esn_params = {'leakage': loguniform(1e-5, 1e0)}
+kwargs_1 = {'random_state': 42,
+           'verbose': 2,
+           'n_jobs': -1,
+           'n_iter': 14,
+           'scoring': make_scorer(accuracy_score)}
 step2_esn_params = {'input_scaling': np.linspace(0.1, 1.0, 10),
                     'spectral_radius': np.linspace(0.0, 1.5, 16)}
 
-step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
+step3_esn_params = {'bias_scaling': np.linspace(0.0, 3.0, 31)}
 
-kwargs = {'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
+kwargs_2_3 = {'verbose': 2, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
 
 # The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
-searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
-            ('step2', GridSearchCV, step2_esn_params, kwargs),
-            ('step3', GridSearchCV, step3_esn_params, kwargs)]
+searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_1),
+            ('step2', GridSearchCV, step2_esn_params, kwargs_2_3),
+            ('step3', GridSearchCV, step3_esn_params, kwargs_2_3)]
 
 base_esn = SeqToSeqESNClassifier(**initially_fixed_params)
 
 try:
-    sequential_search = load("sequential_search_2.joblib")
+    sequential_search = load("sequential_search.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "sequential_search_2.joblib")
+    dump(sequential_search, "sequential_search.joblib")
 
 # Use the ESN with final hyper-parameters
 base_esn = sequential_search.best_estimator_
 
 # Test the ESN
 
-param_grid = {'hidden_layer_size': [8000, 12000, 16000, 20000, 24000, 32000],
+param_grid = {'hidden_layer_size': [500, 1000, 2000, 4000, 8000, 12000, 16000, 20000, 24000, 32000],
               'bi_directional': [False, True]}
 
 print("Fit time\tInference time\tAccuracy score\tSize[Bytes]")
 for params in ParameterGrid(param_grid):
-    # esn_cv = cross_validate(clone(base_esn).set_params(**params), X=X_train, y=y_train, scoring=make_scorer(accuracy_score), n_jobs=-1)
+    esn_cv = cross_validate(clone(base_esn).set_params(**params), X=X_train, y=y_train, scoring=make_scorer(accuracy_score), n_jobs=-1)
     t1 = time.time()
     esn = clone(base_esn).set_params(**params).fit(X_train, y_train, n_jobs=-1)
     t_fit = time.time() - t1
@@ -115,5 +121,4 @@ for params in ParameterGrid(param_grid):
     t1 = time.time()
     acc_score = accuracy_score(y_test, esn.predict(X_test))
     t_inference = time.time() - t1
-    print("{0}\t{1}\t{2}\t{3}".format(t_fit, t_inference, acc_score, mem_size))
-    # print("{0}\t{1}\t{2}\t{3}\t{4}".format(esn_cv, t_fit, t_inference, acc_score, mem_size))
+    print("{0}\t{1}\t{2}\t{3}\t{4}".format(esn_cv, t_fit, t_inference, acc_score, mem_size))

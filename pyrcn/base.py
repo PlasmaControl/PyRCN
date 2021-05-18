@@ -591,7 +591,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
                  bi_directional=False,
                  k_rec=None,
                  wash_out=0,
-                 continuation=True,
+                 continuation=False,
                  random_state=42):
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
@@ -774,6 +774,99 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         recurrent_weights : ndarray of size (hidden_layer_size, hidden_layer_size)
         """
         return self._recurrent_weights
+
+
+class HebbianNodeToNode(NodeToNode):
+    """
+    HebbianNodeToNode for reservoir computing modules (e.g. ESN).
+
+    Applies the hebbian rule to a given set of randomly initialized reservoir weights.
+    """
+    @_deprecate_positional_args
+    def __init__(self, *,
+                 hidden_layer_size=500,
+                 sparsity=1.,
+                 reservoir_activation='tanh',
+                 spectral_radius=1.,
+                 leakage=1.,
+                 bi_directional=False,
+                 k_rec=None,
+                 wash_out=0,
+                 continuation=False,
+                 random_state=42,
+                 learning_rate=0.01,
+                 epochs=100,
+                 training_method='hebbian'):
+        super().__init__(hidden_layer_size=hidden_layer_size,
+                         sparsity=sparsity,
+                         reservoir_activation=reservoir_activation,
+                         spectral_radius=spectral_radius,
+                         leakage=leakage,
+                         bi_directional=bi_directional,
+                         k_rec=k_rec,
+                         wash_out=wash_out,
+                         continuation=continuation,
+                         random_state=random_state)
+        self.learning_rate = learning_rate
+        self.epochs = epochs
+        self.training_method = training_method
+
+    def fit(self, X, y=None):
+        """
+        Fit the HebbianNodeToNode. Initialize recurrent weights and do Hebbian learning.
+
+        Parameters
+        ----------
+        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        y : ignored
+
+        Returns
+        -------
+        self
+        """
+        super().fit(X=X, y=y)
+        for k in range(self.epochs):
+            if self.training_method == 'hebbian':
+                self._hebbian_learning(X=X, y=y)
+            elif self.training_method == 'anti_hebbian':
+                self._anti_hebbian_learning(X=X, y=y)
+            elif self.training_method == 'oja':
+                self._oja_learning(X=X, y=y)
+            elif self.training_method == 'anti_oja':
+                self._anti_oja_learning(X=X, y=y)
+        
+            try:
+                we = eigens(self._recurrent_weights, 
+                            k=np.minimum(10, self.hidden_layer_size - 2), 
+                            which='LM', 
+                            return_eigenvectors=False, 
+                            v0=self._random_state.normal(loc=0., scale=1., size=self.hidden_layer_size)
+                            )
+            except ArpackNoConvergence:
+                print("WARNING: No convergence! Returning possibly invalid values!!!")
+                we = ArpackNoConvergence.eigenvalues
+            self._recurrent_weights = self._recurrent_weights / np.amax(np.absolute(we))
+        return self
+
+    def _hebbian_learning(self, X, y=None):
+        hidden_layer_state = self._pass_through_recurrent_weights(X=X, y=y)
+        for k in range(hidden_layer_state.shape[0] - 1):
+            self._recurrent_weights -= self.learning_rate * safe_sparse_dot(hidden_layer_state[k+1:k+2, :].T, hidden_layer_state[k:k+1, :]) * self._recurrent_weights
+
+    def _anti_hebbian_learning(self, X, y=None):
+        hidden_layer_state = self._pass_through_recurrent_weights(X=X, y=y)
+        for k in range(hidden_layer_state.shape[0] - 1):
+            self._recurrent_weights -= -self.learning_rate * safe_sparse_dot(hidden_layer_state[k+1:k+2, :].T, hidden_layer_state[k:k+1, :]) * self._recurrent_weights
+
+    def _oja_learning(self, X, y=None):
+        hidden_layer_state = self._pass_through_recurrent_weights(X=X, y=y)
+        for k in range(hidden_layer_state.shape[0] - 1):
+            self._recurrent_weights -= self.learning_rate * (safe_sparse_dot(hidden_layer_state[k+1:k+2, :].T, hidden_layer_state[k:k+1, :]) - safe_sparse_dot(hidden_layer_state[k+1:k+2, :].T, hidden_layer_state[k+1:k+2, :])) * self._recurrent_weights
+
+    def _anti_oja_learning(self, X, y=None):
+        hidden_layer_state = self._pass_through_recurrent_weights(X=X, y=y)
+        for k in range(hidden_layer_state.shape[0] - 1):
+            self._recurrent_weights -= self.learning_rate * (-safe_sparse_dot(hidden_layer_state[k+1:k+2, :].T, hidden_layer_state[k:k+1, :]) - safe_sparse_dot(hidden_layer_state[k+1:k+2, :].T, hidden_layer_state[k+1:k+2, :])) * self._recurrent_weights
 
 
 class FeedbackNodeToNode(NodeToNode):

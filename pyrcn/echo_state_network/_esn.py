@@ -490,8 +490,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
             The predicted classes.
         """
-        y_pred = super().predict(X)
-        return self._encoder.inverse_transform(y_pred)
+        return self._encoder.inverse_transform(super().predict(X), threshold=None)
 
     def predict_proba(self, X):
         """

@@ -429,7 +429,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
             The predicted classes.
         """
-        return self._encoder.inverse_transform(super().predict(X), threshold=.0)
+        return self._encoder.inverse_transform(super().predict(X), threshold=None)
 
     def predict_proba(self, X):
         """
