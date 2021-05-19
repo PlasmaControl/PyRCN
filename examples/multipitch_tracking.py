@@ -28,7 +28,6 @@ from pyrcn.model_selection import SequentialSearchCV
 # Create a feature extraction pipeline. This is basically a transformer that takes an audio file name
 # and returns a feature vector sequence.
 
-
 def create_feature_extraction_pipeline(sr=44100, frame_sizes=[1024, 2048, 4096], fps_hz=100.):
     audio_loading = Pipeline([("load_audio", FeatureExtractor(librosa.load, sr=sr, mono=True)),
                               ("normalize", FeatureExtractor(librosa.util.normalize, norm=np.inf))])
@@ -51,14 +50,12 @@ def create_feature_extraction_pipeline(sr=44100, frame_sizes=[1024, 2048, 4096],
     return feature_extraction_pipeline
 
 
-
 # Load and preprocess the dataset
 feature_extraction_pipeline = create_feature_extraction_pipeline(sr=44100, frame_sizes=[2048], fps_hz=100)
 
 X_train, X_test, y_train, y_test = fetch_maps_piano_dataset(data_origin="/projects/p_transcriber/MAPS", 
                                                             data_home=None, preprocessor=feature_extraction_pipeline,
                                                             force_preprocessing=True, label_type="pitch")
-
 
 # ESN preparation
 initially_fixed_params = {'hidden_layer_size': 500,
