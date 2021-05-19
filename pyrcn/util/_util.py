@@ -9,9 +9,11 @@ import sys
 import os
 import logging
 import argparse
+import csv
 
 import numpy as np
 from sklearn.datasets import fetch_openml
+
 
 argument_parser = argparse.ArgumentParser(description='Standard input parser for HPC on PyRCN.')
 argument_parser.add_argument('-o', '--out', metavar='outdir', nargs='?', help='output directory', dest='out', type=str)
@@ -58,3 +60,22 @@ def get_mnist(directory=os.getcwd()):
         logging.info('Fetched dataset')
         np.savez(npzfilepath, X=X, y=y)
         return X, y
+
+
+def export_ragged_time_series(filename, times, values, dtype=float, 
+                              delimiter='\t', header=False):
+    """
+    """
+    if header:
+        start_row = 1
+    else:
+        start_row = 0
+
+    with open(filename, mode='w', newline='') as output_file:
+        writer = csv.writer(output_file, delimiter=delimiter)
+        if header:
+            writer.writerow(header)
+        for t, v in zip(times, values):
+            writer.writerow([t]+list(v))
+
+
