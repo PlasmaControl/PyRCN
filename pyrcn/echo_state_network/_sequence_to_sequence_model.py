@@ -133,7 +133,7 @@ class SeqToSeqESNClassifier(ESNClassifier):
         if n_jobs is None:
             for X_train, y_train in zip(X[:-1], y[:-1]):
                 super().partial_fit(X_train, y_train, classes=classes, postpone_inverse=True)
-            super().partial_fit(X[-1], np.repeat(y[-1], X[-1].shape[0]), classes=classes, postpone_inverse=False)
+            super().partial_fit(X[-1], y[-1], classes=classes, postpone_inverse=False)
         else:
             clfs = Parallel(n_jobs=n_jobs, verbose=2)(delayed(self._parallel_fit)(X=X_train, y=y_train, classes=classes) 
                                                       for X_train, y_train in zip(np.array_split(X[:-1], n_jobs), np.array_split(y[:-1], n_jobs)))
@@ -142,7 +142,7 @@ class SeqToSeqESNClassifier(ESNClassifier):
             self.node_to_node = final_clf.node_to_node
             self.regressor = final_clf.regressor
             self._encoder = final_clf._encoder
-            self._base_estimator = clone(self._base_estimator)
+        self._base_estimator = clone(self._base_estimator)
         return self
 
     def _parallel_fit(self, X, y, classes):
