@@ -41,7 +41,7 @@ def read_file(fname,Nfr=-1):
 try:
     X_train, X_test, y_train, y_test = load("Seq_video_dataset.joblib")
 except FileNotFoundError:
-    n_files = 1
+    n_files = 3
 
     X_total = [None] * n_files
     y_total = [None] * n_files
