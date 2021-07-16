@@ -1050,3 +1050,74 @@ class FeedbackNodeToNode(NodeToNode):
         recurrent_weights : ndarray of size (hidden_layer_size)
         """
         return self._feedback_weights
+
+
+class PredefinedWeightsNodeToNode(NodeToNode):
+    """
+    PredefinedWeightsNodeToNode class for reservoir computing modules (e.g. ESN)
+
+    Parameters
+    ----------
+    predefined_recurrent_weights : np.ndarray
+        A set of predefined recurrent weights weights.
+    reservoir_activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
+        This element represents the activation function in the hidden layer.
+            - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
+            - 'logistic', the logistic sigmoid function, returns f(x) = 1 / (1 + exp(-x)).
+            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
+    spectral_radius : float, default=1.
+        Scales the input weight matrix.
+    random_state : {None, int, RandomState}, default=42
+    """
+    @_deprecate_positional_args
+    def __init__(self,
+            predefined_recurrent_weights, *,
+            reservoir_activation = 'tanh',
+            spectral_radius = 1.,
+            leakage=1.,
+            bi_directional=False,
+            random_state = 42):
+        super().__init__(
+            hidden_layer_size=predefined_recurrent_weights.shape[0],
+            sparsity=1.,
+            reservoir_activation = reservoir_activation,
+            spectral_radius=spectral_radius,
+            leakage=leakage,
+            bi_directional=bi_directional,
+            random_state=random_state)
+        self.predefined_recurrent_weights = predefined_recurrent_weights
+
+    def fit(self, X, y=None):
+        """
+        
+        self._recurrent_weights = self._normal_random_recurrent_weights(
+            n_features_in=self.n_features_in_,
+            hidden_layer_size=self.hidden_layer_size,
+            fan_in=np.rint(self.hidden_layer_size * self.sparsity).astype(int),
+            random_state=self._random_state)
+        return self
+        """
+        self._validate_hyperparameters()
+        if y is None:
+            self._validate_data(X, y)
+        else:
+            self._validate_data(X, y, multi_output=True)
+        self._check_n_features(X, reset=True)
+
+        if self.k_rec is not None:
+            self.sparsity = self.k_rec / X.shape[1]
+        if self.predefined_recurrent_weights is None:
+            raise ValueError('predefined_recurrent_weights have to be defined, use NodeToNode class!')
+
+        if self.predefined_recurrent_weights.shape[0] != X.shape[1]:
+            raise ValueError('X has not the expected shape {0}, given {1}.'.format(
+                self.predefined_input_weights.shape[0], X.shape[1]))
+
+        if self.predefined_recurrent_weights.shape[0] != self.predefined_recurrent_weights.shape[1]:
+            raise ValueError('Recurrent weights need to be a squared matrix, given {1}.'.format(
+                self.predefined_recurrent_weights.shape))
+
+        self._recurrent_weights = self.predefined_recurrent_weights
+        return self
