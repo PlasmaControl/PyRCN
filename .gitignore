@@ -155,3 +155,5 @@ dmypy.json
 /MusicNet
 /onset_detection
 /.idea
+
+.joblib
