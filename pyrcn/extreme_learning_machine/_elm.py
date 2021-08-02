@@ -448,7 +448,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         # for single dim proba use np.amax
         # predicted_positive = np.subtract(predicted.T, np.min(predicted, axis=1))
         predicted_positive = np.clip(super().predict(X), a_min=1e-5, a_max=None)
-        return predictive_positive
+        return predicted_positive
 
     def predict_log_proba(self, X):
         """

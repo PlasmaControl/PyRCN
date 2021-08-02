@@ -33,31 +33,27 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import ticker
 
 
-chlo = np.load(r"E:\multivariate_time_series_dataset\numpy\CHLO.npz")
-X_train = np.empty(shape=(467, ), dtype=object)
-y_train = np.empty(shape=(467, ), dtype=object)
-X_test = np.empty(shape=(3840, ), dtype=object)
-y_test = np.empty(shape=(3840, ), dtype=object)
+arab = np.load(r"E:\multivariate_time_series_dataset\numpy\ARAB.npz")
+X_train = np.empty(shape=(6600, ), dtype=object)
+y_train = np.empty(shape=(6600, ), dtype=object)
+X_test = np.empty(shape=(2200, ), dtype=object)
+y_test = np.empty(shape=(2200, ), dtype=object)
 
-for k, (X, y) in enumerate(zip(chlo['X'], chlo['Y'])):
+for k, (X, y) in enumerate(zip(arab['X'], arab['Y'])):
     X_train[k] = X[X.sum(axis=1)!=0, :]  # Sequences are zeropadded -> should we remove zeros? if not, X_train[k] = X
-    y_train[k] = np.argwhere(y).ravel()
+    y_train[k] = np.tile(y, (X_train[k].shape[0], 1))
 scaler = StandardScaler().fit(np.concatenate(X_train))
 for k, X in enumerate(X_train):
     X_train[k] = scaler.transform(X=X)  # Sequences are zeropadded -> should we remove zeros? if not, X_train[k] = X
 
 X_train, y_train = shuffle(X_train, y_train, random_state=0)
 
-for k, (X, y) in enumerate(zip(chlo['Xte'], chlo['Yte'])):
+for k, (X, y) in enumerate(zip(arab['Xte'], arab['Yte'])):
     X_test[k] = scaler.transform(X=X[X.sum(axis=1)!=0, :])  # Sequences are zeropadded -> should we remove zeros? if not, X_train[k] = X
-    y_test[k] = np.argwhere(y).ravel()
-
-kmeans = MiniBatchKMeans(n_clusters=50, n_init=200, reassignment_ratio=0, max_no_improvement=50, init='k-means++', verbose=2, random_state=0)
-kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
-w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
+    y_test[k] = np.tile(y, (X_test[k].shape[0], 1))
 
 initially_fixed_params = {'hidden_layer_size': 50,
-                          'k_in': 3,
+                          'k_in': 10,
                           'input_scaling': 0.4,
                           'input_activation': 'identity',
                           'bias_scaling': 0.0,
@@ -78,10 +74,10 @@ step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
 step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
 step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
 
-kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
-kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
-kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
-kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
+kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': 1, 'scoring': make_scorer(mean_squared_error, greater_is_better=False, needs_proba=True)}
+kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(mean_squared_error, greater_is_better=False, needs_proba=True)}
+kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(mean_squared_error, greater_is_better=False, needs_proba=True)}
+kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(mean_squared_error, greater_is_better=False, needs_proba=True)}
 
 # The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
@@ -89,52 +85,10 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
             ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-base_km_esn = SeqToLabelESNClassifier(input_to_node=PredefinedWeightsInputToNode(predefined_input_weights=w_in.T),
-                                      **initially_fixed_params)
-
+base_esn = SeqToSeqESNClassifier(**initially_fixed_params)
+base_esn.fit(X_train, y_train)
 try:
-    sequential_search = load("../sequential_search_chlo_km.joblib")
+    sequential_search = load("../sequential_search_arab.joblib")
 except FileNotFoundError:
-    sequential_search = SequentialSearchCV(base_km_esn, searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "../sequential_search_chlo_km.joblib")
-
-print(sequential_search.all_best_params_)
-print(sequential_search.all_best_score_)
-"""
-param_grid = {'hidden_layer_size': [50, 100, 200, 400, 800, 1600]}
-
-for params in ParameterGrid(param_grid):
-    kmeans = MiniBatchKMeans(n_clusters=params['hidden_layer_size'], n_init=200, reassignment_ratio=0, max_no_improvement=50, init='k-means++', verbose=0, random_state=0)
-    kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
-    w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
-    base_km_esn = clone(sequential_search.best_estimator_)
-    base_km_esn.input_to_node.predefined_input_weights=w_in.T
-    base_km_esn.set_params(**params)
-    gs_cv = GridSearchCV(base_km_esn,
-                         param_grid={'random_state': range(10)},
-                         scoring=make_scorer(accuracy_score), n_jobs=-1).fit(X=X_train, y=y_train)
-    print(gs_cv.cv_results_)
-    print("---------------------------------------")
-    acc_score = accuracy_score(y_test, gs_cv.best_estimator_.predict(X_test))
-    print(acc_score)
-    print("---------------------------------------")
-"""
-constant_params = sequential_search.best_estimator_.get_params()
-constant_params.pop('hidden_layer_size')
-constant_params.pop('random_state')
-constant_params.pop('predefined_input_weights')
-param_grid = {'hidden_layer_size': [50, 100, 200, 400, 800, 1600],
-              'random_state': range(1, 11)}
-
-for params in ParameterGrid(param_grid):
-    kmeans = MiniBatchKMeans(n_clusters=params['hidden_layer_size'], n_init=200, reassignment_ratio=0, max_no_improvement=50, init='k-means++', verbose=0, random_state=params['random_state'])
-    t1 = time.time()
-    kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
-    w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
-    t2 = time.time()
-    km_esn = clone(sequential_search.best_estimator_)
-    km_esn.input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
-    km_esn.set_params(**constant_params, **params)
-    km_esn.fit(X=X_train, y=y_train, n_jobs=8)
-    score = accuracy_score(y_test, km_esn.predict(X_test))
-    print("KM-ESN with params {0} achieved score of {1} and was trained in {2} seconds.".format(params, score, t2-t1))
+    sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
+    dump(sequential_search, "../sequential_search_arab.joblib")
