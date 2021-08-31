@@ -44,6 +44,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                  input_to_node=None,
                  regressor=None,
                  chunk_size=None,
+                 verbose=False,
                  **kwargs):
         if input_to_node is None:
             i2n_params = InputToNode()._get_param_names()
@@ -58,6 +59,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             reg_params = regressor._get_param_names()
             self.regressor = regressor.set_params(**{ key: kwargs[key] for key in kwargs.keys() if key in reg_params})
         self._chunk_size = chunk_size
+        self.verbose = verbose
 
     def get_params(self, deep=True):
         if deep:
@@ -107,7 +109,8 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         try:
             hidden_layer_state = self._input_to_node.transform(X)
         except NotFittedError as e:
-            print('input_to_node has not been fitted yet: {0}'.format(e))
+            if self.verbose:
+                print('input_to_node has not been fitted yet: {0}'.format(e))
             hidden_layer_state = self._input_to_node.fit_transform(X)
             pass
 
@@ -426,7 +429,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
             The predicted classes.
         """
-        return self._encoder.inverse_transform(super().predict(X), threshold=.0)
+        return self._encoder.inverse_transform(super().predict(X), threshold=None)
 
     def predict_proba(self, X):
         """
@@ -444,8 +447,8 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         """
         # for single dim proba use np.amax
         # predicted_positive = np.subtract(predicted.T, np.min(predicted, axis=1))
-        predicted_positive = np.clip(super().predict(X), a_min=1e-5, a_max=None).T
-        return np.divide(predicted_positive, np.sum(predicted_positive, axis=0)).T
+        predicted_positive = np.clip(super().predict(X), a_min=1e-5, a_max=None)
+        return predicted_positive
 
     def predict_log_proba(self, X):
         """

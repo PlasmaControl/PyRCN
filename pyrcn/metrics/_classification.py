@@ -18,6 +18,7 @@ from scipy.sparse import csr_matrix
 
 from sklearn.preprocessing import LabelEncoder, LabelBinarizer
 from sklearn.metrics._classification import _weighted_sum, _check_zero_division
+from sklearn.utils.sparsefuncs import count_nonzero
 from sklearn.utils import check_array
 from sklearn.utils.validation import check_consistent_length
 from sklearn.utils.validation import _deprecate_positional_args
@@ -48,7 +49,7 @@ def _check_targets(y_true, y_pred):
     """
     check_consistent_length(y_true, y_pred)
     all_types_true = [type_of_target(y) for y in y_true]
-    all_types_pred = [type_of_target(y.ravel()) for y in y_pred]
+    all_types_pred = [type_of_target(y) for y in y_pred]
 
     if len(np.unique(all_types_true)) > 2:
         raise ValueError("Classification metrics can't handle a mix of {0} "
@@ -97,8 +98,9 @@ def _check_targets(y_true, y_pred):
                 y_type = "multiclass"
 
     if y_type.startswith('multilabel'):
-        y_true = csr_matrix(y_true)
-        y_pred = csr_matrix(y_pred)
+        for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+            y_true[k] = csr_matrix(y_true[k])
+            y_pred[k] = csr_matrix(y_pred[k])
         y_type = 'multilabel-indicator'
 
     return y_type, y_true, y_pred
@@ -1925,7 +1927,8 @@ def log_loss(y_true, y_pred, *, eps=1e-15, normalize=True, sample_weight=None,
     C.M. Bishop (2006). Pattern Recognition and Machine Learning. Springer,
     p. 209.
     """
-    y_pred = check_array(y_pred, ensure_2d=False)
+    for k in range(len(y_pred)):
+        y_pred[k] = check_array(y_pred[k], ensure_2d=False)
     check_consistent_length(y_pred, y_true, sample_weight)
 
     lb = LabelBinarizer()
@@ -1933,7 +1936,7 @@ def log_loss(y_true, y_pred, *, eps=1e-15, normalize=True, sample_weight=None,
     if labels is not None:
         lb.fit(labels)
     else:
-        lb.fit(y_true)
+        lb.fit(np.concatenate(y_true))
 
     if len(lb.classes_) == 1:
         if labels is None:
@@ -1945,32 +1948,39 @@ def log_loss(y_true, y_pred, *, eps=1e-15, normalize=True, sample_weight=None,
                              'labels for log_loss, '
                              'got {0}.'.format(lb.classes_))
 
-    transformed_labels = lb.transform(y_true)
+    transformed_labels = np.empty(shape=y_true.shape, dtype=object)
+    for k, y in enumerate(y_true):
+        transformed_labels[k] = lb.transform(y)
 
-    if transformed_labels.shape[1] == 1:
-        transformed_labels = np.append(1 - transformed_labels,
-                                       transformed_labels, axis=1)
+    if transformed_labels[0].shape[1] == 1:
+        for k in range(len(y_true)):
+            transformed_labels[k] = np.append(1 - transformed_labels[k],
+                                              transformed_labels[k], axis=1)
 
     # Clipping
-    y_pred = np.clip(y_pred, eps, 1 - eps)
+    for k in range(len(y_pred)):
+        y_pred[k] = np.clip(y_pred[k], eps, 1 - eps)
 
     # If y_pred is of single dimension, assume y_true to be binary
     # and then check.
-    if y_pred.ndim == 1:
-        y_pred = y_pred[:, np.newaxis]
-    if y_pred.shape[1] == 1:
-        y_pred = np.append(1 - y_pred, y_pred, axis=1)
+    if y_pred[0].ndim == 1:
+        for k in range(len(y_pred)):
+            y_pred[k] = y_pred[k][:, np.newaxis]
+    if y_pred[0].shape[1] == 1:
+        for k in range(len(y_pred)):
+            y_pred[k] = np.append(1 - y_pred[k], y_pred[k], axis=1)
 
     # Check if dimensions are consistent.
-    transformed_labels = check_array(transformed_labels)
-    if len(lb.classes_) != y_pred.shape[1]:
+    for k in range(len(transformed_labels)):
+        transformed_labels[k] = check_array(transformed_labels[k])
+    if len(lb.classes_) != y_pred[0].shape[1]:
         if labels is None:
             raise ValueError("y_true and y_pred contain different number of "
                              "classes {0}, {1}. Please provide the true "
                              "labels explicitly through the labels argument. "
                              "Classes found in "
                              "y_true: {2}".format(transformed_labels.shape[1],
-                                                  y_pred.shape[1],
+                                                  y_pred[0].shape[1],
                                                   lb.classes_))
         else:
             raise ValueError('The number of classes in labels is different '
@@ -1978,10 +1988,13 @@ def log_loss(y_true, y_pred, *, eps=1e-15, normalize=True, sample_weight=None,
                              'labels: {0}'.format(lb.classes_))
 
     # Renormalize
-    y_pred /= y_pred.sum(axis=1)[:, np.newaxis]
-    loss = -(transformed_labels * np.log(y_pred)).sum(axis=1)
+    for k in range(len(y_pred)):
+        y_pred[k] /= y_pred[k].sum(axis=1)[:, np.newaxis]
+    loss = np.empty(shape=y_true.shape, dtype=object)
+    for k in range(len(loss)):
+        loss[k] = -(transformed_labels[k] * np.log(y_pred[k])).sum(axis=1)
 
-    return _weighted_sum(loss, sample_weight, normalize)
+    return _weighted_sum(np.concatenate(loss), sample_weight, normalize)
 
 
 @_deprecate_positional_args

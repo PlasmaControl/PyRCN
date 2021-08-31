@@ -49,6 +49,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                  node_to_node=None,
                  regressor=None,
                  chunk_size=None,
+                 verbose=False,
                  **kwargs):
         if input_to_node is None:
             i2n_params = InputToNode()._get_param_names()
@@ -69,6 +70,18 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             reg_params = regressor._get_param_names()
             self.regressor = regressor.set_params(**{ key: kwargs[key] for key in kwargs.keys() if key in reg_params})
         self._chunk_size = chunk_size
+        self.verbose=verbose
+
+    def __add__(self, other):
+        self.regressor._K = self.regressor._K + other.regressor._K
+        self.regressor._xTy = self.regressor._xTy  + other.regressor._xTy
+        return self
+
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        else:
+            return self.__add__(other)
 
     def get_params(self, deep=True):
         if deep:
@@ -118,7 +131,8 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         try:
             hidden_layer_state = self._input_to_node.transform(X)
         except NotFittedError as e:
-            print('input_to_node has not been fitted yet: {0}'.format(e))
+            if self.verbose:
+                print('input_to_node has not been fitted yet: {0}'.format(e))
             hidden_layer_state = self._input_to_node.fit_transform(X)
             pass
 
@@ -126,7 +140,8 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         try:
             hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
         except NotFittedError as e:
-            print('node_to_node has not been fitted yet: {0}'.format(e))
+            if self.verbose:
+                print('node_to_node has not been fitted yet: {0}'.format(e))
             hidden_layer_state = self._node_to_node.fit_transform(hidden_layer_state)
             pass
 
@@ -195,7 +210,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     def predict(self, X):
         """
-        Predicts the targets using the trained ELM regressor.
+        Predicts the targets using the trained ESN regressor.
 
         Parameters
         ----------
@@ -401,9 +416,10 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
                  node_to_node=None,
                  regressor=None,
                  chunk_size=None,
+                 verbose=False,
                  **kwargs):
         super().__init__(input_to_node=input_to_node, node_to_node=node_to_node, regressor=regressor,
-                         chunk_size=chunk_size, **kwargs)
+                         chunk_size=chunk_size, verbose=verbose, **kwargs)
         self._encoder = None
 
     def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, postpone_inverse=False):
@@ -474,7 +490,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
             The predicted classes.
         """
-        return self._encoder.inverse_transform(super().predict(X), threshold=.0)
+        return self._encoder.inverse_transform(super().predict(X), threshold=None)
 
     def predict_proba(self, X):
         """
@@ -491,8 +507,8 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         """
         # for single dim proba use np.amax
         # predicted_positive = np.subtract(predicted.T, np.min(predicted, axis=1))
-        predicted_positive = np.clip(super().predict(X), a_min=1e-5, a_max=None).T
-        return np.divide(predicted_positive, np.sum(predicted_positive, axis=0)).T
+        predicted_positive = np.clip(super().predict(X), a_min=1e-5, a_max=None)
+        return predicted_positive
 
     def predict_log_proba(self, X):
         """Predict the logarithmic probability estimated using the trained ESN classifier.

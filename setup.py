@@ -32,7 +32,11 @@ setuptools.setup(
         'numpy>=1.18.1',
         'scipy>=1.2.0',
         'joblib>=0.13.2',
-        'tqdm',
+        'pandas>=1.0.0',
+        'matplotlib',
+        'librosa>=0.8.0',
+        'madmom>=0.16.1',
+        'tqdm>=4.33.0',
     ],
     python_requires='>=3.7',
 )
