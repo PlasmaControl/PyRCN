@@ -26,14 +26,15 @@ import matplotlib.pyplot as plt
 
 
 def create_feature_extraction_pipeline(sr=16000, frame_sizes=[512, 1024]):
-    audio_loading = Pipeline([("load_audio", FeatureExtractor(librosa.load, sr=sr, mono=True)),
-                              ("normalize", FeatureExtractor(librosa.util.normalize, norm=np.inf))])
+    audio_loading = Pipeline([("load_audio", FeatureExtractor(func=librosa.load, kw_args={"sr": sr, "mono": True})),
+                              ("normalize", FeatureExtractor(func=librosa.util.normalize, kw_args={"norm": np.inf}))])
     
-    feature_extractor = Pipeline([("mel_spectrogram", FeatureExtractor(librosa.feature.melspectrogram, sr=sr, 
-                                                                       n_fft=1024, hop_length=160, window='hann',
-                                                                       center=False, power=2.0, n_mels=80, 
-                                                                       fmin=40, fmax=4000, htk=True)),
-                                            ("power_to_db", FeatureExtractor(librosa.power_to_db, ref=1))])
+    feature_extractor = Pipeline([("mel_spectrogram", FeatureExtractor(func=librosa.feature.melspectrogram, 
+                                                                       kw_args={"sr": sr, "n_fft": 1024, "hop_length": 160, 
+                                                                                "window": 'hann', "center": False, 
+                                                                                "power": 2.0, "n_mels": 80, "fmin": 40, 
+                                                                                "fmax": 4000, "htk": True})),
+                                            ("power_to_db", FeatureExtractor(func=librosa.power_to_db, kw_args={"ref": 1}))])
 
     feature_extraction_pipeline = Pipeline([("audio_loading", audio_loading),
                                             ("feature_extractor", feature_extractor)])

@@ -1,9 +1,9 @@
-import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import FunctionTransformer
 
 
-class FeatureExtractor(BaseEstimator, TransformerMixin):
-    """Sci-kit learn wrapper class for feature extraction methods.
+class FeatureExtractor(FunctionTransformer):
+    """
+    Sci-kit learn wrapper class for feature extraction methods.
     This class acts as a bridge between feature extraction functions 
     and scikit-learn pipelines.
     :usage:
@@ -34,44 +34,17 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
         Parameters to be passed through to `function`
     """
 
-    def __init__(self, function, **kwargs):
-        self.function = function
-        self.kwargs = {}
-        self.sr = None
-        self.mono = None
-        self.norm = None
-        self.sample_rate=None
-        self.num_channels=None
+    def __init__(self, func=None, kw_args=None):
+        super().__init__(func=func, inverse_func=None, validate=False, accept_sparse=False, check_inverse=False, kw_args=kw_args, inv_kw_args=None)
 
-        self.set_params(**kwargs)
-
-    # Clobber _get_param_names here for transparency
-    def _get_param_names(self):
-        """Returns the parameters of the feature extractor as a dictionary."""
-        P = {'function': self.function}
-        P.update(self.kwargs)
-        return P
-
-    # Wrap set_params to catch updates
-    def set_params(self, **kwargs):
-        """Update the parameters of the feature extractor."""
-
-        # We don't want non-functional arguments polluting kwargs
-        params = kwargs.copy()
-        for k in ['function']:
-            params.pop(k, None)
-
-        self.kwargs.update(params)
-        BaseEstimator.set_params(self, **kwargs)
-
-    def fit(self, *args, **kwargs):
+    def fit(self, X, y=None):
         """This function does nothing, and is provided for interface compatibility.
         .. note:: Since most `TransformerMixin` classes implement some statistical
         modeling (e.g., PCA), the `fit` method is necessary.  
         For the `FeatureExtraction` class, all parameters are fixed ahead of time,
         and no statistical estimation takes place.
         """
-        return self
+        return super().fit(X=X, y=y)
 
     def transform(self, X):
         """Applies the feature transformation to an array of input data.
@@ -84,9 +57,7 @@ class FeatureExtractor(BaseEstimator, TransformerMixin):
             `X_transform[i] = function(X[i], [feature extractor parameters])`
         """
         # Each element of X takes first position in function()
-        if isinstance(X, str):
-            return self.function(X, **self.kwargs)[0]
-        if X.ndim > 1:
-            return self.function(X.T, **self.kwargs).T
-        else:
-            return self.function(X.T, **self.kwargs).T
+        X_out = self._transform(X=X, func=self.func, kw_args=self.kw_args)
+        if type(X_out) is tuple:
+            X_out = X_out[0]
+        return X_out
