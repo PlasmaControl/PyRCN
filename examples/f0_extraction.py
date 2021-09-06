@@ -25,7 +25,7 @@ from pyrcn.base import InputToNode, PredefinedWeightsInputToNode, NodeToNode
 import matplotlib.pyplot as plt
 
 
-def create_feature_extraction_pipeline(sr=16000, frame_sizes=[512, 1024]):
+def create_feature_extraction_pipeline(sr=16000):
     audio_loading = Pipeline([("load_audio", FeatureExtractor(func=librosa.load, kw_args={"sr": sr, "mono": True})),
                               ("normalize", FeatureExtractor(func=librosa.util.normalize, kw_args={"norm": np.inf}))])
     
@@ -121,7 +121,7 @@ gpe_scorer = make_scorer(custom_scorer, greater_is_better=False)
 # We define the search spaces for each step together with the type of search (a grid search in this context).
 # At last, we initialize a SeqToSeqESNRegressor with the desired output strategy and with the initially fixed parameters.
 
-initially_fixed_params = {'hidden_layer_size': 50,
+initially_fixed_params = {'hidden_layer_size': 500,
                           'k_in': 10,
                           'input_scaling': 0.4,
                           'input_activation': 'identity',
@@ -163,3 +163,5 @@ except FileNotFoundError:
     print(FileNotFoundError)
     sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
     dump(sequential_search, "../sequential_search_f0_mel.joblib")
+
+print(sequential_search)
