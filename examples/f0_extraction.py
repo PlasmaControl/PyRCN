@@ -13,7 +13,7 @@ from sklearn.utils import shuffle
 from sklearn.utils.fixes import loguniform
 from scipy.stats import uniform
 from sklearn.pipeline import Pipeline, FeatureUnion
-from sklearn.model_selection import train_test_split, ParameterGrid, GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import train_test_split, ParameterGrid, GridSearchCV, RandomizedSearchCV, cross_validate
 from sklearn.cluster import MiniBatchKMeans
 from sklearn.metrics import make_scorer
 from pyrcn.metrics import mean_squared_error
@@ -44,7 +44,7 @@ def create_feature_extraction_pipeline(sr=16000):
 # Load and preprocess the dataset
 feature_extraction_pipeline = create_feature_extraction_pipeline()
 
-X_train, X_test, y_train, y_test = fetch_ptdb_tug_dataset(data_origin="/projects/p_transcriber/SPEECH_DATA", 
+X_train, X_test, y_train, y_test = fetch_ptdb_tug_dataset(data_origin="Z:/Projekt-Pitch-Datenbank/SPEECH_DATA", 
                                                           data_home=None, preprocessor=feature_extraction_pipeline, 
                                                           force_preprocessing=True)
 X_train, y_train = shuffle(X_train, y_train, random_state=0)
@@ -158,10 +158,14 @@ base_esn = SeqToSeqESNRegressor(**initially_fixed_params)
 
 
 try: 
-    sequential_search = load("../sequential_search_f0_mel.joblib")
+    sequential_search = load("f0/sequential_search_f0_mel_km_50.joblib")
 except FileNotFoundError:
     print(FileNotFoundError)
     sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "../sequential_search_f0_mel.joblib")
+    dump(sequential_search, "sequential_search_f0_mel.joblib")
 
-print(sequential_search)
+param_grid = {'hidden_layer_size': [50, 100, 200, 400, 800, 1600, 3200, 6400],
+              'random_state': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+gs = GridSearchCV(clone(sequential_search.best_estimator_), param_grid, 
+                  scoring=gpe_scorer, n_jobs=-1, refit=False, verbose=10).fit(X_train, y_train)
+dump(gs, "../sequential_search_f0_mel_50_final.joblib")
