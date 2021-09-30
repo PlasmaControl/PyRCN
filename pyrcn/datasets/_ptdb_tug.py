@@ -8,6 +8,7 @@ The original database is available at
 from pathlib import Path
 from os.path import dirname, exists, join
 from os import makedirs, remove, walk
+import re
 
 import numpy as np
 import pandas as pd
@@ -20,7 +21,7 @@ from sklearn.utils import _deprecate_positional_args
 
 @_deprecate_positional_args
 def fetch_ptdb_tug_dataset(*, data_origin=None, data_home=None, preprocessor=None, 
-                           force_preprocessing=False):
+                           augment=0, force_preprocessing=False):
     """
     Load the PTDB-TUG: Pitch Tracking Database from Graz University of Technology
     (classification and regression)
@@ -63,20 +64,40 @@ def fetch_ptdb_tug_dataset(*, data_origin=None, data_home=None, preprocessor=Non
         all_test_files = []
         for root, dirs, files in walk(data_origin):
             for f in files:
-                if f.endswith(".wav") and f.startswith("mic"):
+                if f.endswith(".wav") and f.startswith("mic") and not re.search('\_[0-9]\.wav$', f) and not  re.search('\_\-[0-9]\.wav$', f):
                     if "F09" in f or "F10" in f or "M09" in f or "M10" in f:
                         all_test_files.append(join(root, f))
                     else:
                         all_training_files.append(join(root, f))
 
-        X_train = np.empty(shape=(len(all_training_files),), dtype=object)
-        y_train = np.empty(shape=(len(all_training_files),), dtype=object)
+        if augment > 0:
+            augment = list(range(-augment, augment + 1))
+            augment.remove(0)
+        else:
+            augment = [0]
+        if len(augment) == 1:
+            X_train = np.empty(shape=(len(all_training_files),), dtype=object)
+            y_train = np.empty(shape=(len(all_training_files),), dtype=object)
+        else:
+            X_train = np.empty(shape=((1 + len(augment)) * len(all_training_files),), dtype=object)
+            y_train = np.empty(shape=((1 + len(augment)) * len(all_training_files),), dtype=object)
         X_test = np.empty(shape=(len(all_test_files),), dtype=object)
         y_test = np.empty(shape=(len(all_test_files),), dtype=object)
 
-        for k, f in enumerate(all_training_files):
-            X_train[k] = preprocessor.transform(f)
-            y_train[k] = pd.read_csv(f.replace("MIC", "REF").replace("mic", "ref").replace(".wav", ".f0"), sep=" ", header=None)
+        if len(augment) > 1:
+            for k, f in enumerate(all_training_files):
+                X_train[k] = preprocessor.transform(f)
+                y_train[k] = pd.read_csv(f.replace("MIC", "REF").replace("mic", "ref").replace(".wav", ".f0"), sep=" ", header=None)
+            for m, st in enumerate(augment):
+                for k, f in enumerate(all_training_files):
+                    X_train[k + int((m+1) * len(all_training_files))] = preprocessor.transform(f.replace(".wav", "_" + str(st) + ".wav"))
+                    df = pd.read_csv(f.replace("MIC", "REF").replace("mic", "ref").replace(".wav", ".f0"), sep=" ", header=None)
+                    df[[0]] = df[[0]] * 2**(st/12)
+                    y_train[k + int((m+1) * len(all_training_files))] = df
+        else:
+            for k, f in enumerate(all_training_files):
+                X_train[k] = preprocessor.transform(f)
+                y_train[k] = pd.read_csv(f.replace("MIC", "REF").replace("mic", "ref").replace(".wav", ".f0"), sep=" ", header=None)
         for k, f in enumerate(all_test_files):
             X_test[k] = preprocessor.transform(f)
             y_test[k] = pd.read_csv(f.replace("MIC", "REF").replace("mic", "ref").replace(".wav", ".f0"), sep=" ", header=None)

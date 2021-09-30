@@ -46,7 +46,7 @@ class SeqToSeqESNRegressor(ESNRegressor):
         :return:
         """
         if n_jobs is None:
-            for X_train, y_train in zip(X[:-1], y[:-1]):
+            for k, (X_train, y_train ) in enumerate(zip(X[:-1], y[:-1])):
                 super().partial_fit(X_train, y_train, postpone_inverse=True)
             super().partial_fit(X[-1], y[-1], postpone_inverse=False)
         else:

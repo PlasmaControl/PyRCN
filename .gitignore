@@ -157,3 +157,10 @@ dmypy.json
 /.idea
 
 .joblib
+/multidataset
+/RICSyN2015
+/f0
+/sequential_search.joblib
+/multi_dataset_inertias.pdf
+/inertias_normalized.csv
+/inertias.csv

@@ -15,7 +15,7 @@ from scipy.stats import uniform
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.model_selection import train_test_split, ParameterGrid, GridSearchCV, RandomizedSearchCV, cross_validate
 from sklearn.cluster import MiniBatchKMeans
-from sklearn.metrics import make_scorer
+from sklearn.metrics import make_scorer, zero_one_loss
 from pyrcn.metrics import mean_squared_error
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.util import FeatureExtractor
@@ -46,7 +46,7 @@ feature_extraction_pipeline = create_feature_extraction_pipeline()
 
 X_train, X_test, y_train, y_test = fetch_ptdb_tug_dataset(data_origin="Z:/Projekt-Pitch-Datenbank/SPEECH_DATA", 
                                                           data_home=None, preprocessor=feature_extraction_pipeline, 
-                                                          force_preprocessing=True)
+                                                          force_preprocessing=False, augment=0)
 X_train, y_train = shuffle(X_train, y_train, random_state=0)
 
 scaler = StandardScaler().fit(np.concatenate(X_train))
@@ -65,7 +65,7 @@ def gpe(y_true, y_pred):
     
     """
     idx = np.nonzero(y_true*y_pred)[0]
-    return np.mean(np.abs(y_true[idx] - y_pred[idx]) > 0.2 * y_true[idx])
+    return np.sum(np.abs(y_true[idx] - y_pred[idx]) > 0.2 * y_true[idx]) / len(np.nonzero(y_true)[0])
 
 
 def vde(y_true, y_pred):
@@ -156,16 +156,88 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
 
 base_esn = SeqToSeqESNRegressor(**initially_fixed_params)
 
-
 try: 
     sequential_search = load("f0/sequential_search_f0_mel_km_50.joblib")
 except FileNotFoundError:
     print(FileNotFoundError)
     sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "sequential_search_f0_mel.joblib")
+    dump(sequential_search, "f0/sequential_search_f0_mel_km_50.joblib")
 
-param_grid = {'hidden_layer_size': [50, 100, 200, 400, 800, 1600, 3200, 6400],
-              'random_state': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-gs = GridSearchCV(clone(sequential_search.best_estimator_), param_grid, 
-                  scoring=gpe_scorer, n_jobs=-1, refit=False, verbose=10).fit(X_train, y_train)
-dump(gs, "../sequential_search_f0_mel_50_final.joblib")
+print(sequential_search)
+
+
+def gpe_scorer(y_true, y_pred):
+    gross_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        gross_pitch_error[k] = gpe(y_true=y_t[:, 0]*y_t[:, 1], y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(gross_pitch_error)
+
+
+def fpe_scorer(y_true, y_pred):
+    fine_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        fine_pitch_error[k] = fpe(y_true=y_t[:, 0]*y_t[:, 1], y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(fine_pitch_error)
+
+
+def vde_scorer(y_true, y_pred):
+    voicing_decision_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        voicing_decision_error[k] = vde(y_true=y_t[:, 1], y_pred=y_p[:, 1]>=.5)
+    return np.mean(voicing_decision_error)
+
+
+def ffe_scorer(y_true, y_pred):
+    frame_fault_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        frame_fault_error[k] = ffe(y_true=y_t[:, 0]*y_t[:, 1], y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(frame_fault_error)
+
+
+y_pred = sequential_search.best_estimator_.predict(X_test)
+gpe_scorer(y_test, y_pred)
+fpe_scorer(y_test, y_pred)
+vde_scorer(y_test, y_pred)
+ffe_scorer(y_test, y_pred)
+
+param_grid = {'hidden_layer_size': [6400]}
+for params in ParameterGrid(param_grid):
+    kmeans = load("f0/kmeans_6400.joblib")
+    w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
+    print(w_in.shape)
+    base_input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
+    all_params = sequential_search.best_estimator_.get_params()
+    all_params["hidden_layer_size"] = params["hidden_layer_size"]
+    esn = SeqToSeqESNRegressor(input_to_node=base_input_to_node, **all_params)
+    print(esn._base_estimator)
+    esn.fit(X_train, y_train, n_jobs=4)
+    dump(esn, "f0/km_esn_dense_6400_4_0.joblib")
+
+"""
+try:
+    gs = load("f0/sequential_search_f0_mel_km_50_final_2.joblib")
+except:
+    param_grid = {'hidden_layer_size': [6400],  # TODO
+                  'random_state': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+    gs = []
+    for params in ParameterGrid(param_grid):
+        try:
+            print("Attempting to load KMeans from disk...")
+            kmeans = load("f0/kmeans_" + str(params["hidden_layer_size"]) + ".joblib")
+            print("Loaded.")
+        except FileNotFoundError:
+            print("Fitting kmeans with features from the training set...")
+            t1 = time.time()
+            kmeans = MiniBatchKMeans(n_clusters=params["hidden_layer_size"], n_init=200, reassignment_ratio=0, max_no_improvement=50, init='k-means++', verbose=0, random_state=0)
+            kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
+            dump(kmeans, "f0/kmeans_" + str(params["hidden_layer_size"]) + ".joblib")
+            print("done in {0}!".format(time.time() - t1))
+        w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
+        base_input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
+        esn = SeqTo clone(sequential_search.best_estimator_)
+        esn.input_to_node = base_input_to_node
+        esn.set_params(**params)
+        esn.fit(X_train, y=y_train, n_jobs=4)
+    dump(gs, "f0/sequential_search_f0_mel_km_50_final_2.joblib")
+
+"""
