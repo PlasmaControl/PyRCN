@@ -68,6 +68,18 @@ def gpe(y_true, y_pred):
     return np.sum(np.abs(y_true[idx] - y_pred[idx]) > 0.2 * y_true[idx]) / len(np.nonzero(y_true)[0])
 
 
+def new_gpe(y_true, y_pred):
+    """
+    Gross pitch error:
+    
+    All frames that are considered voiced by both pitch tracker and ground truth, 
+    for which the relative pitch error is higher than a certain threshold (\SI{20}{\percent}).
+    
+    """
+    idx = np.nonzero(y_true*y_pred)[0]
+    return np.sum(np.abs(1/y_true[idx] - 1/y_pred[idx]) > 1.5e-3) / len(np.nonzero(y_true)[0])
+
+
 def vde(y_true, y_pred):
     """
     Voicing Decision Error:
@@ -94,6 +106,38 @@ def fpe(y_true, y_pred):
         return 100 * np.std(np.log2(y_pred[idx] / y_true[idx]))
 
 
+def mu_fpe(y_true, y_pred):
+    """
+    Fine Pitch Error:
+    
+    Standard deviation of the distribution of relative error values (in cents) from the frames
+    that do not have gross pitch errors
+    """
+    idx_voiced = np.nonzero(y_true * y_pred)[0]
+    idx_correct = np.argwhere(np.abs(1/y_true - 1/y_pred) <= 1.5e-3).ravel()
+    idx = np.intersect1d(idx_voiced, idx_correct)
+    if idx.size == 0:
+        return 0
+    else:
+        return np.mean(np.abs(y_pred[idx] - y_true[idx]))
+
+
+def sigma_fpe(y_true, y_pred):
+    """
+    Fine Pitch Error:
+    
+    Standard deviation of the distribution of relative error values (in cents) from the frames
+    that do not have gross pitch errors
+    """
+    idx_voiced = np.nonzero(y_true * y_pred)[0]
+    idx_correct = np.argwhere(np.abs(1/y_true - 1/y_pred) <=1.5e-3).ravel()
+    idx = np.intersect1d(idx_voiced, idx_correct)
+    if idx.size == 0:
+        return 0
+    else:
+        return np.std(np.abs(y_pred[idx] - y_true[idx]))
+
+
 def ffe(y_true, y_pred):
     """
     $f_{0}$ Frame Error:
@@ -103,6 +147,13 @@ def ffe(y_true, y_pred):
     """
     idx_correct = np.argwhere(np.abs(y_true - y_pred) <= 0.2 * y_true).ravel()
     return 1 - len(idx_correct) / len(y_true)
+
+
+def custom_scorer(y_true, y_pred):
+    gross_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        gross_pitch_error[k] = gpe(y_true=y_t[:, 0]*y_t[:, 1], y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(gross_pitch_error)
 
 
 def custom_scorer(y_true, y_pred):
@@ -169,34 +220,53 @@ print(sequential_search)
 def gpe_scorer(y_true, y_pred):
     gross_pitch_error = [None] * len(y_true)
     for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
-        gross_pitch_error[k] = gpe(y_true=y_t[:, 0]*y_t[:, 1], y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+        gross_pitch_error[k] = gpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5), y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
     return np.mean(gross_pitch_error)
 
+def new_gpe_scorer(y_true, y_pred):
+    gross_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        gross_pitch_error[k] = new_gpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5), y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(gross_pitch_error)
 
 def fpe_scorer(y_true, y_pred):
     fine_pitch_error = [None] * len(y_true)
     for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
-        fine_pitch_error[k] = fpe(y_true=y_t[:, 0]*y_t[:, 1], y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+        fine_pitch_error[k] = fpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5), y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
     return np.mean(fine_pitch_error)
 
+def mu_fpe_scorer(y_true, y_pred):
+    fine_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        fine_pitch_error[k] = mu_fpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5), y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(fine_pitch_error)
+
+def sigma_fpe_scorer(y_true, y_pred):
+    fine_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        fine_pitch_error[k] = sigma_fpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5), y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(fine_pitch_error)
 
 def vde_scorer(y_true, y_pred):
     voicing_decision_error = [None] * len(y_true)
     for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
-        voicing_decision_error[k] = vde(y_true=y_t[:, 1], y_pred=y_p[:, 1]>=.5)
+        voicing_decision_error[k] = vde(y_true=(y_t[:, 1] > 0.5), y_pred=y_p[:, 1]>=.5)
     return np.mean(voicing_decision_error)
 
 
 def ffe_scorer(y_true, y_pred):
     frame_fault_error = [None] * len(y_true)
     for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
-        frame_fault_error[k] = ffe(y_true=y_t[:, 0]*y_t[:, 1], y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+        frame_fault_error[k] = ffe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5), y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
     return np.mean(frame_fault_error)
 
 
-y_pred = sequential_search.best_estimator_.predict(X_test)
+y_pred = load("f0/km_esn_dense_2000_0_0.joblib").predict(X_test)
 gpe_scorer(y_test, y_pred)
+new_gpe_scorer(y_test, y_pred)
 fpe_scorer(y_test, y_pred)
+mu_fpe_scorer(y_test, y_pred)
+sigma_fpe_scorer(y_test, y_pred)
 vde_scorer(y_test, y_pred)
 ffe_scorer(y_test, y_pred)
 

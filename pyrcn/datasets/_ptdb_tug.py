@@ -130,6 +130,21 @@ def _get_labels(X, df_label):
     y = np.zeros(shape=(X.shape[0], 2))
     if X.shape[0] == labels.shape[0]:
         y[:, :] = labels
-    else:
+        return y
+    elif X.shape[0] == labels.shape[0] + 2 or X.shape[0] == labels.shape[0] + 1:
         y[1:1+len(labels), :] = labels
-    return y
+        return y
+    elif X.shape[0] == 2*labels.shape[0]:
+        y[:, 0] = np.interp(np.arange(len(labels), step=0.5), xp=np.arange(len(labels), step=1), fp=labels[:, 0])
+        y[:, 1] = np.interp(np.arange(len(labels), step=0.5), xp=np.arange(len(labels), step=1), fp=labels[:, 1])
+        return y
+    elif X.shape[0] == 2*labels.shape[0] - 1:
+        y[1:1+2*len(labels)-1, 0] = np.interp(np.arange(len(labels) - 1, step=0.5), xp=np.arange(len(labels), step=1), fp=labels[:, 0])
+        y[1:1+2*len(labels)-1, 1] = np.interp(np.arange(len(labels) - 1, step=0.5), xp=np.arange(len(labels), step=1), fp=labels[:, 1])
+        return y
+    elif X.shape[0] == 2*labels.shape[0] + 1:
+        y[1:1+2*len(labels)+1, 0] = np.interp(np.arange(len(labels), step=0.5), xp=np.arange(len(labels), step=1), fp=labels[:, 0])
+        y[1:1+2*len(labels)+1, 1] = np.interp(np.arange(len(labels), step=0.5), xp=np.arange(len(labels), step=1), fp=labels[:, 1])
+        return y
+    else:
+        print("Test")
