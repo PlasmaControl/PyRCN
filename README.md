@@ -128,10 +128,45 @@ If you use PyRCN, please cite the following publication:
 ```
 
 # References
-Glottal Closure Instant Detection using Echo State Networks
+
+[Unsupervised Pretraining of Echo State Networks for Onset Detection](https://link.springer.com/chapter/10.1007/978-3-030-85099-9_12)
+
+```
+@InProceedings{src:Steiner-21e,
+   author="Peter Steiner and Azarakhsh Jalalvand and Peter Birkholz",
+   editor="Igor Farka{\v{s}} and Paolo Masulli and Sebastian Otte and Stefan Wermter",
+   title="{U}nsupervised {P}retraining of {E}cho {S}tate {N}etworks for {O}nset {D}etection",
+   booktitle="Artificial Neural Networks and Machine Learning -- ICANN 2021",
+   year="2021",
+   publisher="Springer International Publishing",
+   address="Cham",
+   pages="59--70",
+   isbn="978-3-030-86383-8"
+}
+
+
+```
+
+[Improved Acoustic Modeling for Automatic Piano Music Transcription Using Echo State Networks](https://link.springer.com/chapter/10.1007/978-3-030-85099-9_12)
+
+```
+@InProceedings{src:Steiner-21d,
+	author="Peter Steiner and Azarakhsh Jalalvand and Peter Birkholz",
+	editor="Ignacio Rojas and Gonzalo Joya and Andreu Catala",
+	title="{I}mproved {A}coustic {M}odeling for {A}utomatic {P}iano {M}usic {T}ranscription {U}sing {E}cho {S}tate {N}etworks",
+	booktitle="Advances in Computational Intelligence",
+	year="2021",
+	publisher="Springer International Publishing",
+	address="Cham",
+	pages="143--154",
+	isbn="978-3-030-85099-9"
+}
+```
+
+[Glottal Closure Instant Detection using Echo State Networks](http://www.essv.de/pdf/2021_161_168.pdf)
 
 ```latex
-@InProceedings{src:Steiner-21a,
+@InProceedings{src:Steiner-21c,
 	title = {Glottal Closure Instant Detection using Echo State Networks},
 	author = {Peter Steiner and Ian S. Howard and Peter Birkholz},
 	year = {2021},
@@ -147,7 +182,7 @@ Glottal Closure Instant Detection using Echo State Networks
 Cluster-based Input Weight Initialization for Echo State Networks
 
 ```latex
-@misc{src:Steiner-21b,
+@misc{src:Steiner-KM_ESN,
     title={Cluster-based Input Weight Initialization for Echo State Networks},
     author={Peter Steiner and Azarakhsh Jalalvand and Peter Birkholz},
     year={2021},
@@ -160,7 +195,7 @@ Cluster-based Input Weight Initialization for Echo State Networks
 PyRCN: Exploration and Application of ESNs
 
 ```latex
-@misc{steiner2021pyrcn,
+@misc{src:Steiner-PyRCN,
       title={PyRCN: Exploration and Application of ESNs}, 
       author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone and Peter Birkholz},
       year={2021},
@@ -170,10 +205,42 @@ PyRCN: Exploration and Application of ESNs
 }
 ```
 
-Note Onset Detection using Echo State Networks
+[Feature Engineering and Stacked ESNs for Musical Onset Detection](https://ieeexplore.ieee.org/abstract/document/9413205)
 
 ```latex
-@InProceedings{src:Steiner-20a,
+@INPROCEEDINGS{src:Steiner-21b,
+    author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone and Peter Birkholz},
+    booktitle={2020 25th International Conference on Pattern Recognition (ICPR)},
+    title={{F}eature {E}ngineering and {S}tacked {E}cho {S}tate {N}etworks for {M}usical {O}nset {D}etection},
+    year={2021},
+    volume={},
+    number={},
+    pages={9537--9544},
+    doi={10.1109/ICPR48806.2021.9413205}
+}
+```
+
+[Multipitch tracking in music signals using Echo State Networks](https://ieeexplore.ieee.org/abstract/document/9287638)
+
+```latex
+@INPROCEEDINGS{src:Steiner-21a,
+    author={Peter Steiner and Simon Stone and Peter Birkholz and Azarakhsh Jalalvand},
+    booktitle={2020 28th European Signal Processing Conference (EUSIPCO)},
+    title={{M}ultipitch tracking in music signals using {E}cho {S}tate {N}etworks},
+    year={2021},
+    volume={},
+    number={},
+    pages={126--130},
+    keywords={},
+    doi={10.23919/Eusipco47968.2020.9287638},
+    ISSN={2076-1465},
+    month={Jan},
+```
+
+[Note Onset Detection using Echo State Networks](http://www.essv.de/pdf/2020_157_164.pdf)
+
+```latex
+@InProceedings{src:Steiner-20,
 	title = {Note Onset Detection using Echo State Networks},
 	author = {Peter Steiner and Simon Stone and Peter Birkholz},
 	year = {2020},
@@ -186,36 +253,11 @@ Note Onset Detection using Echo State Networks
 } 
 ```
 
-Feature Engineering and Stacked ESNs for Musical Onset Detection
-
-```latex
-@INPROCEEDINGS{src:Steiner-20d,  
-    author={Peter Steiner and Simon Stone and Azarakhsh Jalalvand and Peter Birkholz},  
-    booktitle={2020 25th International Conference on Pattern Recognition (ICPR)},   
-    title={Feature Engineering and Stacked ESNs for Musical Onset Detection},  
-    year={2020},  
-    volume={},  
-    number={},  
-    note={submitted},
-}
-```
-
-Multipitch tracking in music signals using Echo State Networks
-```latex
-@INPROCEEDINGS{src:Steiner-20b,
-    author={Peter Steiner and Simon Stone and Peter Birkholz and Azarakhsh Jalalvand},
-    booktitle={28th European Signal Processing Conference (EUSIPCO), 2020},
-    title={Multipitch tracking in music signals using Echo State Networks},
-    year={2020},
-    note={accepted},
-}
-```
-
-Multiple-F0 Estimation using Echo State Networks
+[Multiple-F0 Estimation using Echo State Networks](https://www.music-ir.org/mirex/abstracts/2019/SBJ1.pdf)
 
 ```latex
 @inproceedings{src:Steiner-19,
-  title={Multiple-F0 Estimation using Echo State Networks},
+  title={{M}ultiple-{F}0 {E}stimation using {E}cho {S}tate {N}etworks},
   booktitle={{MIREX}},
   author={Peter Steiner and Azarakhsh Jalalvand and Peter Birkholz},
   year={2019},
@@ -225,4 +267,4 @@ Multiple-F0 Estimation using Echo State Networks
 
 
 # Acknowledgements
-This research is funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
+This research was funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
