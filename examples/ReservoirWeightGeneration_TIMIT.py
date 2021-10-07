@@ -118,7 +118,7 @@ for k in [50, 100, 200, 400, 500, 800, 1000, 1600, 2000, 3200, 4000, 6400, 8000,
     kmeans = kmeans = MiniBatchKMeans(n_clusters=k, n_init=200, reassignment_ratio=0, max_no_improvement=50, 
                                       init='k-means++', verbose=2, random_state=42)
     kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
-    dump(kmeans, "kmeans_" + str(k) + ".joblib")
+    dump(kmeans, "../kmeans_" + str(k) + ".joblib")
 
 
 initially_fixed_params = {'hidden_layer_size': 50,
@@ -152,16 +152,16 @@ kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 's
 searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step2', RandomizedSearchCV, step2_esn_params, kwargs_step2),
             ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
-            ('step4', GridSearchCV, step3_esn_params, kwargs_step4)]
+            ('step4', RandomizedSearchCV, step3_esn_params, kwargs_step4)]
 
-kmeans = load("kmeans_50.joblib")
+kmeans = load("../kmeans_50.joblib")
 w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
 input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in)
 
 base_esn = SeqToSeqESNClassifier(input_to_node=input_to_node).set_params(**initially_fixed_params)
 
 try:
-    sequential_search = load("sequential_search_speech_timit_kmeans.joblib")
+    sequential_search = load("../sequential_search_speech_timit_kmeans.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "sequential_search_speech_timit_kmeans.joblib")
+    dump(sequential_search, "../sequential_search_speech_timit_kmeans.joblib")
