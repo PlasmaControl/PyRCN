@@ -115,10 +115,14 @@ for k, X in enumerate(X_test):
 
 
 for k in [50, 100, 200, 400, 500, 800, 1000, 1600, 2000, 3200, 4000, 6400, 8000, 16000]:
-    kmeans = kmeans = MiniBatchKMeans(n_clusters=k, n_init=200, reassignment_ratio=0, max_no_improvement=50, 
-                                      init='k-means++', verbose=2, random_state=42)
-    kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
-    dump(kmeans, "../kmeans_" + str(k) + ".joblib")
+    try:
+        kmeans = load("../kmeans_" + str(k) + ".joblib")
+    except FileNotFoundError:
+        kmeans = kmeans = MiniBatchKMeans(n_clusters=k, n_init=200, reassignment_ratio=0, 
+                                          max_no_improvement=50, init='k-means++', 
+                                          verbose=2, random_state=42)
+        kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
+        dump(kmeans, "../kmeans_" + str(k) + ".joblib")
 
 
 initially_fixed_params = {'hidden_layer_size': 50,
