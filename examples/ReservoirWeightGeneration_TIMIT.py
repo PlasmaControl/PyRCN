@@ -27,6 +27,22 @@ training_sentences = list(Path("/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/TIMIT/tr
 test_sentences = list(Path("/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/TIMIT/test").rglob("*.wav"))  # TODO
 
 
+def transition_matrix(transitions):
+    n = 1+ max(transitions) #number of states
+
+    M = np.zeros(shape=(n,n))
+
+    for (i,j) in zip(transitions,transitions[1:]):
+        M[i][j] += 1
+
+    #now convert to probabilities:
+    for row in M:
+        s = sum(row)
+        if s > 0:
+            row[:] = [f/s for f in row]
+    return M
+
+
 def phn_label(phn, frame, hop_length, num_of_frame):
     label = np.empty(num_of_frame, dtype='U5')
     label_number = 0
@@ -159,13 +175,14 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step4', RandomizedSearchCV, step3_esn_params, kwargs_step4)]
 
 kmeans = load("../kmeans_50.joblib")
-w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
+w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None]).T
 input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in)
-
-base_esn = SeqToSeqESNClassifier(input_to_node=input_to_node).set_params(**initially_fixed_params)
+w_rec = transition_matrix(kmeans.labels_)
+node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
+base_esn = SeqToSeqESNClassifier(input_to_node=input_to_node, node_to_node=node_to_node).set_params(**initially_fixed_params)
 
 try:
-    sequential_search = load("../sequential_search_speech_timit_kmeans.joblib")
+    sequential_search = load("../sequential_search_speech_timit_kmeans_rec.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "../sequential_search_speech_timit_kmeans.joblib")
+    dump(sequential_search, "../sequential_search_speech_timit_kmeans_rec.joblib")
