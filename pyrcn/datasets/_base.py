@@ -121,8 +121,8 @@ def mackey_glass(n_timesteps: int,
 
         xt = xth
 
-    y = X[1:].reshape(-1, 1)
-    X = X[:-1].reshape(-1, 1)
+    y = X[1:]
+    X = X[:-1]
 
     return X, y
 
