@@ -17,6 +17,8 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import FeatureUnion
 
+from joblib import Parallel, delayed
+
 
 class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
     """
@@ -61,6 +63,17 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._chunk_size = chunk_size
         self.verbose = verbose
 
+    def __add__(self, other):
+        self.regressor._K = self.regressor._K + other.regressor._K
+        self.regressor._xTy = self.regressor._xTy  + other.regressor._xTy
+        return self
+
+    def __radd__(self, other):
+        if other == 0:
+            return self
+        else:
+            return self.__add__(other)
+
     def get_params(self, deep=True):
         if deep:
             return {**self.input_to_node.get_params(), **{"alpha": self.regressor.get_params()["alpha"]}}
@@ -78,7 +91,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
         return self
 
-    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, postpone_inverse=False):
+    def partial_fit(self, X, y, transformer_weights=None, postpone_inverse=False):
         """
         Fits the regressor partially.
 
@@ -87,9 +100,6 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
         y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
             The targets to predict.
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. ``-1`` means using all processors.
-            See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
         postpone_inverse : bool, default=False
             If output weights have not been fitted yet, regressor might be hinted at
@@ -138,7 +148,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self : Returns a trained ELMRegressor model.
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y, multi_output=True)
+        self._validate_data(X, y, multi_output=True, dtype=None)
 
         self._input_to_node.fit(X)
         self._regressor = self._regressor.__class__()
@@ -153,21 +163,18 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             # setup chunk list
             chunks = list(range(0, X.shape[0], self._chunk_size))
             # postpone inverse calculation for chunks n-1
-            for idx in chunks[:-1]:
-                ELMRegressor.partial_fit(
-                    self,
-                    X=X[idx:idx + self._chunk_size, ...],
-                    y=y[idx:idx + self._chunk_size, ...],
-                    n_jobs=n_jobs,
-                    transformer_weights=transformer_weights,
-                    postpone_inverse=True
-                )
+            reg = Parallel(n_jobs=n_jobs)(delayed(ELMRegressor.partial_fit)
+                                          (self, X[idx:idx + self._chunk_size, ...], 
+                                           y[idx:idx + self._chunk_size, ...],
+                                           transformer_weights=transformer_weights,
+                                           postpone_inverse=True) 
+                                          for idx in chunks[:-1])
+            self = sum(reg)
             # last chunk, calculate inverse and bias
             ELMRegressor.partial_fit(
                 self,
                 X=X[chunks[-1]:, ...],
                 y=y[chunks[-1]:, ...],
-                n_jobs=n_jobs,
                 transformer_weights=transformer_weights,
                 postpone_inverse=False
             )
@@ -358,7 +365,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         super().__init__(input_to_node=input_to_node, regressor=regressor, chunk_size=chunk_size, **kwargs)
         self._encoder = None
 
-    def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, postpone_inverse=False):
+    def partial_fit(self, X, y, classes=None, transformer_weights=None, postpone_inverse=False):
         """Fits the classifier partially.
 
         Parameters
@@ -373,9 +380,6 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
             This argument is required for the first call to partial_fit
             and can be omitted in the subsequent calls.
             Note that y doesn't need to contain all labels in `classes`.
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. ``-1`` means using all processors.
-            See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
         postpone_inverse : bool, default=False
             If output weights have not been fitted yet, regressor might be hinted at
@@ -390,7 +394,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         if self._encoder is None:
             self._encoder = LabelBinarizer().fit(classes)
 
-        return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None,
+        return super().partial_fit(X, self._encoder.transform(y), transformer_weights=None,
                                    postpone_inverse=postpone_inverse)
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):

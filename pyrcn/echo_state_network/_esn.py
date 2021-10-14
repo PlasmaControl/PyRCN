@@ -180,7 +180,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
 
             # regression
-            self._regressor.fit(hidden_layer_state[self.node_to_node.wash_out:, :], y[self.node_to_node.wash_out:, :])
+            self._regressor.fit(hidden_layer_state[self.node_to_node.wash_out:, ...], y[self.node_to_node.wash_out:, ...])
 
         elif self._chunk_size < X.shape[0]:
             # setup chunk list
