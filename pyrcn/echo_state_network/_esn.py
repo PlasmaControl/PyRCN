@@ -17,6 +17,8 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
 from sklearn.pipeline import FeatureUnion
 
+from joblib import Parallel, delayed
+
 
 class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
     """
@@ -103,7 +105,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self
 
 
-    def partial_fit(self, X, y, n_jobs=None, transformer_weights=None, postpone_inverse=False):
+    def partial_fit(self, X, y, transformer_weights=None, postpone_inverse=False):
         """
         Fits the regressor partially.
 
@@ -112,14 +114,14 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
         y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
             The targets to predict.
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. ``-1`` means using all processors.
-            See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
+        postpone_inverse : bool, default=False
+            If output weights have not been fitted yet, regressor might be hinted at
+            postponing inverse calculation. Refer to IncrementalRegression for details.
 
         Returns
         -------
-        self : Returns a traines ESNRegressor model.
+        self : Returns a trained ESNRegressor model.
         """
         if not hasattr(self._regressor, 'partial_fit'):
             raise BaseException('Regressor has no attribute partial_fit, got {0}'.format(self._regressor))
@@ -147,7 +149,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
         # regression
         if self._regressor:
-            self._regressor.partial_fit(hidden_layer_state[self.node_to_node.wash_out:, :], y[self.node_to_node.wash_out:, ...], postpone_inverse=postpone_inverse)
+            self._regressor.partial_fit(hidden_layer_state, y, postpone_inverse=postpone_inverse)
         return self
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
@@ -169,7 +171,8 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self : Returns a trained ESNRegressor model.
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y, multi_output=True)
+        self._validate_data(X, y, multi_output=True, dtype=None)
+
         self._input_to_node.fit(X)
         self._node_to_node.fit(self._input_to_node.transform(X))
         self._regressor = self._regressor.__class__()
@@ -180,30 +183,27 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
 
             # regression
-            self._regressor.fit(hidden_layer_state[self.node_to_node.wash_out:, :], y[self.node_to_node.wash_out:, ...])
+            self._regressor.fit(hidden_layer_state, y)
 
         elif self._chunk_size < X.shape[0]:
             # setup chunk list
             chunks = list(range(0, X.shape[0], self._chunk_size))
             # postpone inverse calculation for chunks n-1
-            for idx in chunks[:-1]:
-                ESNRegressor.partial_fit(
-                    self,
-                    X=X[idx:idx + self._chunk_size, ...],
-                    y=y[idx:idx + self._chunk_size, ...],
-                    n_jobs=n_jobs,
-                    transformer_weights=transformer_weights,
-                    postpone_inverse=True
-                )
+            reg = Parallel(n_jobs=n_jobs)(delayed(ESNRegressor.partial_fit)
+                                          (self, X[idx:idx + self._chunk_size, ...], 
+                                           y[idx:idx + self._chunk_size, ...],
+                                           transformer_weights=transformer_weights,
+                                           postpone_inverse=True) 
+                                          for idx in chunks[:-1])
             # last chunk, calculate inverse and bias
-            ESNRegressor.partial_fit(
-                self,
+            reg = sum(reg)
+            reg.partial_fit(
                 X=X[chunks[-1]:, ...],
                 y=y[chunks[-1]:, ...],
-                n_jobs=n_jobs,
                 transformer_weights=transformer_weights,
                 postpone_inverse=False
             )
+            self._regressor = reg._regressor
         else:
             raise ValueError('chunk_size invalid {0}'.format(self._chunk_size))
         return self
@@ -231,6 +231,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     def _validate_hyperparameters(self):
         """Validates the hyperparameters.
+
         Returns
         -------
         """
@@ -387,17 +388,18 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
 
 class ESNClassifier(ESNRegressor, ClassifierMixin):
-    """Echo State Network classifier.
+    """
+    Echo State Network classifier.
 
     This model optimizes the mean squared error loss function using linear regression.
 
     Parameters
     ----------
-    input_to_node : iterable
+    input_to_node : iterable, default=[('default', InputToNode())]
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.
-    node_to_node : iterable
+    node_to_node : iterable, default=[('default', NodeToNode())]
         List of (name, transform) tuples (implementing fit/transform) that are
         chained, in the order in which they are chained, with the last object
         an estimator.
@@ -422,8 +424,9 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
                          chunk_size=chunk_size, verbose=verbose, **kwargs)
         self._encoder = None
 
-    def partial_fit(self, X, y, classes=None, n_jobs=None, transformer_weights=None, postpone_inverse=False):
-        """Fits the classifier partially.
+    def partial_fit(self, X, y, classes=None, transformer_weights=None, postpone_inverse=False):
+        """
+        Fits the classifier partially.
 
         Parameters
         ----------
@@ -437,9 +440,6 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
             This argument is required for the first call to partial_fit
             and can be omitted in the subsequent calls.
             Note that y doesn't need to contain all labels in `classes`.
-        n_jobs : int, default=None
-            The number of jobs to run in parallel. ``-1`` means using all processors.
-            See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
         postpone_inverse : bool, default=False
             If output weights have not been fitted yet, regressor might be hinted at
@@ -454,11 +454,12 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         if self._encoder is None:
             self._encoder = LabelBinarizer().fit(classes)
 
-        return super().partial_fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None,
+        return super().partial_fit(X, self._encoder.transform(y), transformer_weights=None,
                                    postpone_inverse=postpone_inverse)
 
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
-        """Fits the regressor.
+        """
+        Fits the regressor.
 
         Parameters
         ----------
@@ -480,11 +481,13 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         return super().fit(X, self._encoder.transform(y), n_jobs=n_jobs, transformer_weights=None)
 
     def predict(self, X):
-        """Predict the classes using the trained ESN classifier.
+        """
+        Predict the classes using the trained ESN classifier.
 
         Parameters
         ----------
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+
         Returns
         -------
         y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)

@@ -9,6 +9,7 @@ import pytest
 from sklearn.datasets import load_iris, load_digits
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline, FeatureUnion
 
 from pyrcn.base import InputToNode
 from pyrcn.linear_model import IncrementalRegression
@@ -68,10 +69,10 @@ def test_elm_regressor_chunk():
 def test_iris_ensemble_iterative_regression():
     print('\ntest_iris_ensemble_iterative_regression():')
     X_train, X_test, y_train, y_test = train_test_split(X_iris, y_iris, test_size=5, random_state=42)
+
     cls = ELMClassifier(
-        input_to_node=[
-            ('tanh', InputToNode(hidden_layer_size=10, random_state=42, activation='tanh')),
-            ('bounded_relu', InputToNode(hidden_layer_size=10, random_state=42, activation='bounded_relu'))],
+        input_to_node=FeatureUnion([('tanh',InputToNode(hidden_layer_size=10, random_state=42, input_activation='tanh')), 
+                                    ('bounded_relu', InputToNode(hidden_layer_size=10, random_state=42, input_activation='bounded_relu'))]),
         regressor=IncrementalRegression(alpha=.01),
         random_state=42)
 

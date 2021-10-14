@@ -159,6 +159,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
             # regression
             self._regressor.fit(hidden_layer_state, y)
+
         elif self._chunk_size < X.shape[0]:
             # setup chunk list
             chunks = list(range(0, X.shape[0], self._chunk_size))
@@ -169,15 +170,15 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                                            transformer_weights=transformer_weights,
                                            postpone_inverse=True) 
                                           for idx in chunks[:-1])
-            self = sum(reg)
             # last chunk, calculate inverse and bias
-            ELMRegressor.partial_fit(
-                self,
+            reg = sum(reg)
+            reg.partial_fit(
                 X=X[chunks[-1]:, ...],
                 y=y[chunks[-1]:, ...],
                 transformer_weights=transformer_weights,
                 postpone_inverse=False
             )
+            self._regressor = reg._regressor
         else:
             raise ValueError('chunk_size invalid {0}'.format(self._chunk_size))
         return self
@@ -361,12 +362,15 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
                  input_to_node=None,
                  regressor=None,
                  chunk_size=None,
+                 verbose=False,
                  **kwargs):
-        super().__init__(input_to_node=input_to_node, regressor=regressor, chunk_size=chunk_size, **kwargs)
+        super().__init__(input_to_node=input_to_node, regressor=regressor, 
+                         chunk_size=chunk_size, verbose=verbose, **kwargs)
         self._encoder = None
 
     def partial_fit(self, X, y, classes=None, transformer_weights=None, postpone_inverse=False):
-        """Fits the classifier partially.
+        """
+        Fits the classifier partially.
 
         Parameters
         ----------
