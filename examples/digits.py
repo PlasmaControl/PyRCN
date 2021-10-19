@@ -20,7 +20,7 @@ from sklearn.model_selection import ParameterGrid, GridSearchCV, cross_validate
 from sklearn.metrics import make_scorer
 
 from pyrcn.model_selection import SequentialSearchCV
-from pyrcn.echo_state_network import SeqToLabelESNClassifier
+from pyrcn.echo_state_network import SeqToLabelESNClassifier, ESNClassifier
 from pyrcn.metrics import accuracy_score
 from pyrcn.datasets import load_digits
 
@@ -46,7 +46,7 @@ print("Shape of digits {0}".format(X[0].shape))
 # In[ ]:
 
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=np.asarray([np.unique(yt) for yt in y]).flatten() )
 print("Number of digits in training set: {0}".format(len(X_train)))
 print("Shape of digits in training set: {0}".format(X_train[0].shape))
 print("Number of digits in test set: {0}".format(len(X_test)))
@@ -94,6 +94,11 @@ searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
             ('step2', GridSearchCV, step2_esn_params, kwargs),
             ('step3', GridSearchCV, step3_esn_params, kwargs),
             ('step4', GridSearchCV, step4_esn_params, kwargs)]
+
+base_esn = ESNClassifier(**initially_fixed_params, decision_strategy="winner_takes_all")
+base_esn.fit(X_train, y_train, n_jobs=8)
+
+y_train_pred = base_esn.predict(X_train)
 
 base_esn = SeqToLabelESNClassifier(**initially_fixed_params)
 

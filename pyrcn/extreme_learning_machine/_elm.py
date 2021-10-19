@@ -148,7 +148,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self : Returns a trained ELMRegressor model.
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y, multi_output=True, dtype=None)
+        self._validate_data(X, y, multi_output=True)
 
         self._input_to_node.fit(X)
         self._regressor = self._regressor.__class__()
@@ -165,20 +165,14 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             chunks = list(range(0, X.shape[0], self._chunk_size))
             # postpone inverse calculation for chunks n-1
             reg = Parallel(n_jobs=n_jobs)(delayed(ELMRegressor.partial_fit)
-                                          (self, X[idx:idx + self._chunk_size, ...], 
-                                           y[idx:idx + self._chunk_size, ...],
-                                           transformer_weights=transformer_weights,
-                                           postpone_inverse=True) 
+                                          (clone(self), X[idx:idx + self._chunk_size, ...], y[idx:idx + self._chunk_size, ...],
+                                           transformer_weights=transformer_weights, postpone_inverse=True) 
                                           for idx in chunks[:-1])
             # last chunk, calculate inverse and bias
-            reg = sum(reg)
-            reg.partial_fit(
-                X=X[chunks[-1]:, ...],
-                y=y[chunks[-1]:, ...],
-                transformer_weights=transformer_weights,
-                postpone_inverse=False
-            )
-            self._regressor = reg._regressor
+            self._regressor = sum(reg)._regressor
+            ELMRegressor.partial_fit(self,
+                                     X=X[chunks[-1]:, ...], y=y[chunks[-1]:, ...],
+                                     transformer_weights=transformer_weights, postpone_inverse=False)
         else:
             raise ValueError('chunk_size invalid {0}'.format(self._chunk_size))
         return self
