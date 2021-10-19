@@ -11,11 +11,14 @@ from sklearn.base import _deprecate_positional_args
 import numpy as np
 
 
-def stack_sequence(X, y):
+def stack_sequence(X, y, sequence_to_label=False):
     if isinstance(X, list):
         X = np.asarray(X)
     if isinstance(y, list):
         y = np.asarray(y)
+    if sequence_to_label:
+        for k, _ in enumerate(y):
+            y[k] = np.repeat(y[k], X[k].shape[0])
 
     check_consistent_length(X, y)
     sequence_ranges = None

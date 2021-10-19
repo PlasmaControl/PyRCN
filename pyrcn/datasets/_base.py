@@ -135,7 +135,7 @@ def load_digits(*, n_class=10, return_X_y=False, as_frame=False, as_sequence=Fal
         y = np.empty(shape=(X_ori.shape[0],), dtype=object)
         for k, (X_single, y_single) in enumerate(zip(X_ori, y_ori)):
             X[k] = X_single.reshape(8, 8).T
-            y[k] = y_single
+            y[k] = np.atleast_1d(y_single)
         return X, y
     else:
         return sklearn_load_digits(n_class=n_class, return_X_y=return_X_y, as_frame=as_frame)
