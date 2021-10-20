@@ -15,7 +15,7 @@ from sklearn.exceptions import DataDimensionalityWarning
 from pyrcn.base import InputToNode, NodeToNode
 from pyrcn.utils import stack_sequence
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.postprocessing import SequenceToLabelTransformer
+from pyrcn.postprocessing import SequenceToLabelClassifier
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
@@ -282,7 +282,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                             "and implement fit and transform "
                             "'%s' (type %s) doesn't" % (self.node_to_node, type(self.node_to_node)))
 
-        if self._requires_sequence is not "auto" and (not isinstance(self._requires_sequence, bool)):
+        if self._requires_sequence != "auto" and (not isinstance(self._requires_sequence, bool)):
             raise ValueError('Invalid value for requires_sequence, got {0}'.format(self._requires_sequence))
 
         if not is_regressor(self._regressor):
@@ -556,7 +556,11 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         y = super().predict(X)
         if self.requires_sequence and self._sequence_to_label:
             for k, _ in enumerate(y):
-                y[k] = SequenceToLabelTransformer(output_strategy=self._decision_strategy).fit_transform(y[k])
+                y[k] = SequenceToLabelClassifier(output_strategy=self._decision_strategy).fit(y[k], None).predict(y[k])
+            return y
+        elif self.requires_sequence:
+            for k, _ in enumerate(y):
+                y[k] = self._encoder.inverse_transform(y[k], threshold=None)
             return y
         else:
             return self._encoder.inverse_transform(super().predict(X), threshold=None)
@@ -576,13 +580,19 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         """
         # for single dim proba use np.amax
         # predicted_positive = np.subtract(predicted.T, np.min(predicted, axis=1))
-        if self.requires_sequence:
-            y = super().predict(X)
+        y = super().predict(X)
+        if self.requires_sequence and self._sequence_to_label:
             for k, _ in enumerate(y):
+                y[k] = SequenceToLabelClassifier(output_strategy=self._decision_strategy).fit(y[k], None).predict_proba(y[k])
+                y[k] = np.clip(y[k], a_min=1e-5, a_max=None)
+            return y
+        elif self.requires_sequence:
+            for k, _ in enumerate(y):
+                y[k] = self._encoder.inverse_transform(y[k], threshold=None)
                 y[k] = np.clip(y[k], a_min=1e-5, a_max=None)
             return y
         else:
-            return np.clip(super().predict(X), a_min=1e-5, a_max=None)
+            return self._encoder.inverse_transform(super().predict(X), threshold=None)
 
     def predict_log_proba(self, X):
         """Predict the logarithmic probability estimated using the trained ESN classifier.

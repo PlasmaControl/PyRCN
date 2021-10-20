@@ -78,7 +78,7 @@ initially_fixed_params = {'hidden_layer_size': 50,
                           'continuation': False,
                           'alpha': 1e-5,
                           'random_state': 42,
-                          'output_strategy': "winner_takes_all"}
+                          'decision_strategy': "winner_takes_all"}
 
 step1_esn_params = {'input_scaling': np.linspace(0.1, 1.0, 10),
                     'spectral_radius': np.linspace(0.0, 1.5, 16)}
@@ -95,12 +95,7 @@ searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
             ('step3', GridSearchCV, step3_esn_params, kwargs),
             ('step4', GridSearchCV, step4_esn_params, kwargs)]
 
-base_esn = ESNClassifier(**initially_fixed_params, decision_strategy="winner_takes_all")
-base_esn.fit(X_train, y_train, n_jobs=8)
-
-y_train_pred = base_esn.predict(X_train)
-
-base_esn = SeqToLabelESNClassifier(**initially_fixed_params)
+base_esn = ESNClassifier(**initially_fixed_params)
 
 
 # ## Optimization

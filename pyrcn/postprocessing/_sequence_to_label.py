@@ -1,6 +1,6 @@
 ﻿import numpy as np
 
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, ClassifierMixin
 
 
 def winner_takes_all(X, weights=None):
@@ -11,7 +11,7 @@ def median(X):
     return np.argmax(np.median(X, axis=0))
 
 
-class SequenceToLabelTransformer(BaseEstimator, TransformerMixin):
+class SequenceToLabelClassifier(BaseEstimator, ClassifierMixin):
     """
     TODO: DOCSTRING
     """
@@ -21,11 +21,20 @@ class SequenceToLabelTransformer(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         return self
 
-    def transform(self, X, y=None):
+    def predict(self, X, y=None):
         if self._output_strategy == "winner_takes_all":
             X = np.sum(X, axis=0)
         elif self._output_strategy == "median":
             X = np.median(X, axis=0)
         elif self._output_strategy == "last_value":
             X = X[-1, :]
-        return np.argmax(X)
+        return np.atleast_1d(np.argmax(X))
+
+    def predict_proba(self, X, y=None):
+        if self._output_strategy == "winner_takes_all":
+            X = np.sum(X, axis=0)
+        elif self._output_strategy == "median":
+            X = np.median(X, axis=0)
+        elif self._output_strategy == "last_value":
+            X = X[-1, :]
+        return X
