@@ -15,7 +15,7 @@ from sklearn.exceptions import DataDimensionalityWarning
 from pyrcn.base import InputToNode, NodeToNode
 from pyrcn.utils import stack_sequence
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.postprocessing import SequenceToLabelClassifier
+from pyrcn.projection import MatrixToIndexProjection
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
@@ -526,8 +526,8 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         if self.requires_sequence is "auto":
             self._check_if_sequence(X, y)
         if self.requires_sequence:
-            self._check_if_sequence_to_label(X, y)
-            X, y, sequence_ranges = stack_sequence(X, y, sequence_to_label=self._sequence_to_label)
+            self._check_if_sequence_to_label(X, y)  # change this to "sequence_to_value
+            X, y, sequence_ranges = stack_sequence(X, y, sequence_to_label=self._sequence_to_label)  # concatenate_sequences
             self._encoder = LabelBinarizer().fit(y)
             y = self._encoder.transform(y)
         else:
@@ -556,7 +556,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         y = super().predict(X)
         if self.requires_sequence and self._sequence_to_label:
             for k, _ in enumerate(y):
-                y[k] = SequenceToLabelClassifier(output_strategy=self._decision_strategy).fit(y[k], None).predict(y[k])
+                y[k] = MatrixToIndexProjection(output_strategy=self._decision_strategy).fit_transform(y[k])
             return y
         elif self.requires_sequence:
             for k, _ in enumerate(y):
@@ -583,7 +583,8 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         y = super().predict(X)
         if self.requires_sequence and self._sequence_to_label:
             for k, _ in enumerate(y):
-                y[k] = SequenceToLabelClassifier(output_strategy=self._decision_strategy).fit(y[k], None).predict_proba(y[k])
+                y[k] = MatrixToIndexProjection(output_strategy=self._decision_strategy,
+                                               needs_proba=True).fit_transform(y[k])
                 y[k] = np.clip(y[k], a_min=1e-5, a_max=None)
             return y
         elif self.requires_sequence:
