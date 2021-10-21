@@ -11,7 +11,7 @@ from sklearn.base import _deprecate_positional_args
 import numpy as np
 
 
-def stack_sequence(X, y, sequence_to_label=False):
+def concatenate_sequences(X, y, sequence_to_label=False):
     if isinstance(X, list):
         X = np.asarray(X)
     if isinstance(y, list):

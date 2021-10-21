@@ -9,7 +9,7 @@ import sys
 
 import numpy as np
 
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor, clone
 from pyrcn.base import InputToNode
 from pyrcn.linear_model import IncrementalRegression
 from sklearn.utils.validation import _deprecate_positional_args
@@ -164,10 +164,16 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             # setup chunk list
             chunks = list(range(0, X.shape[0], self._chunk_size))
             # postpone inverse calculation for chunks n-1
-            reg = Parallel(n_jobs=n_jobs)(delayed(ELMRegressor.partial_fit)
-                                          (clone(self), X[idx:idx + self._chunk_size, ...], y[idx:idx + self._chunk_size, ...],
-                                           transformer_weights=transformer_weights, postpone_inverse=True) 
-                                          for idx in chunks[:-1])
+            if n_jobs < 2:
+                [ELMRegressor.partial_fit(self,
+                                          X[idx:idx + self._chunk_size, ...], y[idx:idx + self._chunk_size, ...],
+                                          transformer_weights=transformer_weights, postpone_inverse=True) 
+                 for idx in chunks[:-1]]
+            else:
+                reg = Parallel(n_jobs=n_jobs)(delayed(ELMRegressor.partial_fit)
+                                              (clone(self), X[idx:idx + self._chunk_size, ...], y[idx:idx + self._chunk_size, ...],
+                                               transformer_weights=transformer_weights, postpone_inverse=True) 
+                                              for idx in chunks[:-1])
             # last chunk, calculate inverse and bias
             self._regressor = sum(reg)._regressor
             ELMRegressor.partial_fit(self,

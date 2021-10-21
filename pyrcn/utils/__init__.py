@@ -5,7 +5,7 @@ The :mod:`pyrcn.util` contains utilities for running, testing and analyzing the 
 # Author: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
-from pyrcn.utils._utils import stack_sequence
+from pyrcn.utils._utils import concatenate_sequences
 
-__all__ = ['stack_sequence'
+__all__ = ['concatenate_sequences'
            ]

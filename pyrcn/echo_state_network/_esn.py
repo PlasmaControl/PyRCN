@@ -13,7 +13,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor, clone
 from sklearn.exceptions import DataDimensionalityWarning
 from pyrcn.base import InputToNode, NodeToNode
-from pyrcn.utils import stack_sequence
+from pyrcn.utils import concatenate_sequences
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.projection import MatrixToIndexProjection
 from sklearn.utils.validation import _deprecate_positional_args
@@ -130,6 +130,11 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                              "Only 1 or 2 dimensions are allowed."%X.ndim)
         self.requires_sequence = X.ndim == 1
 
+    def _check_if_sequence_to_value(self, X, y):
+        len_X = np.unique([x.shape[0] for x in X])
+        len_y = np.unique([yt.shape[0] for yt in y])
+        self._sequence_to_label = not len_X==len_y
+
     def partial_fit(self, X, y, transformer_weights=None, postpone_inverse=False):
         """
         Fits the regressor partially.
@@ -199,7 +204,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         if self.requires_sequence is "auto":
             self._check_if_sequence(X, y)
         if self.requires_sequence:
-            X, y, sequence_ranges = stack_sequence(X, y)
+            X, y, sequence_ranges = concatenate_sequences(X, y)
         else:
             self._validate_data(X, y, multi_output=True)
         self._input_to_node.fit(X)
@@ -219,12 +224,20 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self
 
     def _sequence_fit(self, X, y, sequence_ranges, n_jobs):
-        reg = Parallel(n_jobs=n_jobs)(delayed(ESNRegressor.partial_fit)
-                                      (clone(self), X[idx[0]:idx[1], ...], 
-                                       y[idx[0]:idx[1], ...],
-                                       postpone_inverse=True)
-                                      for idx in sequence_ranges[:-1])
-        self._regressor = sum(reg)._regressor
+        if n_jobs is not None and n_jobs > 1:
+            reg = Parallel(n_jobs=n_jobs)(delayed(ESNRegressor.partial_fit)
+                                          (clone(self), X[idx[0]:idx[1], ...], 
+                                           y[idx[0]:idx[1], ...],
+                                           postpone_inverse=True)
+                                          for idx in sequence_ranges[:-1])
+            self._regressor = sum(reg)._regressor
+        else:
+            [ESNRegressor.partial_fit(self,
+                                      X[idx[0]:idx[1], ...], 
+                                      y[idx[0]:idx[1], ...],
+                                      postpone_inverse=True) 
+             for idx in sequence_ranges[:-1] ]
+
         # last sequence, calculate inverse and bias
         ESNRegressor.partial_fit(self,
                                  X=X[sequence_ranges[-1][0]:, ...], 
@@ -498,11 +511,6 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         return super().partial_fit(X, self._encoder.transform(y), transformer_weights=None,
                                    postpone_inverse=postpone_inverse)
 
-    def _check_if_sequence_to_label(self, X, y):
-        len_X = np.unique([x.shape[0] for x in X])
-        len_y = np.unique([yt.shape[0] for yt in y])
-        self._sequence_to_label = not len_X==len_y
-
     def fit(self, X, y, n_jobs=None, transformer_weights=None):
         """
         Fits the classifier.
@@ -526,8 +534,8 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         if self.requires_sequence is "auto":
             self._check_if_sequence(X, y)
         if self.requires_sequence:
-            self._check_if_sequence_to_label(X, y)  # change this to "sequence_to_value
-            X, y, sequence_ranges = stack_sequence(X, y, sequence_to_label=self._sequence_to_label)  # concatenate_sequences
+            self._check_if_sequence_to_value(X, y)
+            X, y, sequence_ranges = concatenate_sequences(X, y, sequence_to_label=self._sequence_to_label)  # concatenate_sequences
             self._encoder = LabelBinarizer().fit(y)
             y = self._encoder.transform(y)
         else:
