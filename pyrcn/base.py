@@ -15,6 +15,7 @@ import warnings
 
 import sklearn
 from sklearn.utils.validation import _deprecate_positional_args
+from sklearn.utils import check_consistent_length, check_array
 from sklearn.neural_network._base import ACTIVATIONS
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state

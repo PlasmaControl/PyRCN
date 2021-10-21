@@ -31,7 +31,7 @@ Please see the [References section](#references) for more information. For code 
 
 ## Prerequisites
 
-PyRCn is developed using Python 3.6 or newer. It depends on the following packages:
+PyRCN is developed using Python 3.6 or newer. It depends on the following packages:
 
 - [numpy>=1.18.1](https://numpy.org/)
 - [scipy>=1.2.0](https://scipy.org/)
@@ -118,7 +118,7 @@ If you use PyRCN, please cite the following publication:
 
 ```latex
 @misc{steiner2021pyrcn,
-      title={PyRCN: Exploration and Application of ESNs}, 
+      title={PyRCN: A Toolbox for Exploration and Application of Reservoir Computing Networks}, 
       author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone and Peter Birkholz},
       year={2021},
       eprint={2103.04807},

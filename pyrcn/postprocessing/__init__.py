@@ -6,4 +6,5 @@ The :mod:`pyrcn.coates` module implements the coates preprocessing.
 
 from pyrcn.postprocessing._normal_distribution import NormalDistribution
 
+
 __all__ = ['NormalDistribution']

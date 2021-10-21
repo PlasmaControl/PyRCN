@@ -8,7 +8,6 @@
 
 
 import os, sys
-
 cwd = os.getcwd()
 module_path = os.path.dirname(cwd)  # target working directory
 
@@ -51,7 +50,7 @@ y_train, y_test = y[:60000].astype(int), y[60000:].astype(int)
 
 # # Prepare sequential hyperparameter tuning
 
-# In[5]:
+# In[7]:
 
 
 initially_fixed_params = {'hidden_layer_size': 500,
@@ -65,10 +64,10 @@ step1_params = {'input_scaling': loguniform(1e-5, 1e1)}
 kwargs1 = {'random_state': 42,
            'verbose': 1,
            'n_jobs': -1,
-           'n_iter': 50,
+           'n_iter': 5,
            'scoring': 'accuracy'}
 step2_params = {'bias_scaling': np.linspace(0.0, 1.6, 16)}
-kwargs2 = {'verbose': 1,
+kwargs2 = {'verbose': 5,
            'n_jobs': -1,
            'scoring': 'accuracy'}
 
@@ -87,14 +86,10 @@ searches = [('step1', RandomizedSearchCV, step1_params, kwargs1),
 sequential_search = SequentialSearchCV(elm, searches=searches).fit(X_train, y_train)
 
 
-# # Extract the final results
-
 # In[ ]:
 
 
-final_fixed_params = initially_fixed_params
-final_fixed_params.update(sequential_search.all_best_params_["step1"])
-final_fixed_params.update(sequential_search.all_best_params_["step2"])
+best_params = sequential_search.best_estimator_.get_params()
 
 
 # # Test
@@ -103,8 +98,8 @@ final_fixed_params.update(sequential_search.all_best_params_["step2"])
 # In[ ]:
 
 
-base_elm_ridge = ELMClassifier(regressor=Ridge(), **final_fixed_params)
-base_elm_inc = ELMClassifier(**final_fixed_params)
+base_elm_ridge = ELMClassifier(regressor=Ridge(), **best_params)
+base_elm_inc = ELMClassifier(**best_params)
 base_elm_inc_chunk = clone(base_elm_inc).set_params(chunk_size=6000)
 
 param_grid = {'hidden_layer_size': [500, 1000, 2000, 4000, 8000, 16000]}

@@ -164,7 +164,7 @@ dmypy.json
 /multi_dataset_inertias.pdf
 /inertias_normalized.csv
 /inertias.csv
-/TIMIT/kmeans_50.joblib
+/TIMIT
 /sequential_search_speech_timit_random.joblib
 /sequential_search_speech_timit_kmeans_rec_rho.joblib
 /sequential_search_speech_timit_kmeans_rec.joblib
