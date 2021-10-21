@@ -17,7 +17,132 @@ import joblib
 from sklearn.datasets import get_data_home
 from sklearn.datasets._base import RemoteFileMetadata, _pkl_filepath
 from sklearn.utils import _deprecate_positional_args
-from madmom.utils import quantize_notes
+
+
+def _combine_events(events, delta, combine='mean'):
+    """
+    Combine all events within a certain range.
+    Parameters
+    ----------
+    events : list or numpy array
+        Events to be combined.
+    delta : float
+        Combination delta. All events within this `delta` are combined.
+    combine : {'mean', 'left', 'right'}
+        How to combine two adjacent events:
+            - 'mean': replace by the mean of the two events
+            - 'left': replace by the left of the two events
+            - 'right': replace by the right of the two events
+    Returns
+    -------
+    numpy array
+        Combined events.
+    """
+    # add a small value to delta, otherwise we end up in floating point hell
+    delta += 1e-12
+    # return immediately if possible
+    if len(events) <= 1:
+        return events
+    # convert to numpy array or create a copy if needed
+    events = np.array(events, dtype=np.float)
+    # can handle only 1D events
+    if events.ndim > 1:
+        raise ValueError('only 1-dimensional events supported.')
+    # set start position
+    idx = 0
+    # get first event
+    left = events[idx]
+    # iterate over all remaining events
+    for right in events[1:]:
+        if right - left <= delta:
+            # combine the two events
+            if combine == 'mean':
+                left = events[idx] = 0.5 * (right + left)
+            elif combine == 'left':
+                left = events[idx] = left
+            elif combine == 'right':
+                left = events[idx] = right
+            else:
+                raise ValueError("don't know how to combine two events with "
+                                 "%s" % combine)
+        else:
+            # move forward
+            idx += 1
+            left = events[idx] = right
+    # return the combined events
+    return events[:idx + 1]
+
+
+def _quantize_notes(notes, fps, length=None, num_pitches=None, velocity=None):
+    """
+    Quantize the notes with the given resolution.
+    Create a sparse 2D array with rows corresponding to points in time
+    (according to `fps` and `length`), and columns to note pitches (according
+    to `num_pitches`). The values of the array correspond to the velocity of a
+    sounding note at a given point in time (based on the note pitch, onset,
+    duration and velocity). If no values for `length` and `num_pitches` are
+    given, they are inferred from `notes`.
+    Parameters
+    ----------
+    notes : 2D numpy array
+        Notes to be quantized. Expected columns:
+        'note_time' 'note_number' ['duration' ['velocity']]
+        If `notes` contains no 'duration' column, only the frame of the
+        onset will be set. If `notes` has no velocity column, a velocity
+        of 1 is assumed.
+    fps : float
+        Quantize with `fps` frames per second.
+    length : int, optional
+        Length of the returned array. If 'None', the length will be set
+        according to the latest sounding note.
+    num_pitches : int, optional
+        Number of pitches of the returned array. If 'None', the number of
+        pitches will be based on the highest pitch in the `notes` array.
+    velocity : float, optional
+        Use this velocity for all quantized notes. If set, the last column of
+        `notes` (if present) will be ignored.
+    Returns
+    -------
+    numpy array
+        Quantized notes.
+    """
+    # convert to numpy array or create a copy if needed
+    notes = np.array(np.array(notes).T, dtype=np.float, ndmin=2).T
+    # check supported dims and shapes
+    if notes.ndim != 2:
+        raise ValueError('only 2-dimensional notes supported.')
+    if notes.shape[1] < 2:
+        raise ValueError('notes must have at least 2 columns.')
+    # split the notes into columns
+    note_onsets = notes[:, 0]
+    note_numbers = notes[:, 1].astype(np.int)
+    note_offsets = np.copy(note_onsets)
+    if notes.shape[1] > 2:
+        note_offsets += notes[:, 2]
+    if notes.shape[1] > 3 and velocity is None:
+        note_velocities = notes[:, 3]
+    else:
+        velocity = velocity or 1
+        note_velocities = np.ones(len(notes)) * velocity
+    # determine length and width of quantized array
+    if length is None:
+        # set the length to be long enough to cover all notes
+        length = int(round(np.max(note_offsets) * float(fps))) + 1
+    if num_pitches is None:
+        num_pitches = int(np.max(note_numbers)) + 1
+    # init array
+    quantized = np.zeros((length, num_pitches))
+    # quantize onsets and offsets
+    note_onsets = np.round((note_onsets * fps)).astype(np.int)
+    note_offsets = np.round((note_offsets * fps)).astype(np.int) + 1
+    # iterate over all notes
+    for n, note in enumerate(notes):
+        # use only the notes which fit in the array and note number >= 0
+        if num_pitches > note_numbers[n] >= 0:
+            quantized[note_onsets[n]:note_offsets[n], note_numbers[n]] = \
+                note_velocities[n]
+    # return quantized array
+    return quantized
 
 
 @_deprecate_positional_args
@@ -123,7 +248,7 @@ def fetch_maps_piano_dataset(*, data_origin=None, data_home=None, preprocessor=N
 def _get_pitch_labels(X, df_label):
     df_label["Duration"] = df_label["OffsetTime"] - df_label["OnsetTime"]
     notes = df_label[["OnsetTime", "MidiPitch", "Duration"]].to_numpy()
-    pitch_labels = quantize_notes(notes, fps=100., num_pitches=128, length=X.shape[0])
+    pitch_labels = _quantize_notes(notes, fps=100., num_pitches=128, length=X.shape[0])
     y = np.zeros(shape=(pitch_labels.shape[0], pitch_labels.shape[1] + 1))
     y[:, 1:] = pitch_labels
     y[np.argwhere(pitch_labels.sum(axis=1) == 0), 0] = 1
@@ -167,7 +292,7 @@ def get_onset_events(self, utterance):
             start_time = float(label['OnsetTime'])
             note = int(label['MidiPitch'])
             onset_labels.append([start_time, note])
-    return madmom.utils.combine_events(list(dict.fromkeys(onset_labels)), 0.03, combine='mean')
+    return _combine_events(list(dict.fromkeys(onset_labels)), 0.03, combine='mean')
 
 def get_offset_events(self, utterance):
     """get_offset_events(utterance)
@@ -187,4 +312,6 @@ def get_offset_events(self, utterance):
             start_time = float(label['OnsetTime'])
             note = int(label['MidiPitch'])
             offset_labels.append([start_time, note])
-    return madmom.utils.combine_events(list(dict.fromkeys(offset_labels)), 0.03, combine='mean')
+    return _combine_events(list(dict.fromkeys(offset_labels)), 0.03, combine='mean')
+
+
