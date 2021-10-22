@@ -6,7 +6,7 @@ The :mod:`pyrcn.util` contains utilities for runnung, testing and analyzing the 
 # License: BSD 3 clause
 
 from sklearn.utils import check_X_y, check_consistent_length
-from sklearn.base import _deprecate_positional_args
+from sklearn.utils.validation import _deprecate_positional_args
 
 import numpy as np
 
