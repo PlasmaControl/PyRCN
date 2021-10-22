@@ -9,7 +9,7 @@ import sys
 
 import numpy as np
 
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
+from sklearn.base import  ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
 from pyrcn.base import InputToNode, FeedbackNodeToNode, ACTIVATIONS, ACTIVATIONS_INVERSE
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNRegressor

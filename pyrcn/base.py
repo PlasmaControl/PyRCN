@@ -15,6 +15,7 @@ import warnings
 
 import sklearn
 from sklearn.utils.validation import _deprecate_positional_args
+from sklearn.utils import check_consistent_length, check_array
 from sklearn.neural_network._base import ACTIVATIONS
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state
@@ -559,7 +560,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
     hidden_layer_size : int, default=500
         Sets the number of nodes in hidden layer. Equals number of output features.
     sparsity : float, default=1.
-        Quotient of input weights per node (k_in) and number of input features (n_features)
+        Quotient of recurrent weights per node (k_rec) and number of input features (n_features)
     reservoir_activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
         This element represents the activation function in the hidden layer.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
@@ -568,7 +569,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
             - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
     spectral_radius : float, default=1.
-        Scales the input weight matrix.
+        Scales the recurrent weight matrix.
     leakage : float, default=1.
         parameter to determine the degree of leaky integration.
     bi_directional : bool, default=False
@@ -688,7 +689,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        normal_random_input_weights : ndarray of size (hidden_layer_size, hidden_layer_size)
+        normal_random_recurrent_weights : ndarray of size (hidden_layer_size, hidden_layer_size)
         """
         if n_features_in != hidden_layer_size:
             raise ValueError("Dimensional mismatch: n_features must match hidden_layer_size, got %s !=%s." %
@@ -878,7 +879,7 @@ class FeedbackNodeToNode(NodeToNode):
     hidden_layer_size : int, default=500
         Sets the number of nodes in hidden layer. Equals number of output features.
     sparsity : float, default=1.
-        Quotient of input weights per node (k_in) and number of input features (n_features)
+        Quotient of recurrent weights per node (k_rec) and number of recurrent features (n_features)
     reservoir_activation : {'tanh', 'identity', 'logistic', 'relu', 'bounded_relu'}, default='tanh'
         This element represents the activation function in the hidden layer.
             - 'identity', no-op activation, useful to implement linear bottleneck, returns f(x) = x
@@ -887,7 +888,7 @@ class FeedbackNodeToNode(NodeToNode):
             - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
             - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
     spectral_radius : float, default=1.
-        Scales the input weight matrix.
+        Scales the recurrent weight matrix.
     leakage : float, default=1.
         parameter to determine the degree of leaky integration.
     teacher_scaling : float, default=1.
@@ -1018,7 +1019,7 @@ class FeedbackNodeToNode(NodeToNode):
         size : int
         Object memory in bytes.
         """
-        if scipy.sparse.issparse(self._input_weights):
+        if scipy.sparse.issparse(self._recurrent_weights):
             return object.__sizeof__(self) + \
                 self._recurrent_weights.todense().nbytes + \
                 self._feedback_weights.nbytes + \
@@ -1068,7 +1069,7 @@ class PredefinedWeightsNodeToNode(NodeToNode):
             - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
             - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
     spectral_radius : float, default=1.
-        Scales the input weight matrix.
+        Scales the recurrent weight matrix.
     random_state : {None, int, RandomState}, default=42
     """
     @_deprecate_positional_args
@@ -1113,7 +1114,7 @@ class PredefinedWeightsNodeToNode(NodeToNode):
 
         if self.predefined_recurrent_weights.shape[0] != X.shape[1]:
             raise ValueError('X has not the expected shape {0}, given {1}.'.format(
-                self.predefined_input_weights.shape[0], X.shape[1]))
+                self.predefined_recurrent_weights.shape[0], X.shape[1]))
 
         if self.predefined_recurrent_weights.shape[0] != self.predefined_recurrent_weights.shape[1]:
             raise ValueError('Recurrent weights need to be a squared matrix, given {1}.'.format(

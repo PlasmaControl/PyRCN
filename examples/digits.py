@@ -20,7 +20,7 @@ from sklearn.model_selection import ParameterGrid, GridSearchCV, cross_validate
 from sklearn.metrics import make_scorer
 
 from pyrcn.model_selection import SequentialSearchCV
-from pyrcn.echo_state_network import SeqToLabelESNClassifier
+from pyrcn.echo_state_network import ESNClassifier
 from pyrcn.metrics import accuracy_score
 from pyrcn.datasets import load_digits
 
@@ -46,7 +46,9 @@ print("Shape of digits {0}".format(X[0].shape))
 # In[ ]:
 
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, 
+                                                    stratify=np.asarray([np.unique(yt) for yt in y]).flatten(), 
+                                                    random_state=42)
 print("Number of digits in training set: {0}".format(len(X_train)))
 print("Shape of digits in training set: {0}".format(X_train[0].shape))
 print("Number of digits in test set: {0}".format(len(X_test)))
@@ -78,7 +80,7 @@ initially_fixed_params = {'hidden_layer_size': 50,
                           'continuation': False,
                           'alpha': 1e-5,
                           'random_state': 42,
-                          'output_strategy': "winner_takes_all"}
+                          'decision_strategy': "winner_takes_all"}
 
 step1_esn_params = {'input_scaling': np.linspace(0.1, 1.0, 10),
                     'spectral_radius': np.linspace(0.0, 1.5, 16)}
@@ -95,7 +97,7 @@ searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
             ('step3', GridSearchCV, step3_esn_params, kwargs),
             ('step4', GridSearchCV, step4_esn_params, kwargs)]
 
-base_esn = SeqToLabelESNClassifier(**initially_fixed_params)
+base_esn = ESNClassifier(**initially_fixed_params)
 
 
 # ## Optimization
@@ -135,12 +137,12 @@ for params in ParameterGrid(param_grid):
     esn = clone(base_esn).set_params(**params).fit(X_train, y_train)
     t_fit = time.time() - t1
     t1 = time.time()
-    esn_par = clone(base_esn).set_params(**params).fit(X_train, y_train, n_jobs=8)
+    esn_par = clone(base_esn).set_params(**params).fit(X_train, y_train, n_jobs=-1)
     t_fit_par = time.time() - t1
     mem_size = esn.__sizeof__()
     t1 = time.time()
     acc_score = accuracy_score(y_test, esn.predict(X_test))
-    tinference = time.time() - t1
+    t_inference = time.time() - t1
     print("{0}\t{1}\t{2}\t{3}\t{4}".format(esn_cv, t_fit, t_inference, acc_score, mem_size))
 
 

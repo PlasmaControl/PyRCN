@@ -157,3 +157,20 @@ dmypy.json
 /.idea
 
 .joblib
+/multidataset
+/RICSyN2015
+/f0
+/sequential_search.joblib
+/multi_dataset_inertias.pdf
+/inertias_normalized.csv
+/inertias.csv
+/TIMIT
+/sequential_search_speech_timit_random.joblib
+/sequential_search_speech_timit_kmeans_rec_rho.joblib
+/sequential_search_speech_timit_kmeans_rec.joblib
+/sequential_search_speech_timit_kmeans.joblib
+/sequential_search_speech_command_v0.01_digits_random.joblib
+/sequential_search_fsdd_random.joblib
+/sequential_search_fsdd_kmeans_rec_eigs.joblib
+/sequential_search_fsdd_kmeans_rec.joblib
+/sequential_search_fsdd_kmeans.joblib

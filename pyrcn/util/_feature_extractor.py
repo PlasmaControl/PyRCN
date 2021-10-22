@@ -1,92 +1,65 @@
-import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.preprocessing import FunctionTransformer
 
 
-class FeatureExtractor(BaseEstimator, TransformerMixin):
-    """Sci-kit learn wrapper class for feature extraction methods.
-    This class acts as a bridge between feature extraction functions 
-    and scikit-learn pipelines.
-    :usage:
-        >>> import librosa
-        >>> import sklearn.pipeline
+class FeatureExtractor(FunctionTransformer):
+    """
+    Constructs a transformer from an arbitrary callable.
 
-        >>> # Build a mel-spectrogram extractor
-        >>> MelSpec = FeatureExtractor(librosa.feature.melspectrogram,
-                                                    sr=22050, 
-                                                    n_fft=2048, 
-                                                    n_mels=128, 
-                                                    fmax=8000)
+    A FunctionTransformer forwards its X (and optionally y) arguments to a user-defined function or function object and returns the result of this function. 
+    This is useful for stateless transformations such as taking the log of frequencies, doing custom scaling, etc.
 
-        >>> # And a log-amplitude extractor
-        >>> LogAmp = FeatureExtractor(librosa.amplitude_to_db, ref_power=np.max)
+    Compared to sklearn.preprocessing.FunctionTransformer, it is possible to pass a filename as X and process the underlying file.
 
-        >>> # Chain them into a pipeline
-        >>> FeaturePipeline = sklearn.pipeline.Pipeline([('MelSpectrogram', MelSpec), ('LogAmplitude', LogAmp)])
-        >>> # Load an audio file
-        >>> y, sr = librosa.load('file.mp3', sr=22050)
-        >>> # Apply the transformation to y
-        >>> F = FeaturePipeline.transform([y])
-    :parameters:
-      - function : function
-        The feature extraction function to wrap.
-        Example: `librosa.feature.melspectrogram`
-      - kwargs : additional keyword arguments
-        Parameters to be passed through to `function`
+    Note: If a lambda is used as the function, then the resulting transformer will not be pickleable.
+
+    Parameters
+    ----------
+    func : function
+        The callable to use for the transformation. 
+        This will be passed the same arguments as transform, with args and kwargs forwarded. 
+        If func is None, then func will be the identity function.
+    kw_args : dict, default=None.
+        Dictionary of additional keyword arguments to pass to func.
+
     """
 
-    def __init__(self, function, **kwargs):
-        self.function = function
-        self.kwargs = {}
-        self.sr = None
-        self.mono = None
-        self.norm = None
-        self.sample_rate=None
-        self.num_channels=None
+    def __init__(self, func=None, kw_args=None):
+        super().__init__(func=func, inverse_func=None, validate=False, accept_sparse=False, check_inverse=False, kw_args=kw_args, inv_kw_args=None)
 
-        self.set_params(**kwargs)
-
-    # Clobber _get_param_names here for transparency
-    def _get_param_names(self):
-        """Returns the parameters of the feature extractor as a dictionary."""
-        P = {'function': self.function}
-        P.update(self.kwargs)
-        return P
-
-    # Wrap set_params to catch updates
-    def set_params(self, **kwargs):
-        """Update the parameters of the feature extractor."""
-
-        # We don't want non-functional arguments polluting kwargs
-        params = kwargs.copy()
-        for k in ['function']:
-            params.pop(k, None)
-
-        self.kwargs.update(params)
-        BaseEstimator.set_params(self, **kwargs)
-
-    def fit(self, *args, **kwargs):
-        """This function does nothing, and is provided for interface compatibility.
-        .. note:: Since most `TransformerMixin` classes implement some statistical
-        modeling (e.g., PCA), the `fit` method is necessary.  
-        For the `FeatureExtraction` class, all parameters are fixed ahead of time,
-        and no statistical estimation takes place.
+    def fit(self, X, y=None, **fit_params):
         """
-        return self
+        Fit transformer by checking X.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Input array.
+        y : array-like of shape (n_samples,) or (n_samples, n_outputs), default=None
+
+            Target values (None for unsupervised transformations).
+
+        fit_params : dict
+            Additional fit parameters.
+
+        """
+        return super().fit(X=X, y=y, **fit_params)
 
     def transform(self, X):
-        """Applies the feature transformation to an array of input data.
-        :parameters:
-          - X : iterable
-            Array or list of input data
-        :returns:
-          - X_transform : list
-            In positional argument mode (target=None), then
-            `X_transform[i] = function(X[i], [feature extractor parameters])`
         """
-        # Each element of X takes first position in function()
-        if isinstance(X, str):
-            return self.function(X, **self.kwargs)[0]
-        if X.ndim > 1:
-            return self.function(X.T, **self.kwargs).T
-        else:
-            return self.function(X.T, **self.kwargs).T
+        Transform X using the forward function.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_features)
+            Input array.
+
+        Returns
+        -------
+        X_out : array-like, shape (n_samples, n_features)
+            Transformed input.
+
+        """
+        X_out = self._transform(X=X, func=self.func, kw_args=self.kw_args)
+        if type(X_out) is tuple:
+            X_out = X_out[0]
+        return X_out
