@@ -16,7 +16,7 @@ import joblib
 
 from sklearn.datasets import get_data_home
 from sklearn.datasets._base import RemoteFileMetadata, _pkl_filepath
-from sklearn.utils import _deprecate_positional_args
+from sklearn.utils.validation import _deprecate_positional_args
 
 
 @_deprecate_positional_args
