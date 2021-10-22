@@ -29,7 +29,7 @@ setuptools.setup(
     },
     install_requires=[
         'scikit-learn>=0.23.1',
-        'ipywidgets,
+        'ipywidgets',
         'numpy>=1.18.1',
         'scipy>=1.2.0',
         'joblib>=0.13.2',
