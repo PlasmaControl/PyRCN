@@ -1,0 +1,8 @@
+#notebook {
+	background-color: aliceblue;
+	background-image: url(Logo_TU_Dresden.svg);
+	background-repeat: no-repeat;
+	background-attachment: fixed; /*scroll*/
+	background-position: right center;
+	background-size: 390px;
+}
