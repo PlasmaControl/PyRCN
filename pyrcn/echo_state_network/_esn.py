@@ -47,6 +47,8 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
     requires_sequence : "auto" or bool
         If True, the input data is expected to be a sequence. 
         If "auto", tries to automatically estimate when calling ```fit``` for the first time
+    decision_strategy : str, one of {'winner_takes_all', 'median', 'weighted', 'last_value', 'mode'}, default='winner_takes_all'
+        Decision strategy for sequence-to-label task. Ignored if the target output is a sequence
     kwargs : dict, default = None
         keyword arguments passed to the subestimators if this is desired, default=None
     """
@@ -56,6 +58,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                  node_to_node=None,
                  regressor=None,
                  requires_sequence="auto",
+                 decision_strategy="winner_takes_all",
                  verbose=False,
                  **kwargs):
         if input_to_node is None:
@@ -278,7 +281,8 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             return y
 
     def _validate_hyperparameters(self):
-        """Validates the hyperparameters.
+        """
+        Validates the hyperparameters.
 
         Returns
         -------
@@ -304,7 +308,9 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                             "'%s' (type %s) doesn't" % (self._regressor, type(self._regressor)))
 
     def __sizeof__(self):
-        """Returns the size of the object in bytes.
+        """
+        Returns the size of the object in bytes.
+
         Returns
         -------
         size : int
@@ -317,7 +323,9 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     @property
     def regressor(self):
-        """Returns the regressor.
+        """
+        Returns the regressor.
+
         Returns
         -------
         regressor : Regressor
@@ -326,7 +334,9 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     @regressor.setter
     def regressor(self, regressor):
-        """Sets the regressor.
+        """
+        Sets the regressor.
+
         Parameters
         ----------
         regressor : regressor or None
@@ -337,7 +347,9 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     @property
     def input_to_node(self):
-        """Returns the input_to_node list or the input_to_node Transformer.
+        """
+        Returns the input_to_node list or the input_to_node Transformer.
+
         Returns
         -------
         input_to_node : Transformer or [Transformer]
@@ -346,7 +358,9 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     @input_to_node.setter
     def input_to_node(self, input_to_node, n_jobs=None, transformer_weights=None):
-        """Sets the input_to_node list or the input_to_node Transformer.
+        """
+        Sets the input_to_node list or the input_to_node Transformer.
+
         Parameters
         ----------
         input_to_node : Transformer or [Transformer]
@@ -357,6 +371,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         Multiplicative weights for features per transformer.
         Keys are transformer names, values the weights.
         Raises ValueError if key not present in transformer_list.
+
         Returns
         -------
         """
@@ -372,7 +387,9 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     @property
     def node_to_node(self):
-        """Returns the node_to_node list or the input_to_node Transformer.
+        """
+        Returns the node_to_node list or the input_to_node Transformer.
+
         Returns
         -------
         node_to_node : Transformer or [Transformer]
@@ -381,7 +398,9 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     @property
     def hidden_layer_state(self):
-        """Returns the hidden_layer_state, e.g. the resevoir state over time.
+        """
+        Returns the hidden_layer_state, e.g. the resevoir state over time.
+
         Returns
         -------
         hidden_layer_state : np.ndarray
@@ -390,7 +409,9 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     @node_to_node.setter
     def node_to_node(self, node_to_node, n_jobs=None, transformer_weights=None):
-        """Sets the input_to_node list or the input_to_node Transformer.
+        """
+        Sets the input_to_node list or the input_to_node Transformer.
+
         Parameters
         ----------
         node_to_node : Transformer or [Transformer]
@@ -401,6 +422,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         Multiplicative weights for features per transformer.
         Keys are transformer names, values the weights.
         Raises ValueError if key not present in transformer_list.
+
         Returns
         -------
         """
@@ -415,20 +437,50 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             self._node_to_node = node_to_node
 
     @property
-    def requires_sequence(self):
-        """Returns the requires_sequence parameter.
+    def decision_strategy(self):
+        """
+        Returns the decision_strategy parameter.
+
         Returns
         -------
-        requires_sequence : "auto" or bool
+        decision_strategy : str, default="winner_takes_all"
+        """
+        return self._decision_strategy
+
+    @decision_strategy.setter
+    def decision_strategy(self, requires_sequence):
+        """
+        Sets the requires_sequence parameter.
+
+        Parameters
+        ----------
+        decision_strategy : str, default="winner_takes_all"
+
+        Returns
+        -------
+        """
+        self._decision_strategy = decision_strategy
+
+    @property
+    def requires_sequence(self):
+        """
+        Returns the requires_sequence parameter.
+
+        Returns
+        -------
+        requires_sequence : str, default="winner_takes_all"
         """
         return self._requires_sequence
 
     @requires_sequence.setter
     def requires_sequence(self, requires_sequence):
-        """Sets the requires_sequence parameter.
+        """
+        Sets the requires_sequence parameter.
+
         Parameters
         ----------
         requires_sequence : "auto" or bool
+
         Returns
         -------
         """
@@ -536,10 +588,10 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         if self.requires_sequence:
             self._check_if_sequence_to_value(X, y)
             X, y, sequence_ranges = concatenate_sequences(X, y, sequence_to_label=self._sequence_to_label)  # concatenate_sequences
-            self._encoder = LabelBinarizer().fit(y)
-            y = self._encoder.transform(y)
         else:
             self._validate_data(X, y, multi_output=True)
+        self._encoder = LabelBinarizer().fit(y)
+        y = self._encoder.transform(y)
         self._input_to_node.fit(X)
         self._node_to_node.fit(self._input_to_node.transform(X))
         self._regressor = self._regressor.__class__()
@@ -581,6 +633,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         ----------
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
             The input data.
+        
         Returns
         -------
         y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
@@ -604,12 +657,14 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
             return self._encoder.inverse_transform(super().predict(X), threshold=None)
 
     def predict_log_proba(self, X):
-        """Predict the logarithmic probability estimated using the trained ESN classifier.
+        """
+        Predict the logarithmic probability estimated using the trained ESN classifier.
 
         Parameters
         ----------
         X : {ndarray, sparse matrix} of shape (n_samples, n_features)
             The input data.
+
         Returns
         -------
         y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)

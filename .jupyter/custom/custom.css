@@ -151,7 +151,7 @@ div#notebook {
 
 #ipython_notebook img{                                                                                        
     display:block;
-    background: url(../../docs/logos/Logo_TU_Dresden.svg);
+    background: url(./Logo_TU_Dresden.svg);
 	background-repeat: no-repeat;
     background-size: contain;
     width: 233px;
