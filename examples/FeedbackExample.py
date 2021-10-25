@@ -35,7 +35,6 @@ initially_fixed_esn_params = {'hidden_layer_size': 200,
                               'leakage': 1.0,
                               'teacher_scaling': 1.12,
                               'teacher_shift': -0.7,
-                              'bi_directional': False,
                               'output_activation': 'tanh',
                               'alpha': 1e-3
                               }

@@ -169,7 +169,7 @@ for file in all_wavs_m[13:]:
     print(y_val[-1].shape)
 """
 base_input_to_node = InputToNode(hidden_layer_size=500, activation='identity', k_in=5, input_scaling=14.6, bias_scaling=0.0, random_state=1)
-base_node_to_node = NodeToNode(hidden_layer_size=500, spectral_radius=0.8, leakage=0.5, bias_scaling=0.5, k_rec=16, bi_directional=True, random_state=1)
+base_node_to_node = NodeToNode(hidden_layer_size=500, spectral_radius=0.8, leakage=0.5, bias_scaling=0.5, k_rec=16, bidirectional=True, random_state=1)
 base_reg = FastIncrementalRegression(alpha=1.7e-10)
 
 base_esn = ESNRegressor(input_to_node=[('default', base_input_to_node)],

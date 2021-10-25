@@ -74,7 +74,7 @@ initially_fixed_params = {'hidden_layer_size': 50,
                           'bias_scaling': 0.0,
                           'reservoir_activation': 'tanh',
                           'leakage': 1.0,
-                          'bi_directional': False,
+                          'bidirectional': False,
                           'k_rec': 10,
                           'wash_out': 0,
                           'continuation': False,
@@ -128,7 +128,7 @@ base_esn = sequential_search.best_estimator_
 
 
 param_grid = {'hidden_layer_size': [50, 100, 200, 400, 500],
-              'bi_directional': [False, True]}
+              'bidirectional': [False, True]}
 
 print("CV results\tFit time\tInference time\tAccuracy score\tSize[Bytes]")
 for params in ParameterGrid(param_grid):

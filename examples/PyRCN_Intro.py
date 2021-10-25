@@ -83,7 +83,7 @@ from pyrcn.base import NodeToNode
 node_to_node = NodeToNode(hidden_layer_size=50,
                           reservoir_activation="tanh",
                           spectral_radius=1.0, leakage=0.9,
-                          bi_directional=False)
+                          bidirectional=False)
 R_n2n = node_to_node.fit_transform(R_i2n)
 print(U.shape, R_n2n.shape)
 
@@ -464,7 +464,7 @@ esn_params = {'input_scaling': 0.1,
 b_esn = ESNClassifier(**esn_params)
 
 param_grid = {'hidden_layer_size': [50, 100, 200, 400, 500],
-              'bi_directional': [False, True]}
+              'bidirectional': [False, True]}
 
 for params in ParameterGrid(param_grid):
     esn_cv = cross_validate(clone(b_esn).set_params(**params), 
