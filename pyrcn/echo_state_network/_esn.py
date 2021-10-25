@@ -136,7 +136,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
     def _check_if_sequence_to_value(self, X, y):
         len_X = np.unique([x.shape[0] for x in X])
         len_y = np.unique([yt.shape[0] for yt in y])
-        self._sequence_to_label = not len_X==len_y
+        self._sequence_to_value = not np.any(len_X==len_y)
 
     def partial_fit(self, X, y, transformer_weights=None, postpone_inverse=False):
         """
@@ -204,7 +204,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self : Returns a trained ESNRegressor model.
         """
         self._validate_hyperparameters()
-        if self.requires_sequence is "auto":
+        if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
         if self.requires_sequence:
             X, y, sequence_ranges = concatenate_sequences(X, y)
@@ -226,7 +226,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._regressor.fit(hidden_layer_state, y)
         return self
 
-    def _sequence_fit(self, X, y, sequence_ranges, n_jobs):
+    def _sequence_fit(self, X, y, sequence_ranges=None, n_jobs=None):
         if n_jobs is not None and n_jobs > 1:
             reg = Parallel(n_jobs=n_jobs)(delayed(ESNRegressor.partial_fit)
                                           (clone(self), X[idx[0]:idx[1], ...], 
@@ -437,6 +437,31 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             self._node_to_node = node_to_node
 
     @property
+    def sequence_to_value(self):
+        """
+        Returns the sequence_to_value parameter.
+
+        Returns
+        -------
+        sequence_to_value : bool
+        """
+        return self._sequence_to_value
+
+    @sequence_to_value.setter
+    def sequence_to_value(self, sequence_to_value):
+        """
+        Sets the sequence_to_value parameter.
+
+        Parameters
+        ----------
+        sequence_to_value : bool
+
+        Returns
+        -------
+        """
+        self._sequence_to_value = sequence_to_value
+
+    @property
     def decision_strategy(self):
         """
         Returns the decision_strategy parameter.
@@ -528,7 +553,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
                          requires_sequence=requires_sequence, verbose=verbose, **kwargs)
         self._decision_strategy = decision_strategy
         self._encoder = None
-        self._sequence_to_label = False
+        self._sequence_to_value = False
 
     def partial_fit(self, X, y, classes=None, transformer_weights=None, postpone_inverse=False):
         """
@@ -583,11 +608,11 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         """
 
         self._validate_hyperparameters()
-        if self.requires_sequence is "auto":
+        if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
         if self.requires_sequence:
             self._check_if_sequence_to_value(X, y)
-            X, y, sequence_ranges = concatenate_sequences(X, y, sequence_to_label=self._sequence_to_label)  # concatenate_sequences
+            X, y, sequence_ranges = concatenate_sequences(X, y, sequence_to_value=self._sequence_to_value)  # concatenate_sequences
         else:
             self._validate_data(X, y, multi_output=True)
         self._encoder = LabelBinarizer().fit(y)
@@ -614,7 +639,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
             The predicted classes.
         """
         y = super().predict(X)
-        if self.requires_sequence and self._sequence_to_label:
+        if self.requires_sequence and self._sequence_to_value:
             for k, _ in enumerate(y):
                 y[k] = MatrixToIndexProjection(output_strategy=self._decision_strategy).fit_transform(y[k])
             return y
@@ -642,7 +667,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         # for single dim proba use np.amax
         # predicted_positive = np.subtract(predicted.T, np.min(predicted, axis=1))
         y = super().predict(X)
-        if self.requires_sequence and self._sequence_to_label:
+        if self.requires_sequence and self._sequence_to_value:
             for k, _ in enumerate(y):
                 y[k] = MatrixToIndexProjection(output_strategy=self._decision_strategy,
                                                needs_proba=True).fit_transform(y[k])

@@ -99,7 +99,9 @@ class SequentialSearchCV(BaseSearchCV):
             self.all_refit_time_ = {}
             self.all_multimetric_ = {}
             for name, search, params, *kwargs in searches:
-                if len(kwargs) == 1:
+                if len(kwargs) == 1 and 'refit' in kwargs[0].keys():
+                    result = search(self.estimator, params, **kwargs[0]).fit(X, y)
+                elif len(kwargs) == 1 and 'refit' not in kwargs[0].keys():
                     result = search(self.estimator, params, refit=True, **kwargs[0]).fit(X, y)
                 else:
                     result = search(self.estimator, params, refit=True).fit(X, y)

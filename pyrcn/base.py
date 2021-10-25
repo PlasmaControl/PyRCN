@@ -572,14 +572,10 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         Scales the recurrent weight matrix.
     leakage : float, default=1.
         parameter to determine the degree of leaky integration.
-    bi_directional : bool, default=False
+    bidirectional : bool, default=False
         Whether to work in bidirectional mode.
     k_rec : int, default=None.
         recurrent weights per node. By default, it is None. If set, it overrides sparsity.
-    wash_out : int, default=0.
-        number of initial states to omit for training. By default, it is not omit any data.
-    continuation : bool, default=False
-        whether to save the last reservoir state for later continuation.
     random_state : {None, int, RandomState}, default=42
     """
     @_deprecate_positional_args
@@ -589,20 +585,16 @@ class NodeToNode(BaseEstimator, TransformerMixin):
                  reservoir_activation='tanh',
                  spectral_radius=1.,
                  leakage=1.,
-                 bi_directional=False,
+                 bidirectional=False,
                  k_rec=None,
-                 wash_out=0,
-                 continuation=False,
                  random_state=42):
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
         self.reservoir_activation = reservoir_activation
         self.spectral_radius = spectral_radius
         self.leakage = leakage
-        self.bi_directional = bi_directional
+        self.bidirectional = bidirectional
         self.k_rec = k_rec
-        self.wash_out = wash_out
-        self.continuation = continuation
         self.random_state = random_state
 
         self._recurrent_weights = None
@@ -652,7 +644,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         if self._recurrent_weights is None:
             raise NotFittedError(self)
 
-        if self.bi_directional:
+        if self.bidirectional:
             _hidden_layer_state_fw = self._pass_through_recurrent_weights(X=X)
             _hidden_layer_state_bw = np.flipud(self._pass_through_recurrent_weights(X=np.flipud(X)))
             self._hidden_layer_state = np.concatenate((_hidden_layer_state_fw, _hidden_layer_state_bw), axis=1)
@@ -662,7 +654,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
     def _pass_through_recurrent_weights(self, X, y=None):
         hidden_layer_state = np.zeros(shape=(X.shape[0]+1, self.hidden_layer_size))
-        if self.continuation and self._hidden_layer_state is not None and not self.bi_directional:
+        if self._hidden_layer_state is not None and not self.bidirectional:
             hidden_layer_state[0, :] = self._hidden_layer_state[-1, :]
         for sample in range(X.shape[0]):
             a = X[sample, :]
@@ -741,8 +733,8 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             raise ValueError("spectral_radius must be >= 0, got %s." % self.spectral_radius)
         if self.leakage <= 0. or self.leakage > 1.:
             raise ValueError("leakage must be between 0. and 1., got %s." % self.leakage)
-        if self.bi_directional not in [False, True]:
-            raise ValueError("bi_directional must be either False or True,, got %s." % self.bi_directional)
+        if self.bidirectional not in [False, True]:
+            raise ValueError("bidirectional must be either False or True,, got %s." % self.bidirectional)
         if self.k_rec is not None and self.k_rec <= 0:
             raise ValueError("k_rec must be > 0, got %d." % self.k_rec)
 
@@ -790,10 +782,8 @@ class HebbianNodeToNode(NodeToNode):
                  reservoir_activation='tanh',
                  spectral_radius=1.,
                  leakage=1.,
-                 bi_directional=False,
+                 bidirectional=False,
                  k_rec=None,
-                 wash_out=0,
-                 continuation=False,
                  random_state=42,
                  learning_rate=0.01,
                  epochs=100,
@@ -803,10 +793,8 @@ class HebbianNodeToNode(NodeToNode):
                          reservoir_activation=reservoir_activation,
                          spectral_radius=spectral_radius,
                          leakage=leakage,
-                         bi_directional=bi_directional,
+                         bidirectional=bidirectional,
                          k_rec=k_rec,
-                         wash_out=wash_out,
-                         continuation=continuation,
                          random_state=random_state)
         self.learning_rate = learning_rate
         self.epochs = epochs
@@ -895,7 +883,7 @@ class FeedbackNodeToNode(NodeToNode):
         Factor applied to the target signal
     teacher_shift: float, default=0.
         Additive term applied to the target signal
-    bi_directional : bool, default=None
+    bidirectional : bool, default=None
         Whether to work in bidirectional mode. This is ignored here.
     k_rec : int, default=None.
         recurrent weights per node. By default, it is None. If set, it overrides sparsity.
@@ -917,7 +905,6 @@ class FeedbackNodeToNode(NodeToNode):
                  leakage=1.,
                  teacher_scaling=1.,
                  teacher_shift=1.,
-                 bi_directional=None,
                  k_rec=None,
                  output_activation='tanh',
                  random_state=42):
@@ -927,7 +914,7 @@ class FeedbackNodeToNode(NodeToNode):
             reservoir_activation=reservoir_activation,
             spectral_radius=spectral_radius,
             leakage=leakage,
-            bi_directional=False,
+            bidirectional=False,
             k_rec=k_rec,
             random_state=random_state)
         self.teacher_scaling = teacher_scaling
@@ -962,7 +949,7 @@ class FeedbackNodeToNode(NodeToNode):
     def _pass_through_recurrent_weights(self, X, y):
         hidden_layer_state = np.zeros(shape=(X.shape[0] + 1, self.hidden_layer_size))
         if y is not None:
-            if self.continuation and self._hidden_layer_state is not None:
+            if self._hidden_layer_state is not None:
                 hidden_layer_state[0, :] = self._hidden_layer_state[-1, :]
             for sample in range(X.shape[0]):
                 a = X[sample, :]
@@ -1086,7 +1073,7 @@ class PredefinedWeightsNodeToNode(NodeToNode):
             reservoir_activation = reservoir_activation,
             spectral_radius=spectral_radius,
             leakage=leakage,
-            bi_directional=bi_directional,
+            bidirectional=bi_directional,
             random_state=random_state)
         self.predefined_recurrent_weights = predefined_recurrent_weights
 

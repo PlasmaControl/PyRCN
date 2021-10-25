@@ -1,40 +1,40 @@
+from pathlib import Path
 import os
 import glob
 import numpy as np
 import time
 import librosa
 import pandas as pd
-from joblib import dump, load
-from pathlib import Path
 from tqdm import tqdm
+
+from joblib import dump, load
 
 from sklearn.base import clone
 from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import MiniBatchKMeans
 from sklearn.utils import shuffle
 from sklearn.utils.fixes import loguniform
 from scipy import sparse
 from scipy.stats import uniform
-from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV, ParameterGrid, cross_validate
+from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
+from sklearn.cluster import MiniBatchKMeans
 from sklearn.metrics import make_scorer
-from pyrcn.metrics import accuracy_score
+from pyrcn.metrics import mean_squared_error, accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
-from pyrcn.echo_state_network import SeqToSeqESNClassifier
+from pyrcn.util import FeatureExtractor
+from pyrcn.datasets import fetch_ptdb_tug_dataset
+from pyrcn.echo_state_network import ESNClassifier
 from pyrcn.base import InputToNode, PredefinedWeightsInputToNode, NodeToNode, PredefinedWeightsNodeToNode
 
 
-training_sentences = list(Path("/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/TIMIT/train").rglob("*.wav"))  # TODO
-test_sentences = list(Path("/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/TIMIT/test").rglob("*.wav"))  # TODO
+training_sentences = list(Path("/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/TIMIT/train").rglob("*.wav"))
+test_sentences = list(Path("/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/TIMIT/test").rglob("*.wav"))
 
 
 def transition_matrix(transitions):
     n = 1+ max(transitions) #number of states
-
     M = np.zeros(shape=(n,n))
-
     for (i,j) in zip(transitions,transitions[1:]):
         M[i][j] += 1
-
     #now convert to probabilities:
     for row in M:
         s = sum(row)
@@ -59,7 +59,6 @@ def phn_label(phn, frame, hop_length, num_of_frame):
             else:
                 label_number += 1
                 label[i] = phn[label_number][2]
-
         idx += hop_length
     return label
 
@@ -72,7 +71,6 @@ def set_label_number(label):
                    "hh": 27, "hv": 27, "v": 28, "f": 29, "dh": 30, "th": 31, "b": 32, "p": 33, "d": 34, "t": 35,
                    "g": 36, "k": 37, "bcl": 38, "pcl": 38, "dcl": 38, "tcl": 38, "gcl": 38, "kcl": 38, "epi": 38,
                    "pau": 38, "h": 38, "q": 38}
-
     label_idx = np.zeros(len(label))
     for i in range(len(label)):
         label_idx[i] = phone_39set[label[i]]
@@ -102,7 +100,6 @@ for k, f in tqdm(enumerate(shuffle(training_sentences, random_state=42))):
         label_idx = set_label_number(label)
         y_train.append(label_idx)
 
-
 for k, f in tqdm(enumerate(shuffle(test_sentences, random_state=42))):
     if not "sa" in str(f):
         y, sr = librosa.core.load(str(f), sr=None, mono=False)
@@ -119,7 +116,6 @@ for k, f in tqdm(enumerate(shuffle(test_sentences, random_state=42))):
         label_idx = set_label_number(label)
         y_test.append(label_idx)
 
-
 X_train = np.asarray(X_train, dtype=object)
 X_test = np.asarray(X_test, dtype=object)
 y_train = np.asarray(y_train, dtype=object)
@@ -128,7 +124,6 @@ for k, X in enumerate(X_train):
     X_train[k] = scaler.transform(X)
 for k, X in enumerate(X_test):
     X_test[k] = scaler.transform(X)
-
 
 for k in [50, 100, 200, 400, 500, 800, 1000, 1600, 2000, 3200, 4000, 6400, 8000, 16000]:
     try:
@@ -140,7 +135,6 @@ for k in [50, 100, 200, 400, 500, 800, 1000, 1600, 2000, 3200, 4000, 6400, 8000,
         kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
         dump(kmeans, "../kmeans_" + str(k) + ".joblib")
 
-
 initially_fixed_params = {'hidden_layer_size': 50,
                           'k_in': 10,
                           'input_scaling': 0.4,
@@ -150,39 +144,35 @@ initially_fixed_params = {'hidden_layer_size': 50,
                           'leakage': 0.1,
                           'k_rec': 10,
                           'reservoir_activation': 'tanh',
-                          'bi_directional': False,
-                          'wash_out': 0,
-                          'continuation': False,
+                          'bidirectional': False,
                           'alpha': 1e-5,
-                          'random_state': 42}
+                          'random_state': 42,
+                          'requires_sequence': True}
 
 step1_esn_params = {'input_scaling': uniform(loc=1e-2, scale=1),
                     'spectral_radius': uniform(loc=0, scale=2)}
-
 step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
 step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
 step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
+scoring = {"MSE": make_scorer(mean_squared_error, greater_is_better=False, needs_proba=True), 
+           "Acc": make_scorer(accuracy_score)}
 
-kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
-kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
-kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
-kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
+kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': scoring, 'refit': 'MSE'}
+kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': scoring, 'refit': 'MSE'}
+kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': scoring, 'refit': 'MSE'}
+kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1, 'scoring': scoring, 'refit': 'MSE'}
 
 # The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step2', RandomizedSearchCV, step2_esn_params, kwargs_step2),
             ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
-            ('step4', RandomizedSearchCV, step3_esn_params, kwargs_step4)]
+            ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-kmeans = load("../kmeans_50.joblib")
-w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None]).T
-input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in)
-w_rec = transition_matrix(kmeans.labels_)
-node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
-base_esn = SeqToSeqESNClassifier(input_to_node=input_to_node, node_to_node=node_to_node).set_params(**initially_fixed_params)
+base_esn = ESNClassifier(**initially_fixed_params)
 
 try:
-    sequential_search = load("../sequential_search_speech_timit_kmeans_rec.joblib")
+    sequential_search = load("../sequential_search_speech_timit_random.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "../sequential_search_speech_timit_kmeans_rec.joblib")
+    dump(sequential_search, "../sequential_search_speech_timit_random.joblib")
+print(sequential_search.all_best_params_, sequential_search.all_best_score_)
