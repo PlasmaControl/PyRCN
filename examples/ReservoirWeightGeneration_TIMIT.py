@@ -178,12 +178,14 @@ except FileNotFoundError:
     dump(kmeans, "../kmeans_50.joblib")
 
 w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
+w_rec = transition_matrix(kmeans.labels_)
 input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
-base_esn = ESNClassifier(input_to_node=input_to_node).set_params(**initially_fixed_params)
+node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
+base_esn = ESNClassifier(input_to_node=input_to_node, node_to_node=node_to_node).set_params(**initially_fixed_params)
 
 try:
-    sequential_search = load("../sequential_search_speech_timit_kmeans.joblib")
+    sequential_search = load("../sequential_search_speech_timit_kmeans_rec.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "../sequential_search_speech_timit_kmeans.joblib")
+    dump(sequential_search, "../sequential_search_speech_timit_kmeans_rec.joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
