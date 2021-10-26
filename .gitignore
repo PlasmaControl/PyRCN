@@ -174,3 +174,4 @@ dmypy.json
 /sequential_search_fsdd_kmeans_rec_eigs.joblib
 /sequential_search_fsdd_kmeans_rec.joblib
 /sequential_search_fsdd_kmeans.joblib
+/docs/source/_build
