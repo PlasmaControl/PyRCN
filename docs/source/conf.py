@@ -18,8 +18,8 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'PyRCN'
-copyright = '2021, Peter Steiner, Azarakhsh Jalalvand'
-author = 'Peter Steiner, Azarakhsh Jalalvand'
+copyright = '2021, Peter Steiner, Azarakhsh Jalalvand, Simon Stone, Peter Birkholz'
+author = 'Peter Steiner, Azarakhsh Jalalvand, Simon Stone, Peter Birkholz'
 
 # The full version, including alpha/beta/rc tags
 release = '0.0.14'
@@ -31,7 +31,7 @@ release = '0.0.14'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.napoleon', 
+    'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
     'sphinx_copybutton'

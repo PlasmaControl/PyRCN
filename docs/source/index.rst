@@ -1,5 +1,5 @@
 .. PyRCN documentation master file, created by
-   sphinx-quickstart on Fri Jan 29 09:46:50 2021.
+   sphinx-quickstart on Tue Oct 26 11:53:37 2021.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
@@ -15,7 +15,7 @@ PyRCN ("Python Reservoir Computing Networks") is a light-weight and transparent 
 The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to refactor their code in order to use the estimators implemented by this framework. 
 Scikit-learn's built-in parameter optimization methods and example datasets can also be used in the usual way.
 
-PyRCN is used by the [Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universit√§t Dresden, Dresden, Germany](https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en) 
+PyRCN is used by the [Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universit‰t Dresden, Dresden, Germany](https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en) 
 and [IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium](https://www.ugent.be/ea/idlab/en). 
 
 Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger and Extreme Learning Machines (ELMs) by Guang-Bin Huang in different flavors, e.g. Classifier and Regressor. It is actively developed to be extended into several directions:
@@ -83,7 +83,7 @@ This research was funded by the European Social Fund (Application number: 100327
 
 .. image:: logos/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg
   :height: 90
-  :alt: Europ√§ischer Sozialfonds
+  :alt: Europ‰ischer Sozialfonds
 
 .. image:: logos/Logo_IDLab_White.png
   :height: 70
