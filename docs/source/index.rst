@@ -48,7 +48,7 @@ PyRCN has successfully been used for several tasks:
 
    installation
    introduction
-   usage
+   getting_started
    tutorial
    development
    citation
