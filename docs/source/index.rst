@@ -1,8 +1,48 @@
-Welcome to PyRCN's documentation!
-=================================
+.. PyRCN documentation master file, created by
+   sphinx-quickstart on Fri Jan 29 09:46:50 2021.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+=====
+PyRCN
+=====
+
+**A Python 3 framework for Reservoir Computing with a [scikit-learn](https://scikit-learn.org/stable/)-compatible API.**
+.. image:: https://badge.fury.io/py/PyRCN.svg
+    :target: https://badge.fury.io/py/PyRCN
+
+PyRCN ("Python Reservoir Computing Networks") is a light-weight and transparent Python 3 framework for Reservoir Computing and is based on widely used scientific Python packages, such as numpy or scipy. 
+The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to refactor their code in order to use the estimators implemented by this framework. 
+Scikit-learn's built-in parameter optimization methods and example datasets can also be used in the usual way.
+
+PyRCN is used by the [Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universität Dresden, Dresden, Germany](https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en) 
+and [IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium](https://www.ugent.be/ea/idlab/en). 
+
+Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger and Extreme Learning Machines (ELMs) by Guang-Bin Huang in different flavors, e.g. Classifier and Regressor. It is actively developed to be extended into several directions:
+
+- Interaction with [sktime](http://sktime.org/)
+- Interaction with [hmmlearn](https://hmmlearn.readthedocs.io/en/stable/)
+- More towards future work: Related architectures, such as Liquid State Machines (LSMs) and Perturbative Neural Networks (PNNs)
+
+PyRCN has successfully been used for several tasks:
+
+- Music Information Retrieval (MIR)
+    - Multipitch tracking
+    - Onset detection
+    - $f_{0}$ analysis of spoken language
+    - GCI detection in raw audio signals
+- Time Series Prediction
+    - Mackey-Glass benchmark test
+    - Stock price prediction
+- Ongoing research tasks:
+    - Beat tracking in music signals
+    - Pattern recognition in sensor data
+    - Phoneme recognition
+    - Unsupervised pre-training of RCNs and optimization of ESNs
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
+   :caption: Contents:
 
    introduction
    installation
@@ -10,32 +50,31 @@ Welcome to PyRCN's documentation!
    tutorial
    development
    citation
-
-.. toctree::
-   :maxdepth: 3
-   :caption: Included modules
-
-   PyRCN/base
-   PyRCN/cluster
-   PyRCN/echo_state_network
-   PyRCN/extreme_learning_machine
-   PyRCN/linear_model
-   PyRCN/postprocessing
-   PyRCN/preprocessing
-   PyRCN/util
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Contents:
-
-
+   api/api
 
 Indices and tables
-------------------
+==================
 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`
+
+Citation
+========
+
+If you use PyRCN, please cite the following publication:
+
+.. code-block:: latex
+
+    @misc{steiner2021pyrcn,
+          title={PyRCN: A Toolbox for Exploration and Application of Reservoir Computing Networks}, 
+          author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone and Peter Birkholz},
+          year={2021},
+          eprint={2103.04807},
+          archivePrefix={arXiv},
+          primaryClass={cs.LG}
+    }
+
 
 Acknowledgements
 ----------------
