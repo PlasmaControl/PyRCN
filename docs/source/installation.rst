@@ -1,48 +1,66 @@
-Installation
-============
+.. _installation guide:
 
-Please  either install :ref:`from package <install_from_package>` or :ref:`from source <install_from_source>` in case you would like to contribute to the package. Please have a look at the :ref:`prerequisites <install_prerequisites>` before installing the package.
+==================
+Installation guide
+==================
 
-.. _install_prerequisites:
+PyRCN runs on many different systems.
 
-Prerequisites
--------------
+Before installing PyRCN, make sure that you have a compatible Python distribution installed
+on your computer. **PyRCN is meant to be used only with Python 3.7 and higher**.
 
-PyRCn is developed using Python 3.6 or newer. It depends on the following packages:
+To check the version of your Python distribution, you can run the following command in a terminal,
+in Linux/MacOS/Windows :
 
-- [numpy>=1.18.1](https://numpy.org/)
-- [scipy>=1.2.0](https://scipy.org/)
-- [scikit-learn>=0.22.1](https://scikit-learn.org/stable/)
-- [joblib>=0.13.2](https://joblib.readthedocs.io)
+.. code-block:: bash
 
-.. _install_from_package:
+    python --version
 
-Installation from PyPI
-----------------------
+We recommend using a virtual environment to avoid any unintended interactions with the dependencies of 
+packages that are already installed on your system. 
 
-The easiest and recommended way to install ``PyRCN`` is to use ``pip`` from (PyPI)[https://pypi.org] :
+To learn more about virtual environment, you can check `Python documentation on virual
+environments and packages <https://docs.python.org/3/tutorial/venv.html>`_, or the documentation of the
+`conda environment manager <https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html>`_
+if you are using Anaconda.
 
-```python
-pip install pyrcn   
-```
+Installation using `pip`
+------------------------
 
-This will install all dependencies automatically.
+PyRCN is hosted by `PyPI <https://pypi.org/project/pyrcn/>`_ and can therefore be installed using `pip` 
+on Linux/MacOS/Windows.
 
-.. _install_from_source:
+To install PyRCN using `pip`, simply run the following command in a terminal:
+
+.. code-block:: bash
+
+    pip install pyrcn
+
+To upgrade an existing version of PyRCN using `pip`, simply run the following command in a terminal:
+
+.. code-block:: bash
+
+    pip install --upgrade pyrcn
+
+
+To check your installation of ReservoirPy, run:
+
+.. code-block:: bash
+
+    pip show pyrcn
 
 Installation from source
 ------------------------
 
-If you plan to contribute to ``PyRCN``, you can also install the package from source.
+You can find the source code of PyRCN on `GitHub <https://github.com/TUD-STKS/PyRCN>`_.
 
-Clone the Git repository:
+Download the latest version on the ``master`` branch, or any other branch you would like
+to install (``dev`` branch or older versions branches). You can also fork the project from
+GitHub.
 
-```
-git clone https://github.com/TUD-STKS/PyRCN.git
-```
+Then, unzip the project (or clone the forked repository). You can then install ReservoirPy in
+editable mode using `pip` :
 
-Install the package using ``setup.py``:
+.. code-block:: bash
 
-```
-python setup.py install --user
-```
+    pip install -e /path/to/pyrcn

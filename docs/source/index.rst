@@ -7,21 +7,23 @@
 PyRCN
 =====
 
-**A Python 3 framework for Reservoir Computing with a `scikit-learn<https://scikit-learn.org/stable/>`_-compatible API.**
+**A Python 3 framework for building Reservoir Computing Networks (RCNs).**
 
 .. image:: https://badge.fury.io/py/PyRCN.svg
     :target: https://badge.fury.io/py/PyRCN
 
+
+
 PyRCN ("Python Reservoir Computing Networks") is a light-weight and transparent Python 3 framework for Reservoir Computing and is based on widely used scientific Python packages, such as numpy or scipy. 
-The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to refactor their code in order to use the estimators implemented by this framework. 
+The API is fully `scikit-learn <https://scikit-learn.org/stable>`_-compatible, so that users of scikit-learn do not need to refactor their code in order to use the estimators implemented by this framework. 
 Scikit-learn's built-in parameter optimization methods and example datasets can also be used in the usual way.
-PyRCN is used by the `Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universit‰t Dresden, Dresden, Germany<https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en>`_ 
-and `IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium<https://www.ugent.be/ea/idlab/en>`_. 
+PyRCN is used by the `Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universit√§t Dresden, Dresden, Germany <https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en>`_
+and `IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium <https://www.ugent.be/ea/idlab/en>`_
 
 Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger and Extreme Learning Machines (ELMs) by Guang-Bin Huang in different flavors, e.g. Classifier and Regressor. It is actively developed to be extended into several directions:
 
-- Interaction with `sktime<https://sktime.org/>`_
-- Interaction with `hmmlearn<https://hmmlearn.readthedocs.io/en/stable/>`_
+- Interaction with `sktime <https://sktime.org/>`_
+- Interaction with `hmmlearn <https://hmmlearn.readthedocs.io/en/stable/>`_
 - More towards future work: Related architectures, such as Liquid State Machines (LSMs) and Perturbative Neural Networks (PNNs)
 
 PyRCN has successfully been used for several tasks:
@@ -29,7 +31,7 @@ PyRCN has successfully been used for several tasks:
 - Music Information Retrieval (MIR)
     - Multipitch tracking
     - Onset detection
-    - $f_{0}$ analysis of spoken language
+    - *f*\ :sub:`0`\  analysis of spoken language
     - GCI detection in raw audio signals
 - Time Series Prediction
     - Mackey-Glass benchmark test
@@ -44,8 +46,8 @@ PyRCN has successfully been used for several tasks:
    :maxdepth: 2
    :caption: Contents:
 
-   introduction
    installation
+   introduction
    usage
    tutorial
    development
@@ -83,7 +85,7 @@ This research was funded by the European Social Fund (Application number: 100327
 
 .. image:: _static/img/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg
   :height: 90
-  :alt: Europ‰ischer Sozialfonds
+  :alt: Europ√§ischer Sozialfonds
 
 .. image:: _static/img/Logo_IDLab_White.png
   :height: 70
