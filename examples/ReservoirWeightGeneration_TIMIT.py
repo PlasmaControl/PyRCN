@@ -181,7 +181,6 @@ w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_
 w_rec = transition_matrix(kmeans.labels_)
 input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
 node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec / np.max(np.abs(np.linalg.eigvals(w_rec))))
-# node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec / np.max(np.abs(np.linalg.eigvals(w_rec))))
 base_esn = ESNClassifier(input_to_node=input_to_node, node_to_node=node_to_node).set_params(**initially_fixed_params)
 
 try:

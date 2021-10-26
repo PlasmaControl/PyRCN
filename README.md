@@ -1,15 +1,19 @@
 # PyRCN
-A Python 3 framework for Reservoir Computing with a [scikit-learn](https://scikit-learn.org/stable/)-compatible API.
+**A Python 3 framework for Reservoir Computing with a [scikit-learn](https://scikit-learn.org/stable/)-compatible API.**
+[![PyPI version](https://badge.fury.io/py/PyRCN.svg)](https://badge.fury.io/py/PyRCN)
+[![Documentation Status](https://readthedocs.org/projects/pyrcn/badge/?version=latest)](https://pyrcn.readthedocs.io/en/latest/?badge=latest)
 
-PyRCN ("Python Reservoir Computing Networks") is a light-weight and transparent Python 3 framework for Reservoir Computing (currently only implementing Echo State Networks) and is based on widely used scientific Python packages, such as numpy or scipy. The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to refactor their code in order to use the estimators implemented by this framework. Scikit-learn's built-in parameter optimization methods and example datasets can also be used in the usual way.
+PyRCN ("Python Reservoir Computing Networks") is a light-weight and transparent Python 3 framework for Reservoir Computing and is based on widely used scientific Python packages, such as numpy or scipy. 
+The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to refactor their code in order to use the estimators implemented by this framework. 
+Scikit-learn's built-in parameter optimization methods and example datasets can also be used in the usual way.
 
-PyRCN is used by the [Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universität Dresden, Dresden, Germany](https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en) and [IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium](https://www.ugent.be/ea/idlab/en). 
+PyRCN is used by the [Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universität Dresden, Dresden, Germany](https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en) 
+and [IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium](https://www.ugent.be/ea/idlab/en). 
 
-Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger in different flavors, e.g. Classifier and Regressor. It is actively developed to be extended into several directions:
+Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger and Extreme Learning Machines (ELMs) by Guang-Bin Huang in different flavors, e.g. Classifier and Regressor. It is actively developed to be extended into several directions:
 
-- Incorporate Feedback
-- Better sequence handling with [sktime](http://sktime.org/)
-- A unified API to stack ESNs
+- Interaction with [sktime](http://sktime.org/)
+- Interaction with [hmmlearn](https://hmmlearn.readthedocs.io/en/stable/)
 - More towards future work: Related architectures, such as Liquid State Machines (LSMs) and Perturbative Neural Networks (PNNs)
 
 PyRCN has successfully been used for several tasks:
@@ -17,6 +21,8 @@ PyRCN has successfully been used for several tasks:
 - Music Information Retrieval (MIR)
     - Multipitch tracking
     - Onset detection
+    - $f_{0}$ analysis of spoken language
+    - GCI detection in raw audio signals
 - Time Series Prediction
     - Mackey-Glass benchmark test
     - Stock price prediction
@@ -24,22 +30,24 @@ PyRCN has successfully been used for several tasks:
     - Beat tracking in music signals
     - Pattern recognition in sensor data
     - Phoneme recognition
+    - Unsupervised pre-training of RCNs and optimization of ESNs
 
 Please see the [References section](#references) for more information. For code examples, see [Getting started](#getting-started).
 
-# Installation
+## Installation
 
-## Prerequisites
+### Prerequisites
 
-PyRCN is developed using Python 3.6 or newer. It depends on the following packages:
+PyRCN is developed using Python 3.7 or newer. It depends on the following packages:
 
 - [numpy>=1.18.1](https://numpy.org/)
-- [scipy>=1.2.0](https://scipy.org/)
-- [scikit-learn>=0.23.1](https://scikit-learn.org/stable/)
+- [scikit-learn>=1.0](https://scikit-learn.org/stable/)
 - [joblib>=0.13.2](https://joblib.readthedocs.io)
 - [pandas>=1.0.0](https://pandas.pydata.org/)
 - [matplotlib](https://matplotlib.org/)
-## Installation from PyPI
+- [seaborn](https://seaborn.pydata.org/)
+
+### Installation from PyPI
 
 The easiest and recommended way to install ``PyRCN`` is to use ``pip`` from [PyPI](https://pypi.org) :
 
@@ -47,7 +55,7 @@ The easiest and recommended way to install ``PyRCN`` is to use ``pip`` from [PyP
 pip install pyrcn   
 ```
 
-## Installation from source
+### Installation from source
 
 If you plan to contribute to ``PyRCN``, you can also install the package from source.
 
@@ -62,7 +70,12 @@ Install the package using ``setup.py``:
 python setup.py install --user
 ```
 
-# Package structure
+## Offcial documentation
+
+See [the official PyRCN documentation](https://pyrcn.readthedocs.io/en/latest/?badge=latest)
+to learn more about the main features of PyRCN, its API and the installation process.
+
+## Package structure
 The package is structured in the following way: 
 
 - `doc`
@@ -75,15 +88,19 @@ The package is structured in the following way:
     - This folder includes the actual Python package.
 
 
-# Getting Started
+## Getting Started
 
 PyRCN includes currently variants of Echo State Networks (ESNs) and Extreme Learning Machines (ELMs): Regressors and Classifiers.
 
 Basic example for the ESNClassifier:
 
 ```python
+from sklearn.model_selection import train_test_split
+from pyrcn.datasets import load_digits
 from pyrcn.echo_state_network import ESNClassifier
 
+X, y = load_digits(return_X_y=True, as_sequence=True)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
 clf = ESNClassifier()
 clf.fit(X=X_train, y=y_train)
@@ -95,24 +112,33 @@ y_pred_proba = clf.predict_proba(X=X_test)  #  output are the class probabilitie
 Basic example for the ESNRegressor:
 
 ```python
+from sklearn.model_selection import TimeSeriesSplit
+from pyrcn.datasets import mackey_glass
 from pyrcn.echo_state_network import ESNRegressor
 
+X, y = mackey_glass(n_timesteps=20000)
 
 reg = ESNRegressor()
-ref.fit(X=X_train, y=y_train)
+reg.fit(X=X[:8000], y=y[:8000])
 
-y_pred = reg.predict(X=X_test)  # output is the prediction for each input example
+y_pred = reg.predict(X[8000:])  # output is the prediction for each input example
 ```
 
-An extensive introduction to getting started with PyRCN is included in the [examples](https://github.com/TUD-STKS/PyRCN/blob/master/examples) directory. The notebook [digits](https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.ipynb) or its corresponding [Python script](https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.py) show how to set up an ESN for a small hand-written digit recognition experiment.
-
+An extensive introduction to getting started with PyRCN is included in the [examples](https://github.com/TUD-STKS/PyRCN/blob/master/examples) directory. 
+The notebook [digits](https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.ipynb) or its corresponding [Python script](https://github.com/TUD-STKS/PyRCN/blob/master/examples/digits.py) show how to set up an ESN for a small hand-written digit recognition experiment. 
 Launch the digits notebook on Binder: 
 
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TUD-STKS/PyRCN/master?filepath=examples%2Fdigits.ipynb)
 
+The notebook [PyRCN_Intro](https://github.com/TUD-STKS/PyRCN/blob/master/examples/PyRCN_Intro.ipynb) or its corresponding [Python script](https://github.com/TUD-STKS/PyRCN/blob/master/examples/PyRCN_Intro.py) show how to construct different RCNs with building blocks. 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TUD-STKS/PyRCN/master?filepath=examples%2FPyRCN_Intro.ipynb)
+
+The notebook [Impulse responses](https://github.com/TUD-STKS/PyRCN/blob/master/examples/esn_impulse_responses.ipynb) is an interactive tool to demonstrate the impact of different hyper-parameters on the impulse responses of an ESN. 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TUD-STKS/PyRCN/master?filepath=examples%2Fesn_impulse_responses.ipynb)
+
 Fore more advanced examples, please have a look at our [Automatic Music Transcription Repository](https://github.com/TUD-STKS/Automatic-Music-Transcription), in which we provide an entire feature extraction, training and test pipeline for multipitch tracking and for note onset detection using PyRCN.
 
-# Citation
+## Citation
 
 If you use PyRCN, please cite the following publication:
 
@@ -127,7 +153,7 @@ If you use PyRCN, please cite the following publication:
 }
 ```
 
-# References
+## References
 
 [Unsupervised Pretraining of Echo State Networks for Onset Detection](https://link.springer.com/chapter/10.1007/978-3-030-85099-9_12)
 
@@ -266,5 +292,5 @@ PyRCN: Exploration and Application of ESNs
 ```
 
 
-# Acknowledgements
+## Acknowledgements
 This research was funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
