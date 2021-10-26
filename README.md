@@ -1,5 +1,6 @@
 # PyRCN
 **A Python 3 framework for Reservoir Computing with a [scikit-learn](https://scikit-learn.org/stable/)-compatible API.**
+
 [![PyPI version](https://badge.fury.io/py/PyRCN.svg)](https://badge.fury.io/py/PyRCN)
 [![Documentation Status](https://readthedocs.org/projects/pyrcn/badge/?version=latest)](https://pyrcn.readthedocs.io/en/latest/?badge=latest)
 
