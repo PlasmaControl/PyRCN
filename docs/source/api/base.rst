@@ -1,10 +1,7 @@
+.. _`pyrcn.base`:
+
 pyrcn.base
 ==========
 
-Submodules
-----------
-
-.. toctree::
-
-   base/InputToNode
-   base/NodeToNode
+.. automodule:: pyrcn.base
+   :members:

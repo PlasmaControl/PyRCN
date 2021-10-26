@@ -24,7 +24,5 @@ Subpackages
       :widths: 50 50
       :header-rows: 0
 
-      * - :ref:`pyrcn.hyper`
-        - Tools for hyperparameters optimization with `hyperopt`
       * - :ref:`pyrcn.datasets`
         - Ready-to-use datasets for model evaluation
