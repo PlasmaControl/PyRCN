@@ -1,8 +1,7 @@
+.. _`pyrcn.linear_model`:
+
 pyrcn.linear_model
 ==================
 
-Submodules
-----------
-
-.. toctree::
-   linear_model/IncrementalRegression
+.. automodule:: pyrcn.linear_model._incremental_regression
+   :members:

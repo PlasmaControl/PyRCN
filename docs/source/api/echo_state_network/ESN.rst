@@ -1,8 +1,5 @@
 Echo State Network
 ==================
 
-.. automodule:: pyrcn.echo_state_network.ESNRegressor
-   :members:
-
-.. automodule:: pyrcn.echo_state_network.ESNClassifier
+.. automodule:: pyrcn.echo_state_network._esn
    :members:

@@ -1,9 +1,7 @@
+.. _`pyrcn.cluster`:
+
 pyrcn.cluster
 =============
 
-Submodules
-----------
-
-.. toctree::
-
-   cluster/KCluster
+.. automodule:: pyrcn.cluster
+   :members:

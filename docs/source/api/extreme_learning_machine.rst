@@ -1,9 +1,7 @@
+.. _`pyrcn.extreme_learning_machine`:
+
 pyrcn.extreme_learning_machine
 ==============================
 
-Submodules
-----------
-
-.. toctree::
-
-   extreme_learning_machine/ELM
+.. automodule:: pyrcn.extreme_learning_machine._elm
+   :members:

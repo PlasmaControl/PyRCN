@@ -1,3 +1,5 @@
+.. _`pyrcn.echo_state_network`:
+
 pyrcn.echo_state_network
 ========================
 
