@@ -52,7 +52,6 @@ PyRCN has successfully been used for several tasks:
    tutorial
    development
    citation
-   api/api
 
 Indices and tables
 ==================
