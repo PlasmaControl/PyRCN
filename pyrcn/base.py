@@ -1065,7 +1065,7 @@ class PredefinedWeightsNodeToNode(NodeToNode):
             reservoir_activation = 'tanh',
             spectral_radius = 1.,
             leakage=1.,
-            bi_directional=False,
+            bidirectional=False,
             random_state = 42):
         super().__init__(
             hidden_layer_size=predefined_recurrent_weights.shape[0],
@@ -1073,7 +1073,7 @@ class PredefinedWeightsNodeToNode(NodeToNode):
             reservoir_activation = reservoir_activation,
             spectral_radius=spectral_radius,
             leakage=leakage,
-            bidirectional=bi_directional,
+            bidirectional=bidirectional,
             random_state=random_state)
         self.predefined_recurrent_weights = predefined_recurrent_weights
 
