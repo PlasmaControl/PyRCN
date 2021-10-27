@@ -25,22 +25,3 @@ The Jupyter notebook `digits <https://github.com/TUD-STKS/PyRCN/blob/master/exam
 
 Fore more advanced examples, please have a look at our `Automatic Music Transcription Repository <https://github.com/TUD-STKS/Automatic-Music-Transcription>`_, 
 in which we provide an entire feature extraction, training and test pipeline for multipitch tracking and for note onset detection using PyRCN. This is currently transferred to this repository.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-Fore more advanced examples, pleas have a look at our (Automatic Music Transcription Repository)[https://github.com/TUD-STKS/Automatic-Music-Transcription], in which we provide an entire feature extraction, training and test pipeline for multipitch tracking and for note onset detection using PyRCN.

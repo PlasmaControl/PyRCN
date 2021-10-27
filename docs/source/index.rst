@@ -54,13 +54,15 @@ PyRCN has successfully been used for several tasks:
   * Unsupervised pre-training of RCNs and optimization of ESNs
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :caption: Contents:
 
    installation
    introduction
    getting_started
    tutorial
+   development
+   citation
 
 Indices and tables
 ==================
