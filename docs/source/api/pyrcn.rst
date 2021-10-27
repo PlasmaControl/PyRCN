@@ -16,6 +16,8 @@ Submodules
         - Objects for Extreme Learning Machines
       * - :ref:`pyrcn.linear_model`
         - Incremental linear (ridge) regression
+      * - :ref:`pyrcn.cluster`
+        - Clustering
 
 Subpackages
 -----------
