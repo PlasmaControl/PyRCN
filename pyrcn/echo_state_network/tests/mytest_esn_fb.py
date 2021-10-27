@@ -11,7 +11,7 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import Ridge
 
-from pyrcn.base import InputToNode, FeedbackNodeToNode
+from pyrcn.base.blocks import InputToNode, FeedbackNodeToNode
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNFeedbackRegressor
 

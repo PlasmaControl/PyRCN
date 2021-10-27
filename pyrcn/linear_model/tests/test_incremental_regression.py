@@ -7,7 +7,6 @@ from sklearn.base import is_regressor
 from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 
-from pyrcn.base import InputToNode
 from pyrcn.linear_model import IncrementalRegression
 from sklearn.linear_model import Ridge
 
