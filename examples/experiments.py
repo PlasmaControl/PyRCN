@@ -35,7 +35,8 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.linear_model import Ridge
 
 from pyrcn.util import new_logger, argument_parser, get_mnist, tud_colors
-from pyrcn.base import InputToNode, ACTIVATIONS, BatchIntrinsicPlasticity
+from pyrcn.base.blocks import InputToNode, BatchIntrinsicPlasticity
+from pyrcn.base import ACTIVATIONS
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier
 

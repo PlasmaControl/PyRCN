@@ -16,7 +16,7 @@ from sklearn.model_selection import GridSearchCV
 
 from sklearn.datasets import fetch_openml
 from sklearn.cluster import KMeans
-from pyrcn.base import InputToNode
+from pyrcn.base.blocks import InputToNode
 
 from pyrcn.util import tud_colors, new_logger, get_mnist
 
@@ -43,7 +43,7 @@ def input2node_distribution(directory):
     list_activation = ['tanh', 'relu', 'bounded_relu']
     list_train = [X, X_pca]
 
-    fig, axs = plt.subplots(nrows=2, ncols=3, figsize=(6., 3.))
+    fig, axs = plt.subplots(nrows=2, ncols=3)
 
     for idx_activation in range(len(list_activation)):
         activation = list_activation[idx_activation]

@@ -5,11 +5,11 @@ import os
 import scipy
 import numpy as np
 
-import matplotlib
-matplotlib.use('pgf')
 import matplotlib.pyplot as plt
+import seaborn as sns
+sns.set_theme()
 
-from pyrcn.base import InputToNode, BatchIntrinsicPlasticity
+from pyrcn.base.blocks import InputToNode, BatchIntrinsicPlasticity
 
 
 tud_colors = {
@@ -37,9 +37,12 @@ def main():
     algorithm = 'dresden'
     sample_size = (1000, 1)
 
-    i2n_uniform = BatchIntrinsicPlasticity(hidden_layer_size=1, activation='tanh', random_state=rs, distribution='uniform', algorithm=algorithm)
-    i2n_exponential = BatchIntrinsicPlasticity(hidden_layer_size=1, activation='tanh', random_state=rs, distribution='exponential', algorithm=algorithm)
-    i2n_normal = BatchIntrinsicPlasticity(hidden_layer_size=1, activation='tanh', random_state=rs, distribution='normal', algorithm=algorithm)
+    i2n_uniform = BatchIntrinsicPlasticity(hidden_layer_size=1, input_activation='tanh', 
+                                           random_state=rs, distribution='uniform', algorithm=algorithm)
+    i2n_exponential = BatchIntrinsicPlasticity(hidden_layer_size=1, input_activation='tanh', 
+                                               random_state=rs, distribution='exponential', algorithm=algorithm)
+    i2n_normal = BatchIntrinsicPlasticity(hidden_layer_size=1, input_activation='tanh', random_state=rs, 
+                                          distribution='normal', algorithm=algorithm)
 
     X_uniform = rs.uniform(size=sample_size)
     X_exponential = rs.exponential(size=sample_size)
@@ -70,52 +73,54 @@ def main():
     """
 
     # display distributions
-    fig, axs = plt.subplots(3, 4, figsize=(6, 4))
+    fig, axs = plt.subplots(3, 4)
     # plt.ylabel('f_x')
     # plt.xlabel('f_y')
     # fig.suptitle('BIP transformations')
 
     bins = 20
 
-    axs[0, 0].hist(i2n_exponential.fit_transform(X_exponential), bins=bins, density=True, color=tud_colors['lightblue'])
+
+
+    sns.histplot(data=i2n_exponential.fit_transform(X_exponential), bins=bins, stat="density", color=tud_colors['lightblue'], ax=axs[0, 0], legend=False)
     axs[0, 0].set_xlim((-1., 1.))
     axs[0, 0].set_ylim((0., 3.))
-    axs[0, 1].hist(i2n_normal.fit_transform(X_exponential), bins=bins, density=True, color=tud_colors['lightgreen'])
+    sns.histplot(data=i2n_normal.fit_transform(X_exponential), bins=bins, stat="density", color=tud_colors['lightgreen'], ax=axs[0, 1], legend=False)
     axs[0, 1].set_xlim((-1., 1.))
     axs[0, 1].set_ylim((0., 3.))
-    axs[0, 2].hist(i2n_uniform.fit_transform(X_exponential), bins=bins, density=True, color=tud_colors['lightpurple'])
+    sns.histplot(data=i2n_uniform.fit_transform(X_exponential), bins=bins, stat="density", color=tud_colors['lightpurple'], ax=axs[0, 2], legend=False)
     axs[0, 2].set_xlim((-1., 1.))
     axs[0, 2].set_ylim((0., 3.))
 
-    axs[1, 0].hist(i2n_exponential.fit_transform(X_normal), bins=bins, density=True, color=tud_colors['lightblue'])
+    sns.histplot(data=i2n_exponential.fit_transform(X_normal), bins=bins, stat="density", color=tud_colors['lightblue'], ax=axs[1, 0], legend=False)
     axs[1, 0].set_xlim((-1., 1.))
     axs[1, 0].set_ylim((0., 1.5))
-    axs[1, 1].hist(i2n_normal.fit_transform(X_normal), bins=bins, density=True, color=tud_colors['lightgreen'])
+    sns.histplot(data=i2n_normal.fit_transform(X_normal), bins=bins, stat="density", color=tud_colors['lightgreen'], ax=axs[1, 1], legend=False)
     axs[1, 1].set_xlim((-1., 1.))
     axs[1, 1].set_ylim((0., 1.5))
-    axs[1, 2].hist(i2n_uniform.fit_transform(X_normal), bins=bins, density=True, color=tud_colors['lightpurple'])
+    sns.histplot(data=i2n_uniform.fit_transform(X_normal), bins=bins, stat="density", color=tud_colors['lightpurple'], ax=axs[1, 2], legend=False)
     axs[1, 2].set_xlim((-1., 1.))
     axs[1, 2].set_ylim((0., 1.5))
 
-    axs[2, 0].hist(i2n_exponential.fit_transform(X_uniform), bins=bins, density=True, color=tud_colors['lightblue'])
+    sns.histplot(data=i2n_exponential.fit_transform(X_uniform), bins=bins, stat="density", color=tud_colors['lightblue'], ax=axs[2, 0], legend=False)
     axs[2, 0].set_xlim((-1., 1.))
     axs[2, 0].set_ylim((0., 2.5))
-    axs[2, 1].hist(i2n_normal.fit_transform(X_uniform), bins=bins, density=True, color=tud_colors['lightgreen'])
+    sns.histplot(data=i2n_normal.fit_transform(X_uniform), bins=bins, stat="density", color=tud_colors['lightgreen'], ax=axs[2, 1], legend=False)
     axs[2, 1].set_xlim((-1., 1.))
     axs[2, 1].set_ylim((0., 2.5))
-    axs[2, 2].hist(i2n_uniform.fit_transform(X_uniform), bins=bins, density=True, color=tud_colors['lightpurple'])
+    sns.histplot(data=i2n_uniform.fit_transform(X_uniform), bins=bins, stat="density", color=tud_colors['lightpurple'], ax=axs[2, 2], legend=False)
     axs[2, 2].set_xlim((-1., 1.))
     axs[2, 2].set_ylim((0., 2.5))
 
-    axs[0, 3].hist(X_exponential, bins=bins, color=tud_colors['gray'])
+    sns.histplot(data=X_exponential, bins=bins, color=tud_colors['gray'], ax=axs[0, 3], legend=False)
     axs[0, 3].set_title('exponential')
-    axs[1, 3].hist(X_normal, bins=bins, color=tud_colors['gray'])
+    sns.histplot(data=X_normal, bins=bins, color=tud_colors['gray'], ax=axs[1, 3], legend=False)
     axs[1, 3].set_title('normal')
-    axs[2, 3].hist(X_uniform, bins=bins, color=tud_colors['gray'])
+    sns.histplot(data=X_uniform, bins=bins, color=tud_colors['gray'], ax=axs[2, 3], legend=False)
     axs[2, 3].set_title('uniform')
 
     plt.tight_layout()
-    plt.savefig(os.path.join(directory, 'bip-transformations.pgf'), format='pgf')
+    plt.show()
 
 
 if __name__ == "__main__":

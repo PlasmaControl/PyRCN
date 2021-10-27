@@ -31,7 +31,7 @@ plt.rcParams['ps.fonttype'] = 42
 
 from pyrcn.echo_state_network import FeedbackESNRegressor, ESNRegressor
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.base import InputToNode, NodeToNode, FeedbackNodeToNode
+from pyrcn.base.blocks import InputToNode, NodeToNode, FeedbackNodeToNode
 
 
 # ## Load the dataset

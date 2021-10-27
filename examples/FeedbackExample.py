@@ -3,7 +3,7 @@ from matplotlib import pyplot as plt
 from sklearn.model_selection import ParameterGrid
 from sklearn.base import clone
 
-from pyrcn.base import InputToNode, FeedbackNodeToNode
+from pyrcn.base.blocks import InputToNode, FeedbackNodeToNode
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import FeedbackESNRegressor
 from joblib import load

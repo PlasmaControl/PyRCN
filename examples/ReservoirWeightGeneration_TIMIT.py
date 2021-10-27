@@ -23,7 +23,7 @@ from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.util import FeatureExtractor
 from pyrcn.datasets import fetch_ptdb_tug_dataset
 from pyrcn.echo_state_network import ESNClassifier
-from pyrcn.base import InputToNode, PredefinedWeightsInputToNode, NodeToNode, PredefinedWeightsNodeToNode
+from pyrcn.base.blocks import InputToNode, PredefinedWeightsInputToNode, NodeToNode, PredefinedWeightsNodeToNode
 
 
 training_sentences = list(Path("/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/TIMIT/train").rglob("*.wav"))

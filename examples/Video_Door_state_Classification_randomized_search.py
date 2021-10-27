@@ -1,7 +1,7 @@
 import numpy as np
 from tqdm import tqdm
 
-from pyrcn.base import InputToNode, PredefinedWeightsInputToNode, NodeToNode
+from pyrcn.base.blocks import InputToNode, PredefinedWeightsInputToNode, NodeToNode
 from pyrcn.echo_state_network import SeqToSeqESNClassifier
 from pyrcn.metrics import mean_squared_error
 

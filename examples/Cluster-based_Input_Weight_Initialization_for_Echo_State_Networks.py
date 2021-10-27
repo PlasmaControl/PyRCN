@@ -13,7 +13,7 @@ from scipy.stats import uniform
 from sklearn.cluster import MiniBatchKMeans
 from joblib import dump, load
 from pyrcn.echo_state_network import SeqToLabelESNClassifier
-from pyrcn.base import PredefinedWeightsInputToNode, NodeToNode
+from pyrcn.base.blocks import PredefinedWeightsInputToNode, NodeToNode
 from pyrcn.metrics import accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
 import matplotlib

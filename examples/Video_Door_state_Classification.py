@@ -3,7 +3,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from pyrcn.base import InputToNode, PredefinedWeightsInputToNode, NodeToNode
+from pyrcn.base.blocks import InputToNode, PredefinedWeightsInputToNode, NodeToNode
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import SeqToSeqESNClassifier
 from pyrcn.metrics import accuracy_score, classification_report, confusion_matrix, mean_squared_error

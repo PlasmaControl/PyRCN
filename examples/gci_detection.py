@@ -4,7 +4,7 @@ import librosa.display
 import glob
 from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.linear_model import FastIncrementalRegression
-from pyrcn.base import InputToNode, NodeToNode
+from pyrcn.base.blocks import InputToNode, NodeToNode
 from sklearn.base import clone
 from scipy.signal import find_peaks
 from mir_eval import onset

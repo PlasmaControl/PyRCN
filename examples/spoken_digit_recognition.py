@@ -14,7 +14,7 @@ from sklearn.utils.fixes import loguniform
 from scipy.stats import uniform
 from joblib import Parallel, delayed, dump, load
 from pyrcn.echo_state_network import SeqToLabelESNClassifier
-from pyrcn.base import PredefinedWeightsInputToNode, NodeToNode
+from pyrcn.base.blocks import PredefinedWeightsInputToNode, NodeToNode
 from pyrcn.metrics import accuracy_score, classification_report, confusion_matrix
 from pyrcn.model_selection import SequentialSearchCV
 import seaborn as sns

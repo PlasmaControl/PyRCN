@@ -21,7 +21,7 @@ from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.util import FeatureExtractor
 from pyrcn.datasets import fetch_ptdb_tug_dataset
 from pyrcn.echo_state_network import SeqToSeqESNRegressor
-from pyrcn.base import InputToNode, PredefinedWeightsInputToNode, NodeToNode
+from pyrcn.base.blocks import InputToNode, PredefinedWeightsInputToNode, NodeToNode
 import matplotlib.pyplot as plt
 
 

@@ -6,7 +6,7 @@
 # In[ ]:
 
 
-from pyrcn.base import InputToNode
+from pyrcn.base.blocks import InputToNode
 from sklearn.datasets import make_blobs
 
 
@@ -67,7 +67,7 @@ print(U.shape, R_i2n.shape)
 # In[ ]:
 
 
-from pyrcn.base import NodeToNode
+from pyrcn.base.blocks import NodeToNode
 
 
 # In[ ]:
@@ -199,7 +199,7 @@ print(vanilla_elm.predict(U))
 # In[ ]:
 
 
-from pyrcn.base import BatchIntrinsicPlasticity
+from pyrcn.base.blocks import BatchIntrinsicPlasticity
 
 # Custom ELM with BatchIntrinsicPlasticity
 #       _ _ _ _ _ _ _        _ _ _ _ _ _ _        
@@ -297,7 +297,7 @@ print(vanilla_esn.predict(U))
 # In[ ]:
 
 
-from pyrcn.base import HebbianNodeToNode
+from pyrcn.base.blocks import HebbianNodeToNode
 # Custom ESN with BatchIntrinsicPlasticity and HebbianNodeToNode
 #       _ _ _ _ _ _ _       _ _ _ _ _ _ _        _ _ _ _ _ _ _        
 #     |     (bip)    |     |   (hebb)    |     |               |       

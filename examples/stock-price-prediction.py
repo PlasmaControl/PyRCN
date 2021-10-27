@@ -32,7 +32,7 @@ plt.rcParams["font.size"] = 10
 
 from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.base import InputToNode, NodeToNode
+from pyrcn.base.blocks import InputToNode, NodeToNode
 
 
 # ## Loading and visualizing stock prices
