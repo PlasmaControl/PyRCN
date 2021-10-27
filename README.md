@@ -295,5 +295,5 @@ PyRCN: Exploration and Application of ESNs
 ```
 
 
-## Acknowledgements
+## Acknowledgments
 This research was funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
