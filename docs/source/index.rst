@@ -59,6 +59,7 @@ PyRCN has successfully been used for several tasks:
    :caption: Contents:
 
    installation
+   getting_started
 
 Indices and tables
 ==================
