@@ -5,3 +5,6 @@ pyrcn.base
 
 .. automodule:: pyrcn.base
    :members
+
+.. autoclass:: pyrcn.base.InputToNode
+   :members:
