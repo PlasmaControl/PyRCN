@@ -22,22 +22,22 @@ and `IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium <https://ww
 
 Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger and Extreme Learning Machines (ELMs) by Guang-Bin Huang in different flavors, e.g. Classifier and Regressor. It is actively developed to be extended into several directions:
 
-- Interaction with `sktime <https://sktime.org/>`_
-- Interaction with `hmmlearn <https://hmmlearn.readthedocs.io/en/stable/>`_
-- More towards future work: Related architectures, such as Liquid State Machines (LSMs) and Perturbative Neural Networks (PNNs)
+* Interaction with `sktime <https://sktime.org/>`_
+* Interaction with `hmmlearn <https://hmmlearn.readthedocs.io/en/stable/>`_
+* More towards future work: Related architectures, such as Liquid State Machines (LSMs) and Perturbative Neural Networks (PNNs)
 
 PyRCN has successfully been used for several tasks:
 
-- Music Information Retrieval (MIR)
-   - Multipitch tracking
-   - Onset detection
-   - *f*\ :sub:`0`\  analysis of spoken language
-   - GCI detection in raw audio signals
-- Time Series Prediction
-   - Mackey-Glass benchmark test
-   - Stock price prediction
-- Ongoing research tasks:
-   - Beat tracking in music signals
-   - Pattern recognition in sensor data
-   - Phoneme recognition
-   - Unsupervised pre-training of RCNs and optimization of ESNs
+* Music Information Retrieval (MIR)
+  * Multipitch tracking
+  * Onset detection
+  * *f*\ :sub:`0`\  analysis of spoken language
+  * GCI detection in raw audio signals
+* Time Series Prediction
+  * Mackey-Glass benchmark test
+  * Stock price prediction
+* Ongoing research tasks:
+  * Beat tracking in music signals
+  * Pattern recognition in sensor data
+  * Phoneme recognition
+  * Unsupervised pre-training of RCNs and optimization of ESNs
