@@ -20,4 +20,5 @@ jobs:
       run: |
         pip install pytest
         pip install pytest-cov
+        ls -l
         pytest examples/test_sysexit.py --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
