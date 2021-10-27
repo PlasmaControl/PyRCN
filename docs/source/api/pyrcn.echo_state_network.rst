@@ -25,8 +25,3 @@ Feedback Echo State Network
    :members:
    :undoc-members:
    :show-inheritance:
-
-.. autoclass:: pyrcn.echo_state_network.FeedbackESNClassifier
-   :members:
-   :undoc-members:
-   :show-inheritance:

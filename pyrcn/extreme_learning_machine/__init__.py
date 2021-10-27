@@ -1,5 +1,15 @@
 """
-The :mod:`pyrcn.elm` module includes Extreme Learning Machine algorithms.
+The :mod:`pyrcn.extreme_learning_machine` contains  a simple object-oriented implementation 
+of Extreme Learning Machines [#]_.
+
+Separate implementations of Classifiers and Regressors as specified by scikit-learn.
+
+References
+----------
+    .. [#] Guang-Bin Huang et al., ‘Extreme learning machine: Theory and applications’, 
+           p. 489-501, 2006, doi: 10.1016/j.neucom.2005.12.126.
+    .. [#] M. Lukoševičius, ‘A Practical Guide to Applying Echo
+           State Networks’, Jan. 2012, doi: 10.1007/978-3-642-35289-8_36.
 """
 
 # See https://github.com/TUD-STKS/PyRCN for complete
