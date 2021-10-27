@@ -1,5 +1,11 @@
 """
-The :mod:`pyrcn.base`contains utilities for the reservoir computing modules
+The :mod:`pyrcn.base` contains simple object-oriented implementations 
+of the building blocks for Reservoir Computing Networks [#]_.
+
+References
+----------
+    .. [#] P. Steiner et al., ‘PyRCN: A Toolbox for Exploration and Application 
+           of Reservoir Computing Networks’, under review.
 """
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Michael Schindler <michael.schindler@maschindler.de>
