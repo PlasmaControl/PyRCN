@@ -35,8 +35,6 @@ Building your first Reservoir Computing Network
     .. doctest::
 
         >>> from pyrcn.echo_state_network import ESNRegressor, ESNClassifier
-        >>> 
-        >>> 
         >>> esn = ESNRegressor()
         >>> esn
         ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(),
@@ -53,14 +51,16 @@ Building your first Reservoir Computing Network
 
     .. doctest::
 
-        >>> import pyrcn.base
+        >>> import pyrcn.base.blocks as blocks
         >>> from inspect import getmembers, isclass
-        >>> getmembers(pyrcn.base, isclass)
-        [..., ('BatchIntrinsicPlasticity', <class 'pyrcn.base.BatchIntrinsicPlasticity'>), 
-         ('FeedbackNodeToNode', <class 'pyrcn.base.FeedbackNodeToNode'>), ('HebbianNodeToNode', <class 'pyrcn.base.HebbianNodeToNode'>), 
-         ('InputToNode', <class 'pyrcn.base.InputToNode'>), ('NodeToNode', <class 'pyrcn.base.NodeToNode'>), 
-         ('PredefinedWeightsInputToNode', <class 'pyrcn.base.PredefinedWeightsInputToNode'>), 
-         ('PredefinedWeightsNodeToNode', <class 'pyrcn.base.PredefinedWeightsNodeToNode'>), ...]
+        >>> getmembers(blocks, isclass)
+        [..., ('BatchIntrinsicPlasticity', <class 'pyrcn.base.blocks._input_to_node.BatchIntrinsicPlasticity'>), 
+        ('FeedbackNodeToNode', <class 'pyrcn.base.blocks._node_to_node.FeedbackNodeToNode'>), 
+        ('HebbianNodeToNode', <class 'pyrcn.base.blocks._node_to_node.HebbianNodeToNode'>), 
+        ('InputToNode', <class 'pyrcn.base.blocks._input_to_node.InputToNode'>), 
+        ('NodeToNode', <class 'pyrcn.base.blocks._node_to_node.NodeToNode'>), 
+        ('PredefinedWeightsInputToNode', <class 'pyrcn.base.blocks._input_to_node.PredefinedWeightsInputToNode'>), 
+        ('PredefinedWeightsNodeToNode', <class 'pyrcn.base.blocks._node_to_node.PredefinedWeightsNodeToNode'>)]
 
     Obviously, there are a lot of derived modules from the basic building blocks available. 
     Look their functions up in the documentation or in examples!
@@ -75,7 +75,6 @@ Training a RCN
     .. doctest::
 
         >>> from pyrcn.datasets import mackey_glass
-        >>> # some dummy sequential data
         >>> X, y = mackey_glass(n_timesteps=8000)
 
     The result is displayed below: A Mackey-Glass time-series.
@@ -121,4 +120,4 @@ To handle more complicated and realistic cases, you will probably need to pay a 
 how the reservoir and input matrix are built, how the readout matrix is trained, and how to evaluate
 your model to find the best parameters. All these aspects of reservoir computing are covered in the following tutorials:
 
-- :doc:`tutorials <tutorial>`, to go deeper into ReservoirPy API and see more realistc examples and applications
+- :doc:`Tutorials <tutorial>`, to go deeper into ReservoirPy API and see more realistc examples and applications
