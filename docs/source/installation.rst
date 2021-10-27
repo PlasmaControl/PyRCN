@@ -1,5 +1,3 @@
-.. _installation guide:
-
 ==================
 Installation guide
 ==================

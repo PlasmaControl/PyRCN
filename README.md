@@ -132,12 +132,14 @@ Launch the digits notebook on Binder:
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TUD-STKS/PyRCN/master?filepath=examples%2Fdigits.ipynb)
 
 The notebook [PyRCN_Intro](https://github.com/TUD-STKS/PyRCN/blob/master/examples/PyRCN_Intro.ipynb) or its corresponding [Python script](https://github.com/TUD-STKS/PyRCN/blob/master/examples/PyRCN_Intro.py) show how to construct different RCNs with building blocks. 
+
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TUD-STKS/PyRCN/master?filepath=examples%2FPyRCN_Intro.ipynb)
 
 The notebook [Impulse responses](https://github.com/TUD-STKS/PyRCN/blob/master/examples/esn_impulse_responses.ipynb) is an interactive tool to demonstrate the impact of different hyper-parameters on the impulse responses of an ESN. 
+
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/TUD-STKS/PyRCN/master?filepath=examples%2Fesn_impulse_responses.ipynb)
 
-Fore more advanced examples, please have a look at our [Automatic Music Transcription Repository](https://github.com/TUD-STKS/Automatic-Music-Transcription), in which we provide an entire feature extraction, training and test pipeline for multipitch tracking and for note onset detection using PyRCN.
+Fore more advanced examples, please have a look at our [Automatic Music Transcription Repository](https://github.com/TUD-STKS/Automatic-Music-Transcription), in which we provide an entire feature extraction, training and test pipeline for multipitch tracking and for note onset detection using PyRCN. This is currently transferred to this repository.
 
 ## Citation
 
