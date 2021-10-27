@@ -4,7 +4,6 @@ pyrcn.base
 ==========
 
 .. automodule:: pyrcn.base
-   :members
 
 pyrcn.base.InputToNode
 ----------------------
