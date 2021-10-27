@@ -47,11 +47,6 @@ PyRCN has successfully been used for several tasks:
    :caption: Contents:
 
    installation
-   introduction
-   getting_started
-   tutorial
-   development
-   citation
 
 Indices and tables
 ==================
