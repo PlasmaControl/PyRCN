@@ -11,7 +11,8 @@ PyRCN
 
 .. image:: https://badge.fury.io/py/PyRCN.svg
     :target: https://badge.fury.io/py/PyRCN
-
+.. image:: https://readthedocs.org/projects/pyrcn/badge/?version=latest
+    :target: https://pyrcn.readthedocs.io/en/latest/?badge=latest
 
 
 PyRCN ("Python Reservoir Computing Networks") is a light-weight and transparent Python 3 framework for Reservoir Computing and is based on widely used scientific Python packages, such as numpy or scipy. 
@@ -59,6 +60,7 @@ PyRCN has successfully been used for several tasks:
    :caption: Contents:
 
    installation
+   introduction
    getting_started
 
 Indices and tables
