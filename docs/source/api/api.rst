@@ -5,3 +5,4 @@ PyRCN API
    :maxdepth: 4
 
    pyrcn
+   pyrcn.base
