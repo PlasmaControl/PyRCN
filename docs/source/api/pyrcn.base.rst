@@ -3,8 +3,7 @@
 pyrcn.base
 ==========
 
-.. automodule:: pyrcn.base
-   :members
-
-.. autoclass:: pyrcn.base.InputToNode
+.. automodule:: pyrcn.base.InputToNode
    :members:
+   :undoc-members:
+   :show-inheritance:
