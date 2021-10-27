@@ -1,5 +1,3 @@
-.. _introduction:
-
 Definition of Reservoir Computing
 =================================
 
