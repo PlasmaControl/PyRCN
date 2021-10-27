@@ -9,7 +9,7 @@ from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.base import clone
 
-from pyrcn.base import InputToNode, NodeToNode, FeedbackNodeToNode
+from pyrcn.base.blocks import InputToNode, NodeToNode, FeedbackNodeToNode
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNRegressor, ESNClassifier, FeedbackESNRegressor
 import numpy as np

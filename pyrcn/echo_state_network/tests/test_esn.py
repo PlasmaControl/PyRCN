@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import GridSearchCV
 from sklearn.pipeline import FeatureUnion
 
-from pyrcn.base import InputToNode, NodeToNode
+from pyrcn.base.blocks import InputToNode, NodeToNode
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNClassifier, ESNRegressor
 
@@ -101,7 +101,7 @@ def test_iris_ensemble_iterative_regression():
             ('tanh', InputToNode(hidden_layer_size=10, random_state=42, input_activation='identity')),
             ('bounded_relu', InputToNode(hidden_layer_size=10, random_state=42, input_activation='bounded_relu'))],),
         node_to_node=NodeToNode(hidden_layer_size=20, spectral_radius=0.0),
-        regressor=IncrementalRegression(alpha=.01),)
+        regressor=IncrementalRegression(alpha=.01), requires_sequence=False)
 
     for samples in np.split(np.arange(0, X_train.shape[0]), 5):
         cls.partial_fit(X_train[samples, :], y_train[samples], classes=np.arange(3, dtype=int))

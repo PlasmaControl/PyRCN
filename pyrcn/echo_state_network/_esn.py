@@ -8,8 +8,8 @@ import numpy as np
 
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor, clone
 from sklearn.exceptions import DataDimensionalityWarning
-from pyrcn.base import InputToNode, NodeToNode
-from pyrcn.utils import concatenate_sequences
+from pyrcn.base.blocks import InputToNode, NodeToNode
+from pyrcn.util import concatenate_sequences
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.projection import MatrixToIndexProjection
 from sklearn.utils.validation import _deprecate_positional_args

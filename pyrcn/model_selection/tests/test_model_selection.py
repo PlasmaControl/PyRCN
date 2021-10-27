@@ -22,8 +22,8 @@ def test_sequentialSearchCV_equivalence():
                             searches=[('gs1', GridSearchCV, param_grid1, {'cv': cv}),
                                       ('gs2', RandomizedSearchCV, param_grid2, {'cv': cv, 'random_state': 42})]
                             ).fit(X, y)
-    assert gs1.best_params_ == ss.best_params_['gs1']
-    assert gs2.best_params_ == ss.best_params_['gs2']
+    assert gs1.best_params_ == ss.all_best_params_['gs1']
+    assert gs2.best_params_ == ss.all_best_params_['gs2']
 
 
 if __name__ == '__main__':

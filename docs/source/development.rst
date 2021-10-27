@@ -22,7 +22,7 @@ If you are unsure whether the experienced behaviour is intended or a bug, please
 Improve the documentation
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Whenever you find something not explained well, please inform either Peter Steiner <peter.steiner@tu-dresden.de> or Azarakhsh Jalalvand <azarakhsh.jalalvand@ugent.be>.
+Whenever you find something not explained well, please inform Peter Steiner `peter.steiner@tu-dresden.de <mailto:peter.steiner@tu-dresden.de>`_.
 
 
 .. _GitHub: https://github.com/TUD-STKS/PyRCN

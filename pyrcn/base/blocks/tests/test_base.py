@@ -1,5 +1,5 @@
 """
-Testing for Extreme Learning Machine module (pyrcn.extreme_learning_machine)
+Testing for blocks module (pyrcn.base.blocks)
 """
 import scipy
 import numpy as np
@@ -9,7 +9,7 @@ import pytest
 
 from sklearn.utils.extmath import safe_sparse_dot
 
-from pyrcn.base import InputToNode, NodeToNode, BatchIntrinsicPlasticity, HebbianNodeToNode
+from pyrcn.base.blocks import InputToNode, NodeToNode, BatchIntrinsicPlasticity, HebbianNodeToNode
 
 
 def test_input_to_node_dense():

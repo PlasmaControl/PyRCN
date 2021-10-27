@@ -10,7 +10,8 @@ import sys
 import numpy as np
 
 from sklearn.base import  ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor
-from pyrcn.base import InputToNode, FeedbackNodeToNode, ACTIVATIONS, ACTIVATIONS_INVERSE
+from pyrcn.base.blocks import InputToNode, FeedbackNodeToNode
+from pyrcn.base import ACTIVATIONS, ACTIVATIONS_INVERSE
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.echo_state_network import ESNRegressor
 from sklearn.utils.validation import _deprecate_positional_args

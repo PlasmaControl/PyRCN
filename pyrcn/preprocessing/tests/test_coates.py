@@ -26,7 +26,7 @@ def test_image_transform():
 def test_extract_random_patches():
     test_pictures = np.arange(2 * 7 * 11).reshape((2, 7, 11))
     indices_patch = np.mod(np.arange(0, 8), 4) + (np.arange(0, 8) // 4) * 11
-    random_patches = Coates._extract_random_patches_2d(
+    random_patches = Coates._extract_random_patches(
         test_pictures, image_size=(7, 11), patch_size=(2, 4), n_patches=2, random_state=42)
     np.testing.assert_array_equal(random_patches[0, :] - np.min(random_patches[0, :]).astype(int), indices_patch)
 
@@ -62,3 +62,9 @@ def test_transform():
     assert len(trf.clusterer.cluster_centers_) == 20
 
 
+if __name__ == "__main__":
+    test_image_transform()
+    test_extract_random_patches()
+    test_extract_equidistant_patches()
+    test_fit()
+    test_transform()
