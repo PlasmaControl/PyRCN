@@ -5,8 +5,12 @@ import sys
 import warnings
 
 import numpy as np
-
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor, clone
+try:
+    from typing import Union, Literal
+except ImportError:
+    from typing import Union
+    from typing_extensions import Literal
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin, MultiOutputMixin, is_regressor, clone
 from sklearn.exceptions import DataDimensionalityWarning
 from pyrcn.base.blocks import InputToNode, NodeToNode
 from pyrcn.util import concatenate_sequences
@@ -28,34 +32,35 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     Parameters
     ----------
-    input_to_node : iterable, default=[('default', InputToNode())]
-        List of (name, transform) tuples (implementing fit/transform) that are
-        chained, in the order in which they are chained, with the last object
-        an estimator.
-    node_to_node : iterable, default=[('default', NodeToNode())]
-        List of (name, transform) tuples (implementing fit/transform) that are
-        chained, in the order in which they are chained, with the last object
-        an estimator.
-    regressor : object, default=IncrementalRegression(alpha=.0001)
+    input_to_node : Union[InputToNode, TransformerMixin], default=None
+        Any ```sklearn.base.TransformerMixin``` object that transforms the inputs.
+        If ```None```, a ```pyrcn.base.blocks.InputToNode()``` object is instantiated.
+    node_to_node : Union[InputToNode, TransformerMixin], default=None
+        Any ```sklearn.base.TransformerMixin``` object that transforms the outputs of
+        ```input_to_node```.
+        If ```None```, a ```pyrcn.base.blocks.NodeToNode()``` object is instantiated.
+    regressor : object, default=None
         Regressor object such as derived from ``RegressorMixin``. This
         regressor will automatically be cloned each time prior to fitting.
-        regressor cannot be None, omit argument if in doubt
-    requires_sequence : "auto" or bool
+        If ```None```, a ```pyrcn.linear_model.IncrementalRegression()``` object is instantiated.
+    requires_sequence : Union[Literal["auto"], bool], default="auto"
         If True, the input data is expected to be a sequence. 
         If "auto", tries to automatically estimate when calling ```fit``` for the first time
-    decision_strategy : str, one of {'winner_takes_all', 'median', 'weighted', 'last_value', 'mode'}, default='winner_takes_all'
+    decision_strategy : Literal['winner_takes_all', 'median', 'weighted', 'last_value', 'mode'], default='winner_takes_all'
         Decision strategy for sequence-to-label task. Ignored if the target output is a sequence
+    verbose : bool = False
+        Verbosity output
     kwargs : dict, default = None
         keyword arguments passed to the subestimators if this is desired, default=None
     """
     @_deprecate_positional_args
     def __init__(self, *,
-                 input_to_node=None,
-                 node_to_node=None,
-                 regressor=None,
-                 requires_sequence="auto",
-                 decision_strategy="winner_takes_all",
-                 verbose=False,
+                 input_to_node: Union[InputToNode, TransformerMixin] = None,
+                 node_to_node: Union[NodeToNode, TransformerMixin] = None,
+                 regressor: Union[IncrementalRegression, RegressorMixin] = None,
+                 requires_sequence: Union[Literal["auto"], bool] = "auto",
+                 decision_strategy: Literal['winner_takes_all', 'median', 'weighted', 'last_value', 'mode'] = 'winner_takes_all',
+                 verbose: bool = False,
                  **kwargs):
         if input_to_node is None:
             i2n_params = InputToNode()._get_param_names()
@@ -79,11 +84,39 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self.verbose=verbose
 
     def __add__(self, other):
+        """
+        Sum up two instances of an ```ESNRegressor```. 
+        
+        We always need to update the correlation matrices of the regressor.
+
+        Parameters
+        ----------
+        other : ESNRegressor
+            ```ESNRegressor``` to be added to ```self```
+
+        Returns
+        -------
+        self : returns the sum of two ```ESNRegressor``` instances.
+        """
         self.regressor._K = self.regressor._K + other.regressor._K
         self.regressor._xTy = self.regressor._xTy  + other.regressor._xTy
         return self
 
     def __radd__(self, other):
+        """
+        Sum up multiple instances of an ```ESNRegressor```. 
+        
+        We always need to update the correlation matrices of the regressor.
+
+        Parameters
+        ----------
+        other : ESNRegressor
+            ```ESNRegressor``` to be added to ```self```
+
+        Returns
+        -------
+        self : returns the sum of two ```ESNRegressor``` instances.
+        """
         if other == 0:
             return self
         else:
@@ -108,7 +141,25 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
         return self
 
-    def _check_if_sequence(self, X, y):
+    def _check_if_sequence(self, X: Union[list, np.ndarray], y: Union[list, np.ndarray]):
+        """
+        Validation of the training data.
+
+        If X is a list and each member of the list has the same number of samples, 
+        we treat it as an array of instance (one sequence).
+
+        If X or y have more than two dimensions, it is no valid data type.
+
+        If the number of dimensions of X after converting it to a ```ndarray``` is one,
+        the ESN runs in sequential mode.
+
+        Parameters
+        ----------
+        X : Union[list, np.ndarray]
+            The input data
+        y : Union[list, np.ndarray]
+            The target data
+        """
         if isinstance(X, list):
             lengths_X = np.unique([x.shape[0] for x in X])
             if len(lengths_X) == 1 and self.verbose:
@@ -129,28 +180,44 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                              "Only 1 or 2 dimensions are allowed."%X.ndim)
         self.requires_sequence = X.ndim == 1
 
-    def _check_if_sequence_to_value(self, X, y):
+    def _check_if_sequence_to_value(self, X: Union[list, np.ndarray], y: Union[list, np.ndarray]):
+        """
+        Validation of the training data.
+
+        If the numbers of samples in each element in X and y (already in sequential form) 
+        are different, we assume to have a sequence-to-value problem,
+       such as a seqence-to-label classification.
+
+        Parameters
+        ----------
+        X : Union[list, np.ndarray]
+            The input data
+        y : Union[list, np.ndarray]
+            The target data
+        """
         len_X = np.unique([x.shape[0] for x in X])
         len_y = np.unique([yt.shape[0] for yt in y])
         self._sequence_to_value = not np.any(len_X==len_y)
 
-    def partial_fit(self, X, y, transformer_weights=None, postpone_inverse=False):
+    def partial_fit(self, X: np.ndarray, y: np.ndarray, 
+                    transformer_weights = None, 
+                    postpone_inverse: bool = False):
         """
         Fits the regressor partially.
 
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
+        X : ndarray of shape (n_samples, n_features)
+        y : ndarray of shape (n_samples,) or (n_samples, n_targets)
             The targets to predict.
         transformer_weights : ignored
         postpone_inverse : bool, default=False
-            If output weights have not been fitted yet, regressor might be hinted at
-            postponing inverse calculation. Refer to IncrementalRegression for details.
+            If the output weights have not been fitted yet, regressor might be hinted at
+            postponing inverse calculation. Refer to ```IncrementalRegression``` for details.
 
         Returns
         -------
-        self : Returns a trained ESNRegressor model.
+        self : Returns a trained ```ESNRegressor``` model.
         """
         if not hasattr(self._regressor, 'partial_fit'):
             raise BaseException('Regressor has no attribute partial_fit, got {0}'.format(self._regressor))
@@ -181,17 +248,19 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             self._regressor.partial_fit(hidden_layer_state, y, postpone_inverse=postpone_inverse)
         return self
 
-    def fit(self, X, y, n_jobs=None, transformer_weights=None):
+    def fit(self, X: np.ndarray, y: np.ndarray, 
+            n_jobs: Union[int, np.integer]= None,
+            transformer_weights = None):
         """
         Fits the regressor.
 
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
+        X : ndarray of shape (n_samples, n_features) or of shape (n_sequences, )
+        y : ndarray of shape (n_samples,) or (n_samples, n_targets) or of shape (n_sequences)
             The targets to predict.
         n_jobs : int, default=None
-            The number of jobs to run in parallel. ``-1`` means using all processors.
+            The number of jobs to run in parallel. ```-1``` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
 
@@ -210,19 +279,31 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._node_to_node.fit(self._input_to_node.transform(X))
         self._regressor = self._regressor.__class__()
         if not self.requires_sequence:
-            return self._instance_fit(X, y)
+            return self.partial_fit(X, y, postpone_inverse=False)
         else:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
 
-    def _instance_fit(self, X, y):
-        # input_to_node
-        hidden_layer_state = self._input_to_node.transform(X)
-        hidden_layer_state = self._node_to_node.transform(hidden_layer_state)
-        # regression
-        self._regressor.fit(hidden_layer_state, y)
-        return self
+    def _sequence_fit(self, X: np.ndarray, y: np.ndarray, sequence_ranges: np.ndarray,
+                      n_jobs: Union[int, np.integer]= None):
+        """
+        Call partial_fit for each sequence. With more than one job, this is done 
+        in parallel using ```joblib```.
 
-    def _sequence_fit(self, X, y, sequence_ranges=None, n_jobs=None):
+        Parameters
+        ----------
+        X : ndarray of shape (samples, n_features)
+        y : ndarray of shape (n_samples,) or (n_samples, n_targets)
+            The targets to predict.
+        sequence_ranges : ndarray of shape (n_sequences, 2)
+            The start and stop indices of each sequence are denoted here.
+        n_jobs : int, default=None
+            The number of jobs to run in parallel. ```-1``` means using all processors.
+            See :term:`Glossary <n_jobs>` for more details.
+
+        Returns
+        -------
+        self : Returns a trained ESNRegressor model.
+        """
         if n_jobs is not None and n_jobs > 1:
             reg = Parallel(n_jobs=n_jobs)(delayed(ESNRegressor.partial_fit)
                                           (clone(self), X[idx[0]:idx[1], ...], 
@@ -244,17 +325,17 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                                  postpone_inverse=False)
         return self
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
-        Predicts the targets using the trained ESN regressor.
+        Predicts the targets using the trained ```ESNRegressor```.
 
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        X : ndarray of shape (n_samples, n_features)
 
         Returns
         -------
-        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
+        y : ndarray of (n_samples,) or (n_samples, n_targets)
             The predicted targets
         """
         if self._input_to_node is None or self._regressor is None:
@@ -280,8 +361,6 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         """
         Validates the hyperparameters.
 
-        Returns
-        -------
         """
         if not (hasattr(self.input_to_node, "fit") and hasattr(self.input_to_node, "fit_transform") and hasattr(
                 self.input_to_node, "transform")):
@@ -310,7 +389,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         Returns
         -------
         size : int
-        Object memory in bytes.
+            Object memory in bytes.
         """
         return object.__sizeof__(self) + \
             sys.getsizeof(self._input_to_node) + \
@@ -318,82 +397,73 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             sys.getsizeof(self._regressor)
 
     @property
-    def regressor(self):
+    def regressor(self) -> RegressorMixin:
         """
         Returns the regressor.
 
         Returns
         -------
-        regressor : Regressor
+        regressor : RegressorMixin
         """
         return self._regressor
 
     @regressor.setter
-    def regressor(self, regressor):
+    def regressor(self, regressor: RegressorMixin):
         """
         Sets the regressor.
 
         Parameters
         ----------
-        regressor : regressor or None
-        Returns
-        -------
+        regressor : RegressorMixin
         """
         self._regressor = regressor
 
     @property
-    def input_to_node(self):
+    def input_to_node(self) -> Union[InputToNode, TransformerMixin]:
         """
-        Returns the input_to_node list or the input_to_node Transformer.
+        Returns the input_to_node Transformer.
 
         Returns
         -------
-        input_to_node : Transformer or [Transformer]
+        input_to_node : TransformerMixin
         """
         return self._input_to_node
 
     @input_to_node.setter
-    def input_to_node(self, input_to_node, n_jobs=None, transformer_weights=None):
+    def input_to_node(self, input_to_node: Union[InputToNode, TransformerMixin]):
         """
-        Sets the input_to_node list or the input_to_node Transformer.
+        Sets the input_to_node Transformer.
 
         Parameters
         ----------
-        input_to_node : Transformer or [Transformer]
-        n_jobs : int, default=None
-        Number of jobs to run in parallel.
-        None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
-        transformer_weights : dict, default=None
-        Multiplicative weights for features per transformer.
-        Keys are transformer names, values the weights.
-        Raises ValueError if key not present in transformer_list.
-
-        Returns
-        -------
+        input_to_node : TransformerMixin
         """
-        if hasattr(input_to_node, '__iter__'):
-            # Feature Union of list of input_to_node
-            self._input_to_node = FeatureUnion(
-                transformer_list=input_to_node,
-                n_jobs=n_jobs,
-                transformer_weights=transformer_weights)
-        else:
-            # single input_to_node
-            self._input_to_node = input_to_node
+        self._input_to_node = input_to_node
 
     @property
-    def node_to_node(self):
+    def node_to_node(self) -> Union[NodeToNode, TransformerMixin]:
         """
-        Returns the node_to_node list or the input_to_node Transformer.
+        Returns the node_to_node Transformer.
 
         Returns
         -------
-        node_to_node : Transformer or [Transformer]
+        node_to_node : TransformerMixin
         """
         return self._node_to_node
 
+    @node_to_node.setter
+    def node_to_node(self, node_to_node: Union[NodeToNode, TransformerMixin]):
+        """
+        Sets the node_to_node Transformer.
+
+        Parameters
+        ----------
+        node_to_node : TransformerMixin
+        """
+        self._node_to_node = node_to_node
+
     @property
-    def hidden_layer_state(self):
+    def hidden_layer_state(self) -> np.ndarray:
         """
         Returns the hidden_layer_state, e.g. the resevoir state over time.
 
@@ -403,37 +473,8 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         """
         return self._node_to_node._hidden_layer_state
 
-    @node_to_node.setter
-    def node_to_node(self, node_to_node, n_jobs=None, transformer_weights=None):
-        """
-        Sets the input_to_node list or the input_to_node Transformer.
-
-        Parameters
-        ----------
-        node_to_node : Transformer or [Transformer]
-        n_jobs : int, default=None
-        Number of jobs to run in parallel.
-        None means 1 unless in a joblib.parallel_backend context. -1 means using all processors.
-        transformer_weights : dict, default=None
-        Multiplicative weights for features per transformer.
-        Keys are transformer names, values the weights.
-        Raises ValueError if key not present in transformer_list.
-
-        Returns
-        -------
-        """
-        if hasattr(node_to_node, '__iter__'):
-            # Feature Union of list of input_to_node
-            self._node_to_node = FeatureUnion(
-                transformer_list=node_to_node,
-                n_jobs=n_jobs,
-                transformer_weights=transformer_weights)
-        else:
-            # single input_to_node
-            self._node_to_node = node_to_node
-
     @property
-    def sequence_to_value(self):
+    def sequence_to_value(self) -> bool:
         """
         Returns the sequence_to_value parameter.
 
@@ -444,66 +485,58 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self._sequence_to_value
 
     @sequence_to_value.setter
-    def sequence_to_value(self, sequence_to_value):
+    def sequence_to_value(self, sequence_to_value: bool):
         """
         Sets the sequence_to_value parameter.
 
         Parameters
         ----------
         sequence_to_value : bool
-
-        Returns
-        -------
         """
         self._sequence_to_value = sequence_to_value
 
     @property
-    def decision_strategy(self):
+    def decision_strategy(self) -> Literal['winner_takes_all', 'median', 'weighted', 'last_value', 'mode']:
         """
         Returns the decision_strategy parameter.
 
         Returns
         -------
-        decision_strategy : str, default="winner_takes_all"
+        decision_strategy : Literal['winner_takes_all', 'median', 'weighted', 'last_value', 'mode']
         """
         return self._decision_strategy
 
     @decision_strategy.setter
-    def decision_strategy(self, requires_sequence):
+    def decision_strategy(self, decision_strategy: Literal['winner_takes_all', 'median', 'weighted', 'last_value', 'mode']):
         """
         Sets the requires_sequence parameter.
 
         Parameters
         ----------
-        decision_strategy : str, default="winner_takes_all"
-
-        Returns
-        -------
+        decision_strategy : Literal['winner_takes_all', 'median', 'weighted', 'last_value', 'mode']
         """
         self._decision_strategy = decision_strategy
 
     @property
-    def requires_sequence(self):
+    def requires_sequence(self) -> Union[Literal["auto"], bool]:
         """
         Returns the requires_sequence parameter.
 
         Returns
         -------
-        requires_sequence : str, default="winner_takes_all"
+        requires_sequence : Union[Literal["auto"], bool]
         """
         return self._requires_sequence
 
     @requires_sequence.setter
-    def requires_sequence(self, requires_sequence):
+    def requires_sequence(self, requires_sequence: Union[Literal["auto"], bool]):
         """
         Sets the requires_sequence parameter.
 
         Parameters
         ----------
-        requires_sequence : "auto" or bool
+        requires_sequence : Union[Literal["auto"], bool]
 
-        Returns
-        -------
         """
         self._requires_sequence = requires_sequence
 
@@ -516,34 +549,35 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
 
     Parameters
     ----------
-    input_to_node : iterable, default=[('default', InputToNode())]
-        List of (name, transform) tuples (implementing fit/transform) that are
-        chained, in the order in which they are chained, with the last object
-        an estimator.
-    node_to_node : iterable, default=[('default', NodeToNode())]
-        List of (name, transform) tuples (implementing fit/transform) that are
-        chained, in the order in which they are chained, with the last object
-        an estimator.
-    regressor : object, default=IncrementalRegression(alpha=.0001)
+    input_to_node : Union[InputToNode, TransformerMixin], default=None
+        Any ```sklearn.base.TransformerMixin``` object that transforms the inputs.
+        If ```None```, a ```pyrcn.base.blocks.InputToNode()``` object is instantiated.
+    node_to_node : Union[InputToNode, TransformerMixin], default=None
+        Any ```sklearn.base.TransformerMixin``` object that transforms the outputs of
+        ```input_to_node```.
+        If ```None```, a ```pyrcn.base.blocks.NodeToNode()``` object is instantiated.
+    regressor : object, default=None
         Regressor object such as derived from ``RegressorMixin``. This
         regressor will automatically be cloned each time prior to fitting.
-        regressor cannot be None, omit argument if in doubt
-    requires_sequence : "auto" or bool
+        If ```None```, a ```pyrcn.linear_model.IncrementalRegression()``` object is instantiated.
+    requires_sequence : Union[Literal["auto"], bool], default="auto"
         If True, the input data is expected to be a sequence. 
         If "auto", tries to automatically estimate when calling ```fit``` for the first time
-    decision_strategy : str, one of {'winner_takes_all', 'median', 'weighted', 'last_value', 'mode'}, default='winner_takes_all'
+    decision_strategy : Literal['winner_takes_all', 'median', 'weighted', 'last_value', 'mode'], default='winner_takes_all'
         Decision strategy for sequence-to-label task. Ignored if the target output is a sequence
+    verbose : bool = False
+        Verbosity output
     kwargs : dict, default = None
         keyword arguments passed to the subestimators if this is desired, default=None
     """
     @_deprecate_positional_args
     def __init__(self, *,
-                 input_to_node=None,
-                 node_to_node=None,
-                 regressor=None,
-                 requires_sequence="auto",
-                 verbose=False,
-                 decision_strategy="winner_takes_all",
+                 input_to_node: Union[InputToNode, TransformerMixin] = None,
+                 node_to_node: Union[NodeToNode, TransformerMixin] = None,
+                 regressor: Union[IncrementalRegression, RegressorMixin] = None,
+                 requires_sequence: Union[Literal["auto"], bool] = False,
+                 decision_strategy: Literal['winner_takes_all', 'median', 'weighted', 'last_value', 'mode'] = 'winner_takes_all',
+                 verbose: bool = False,
                  **kwargs):
         super().__init__(input_to_node=input_to_node, node_to_node=node_to_node, regressor=regressor,
                          requires_sequence=requires_sequence, verbose=verbose, **kwargs)
@@ -551,14 +585,16 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         self._encoder = None
         self._sequence_to_value = False
 
-    def partial_fit(self, X, y, classes=None, transformer_weights=None, postpone_inverse=False):
+    def partial_fit(self, X: np.ndarray, y: np.ndarray, 
+                    classes: np.ndarray=None, transformer_weights = None, 
+                    postpone_inverse: bool = False):
         """
-        Fits the classifier partially on a sequence of observations.
+        Fits the regressor partially.
 
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_classes)
+        X : ndarray of shape (n_samples, n_features)
+        y : ndarray of shape (n_samples,) or (n_samples, n_targets)
             The targets to predict.
         classes : array of shape (n_classes,), default=None
             Classes across all calls to partial_fit.
@@ -569,7 +605,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
             Note that y doesn't need to contain all labels in `classes`.
         transformer_weights : ignored
         postpone_inverse : bool, default=False
-            If output weights have not been fitted yet, regressor might be hinted at
+            If the output weights have not been fitted yet, regressor might be hinted at
             postponing inverse calculation. Refer to IncrementalRegression for details.
 
         Returns
@@ -584,17 +620,19 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         return super().partial_fit(X, self._encoder.transform(y), transformer_weights=None,
                                    postpone_inverse=postpone_inverse)
 
-    def fit(self, X, y, n_jobs=None, transformer_weights=None):
+    def fit(self, X: np.ndarray, y: np.ndarray, 
+            n_jobs: Union[int, np.integer]= None,
+            transformer_weights = None):
         """
         Fits the classifier.
 
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_classes)
+        X : ndarray of shape (n_samples, n_features) or of shape (n_sequences, )
+        y : ndarray of shape (n_samples,) or (n_samples, n_classes) or of shape (n_sequences)
             The targets to predict.
         n_jobs : int, default=None
-            The number of jobs to run in parallel. ``-1`` means using all processors.
+            The number of jobs to run in parallel. ```-1``` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
         transformer_weights : ignored
 
@@ -602,7 +640,6 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         -------
         self : Returns a trained ESNClassifier model.
         """
-
         self._validate_hyperparameters()
         if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
@@ -621,13 +658,14 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         else:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """
-        Predict the classes using the trained ESN classifier.
+        Predict the classes using the trained ```ESNClassifier```.
 
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        X : ndarray of shape (n_samples, n_features)
+            The input data.
 
         Returns
         -------
@@ -646,22 +684,20 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         else:
             return self._encoder.inverse_transform(super().predict(X), threshold=None)
 
-    def predict_proba(self, X):
+    def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
-        Predict the probability estimated using the trained ESN classifier.
+        Predict the probability estimated using the trained ```ESNClassifier```.
 
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        X : ndarray of shape (n_samples, n_features)
             The input data.
         
         Returns
         -------
         y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
-            The predicted probability estimated.
+            The predicted probability estimates.
         """
-        # for single dim proba use np.amax
-        # predicted_positive = np.subtract(predicted.T, np.min(predicted, axis=1))
         y = super().predict(X)
         if self.requires_sequence and self._sequence_to_value:
             for k, _ in enumerate(y):
@@ -677,13 +713,13 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         else:
             return self._encoder.inverse_transform(super().predict(X), threshold=None)
 
-    def predict_log_proba(self, X):
+    def predict_log_proba(self, X: np.ndarray) -> np.ndarray:
         """
-        Predict the logarithmic probability estimated using the trained ESN classifier.
+        Predict the logarithmic probability estimated using the trained ```ESNClassifier```.
 
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        X : ndarray of shape (n_samples, n_features)
             The input data.
 
         Returns

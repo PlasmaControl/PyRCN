@@ -2,55 +2,55 @@
 from sklearn.neural_network._base import ACTIVATIONS
 
 
-def inplace_bounded_relu(X):
+def inplace_bounded_relu(X: np.ndarray):
     """
     Compute the bounded rectified linear unit function inplace.
 
     Parameters
     ----------
-    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
+    X : ndarray
         The input data.
     """
     np.minimum(np.maximum(X, 0, out=X), 1, out=X)
 
 
-def inplace_tanh_inverse(X):
+def inplace_tanh_inverse(X: np.ndarray):
     """
     Compute the tanh inverse function inplace.
 
     Parameters
     ----------
-    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
+    X : ndarray
         The input data.
     """
     np.arctanh(X, out=X)
 
 
-def inplace_identity_inverse(X):
+def inplace_identity_inverse(X: np.ndarray):
     """
     Compute the identity inverse function inplace.
 
     Parameters
     ----------
-    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
+    X : ndarray
         The input data.
     """
     ACTIVATIONS['identity'](X)
 
 
-def inplace_logistic_inverse(X):
+def inplace_logistic_inverse(X: np.ndarray):
     """
     Compute the logistic inverse function inplace.
 
     Parameters
     ----------
-    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
+    X : ndarray
         The input data.
     """
     np.negative(np.log(1 - X, out=X), out=X)
 
 
-def inplace_relu_inverse(X):
+def inplace_relu_inverse(X: np.ndarray):
     """
     Compute the relu inverse function inplace.
 
@@ -59,13 +59,13 @@ def inplace_relu_inverse(X):
 
     Parameters
     ----------
-    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
+    X : ndarray
         The input data.
     """
     ACTIVATIONS['relu'](X)
 
 
-def inplace_bounded_relu_inverse(X):
+def inplace_bounded_relu_inverse(X: np.ndarray):
     """
     Compute the bounded relu inverse function inplace.
 
@@ -74,7 +74,7 @@ def inplace_bounded_relu_inverse(X):
 
     Parameters
     ----------
-    X : Union(array-like, sparse matrix), shape (n_samples, n_features)
+    X : ndarray
         The input data.
     """
     ACTIVATIONS['bounded_relu'](X)

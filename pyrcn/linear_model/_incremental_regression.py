@@ -6,7 +6,11 @@ Incremental regression
 # License: BSD 3 clause
 
 import sys
-
+try:
+    from typing import Union, Literal
+except ImportError:
+    from typing import Union
+    from typing_extensions import Literal
 import numpy as np
 import scipy
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -31,7 +35,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
     
     Parameters
     ----------
-    alpha : float, default=1.0
+    alpha : Union[float, np.float], default=1e-5
         L2 regularization parameter
     fit_intercept : bool, default=True
         Fits a constant offset if True. Use this if input values are not average free.
@@ -46,7 +50,9 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         Independent term in decision function. Set to 0.0 if
         ``fit_intercept = False``.
     """
-    def __init__(self, alpha=1e-5, fit_intercept=True, normalize=False):
+    def __init__(self, alpha: Union[float, np.float] = 1e-5, 
+                 fit_intercept: bool = True, 
+                 normalize: bool = False):
         self.alpha = alpha
         self.fit_intercept = fit_intercept
         self.normalize = normalize
@@ -56,21 +62,30 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self._xTy = None
         self._output_weights = None
 
-    def partial_fit(self, X, y, partial_normalize=True, reset=False, validate=True, postpone_inverse=False, n_jobs=None):
-        """Fits the regressor partially.
+    def partial_fit(self, X: np.ndarray, y: np.ndarray, 
+                    partial_normalize: bool = True, reset: bool = False, 
+                    validate: bool = True, postpone_inverse: bool = False):
+        """
+        Fits the regressor partially.
+        
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
+        X : ndarray of shape (samples, n_features)
+        y : ndarray of shape (n_samples,) or (n_samples, n_targets)
+            The targets to predict.
         partial_normalize : bool, default=True
             Partial fits the normalization transformer on this sample if True.
         reset : bool, default=False
             Begin a new fit, drop prior fits.
         validate: bool, default=True
             Validate input data if True.
+        postpone_inverse : bool, default=False
+            If the output weights have not been fitted yet, regressor might be hinted at
+            postponing inverse calculation.
+
         Returns
         -------
-        self
+        self : returns a partially fitted IncrementalRegression model
         """
         if validate:
             self._validate_data(X, y, multi_output=True)
@@ -99,55 +114,67 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         P = np.linalg.inv(self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
 
         if self._output_weights is None:
-            if n_jobs is None:
-                self._output_weights = np.matmul(P, self._xTy)
-            else:
-                self._output_weights = np.asarray(Parallel(n_jobs=n_jobs)(delayed(safe_sparse_dot)(P, self._xTy[:, k]) for k in range(self._xTy.shape[1]))).T
+            self._output_weights = np.matmul(P, self._xTy)
         else:
-            if n_jobs is None:
-                self._output_weights += np.matmul(P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
-            else:
-                self._output_weights += np.asarray(Parallel(n_jobs=n_jobs)(delayed(safe_sparse_dot)(P, safe_sparse_dot(X_preprocessed.T, (y[:, k] - safe_sparse_dot(X_preprocessed, self._output_weights[:, k])))) for k in range(self._xTy.shape[1]))).T
+            self._output_weights += np.matmul(P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
             # self._output_weights += np.matmul(P, self._xTy - np.matmul(self._K, self._output_weights))
         return self
 
-    def fit(self, X, y):
-        """Fits the regressor.
+    def fit(self, X: np.ndarray, y: np.ndarray):
+        """
+        Fits the regressor.
+        
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
-        y : {ndarray, sparse matrix} of shape (n_samples,) or (n_samples, n_targets)
+        X : ndarray of shape (samples, n_features)
+        y : ndarray of shape (n_samples,) or (n_samples, n_targets)
+            The targets to predict.
+        partial_normalize : bool, default=True
+            Partial fits the normalization transformer on this sample if True.
+        reset : bool, default=False
+            Begin a new fit, drop prior fits.
+        validate: bool, default=True
+            Validate input data if True.
+        postpone_inverse : bool, default=False
+            If the output weights have not been fitted yet, regressor might be hinted at
+            postponing inverse calculation.
+
         Returns
         -------
-        self
+        self : returns a fitted IncrementalRegression model
         """
         self.partial_fit(X, y, partial_normalize=False, reset=True, validate=True)
         return self
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
         """Predicts output y according to input X.
+
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        X : ndarray of shape (samples, n_features)
+
         Returns
         -------
-        Y : ndarray of shape (n_samples,) or (n_samples, n_targets)
+        y : ndarray of shape (n_samples,) or (n_samples, n_targets)
         """
         if self._output_weights is None:
             raise NotFittedError(self)
 
         return safe_sparse_dot(self._preprocessing(X, partial_normalize=False), self._output_weights)
 
-    def _preprocessing(self, X, partial_normalize=True):
-        """Applies preprocessing on the input data X.
+    def _preprocessing(self, X: np.ndarray, partial_normalize: bool=True) -> np.ndarray:
+        """
+        Applies preprocessing on the input data X.
+
         Parameters
         ----------
-        X : {ndarray, sparse matrix} of shape (n_samples, n_features)
+        X : ndarray of shape (samples, n_features)
         partial_normalize : bool, default=True
             Partial fits the normalization transformer on this sample if True.
+
         Returns
         -------
-        X_preprocessed : {ndarray, sparse matrix} of shape (n_samples, n_features) or (n_samples, n_features+1)
+        X_preprocessed : ndarray of shape (n_samples, n_features) or (n_samples, n_features+1)
         """
         X_preprocessed = X
 
@@ -163,11 +190,13 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         return X_preprocessed
 
     def __sizeof__(self):
-        """Returns the size of the object in bytes.
+        """
+        Returns the size of the object in bytes.
+
         Returns
         -------
         size : int
-        Object memory in bytes.
+            Object memory in bytes.
         """
         return object.__sizeof__(self) + \
             self._K.nbytes + \
@@ -176,11 +205,13 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
             sys.getsizeof(self.scaler)
 
     @property
-    def coef_(self):
-        """Returns the output weights without intercept. Compatibility to sklearn.linear_model.Ridge.
+    def coef_(self) -> np.ndarray:
+        """
+        Returns the output weights without intercept. Compatibility to ```sklearn.linear_model.Ridge```.
+
         Returns
         -------
-        coef_ : array, shape (n_features,) or (n_targets, n_features)
+        coef_ : ndarray of shape (n_features,) or (n_targets, n_features)
             Weight vector(s).
         """
         if self._output_weights is not None:
@@ -193,11 +224,13 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
                 return np.transpose(self._output_weights)
 
     @property
-    def intercept_(self):
-        """Returns the intercept of output output weights. Compatibility to sklearn.linear_model.Ridge.
+    def intercept_(self) -> Union[float, np.float, np.ndarray]:
+        """
+        Returns the intercept of output output weights. Compatibility to ```sklearn.linear_model.Ridge```.
+        
         Returns
         -------
-        intercept_ : float | array, shape = (n_targets,)
+        intercept_ : Union[float, np.float, np.ndarray]
             Independent term in decision function.
         """
         if self._output_weights is not None and self.fit_intercept:

@@ -16,8 +16,12 @@ References
 # License: BSD 3 clause
 
 from pyrcn.base._activations import ACTIVATIONS, ACTIVATIONS_INVERSE, ACTIVATIONS_INVERSE_BOUNDS
+from pyrcn.base._base import _uniform_random_input_weights, _uniform_random_bias, _normal_random_recurrent_weights
 
 __all__ = ['ACTIVATIONS',
            'ACTIVATIONS_INVERSE',
-           'ACTIVATIONS_INVERSE_BOUNDS'
+           'ACTIVATIONS_INVERSE_BOUNDS',
+           '_uniform_random_input_weights',
+           '_uniform_random_bias',
+           '_normal_random_recurrent_weights'
            ]

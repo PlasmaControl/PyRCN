@@ -25,12 +25,10 @@ def test_elm_regressor_jobs():
     y = np.hstack((np.sin(X).reshape(-1, 1), np.cos(X).reshape(-1, 1)))
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=10, random_state=42)
     param_grid = {
-        'input_to_node': [
-            [('default', InputToNode(bias_scaling=10., hidden_layer_size=20, random_state=42))],
-            [('default', InputToNode(bias_scaling=10., hidden_layer_size=50, random_state=42))]],
-        'regressor': [
-            IncrementalRegression(alpha=.0001),
-            IncrementalRegression(alpha=.01)],
+        'input_to_node': [InputToNode(bias_scaling=10., hidden_layer_size=20, random_state=42),
+                          InputToNode(bias_scaling=10., hidden_layer_size=50, random_state=42)],
+        'regressor': [IncrementalRegression(alpha=.0001),
+                      IncrementalRegression(alpha=.01)],
         'random_state': [42]
     }
     elm = GridSearchCV(ELMRegressor(), param_grid)

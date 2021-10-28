@@ -9,7 +9,11 @@ from pathlib import Path
 from os.path import dirname, exists, join
 from os import makedirs, remove, walk
 import re
-
+try:
+    from typing import Union, Literal
+except ImportError:
+    from typing import Union
+    from typing_extensions import Literal
 import numpy as np
 import pandas as pd
 import joblib
@@ -17,11 +21,18 @@ import joblib
 from sklearn.datasets import get_data_home
 from sklearn.datasets._base import RemoteFileMetadata, _pkl_filepath
 from sklearn.utils.validation import _deprecate_positional_args
+from sklearn.base import TransformerMixin
 
 
 @_deprecate_positional_args
-def fetch_ptdb_tug_dataset(*, data_origin=None, data_home=None, preprocessor=None, 
-                           augment=0, force_preprocessing=False):
+def fetch_ptdb_tug_dataset(*, data_origin: str = None, 
+                           data_home: str = None, 
+                           preprocessor: TransformerMixin = None, 
+                           augment : Union[int, np.integer] = 0, 
+                           force_preprocessing: bool = False) -> (np.ndarray, 
+                                                                  np.ndarray, 
+                                                                  np.ndarray, 
+                                                                  np.ndarray):
     """
     Load the PTDB-TUG: Pitch Tracking Database from Graz University of Technology
     (classification and regression)
@@ -39,15 +50,17 @@ def fetch_ptdb_tug_dataset(*, data_origin=None, data_home=None, preprocessor=Non
         Specify where the original dataset can be found. By default,
         all pyrcn data is stored in '~/pyrcn_data' and all scikit-learn data in
        '~/scikit_learn_data' subfolders.
-
     data_home : str, default=None
         Specify another download and cache folder fo the datasets. By default,
         all pyrcn data is stored in '~/pyrcn_data' and all scikit-learn data in
        '~/scikit_learn_data' subfolders.
-
-    preprocessor : default=None,
+    preprocessor : sklearn.TransformerMixin, default=None,
         Estimator for preprocessing the dataset (create features and targets from 
         audio and label files).
+    augment : Union[int, np.integer], default = 0
+        Semitone range used for data augmentation
+    force_preprocessing: bool, default=False
+        Force preprocessing (label computation and feature extraction)
 
     Returns
     -------
@@ -125,7 +138,20 @@ def fetch_ptdb_tug_dataset(*, data_origin=None, data_home=None, preprocessor=Non
     return X_train, X_test, y_train, y_test
 
 
-def _get_labels(X, df_label):
+def _get_labels(X: np.ndarray, df_label: pd.DataFrame) -> np.ndarray:
+    """
+    Get the pitch labels of a recording
+
+    Parameters
+    ----------
+    X: np.ndarray
+        Feature matrix to know the shape of the input data.
+    df_label, pandas.DataFrame
+        Pandas dataframe that contains the annotations.
+    Returns
+    -------
+    y : np.ndarray
+    """
     labels = df_label[[0, 1]].to_numpy()
     y = np.zeros(shape=(X.shape[0], 2))
     if X.shape[0] == labels.shape[0]:

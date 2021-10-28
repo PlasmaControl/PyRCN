@@ -9,22 +9,30 @@ The license is restricted, and one needs to register and download the dataset.
 from pathlib import Path
 from os.path import dirname, exists, join
 from os import makedirs, remove
-
+try:
+    from typing import Union, Literal
+except ImportError:
+    from typing import Union
+    from typing_extensions import Literal
 import numpy as np
 import pandas as pd
 import joblib
 
+from sklearn.base import TransformerMixin
 from sklearn.datasets import get_data_home
 from sklearn.datasets._base import RemoteFileMetadata, _pkl_filepath
 from sklearn.utils.validation import _deprecate_positional_args
 
 
-def _combine_events(events, delta, combine='mean'):
+def _combine_events(events: Union[list, np.ndarray], 
+                    delta : Union[float, np.float], 
+                    combine: Literal['mean', 'left', 'right']) -> np.ndarray:
     """
     Combine all events within a certain range.
+    
     Parameters
     ----------
-    events : list or numpy array
+    events : Union[list, ndarray]
         Events to be combined.
     delta : float
         Combination delta. All events within this `delta` are combined.
@@ -33,9 +41,10 @@ def _combine_events(events, delta, combine='mean'):
             - 'mean': replace by the mean of the two events
             - 'left': replace by the left of the two events
             - 'right': replace by the right of the two events
+    
     Returns
     -------
-    numpy array
+    events : ndarray
         Combined events.
     """
     # add a small value to delta, otherwise we end up in floating point hell
@@ -73,7 +82,10 @@ def _combine_events(events, delta, combine='mean'):
     return events[:idx + 1]
 
 
-def _quantize_notes(notes, fps, length=None, num_pitches=None, velocity=None):
+def _quantize_notes(notes: np.ndarray, fps: Union[float, np.float], 
+                    length: Union[int, np.integer] = None, 
+                    num_pitches: Union[int, np.integer] = None, 
+                    velocity: Union[float, np.float] = None) -> np.ndarray:
     """
     Quantize the notes with the given resolution.
     Create a sparse 2D array with rows corresponding to points in time
@@ -84,26 +96,27 @@ def _quantize_notes(notes, fps, length=None, num_pitches=None, velocity=None):
     given, they are inferred from `notes`.
     Parameters
     ----------
-    notes : 2D numpy array
+    notes : np.ndarray
         Notes to be quantized. Expected columns:
         'note_time' 'note_number' ['duration' ['velocity']]
         If `notes` contains no 'duration' column, only the frame of the
         onset will be set. If `notes` has no velocity column, a velocity
         of 1 is assumed.
-    fps : float
+    fps : Union[float, np.float]
         Quantize with `fps` frames per second.
-    length : int, optional
+    length : Union[int, np.integer]
         Length of the returned array. If 'None', the length will be set
         according to the latest sounding note.
-    num_pitches : int, optional
+    num_pitches : Union[int, np.integer]
         Number of pitches of the returned array. If 'None', the number of
         pitches will be based on the highest pitch in the `notes` array.
-    velocity : float, optional
+    velocity : Union[float, np.float]
         Use this velocity for all quantized notes. If set, the last column of
         `notes` (if present) will be ignored.
+
     Returns
     -------
-    numpy array
+    np.ndarray
         Quantized notes.
     """
     # convert to numpy array or create a copy if needed
@@ -146,8 +159,13 @@ def _quantize_notes(notes, fps, length=None, num_pitches=None, velocity=None):
 
 
 @_deprecate_positional_args
-def fetch_maps_piano_dataset(*, data_origin=None, data_home=None, preprocessor=None, 
-                             force_preprocessing=False, label_type="pitch"):
+def fetch_maps_piano_dataset(*, data_origin: str = None, data_home: str = None, 
+                             preprocessor: TransformerMixin = None, 
+                             force_preprocessing: bool = False, 
+                             label_type: Literal["pitch", "onset", "offset"]) -> (np.ndarray, 
+                                                                                  np.ndarray, 
+                                                                                  np.ndarray, 
+                                                                                  np.ndarray):
     """
     Load the MAPS piano dataset from Telecom Paris (classification)
 
@@ -164,23 +182,22 @@ def fetch_maps_piano_dataset(*, data_origin=None, data_home=None, preprocessor=N
         Specify where the original dataset can be found. By default,
         all pyrcn data is stored in '~/pyrcn_data' and all scikit-learn data in
        '~/scikit_learn_data' subfolders.
-
     data_home : str, default=None
         Specify another download and cache folder fo the datasets. By default,
         all pyrcn data is stored in '~/pyrcn_data' and all scikit-learn data in
        '~/scikit_learn_data' subfolders.
-
-    preprocessor : default=None,
+    preprocessor : sklearn.TransformerMixin, default=None,
         Estimator for preprocessing the dataset (create features and targets from 
         audio and label files).
-
-    label_type : str, default="pitch",
+    force_preprocessing: bool, default=False
+        Force preprocessing (label computation and feature extraction)
+    label_type : Literal["pitch", "onset", "offset"], default="pitch",
         Type of labels to return. Possible are pitch labels or onset and offset labels
         for each pitch.
 
     Returns
     -------
-    (X_train, X_test, y_train, y_test) : tuple
+    (X_train, X_test, y_train, y_test) : tuple(np.ndarray, np.ndarray, np.ndarray, np.ndarray)
     """
     data_home = get_data_home(data_home=data_home)
     if not exists(data_home):
@@ -245,7 +262,20 @@ def fetch_maps_piano_dataset(*, data_origin=None, data_home=None, preprocessor=N
     return X_train, X_test, y_train, y_test
 
 
-def _get_pitch_labels(X, df_label):
+def _get_pitch_labels(X: np.ndarray, df_label: pd.DataFrame) -> np.ndarray:
+    """
+    Get the pitch labels of a recording
+
+    Parameters
+    ----------
+    X: np.ndarray
+        Feature matrix to know the shape of the input data.
+    df_label, pandas.DataFrame
+        Pandas dataframe that contains the annotations.
+    Returns
+    -------
+    y : np.ndarray
+    """
     df_label["Duration"] = df_label["OffsetTime"] - df_label["OnsetTime"]
     notes = df_label[["OnsetTime", "MidiPitch", "Duration"]].to_numpy()
     pitch_labels = _quantize_notes(notes, fps=100., num_pitches=128, length=X.shape[0])
@@ -255,14 +285,19 @@ def _get_pitch_labels(X, df_label):
     return y
 
 
-def get_note_events(self, utterance):
-    """get_onset_events(utterance)
-    Given a file name of a specific utterance, e.g.
-        ah_development_guitar_2684_TexasMusicForge_Dandelion_pt1
-    returns the note events with start and stop in seconds
+def get_note_events(utterance: str):
+    """
+    Obtain note events from a stored file.
 
-    Returns:
-    start, note, duration
+    Parameters
+    ----------
+    utterance : str
+        file name of an utterance
+
+    Returns
+    -------
+    notes : ndarray 
+        MIDI pitches, start and stop in seconds
     """
     notes = []
     with open(utterance, 'r') as f:
@@ -274,17 +309,20 @@ def get_note_events(self, utterance):
             notes.append([start_time, note, end_time - start_time])
     return np.array(notes)
 
-def get_onset_events(self, utterance):
-    """get_onset_events(utterance)
-    Given a file name of a specific utterance, e.g.
-        ah_development_guitar_2684_TexasMusicForge_Dandelion_pt1
-    returns the instrument events with start and stop in seconds
+def get_onset_events(utterance: str) -> np.ndarray:
+    """
+    Obtain onset events from a stored file.
 
-    If fs is None, returns instrument events with start and stop in samples
+    Parameters
+    ----------
+    utterance : str
+        file name of an utterance
 
-    Returns:
-    start, note, duration
-"""
+    Returns
+    -------
+    onset_events : ndarray 
+        onset times in seconds
+    """
     onset_labels = []
     with open(utterance, 'r') as f:
         reader = csv.DictReader(f, delimiter='\t')
@@ -294,16 +332,19 @@ def get_onset_events(self, utterance):
             onset_labels.append([start_time, note])
     return _combine_events(list(dict.fromkeys(onset_labels)), 0.03, combine='mean')
 
-def get_offset_events(self, utterance):
-    """get_offset_events(utterance)
-    Given a file name of a specific utterance, e.g.
-        ah_development_guitar_2684_TexasMusicForge_Dandelion_pt1
-    returns the instrument events with start and stop in seconds
+def get_offset_events(utterance: str) -> np.ndarray:
+    """
+    Obtain onset events from a stored file.
 
-    If fs is None, returns instrument events with start and stop in samples
+    Parameters
+    ----------
+    utterance : str
+        file name of an utterance
 
-    Returns:
-    start, note, duration
+    Returns
+    -------
+    offset_events : ndarray 
+        offset times in seconds
     """
     offset_labels = []
     with open(utterance, 'r') as f:
@@ -313,5 +354,3 @@ def get_offset_events(self, utterance):
             note = int(label['MidiPitch'])
             offset_labels.append([start_time, note])
     return _combine_events(list(dict.fromkeys(offset_labels)), 0.03, combine='mean')
-
-

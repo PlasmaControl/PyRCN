@@ -1,13 +1,55 @@
 import numpy as np
 import scipy
-
+try:
+    from typing import Union, Literal
+except ImportError:
+    from typing import Union
+    from typing_extensions import Literal
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.utils import check_random_state
 from sklearn.preprocessing import StandardScaler
 
 
 class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
-    def __init__(self, n_clusters=10, metric='cityblock', init='random', n_inits=10, random_state=None, max_iter=300):
+    """
+    KCluster -- an extension of the KMeans algorithm.
+
+    Parameters
+    ----------
+    n_clusters : Union[int, np.integer], default=10
+            The number of clusters to form as well as the number of centroids to generate.
+    metric : Union[Literal['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 
+                           'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'jensenshannon', 
+                           'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 
+                           'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 
+                           'wminkowski', 'yule'], 
+                   callable], default = 'cityblock'.
+        Distance metric to be used.
+    init : Union[Literal['random'], np.ndarray], default = 'random'
+        Method for initialization:
+            - 'random', choose ```n_clusters``` observations (rows) at random from data for the initial centroids.
+            - If an ```np.ndarray``` is passed, it should be of shape ```(n_clusters, n_features)``` and gives the initial centers.
+            - TODO: Add callable here!
+    n_inits :  Union[int, np.integer], default = 10.
+        Number of time the k-means algorithm will be run with different centroid seeds. 
+        The final results will be the best output of ```n_init``` consecutive runs in terms of inertia.
+    random_state : Union[int, np.random.RandomState], default = None
+        Scales the input bias of the activation.
+    max_iter : Union[int, np.integer], default = 300.
+        Maximum number of iterations of the cluster algorithm for a single run.
+    
+    """
+    def __init__(self, 
+                 n_clusters: Union[int, np.integer] = 10, 
+                 metric: Union[Literal['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 
+                                       'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'jensenshannon', 
+                                       'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 
+                                       'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 
+                                       'wminkowski', 'yule'], callable] = 'cityblock', 
+                 init: Union[Literal['random'], np.ndarray] = 'random', 
+                 n_inits:  Union[int, np.integer] = 10, 
+                 random_state: Union[int, np.random.RandomState] = None, 
+                 max_iter: Union[int, np.integer] = 300):
         self.n_clusters = n_clusters
         self.metric = metric
         self.init = init
@@ -21,7 +63,18 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
         self.scaler = None
         return
 
-    def fit(self, X):
+    def fit(self, X: np.ndarray):
+        """
+        Fit the KCluster. Compute K clusters from the input data.
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+
+        Returns
+        -------
+        self : returns a Fitted estimator.
+        """
         self.scaler = StandardScaler().fit(X)
         X = self.scaler.transform(X)
 
@@ -32,7 +85,6 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
                 centroids, inertia, labels, iterations = KCluster._calculate_centroids(
                     X,
                     cluster_centers_init=X[np.random.RandomState(init).randint(low=0, high=X.shape[0], size=self.n_clusters), ...],
-                    # cluster_centers_init=np.random.RandomState(init).uniform(low=np.min(X), high=np.max(X), size=(self.n_clusters, X.shape[1])),
                     metric=self.metric,
                     max_iter=self.max_iter)
 
@@ -53,32 +105,81 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
 
         return self
 
-    def predict(self, X):
+    def predict(self, X: np.ndarray) -> np.ndarray:
+        """
+        Predict the closest cluster each sample in X belongs to.
+
+        In the vector quantization literature, ```cluster_centers_``` is called the code book 
+        and each value returned by predict is the index of the closest code in the code book.
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+
+        Returns
+        -------
+        labels : ndarray of shape (n_samples,) : Index of the cluster each sample belongs to.
+        """
         return scipy.spatial.distance.cdist(X, self.cluster_centers_, metric=self.metric).argmin(axis=1)
 
     @staticmethod
-    def _calculate_centroids(X, cluster_centers_init, metric, max_iter):
+    def _calculate_centroids(X: np.ndarray, cluster_centers_init: np.ndarray, 
+                             metric: Union[Literal['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 
+                                                   'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'jensenshannon', 
+                                                   'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 
+                                                   'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 
+                                                   'wminkowski', 'yule'], callable], 
+                             max_iter: Union[int, np.integer]) -> (np.ndarray, Union[float, np.float], np.ndarray, Union[int, np.integer]):
+        """
+        Calculate the centroids iteratively based on the selected metric.
+
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_samples, n_features)
+            The training data
+        cluster_centers_init : np.ndarray of shape (n_clusters, n_features)
+            The initialized cluster centers
+        metric : Union[Literal['braycurtis', 'canberra', 'chebyshev', 'cityblock', 'correlation', 
+                                'cosine', 'dice', 'euclidean', 'hamming', 'jaccard', 'jensenshannon', 
+                                'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 
+                                'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 
+                                'wminkowski', 'yule'], callable]
+            The chosen metric for cluster centroid computation
+        max_iter : Union[int, np.integer]
+            Maximum number of iterations after which the centroid computation is interrupted.
+
+        Returns
+        -------
+        cluster_centers : ndarray of shape (n_clusters, n_features) : 
+            The final cluster centers
+        inertia : Union[float, np.float]
+            Sum of squared distances of samples to their closest cluster center.
+        labels : ndarray of shape (n_samples, )
+            Labels of each point
+        n_iter : Union[int, np.integer]
+            Number of iterations run
+        """
         cluster_centers = cluster_centers_init
         iteration = max_iter
 
         distance = scipy.spatial.distance.cdist(X, cluster_centers, metric=metric)
-        # assignment = (previous assignment, next assignment)
-        assignment = np.zeros((X.shape[0], )), distance.argmin(axis=1)
+        # labels = (previous labels, next labels)
+        labels = np.zeros((X.shape[0], )), distance.argmin(axis=1)
 
         while iteration > 0:
-            if len(np.unique(assignment[1])) < cluster_centers.shape[0] or (assignment[0] == assignment[1]).all():
-                # inertia = np.linalg.norm(np.take_along_axis(distance, assignment[1].reshape(-1, 1), axis=1), ord=2)
-                inertia = np.sum(np.take_along_axis(distance, assignment[1].reshape(-1, 1), axis=1))
-                return cluster_centers, inertia, assignment[1], max_iter - iteration
+            if len(np.unique(labels[1])) < cluster_centers.shape[0] or (labels[0] == labels[1]).all():
+                # inertia = np.linalg.norm(np.take_along_axis(distance, labels[1].reshape(-1, 1), axis=1), ord=2)
+                inertia = np.sum(np.take_along_axis(distance, labels[1].reshape(-1, 1), axis=1))
+                return cluster_centers, inertia, labels[1], max_iter - iteration
 
             for idx in range(cluster_centers.shape[0]):
-                cluster_centers[idx, ...] = np.mean(X[assignment[1] == idx, ...], axis=0)
+                cluster_centers[idx, ...] = np.mean(X[labels[1] == idx, ...], axis=0)
 
             distance = scipy.spatial.distance.cdist(X, cluster_centers, metric=metric)
 
-            assignment = assignment[1], distance.argmin(axis=1)
+            labels = labels[1], distance.argmin(axis=1)
 
             iteration -= 1
 
-        inertia = np.sum(np.take_along_axis(distance, assignment[1].reshape(-1, 1), axis=1))
-        return cluster_centers, inertia, assignment[1], max_iter - iteration
+        inertia = np.sum(np.take_along_axis(distance, labels[1].reshape(-1, 1), axis=1))
+        return cluster_centers, inertia, labels[1], max_iter - iteration

@@ -28,7 +28,7 @@ def test_esn_regressor_jobs():
     param_grid = {
         'input_to_node': [InputToNode(bias_scaling=.1, hidden_layer_size=10, input_activation='identity', random_state=42),
                           InputToNode(bias_scaling=.1, hidden_layer_size=50, input_activation='identity', random_state=42)],
-        'node_to_node': [NodeToNode(spectral_radius=1., hidden_layer_size=10, random_state=42),
+        'node_to_node': [NodeToNode(spectral_radius=0., hidden_layer_size=10, random_state=42),
                          NodeToNode(spectral_radius=1., hidden_layer_size=50, random_state=42)],
         'regressor': [IncrementalRegression(alpha=.0001), IncrementalRegression(alpha=.01)],
         'random_state': [42]
@@ -39,7 +39,7 @@ def test_esn_regressor_jobs():
     print("tests - esn:\n sin | cos \n {0}".format(y_test-y_esn))
     print("best_params_: ".format(esn.best_params_))
     print("best_score: ".format(esn.best_score_))
-    np.testing.assert_allclose(y_test[:-1], y_esn[:-1], atol=1e-1)
+    np.testing.assert_allclose(1, esn.best_score_, atol=1e-1)
 
 
 def test_esn_regressor_requires_no_sequence():
