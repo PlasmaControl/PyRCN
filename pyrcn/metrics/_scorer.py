@@ -19,13 +19,12 @@ from collections import Counter
 
 import numpy as np
 
-from . import (r2_score, median_absolute_error, max_error, mean_absolute_error,
-               mean_squared_error, mean_squared_log_error,
-               mean_poisson_deviance, mean_gamma_deviance, accuracy_score,
-               top_k_accuracy_score, f1_score, roc_auc_score,
-               average_precision_score, precision_score, recall_score,
-               log_loss, balanced_accuracy_score, explained_variance_score,
-               brier_score_loss, jaccard_score, mean_absolute_percentage_error)
+from pyrcn.metrics import (r2_score, median_absolute_error, max_error, mean_absolute_error,
+                           mean_squared_error, mean_squared_log_error,
+                           mean_poisson_deviance, mean_gamma_deviance, accuracy_score,
+                           f1_score, precision_score, recall_score,
+                           log_loss, balanced_accuracy_score, explained_variance_score,
+                           brier_score_loss, jaccard_score, mean_absolute_percentage_error)
 
 from sklearn.utils.multiclass import type_of_target
 from sklearn.base import is_regressor
@@ -475,7 +474,8 @@ def _check_multimetric_scoring(estimator, scoring):
 
 def make_scorer(score_func, *, greater_is_better=True, needs_proba=False,
                 needs_threshold=False, **kwargs):
-    """Make a scorer from a performance metric or loss function.
+    """
+    Make a scorer from a performance metric or loss function.
     This factory function wraps scoring functions for use in
     :class:`~sklearn.model_selection.GridSearchCV` and
     :func:`~sklearn.model_selection.cross_val_score`.
@@ -488,6 +488,7 @@ def make_scorer(score_func, *, greater_is_better=True, needs_proba=False,
     is the model to be evaluated, `X` is the data and `y` is the
     ground truth labeling (or `None` in the case of unsupervised models).
     Read more in the :ref:`User Guide <scoring>`.
+
     Parameters
     ----------
     score_func : callable
@@ -514,20 +515,12 @@ def make_scorer(score_func, *, greater_is_better=True, needs_proba=False,
         can not be computed using discrete predictions alone.
     **kwargs : additional arguments
         Additional parameters to be passed to score_func.
+
     Returns
     -------
     scorer : callable
         Callable object that returns a scalar score; greater is better.
-    Examples
-    --------
-    >>> from sklearn.metrics import fbeta_score, make_scorer
-    >>> ftwo_scorer = make_scorer(fbeta_score, beta=2)
-    >>> ftwo_scorer
-    make_scorer(fbeta_score, beta=2)
-    >>> from sklearn.model_selection import GridSearchCV
-    >>> from sklearn.svm import LinearSVC
-    >>> grid = GridSearchCV(LinearSVC(), param_grid={'C': [1, 10]},
-    ...                     scoring=ftwo_scorer)
+
     Notes
     -----
     If `needs_proba=False` and `needs_threshold=False`, the score
@@ -584,23 +577,6 @@ accuracy_scorer = make_scorer(accuracy_score)
 balanced_accuracy_scorer = make_scorer(balanced_accuracy_score)
 
 # Score functions that need decision values
-top_k_accuracy_scorer = make_scorer(top_k_accuracy_score,
-                                    greater_is_better=True,
-                                    needs_threshold=True)
-roc_auc_scorer = make_scorer(roc_auc_score, greater_is_better=True,
-                             needs_threshold=True)
-average_precision_scorer = make_scorer(average_precision_score,
-                                       needs_threshold=True)
-roc_auc_ovo_scorer = make_scorer(roc_auc_score, needs_proba=True,
-                                 multi_class='ovo')
-roc_auc_ovo_weighted_scorer = make_scorer(roc_auc_score, needs_proba=True,
-                                          multi_class='ovo',
-                                          average='weighted')
-roc_auc_ovr_scorer = make_scorer(roc_auc_score, needs_proba=True,
-                                 multi_class='ovr')
-roc_auc_ovr_weighted_scorer = make_scorer(roc_auc_score, needs_proba=True,
-                                          multi_class='ovr',
-                                          average='weighted')
 
 # Score function for probabilistic classification
 neg_log_loss_scorer = make_scorer(log_loss, greater_is_better=False,
@@ -614,15 +590,6 @@ brier_score_loss_scorer = make_scorer(brier_score_loss,
 
 
 # Clustering scores
-adjusted_rand_scorer = make_scorer(adjusted_rand_score)
-rand_scorer = make_scorer(rand_score)
-homogeneity_scorer = make_scorer(homogeneity_score)
-completeness_scorer = make_scorer(completeness_score)
-v_measure_scorer = make_scorer(v_measure_score)
-mutual_info_scorer = make_scorer(mutual_info_score)
-adjusted_mutual_info_scorer = make_scorer(adjusted_mutual_info_score)
-normalized_mutual_info_scorer = make_scorer(normalized_mutual_info_score)
-fowlkes_mallows_scorer = make_scorer(fowlkes_mallows_score)
 
 
 SCORERS = dict(explained_variance=explained_variance_scorer,
@@ -637,26 +604,11 @@ SCORERS = dict(explained_variance=explained_variance_scorer,
                neg_mean_poisson_deviance=neg_mean_poisson_deviance_scorer,
                neg_mean_gamma_deviance=neg_mean_gamma_deviance_scorer,
                accuracy=accuracy_scorer,
-               top_k_accuracy=top_k_accuracy_scorer,
-               roc_auc=roc_auc_scorer,
-               roc_auc_ovr=roc_auc_ovr_scorer,
-               roc_auc_ovo=roc_auc_ovo_scorer,
-               roc_auc_ovr_weighted=roc_auc_ovr_weighted_scorer,
-               roc_auc_ovo_weighted=roc_auc_ovo_weighted_scorer,
                balanced_accuracy=balanced_accuracy_scorer,
-               average_precision=average_precision_scorer,
                neg_log_loss=neg_log_loss_scorer,
                neg_brier_score=neg_brier_score_scorer,
                # Cluster metrics that use supervised evaluation
-               adjusted_rand_score=adjusted_rand_scorer,
-               rand_score=rand_scorer,
-               homogeneity_score=homogeneity_scorer,
-               completeness_score=completeness_scorer,
-               v_measure_score=v_measure_scorer,
-               mutual_info_score=mutual_info_scorer,
-               adjusted_mutual_info_score=adjusted_mutual_info_scorer,
-               normalized_mutual_info_score=normalized_mutual_info_scorer,
-               fowlkes_mallows_score=fowlkes_mallows_scorer)
+               )
 
 
 for name, metric in [('precision', precision_score),
