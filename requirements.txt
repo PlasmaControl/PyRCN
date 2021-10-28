@@ -10,3 +10,4 @@ seaborn
 tqdm>=4.33.0
 pytest
 pytest-cov
+typeguard
