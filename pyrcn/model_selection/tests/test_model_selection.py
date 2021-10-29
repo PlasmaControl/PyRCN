@@ -2,7 +2,7 @@ import sys
 if sys.version_info >= (3, 8):
     from typing import Union, Literal
 else:
-    from typing_extensions import literal
+    from typing_extensions import Literal
     from typing import Union
 
 from sklearn import datasets
