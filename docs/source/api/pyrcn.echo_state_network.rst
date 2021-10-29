@@ -17,11 +17,3 @@ Echo State Network
    :members:
    :undoc-members:
    :show-inheritance:
-
-Feedback Echo State Network
----------------------------
-
-.. autoclass:: pyrcn.echo_state_network.FeedbackESNRegressor
-   :members:
-   :undoc-members:
-   :show-inheritance:

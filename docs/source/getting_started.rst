@@ -55,7 +55,6 @@ Building your first Reservoir Computing Network
         >>> from inspect import getmembers, isclass
         >>> getmembers(blocks, isclass)
         [..., ('BatchIntrinsicPlasticity', <class 'pyrcn.base.blocks._input_to_node.BatchIntrinsicPlasticity'>), 
-        ('FeedbackNodeToNode', <class 'pyrcn.base.blocks._node_to_node.FeedbackNodeToNode'>), 
         ('HebbianNodeToNode', <class 'pyrcn.base.blocks._node_to_node.HebbianNodeToNode'>), 
         ('InputToNode', <class 'pyrcn.base.blocks._input_to_node.InputToNode'>), 
         ('NodeToNode', <class 'pyrcn.base.blocks._node_to_node.NodeToNode'>), 

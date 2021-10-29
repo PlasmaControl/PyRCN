@@ -29,9 +29,9 @@ plt.rcParams['image.cmap'] = 'jet'
 plt.rcParams['pdf.fonttype'] = 42
 plt.rcParams['ps.fonttype'] = 42
 
-from pyrcn.echo_state_network import FeedbackESNRegressor, ESNRegressor
+from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.base.blocks import InputToNode, NodeToNode, FeedbackNodeToNode
+from pyrcn.base.blocks import InputToNode, NodeToNode
 
 
 # ## Load the dataset
@@ -114,15 +114,12 @@ param_grid = {'input_to_node__hidden_layer_size': [50],
     'node_to_node__leakage': [1.0],
     'node_to_node__spectral_radius': [0.5],
     'node_to_node__bias_scaling': [0.0],
-    'node_to_node__teacher_scaling': np.linspace(start=0.1, stop=15, num=15),
-    'node_to_node__teacher_shift': np.linspace(start=-0.9, stop=0.9, num=19),
     'node_to_node__activation': ['tanh'],
-    'node_to_node__output_activation': ['tanh'],
     'node_to_node__random_state': [42],
     'regressor__alpha': [1e-3],
     'random_state': [42] }
 
-base_esn = FeedbackESNRegressor(input_to_node=InputToNode(), node_to_node=FeedbackNodeToNode(), regressor=IncrementalRegression())
+base_esn = ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(), regressor=IncrementalRegression())
 
 df = pd.DataFrame(columns = list(param_grid.keys()) + ["Fitting Time", "Validation Time Training", "Validation Time Test", "Training Loss", "Validation Loss"])
 

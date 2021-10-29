@@ -40,8 +40,3 @@ pyrcn.base.blocks.NodeToNode
    :members:
    :undoc-members:
    :show-inheritance:
-
-.. autoclass:: pyrcn.base.blocks.FeedbackNodeToNode
-   :members:
-   :undoc-members:
-   :show-inheritance:

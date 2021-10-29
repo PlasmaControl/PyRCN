@@ -3,7 +3,7 @@ import warnings
 import sklearn
 from sklearn.base import BaseEstimator
 from pyrcn.base.blocks._input_to_node import InputToNode, PredefinedWeightsInputToNode, BatchIntrinsicPlasticity
-from pyrcn.base.blocks._node_to_node import NodeToNode, PredefinedWeightsNodeToNode, HebbianNodeToNode, FeedbackNodeToNode
+from pyrcn.base.blocks._node_to_node import NodeToNode, PredefinedWeightsNodeToNode, HebbianNodeToNode
 
 
 

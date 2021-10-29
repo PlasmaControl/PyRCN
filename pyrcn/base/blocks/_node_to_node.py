@@ -135,7 +135,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _pass_through_recurrent_weights(X: np.ndarray, 
-                                        hidden_layer_size: Union[int, np.integer], bidirectional: bool,
+                                        hidden_layer_size: int, bidirectional: bool,
                                         recurrent_weights: Union[np.ndarray, scipy.sparse.csr.csr_matrix], 
                                         spectral_radius: float,
                                         leakage: float, 
