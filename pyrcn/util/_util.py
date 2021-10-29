@@ -6,6 +6,8 @@ The :mod:`pyrcn.util` contains utilities for runnung, testing and analyzing the 
 # License: BSD 3 clause
 
 import sys
+from typing import Union, Tuple
+
 import os
 import logging
 import argparse
@@ -40,7 +42,7 @@ logging.basicConfig(
 )
 
 
-def new_logger(name, directory=os.getcwd()):
+def new_logger(name: str, directory: str = os.getcwd()) -> logging.Logger:
     logger = logging.getLogger(name)
     logger.setLevel(logging.NOTSET)
     formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s')
@@ -50,7 +52,7 @@ def new_logger(name, directory=os.getcwd()):
     return logger
 
 
-def get_mnist(directory=os.getcwd()):
+def get_mnist(directory: str = os.getcwd()) -> Tuple[np.ndarray, np.ndarray]:
     npzfilepath = os.path.join(directory, 'MNIST.npz')
 
     if os.path.isfile(npzfilepath):
@@ -64,24 +66,31 @@ def get_mnist(directory=os.getcwd()):
         return X, y
 
 
-def export_ragged_time_series(filename, times, values, dtype=float, 
-                              delimiter='\t', header=False):
+def concatenate_sequences(X: Union[list, np.ndarray], y: Union[list, np.ndarray], 
+                          sequence_to_value: bool = False) ->  Tuple[np.ndarray, np.ndarray, Union[np.ndarray, None]]:
     """
+    Concatenate multiple sequences to scikit-learn compatible numpy arrays.
+
+    ´Parameters
+    -----------
+    X : Union[list, np.ndarray] of shape=(n_sequences, )
+        All sequences. Note that all elements in ```X``` 
+        must have at least one equal dimension.
+    y : Union[list, np.ndarray] of shape=(n_sequences, )
+        All sequences. Note that all elements in ```X``` 
+        must have at least one equal dimension.
+    sequence_to_value : bool, default=False
+        If true, expand each element of y to the sequence length
+
+    Returns
+    -------
+    X : np.ndarray of shape=(n_samples, n_features)
+        Input data where n_samples is the accumulated length of all sequences
+    y : np.ndarray of shape=(n_samples, n_features) or shape=(n_samples, )
+        Target data where n_samples is the accumulated length of all sequences
+    sequence_ranges : Union[None, np.ndarray] of shape=(n_sequences, 2)
+        Sequence border indicator matrix
     """
-    if header:
-        start_row = 1
-    else:
-        start_row = 0
-
-    with open(filename, mode='w', newline='') as output_file:
-        writer = csv.writer(output_file, delimiter=delimiter)
-        if header:
-            writer.writerow(header)
-        for t, v in zip(times, values):
-            writer.writerow([t]+list(v))
-
-
-def concatenate_sequences(X, y, sequence_to_value=False):
     if isinstance(X, list):
         X = np.asarray(X)
     if isinstance(y, list):

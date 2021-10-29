@@ -6,14 +6,16 @@ The original database is available at
 The license is restricted, and one needs to register and download the dataset.
 
 """
+import sys
+if sys.version_info >= (3, 8):
+    from typing import Union, Literal
+else:
+    from typing_extensions import literal
+    from typing import Union
+
 from pathlib import Path
 from os.path import dirname, exists, join
 from os import makedirs, remove
-try:
-    from typing import Union, Literal
-except ImportError:
-    from typing import Union
-    from typing_extensions import Literal
 import numpy as np
 import pandas as pd
 import joblib
@@ -25,7 +27,7 @@ from sklearn.utils.validation import _deprecate_positional_args
 
 
 def _combine_events(events: Union[list, np.ndarray], 
-                    delta : Union[float, np.float], 
+                    delta : float, 
                     combine: Literal['mean', 'left', 'right']) -> np.ndarray:
     """
     Combine all events within a certain range.
@@ -82,10 +84,10 @@ def _combine_events(events: Union[list, np.ndarray],
     return events[:idx + 1]
 
 
-def _quantize_notes(notes: np.ndarray, fps: Union[float, np.float], 
+def _quantize_notes(notes: np.ndarray, fps: float, 
                     length: Union[int, np.integer] = None, 
                     num_pitches: Union[int, np.integer] = None, 
-                    velocity: Union[float, np.float] = None) -> np.ndarray:
+                    velocity: float = None) -> np.ndarray:
     """
     Quantize the notes with the given resolution.
     Create a sparse 2D array with rows corresponding to points in time
@@ -102,7 +104,7 @@ def _quantize_notes(notes: np.ndarray, fps: Union[float, np.float],
         If `notes` contains no 'duration' column, only the frame of the
         onset will be set. If `notes` has no velocity column, a velocity
         of 1 is assumed.
-    fps : Union[float, np.float]
+    fps : float
         Quantize with `fps` frames per second.
     length : Union[int, np.integer]
         Length of the returned array. If 'None', the length will be set
@@ -110,7 +112,7 @@ def _quantize_notes(notes: np.ndarray, fps: Union[float, np.float],
     num_pitches : Union[int, np.integer]
         Number of pitches of the returned array. If 'None', the number of
         pitches will be based on the highest pitch in the `notes` array.
-    velocity : Union[float, np.float]
+    velocity : float
         Use this velocity for all quantized notes. If set, the last column of
         `notes` (if present) will be ignored.
 

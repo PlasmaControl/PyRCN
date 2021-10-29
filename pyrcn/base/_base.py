@@ -1,11 +1,12 @@
-﻿try:
+﻿import sys
+if sys.version_info >= (3, 8):
     from typing import Union, Literal
-except ImportError:
-    from typing import Union
+else:
     from typing_extensions import Literal
+    from typing import Union
+
 import numpy as np
 import scipy
-
 if scipy.__version__ == '0.9.0' or scipy.__version__ == '0.10.1':
     from scipy.sparse.linalg import eigs as eigens
     from scipy.sparse.linalg import ArpackNoConvergence
@@ -14,9 +15,9 @@ else:
     from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
 
 
-def _uniform_random_input_weights(n_features_in: Union[int, np.integer], 
-                                  hidden_layer_size: Union[int, np.integer], 
-                                  fan_in: Union[int, np.integer], 
+def _uniform_random_input_weights(n_features_in: int, 
+                                  hidden_layer_size: int, 
+                                  fan_in: int,
                                   random_state: np.random.RandomState) -> Union[np.ndarray, scipy.sparse.csr.csr_matrix]:
     """
     Returns uniform random input weights in range [-1, 1]
@@ -25,8 +26,6 @@ def _uniform_random_input_weights(n_features_in: Union[int, np.integer],
     ----------
     n_features_in : Union[int, np.integer]
     hidden_layer_size : Union[int, np.integer]
-    fan_in : Union[int, np.integer]
-        Determines how many features are mapped to one neuron.
     random_state : numpy.random.RandomState
 
     Returns
@@ -34,7 +33,7 @@ def _uniform_random_input_weights(n_features_in: Union[int, np.integer],
     uniform_random_input_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
        of size (n_features, hidden_layer_size)
     """
-    nr_entries = np.int32(n_features_in * fan_in)
+    nr_entries = int(n_features_in * fan_in)
     weights_array = random_state.uniform(low=-1., high=1., size=nr_entries)
 
     if fan_in < hidden_layer_size:
@@ -68,8 +67,8 @@ def _uniform_random_bias(hidden_layer_size: Union[int, np.integer],
     return random_state.uniform(low=-1., high=1., size=hidden_layer_size)
 
 
-def _normal_random_recurrent_weights(hidden_layer_size: Union[int, np.integer], 
-                                     fan_in: Union[int, np.integer], 
+def _normal_random_recurrent_weights(hidden_layer_size: int, 
+                                     fan_in: int, 
                                      random_state: np.random.RandomState) -> Union[np.ndarray, scipy.sparse.csr.csr_matrix]:
     """
     Returns normally distributed random reservoir weights
@@ -86,7 +85,7 @@ def _normal_random_recurrent_weights(hidden_layer_size: Union[int, np.integer],
     normal_random_recurrent_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix] 
         of size (hidden_layer_size, hidden_layer_size)
     """
-    nr_entries = np.int32(hidden_layer_size * fan_in)
+    nr_entries = int(hidden_layer_size * fan_in)
     weights_array = random_state.normal(loc=0., scale=1., size=nr_entries)
 
     if fan_in < hidden_layer_size:

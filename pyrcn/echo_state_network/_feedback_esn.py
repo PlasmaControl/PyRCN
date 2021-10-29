@@ -6,7 +6,11 @@ The :mod:`echo_state_network` contains the ESNRegressor and the ESNClassifier
 # License: BSD 3 clause
 
 import sys
-
+if sys.version_info >= (3, 8):
+    from typing import Union, Literal
+else:
+    from typing_extensions import Literal
+    from typing import Union
 import numpy as np
 
 from sklearn.base import  ClassifierMixin, RegressorMixin, MultiOutputMixin, is_regressor

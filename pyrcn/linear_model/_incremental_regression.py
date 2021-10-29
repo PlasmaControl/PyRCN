@@ -6,11 +6,12 @@ Incremental regression
 # License: BSD 3 clause
 
 import sys
-try:
-    from typing import Union, Literal
-except ImportError:
-    from typing import Union
+if sys.version_info >= (3, 8):
+    from typing import Union, Literal, cast
+else:
     from typing_extensions import Literal
+    from typing import Union, cast
+
 import numpy as np
 import scipy
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -35,7 +36,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
     
     Parameters
     ----------
-    alpha : Union[float, np.float], default=1e-5
+    alpha : float, default=1e-5
         L2 regularization parameter
     fit_intercept : bool, default=True
         Fits a constant offset if True. Use this if input values are not average free.
@@ -50,7 +51,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         Independent term in decision function. Set to 0.0 if
         ``fit_intercept = False``.
     """
-    def __init__(self, alpha: Union[float, np.float] = 1e-5, 
+    def __init__(self, alpha: float = 1e-5, 
                  fit_intercept: bool = True, 
                  normalize: bool = False):
         self.alpha = alpha
@@ -58,13 +59,13 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self.normalize = normalize
         self.scaler = StandardScaler(copy=False)
 
-        self._K = None
-        self._xTy = None
-        self._output_weights = None
+        self._K = np.ndarray([])
+        self._xTy = np.ndarray([])
+        self._output_weights = np.ndarray([])
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray, 
                     partial_normalize: bool = True, reset: bool = False, 
-                    validate: bool = True, postpone_inverse: bool = False):
+                    validate: bool = True, postpone_inverse: bool = False) -> RegressorMixin:
         """
         Fits the regressor partially.
         
@@ -93,16 +94,16 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         X_preprocessed = self._preprocessing(X, partial_normalize=partial_normalize)
 
         if reset:
-            self._K = None
-            self._xTy = None
-            self._output_weights = None
+            self._K = np.ndarray([])
+            self._xTy = np.ndarray([])
+            self._output_weights = np.ndarray([])
 
-        if self._K is None:
+        if self._K.shape == ():
             self._K = safe_sparse_dot(X_preprocessed.T, X_preprocessed)
         else:
             self._K += safe_sparse_dot(X_preprocessed.T, X_preprocessed)
 
-        if self._xTy is None:
+        if self._xTy.shape == ():
             self._xTy = safe_sparse_dot(X_preprocessed.T, y)
         else:
             self._xTy += safe_sparse_dot(X_preprocessed.T, y)
@@ -113,14 +114,14 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
 
         P = np.linalg.inv(self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
 
-        if self._output_weights is None:
-            self._output_weights = np.matmul(P, self._xTy)
+        if self._output_weights.shape == ():
+            self._output_weights = np.matmul(P, cast(np.ndarray, self._xTy))
         else:
             self._output_weights += np.matmul(P, safe_sparse_dot(X_preprocessed.T, (y - safe_sparse_dot(X_preprocessed, self._output_weights))))
             # self._output_weights += np.matmul(P, self._xTy - np.matmul(self._K, self._output_weights))
         return self
 
-    def fit(self, X: np.ndarray, y: np.ndarray):
+    def fit(self, X: np.ndarray, y: np.ndarray) -> RegressorMixin:
         """
         Fits the regressor.
         
@@ -189,7 +190,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
 
         return X_preprocessed
 
-    def __sizeof__(self):
+    def __sizeof__(self) -> int:
         """
         Returns the size of the object in bytes.
 
@@ -205,7 +206,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
             sys.getsizeof(self.scaler)
 
     @property
-    def coef_(self) -> np.ndarray:
+    def coef_(self) -> Union[np.ndarray, None]:
         """
         Returns the output weights without intercept. Compatibility to ```sklearn.linear_model.Ridge```.
 
@@ -214,7 +215,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         coef_ : ndarray of shape (n_features,) or (n_targets, n_features)
             Weight vector(s).
         """
-        if self._output_weights is not None:
+        if self._output_weights.shape != ():
             if self.fit_intercept:
                 if self._output_weights.ndim == 2:
                     return np.transpose(self._output_weights)[:, :-1]
@@ -222,16 +223,18 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
                     return self._output_weights[:-1]
             else:
                 return np.transpose(self._output_weights)
+        return self._output_weights
 
     @property
-    def intercept_(self) -> Union[float, np.float, np.ndarray]:
+    def intercept_(self) -> Union[float, np.ndarray]:
         """
         Returns the intercept of output output weights. Compatibility to ```sklearn.linear_model.Ridge```.
         
         Returns
         -------
-        intercept_ : Union[float, np.float, np.ndarray]
+        intercept_ : Union[float, np.ndarray]
             Independent term in decision function.
         """
-        if self._output_weights is not None and self.fit_intercept:
+        if self._output_weights.shape != () and self.fit_intercept:
             return np.transpose(self._output_weights)[:, -1]
+        return np.array([])

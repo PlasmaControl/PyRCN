@@ -2,14 +2,14 @@
 # License: BSD 3 clause
 
 import sys
+if sys.version_info >= (3, 8):
+    from typing import Union, Literal
+else:
+    from typing_extensions import Literal
+    from typing import Union
 
 import scipy
 import numpy as np
-try:
-    from typing import Union, Literal
-except ImportError:
-    from typing import Union
-    from typing_extensions import Literal
 import sklearn
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.utils import check_consistent_length, check_array
@@ -30,7 +30,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
     ----------
     hidden_layer_size : Union[int, np.integer], default=500
         Sets the number of nodes in hidden layer. Equals number of output features.
-    sparsity : Union[float, np.float], default = 1.
+    sparsity : float, default = 1.
         Quotient of input weights per node (k_in) and number of input features (n_features)
     input_activation : Literal['tanh', 'identity', 'logistic', 'relu', 'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
@@ -39,9 +39,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
             - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
             - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
             - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
-    input_scaling :  Union[float, np.float], default = 1.
+    input_scaling :  float, default = 1.
         Scales the input weight matrix.
-    bias_scaling : Union[float, np.float], default = 1.
+    bias_scaling : float, default = 1.
         Scales the input bias of the activation.
     k_in : Union[int, np.integer], default = None.
         input weights per node. By default, it is None. If set, it overrides sparsity.
@@ -50,10 +50,10 @@ class InputToNode(BaseEstimator, TransformerMixin):
     @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: Union[int, np.integer] = 500,
-                 sparsity: Union[float, np.float] = 1.,
+                 sparsity: float = 1.,
                  input_activation: Literal['tanh', 'identity', 'logistic', 'relu', 'bounded_relu'] = 'tanh',
-                 input_scaling: Union[float, np.float] = 1.,
-                 bias_scaling: Union[float, np.float] = 1.,
+                 input_scaling: float = 1.,
+                 bias_scaling: float = 1.,
                  k_in: Union[int, np.integer] = None,
                  random_state: Union[int, np.random.RandomState] = 42):
         self.hidden_layer_size = hidden_layer_size
@@ -88,7 +88,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
             self.sparsity = self.k_in / X.shape[1]
         self._input_weights = _uniform_random_input_weights(n_features_in=self.n_features_in_,
                                                             hidden_layer_size=self.hidden_layer_size,
-                                                            fan_in=np.rint(self.hidden_layer_size * self.sparsity).astype(int),
+                                                            fan_in=int(np.rint(self.hidden_layer_size * self.sparsity)),
                                                             random_state=self._random_state)
         self._bias_weights = _uniform_random_bias(hidden_layer_size=self.hidden_layer_size,
                                                   random_state=self._random_state)
@@ -104,7 +104,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Y: ndarray of size (n_samples, hidden_layer_size)
+        y: ndarray of size (n_samples, hidden_layer_size)
         """
         if self._input_weights is None or self._bias_weights is None:
             raise NotFittedError(self)
@@ -116,8 +116,8 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _node_inputs(X: np.ndarray, input_weights: Union[np.ndarray, scipy.sparse.csr.csr_matrix], 
-                     input_scaling: Union[float, np.float], 
-                     bias: np.ndarray, bias_scaling: Union[float, np.float]) -> np.ndarray:
+                     input_scaling: float, 
+                     bias: np.ndarray, bias_scaling: float) -> np.ndarray:
         """
         Returns the node inputs scaled by input_scaling, multiplied by input_weights and bias added.
 
@@ -125,9 +125,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray of size (n_samples, n_features)
         input_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
-        input_scaling : Union[float, np.float]
+        input_scaling : float
         bias : ndarray of size (hidden_layer_size)
-        bias_scaling : Union[float, np.float]
+        bias_scaling : float
 
         Returns
         -------
@@ -159,7 +159,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         if self.k_in is not None and self.k_in <= 0:
             raise ValueError("k_in must be > 0, got %d." % self.k_in)
 
-    def __sizeof__(self) -> Union[float, np.float]:
+    def __sizeof__(self) -> float:
         """
         Returns the size of the object in bytes.
 
@@ -220,9 +220,9 @@ class PredefinedWeightsInputToNode(InputToNode):
             - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
             - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
             - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
-    input_scaling :  Union[float, np.float], default = 1.
+    input_scaling :  float, default = 1.
         Scales the input weight matrix.
-    bias_scaling : Union[float, np.float], default = 1.
+    bias_scaling : float, default = 1.
         Scales the input bias of the activation.
     k_in : Union[int, np.integer], default = None.
         input weights per node. By default, it is None. If set, it overrides sparsity.
@@ -232,8 +232,8 @@ class PredefinedWeightsInputToNode(InputToNode):
     def __init__(self,
                  predefined_input_weights: np.ndarray, *,
                  input_activation: Literal['tanh', 'identity', 'logistic', 'relu', 'bounded_relu'] = 'relu',
-                 input_scaling: Union[float, np.float] = 1.,
-                 bias_scaling: Union[float, np.float] = 0.,
+                 input_scaling: float = 1.,
+                 bias_scaling: float = 0.,
                  random_state: Union[None, int, np.random.RandomState] = 42):
         super().__init__(hidden_layer_size=predefined_input_weights.shape[1],
                          input_activation=input_activation,
@@ -292,7 +292,7 @@ class BatchIntrinsicPlasticity(InputToNode):
             - 'bounded_relu', the bounded rectified linear unit function, returns f(x) = min(max(x, 0),1)
     hidden_layer_size : Union[int, np.integer], default=500
         Sets the number of nodes in hidden layer. Equals number of output features.
-    sparsity : Union[float, np.float], default = 1.
+    sparsity : float, default = 1.
         Quotient of input weights per node (k_in) and number of input features (n_features)
     random_state : Union[None, int, np.random.RandomState], default = 42
     random_state : Union[None, int, np.random.RandomState], default = 42
@@ -303,7 +303,7 @@ class BatchIntrinsicPlasticity(InputToNode):
                  algorithm:  Literal['neumann', 'dresden'] = 'dresden',
                  input_activation: Literal['tanh', 'identity', 'logistic', 'relu', 'bounded_relu'] = 'tanh',
                  hidden_layer_size: Union[int, np.integer] =500,
-                 sparsity: Union[float, np.float] = 1.,
+                 sparsity: float = 1.,
                  random_state: Union[None, int, np.random.RandomState] = 42):
         super().__init__(input_activation=input_activation,
                          hidden_layer_size=hidden_layer_size,

@@ -5,15 +5,17 @@ The original database is available at
 
 
 """
+import sys
+if sys.version_info >= (3, 8):
+    from typing import Union, Literal
+else:
+    from typing_extensions import literal
+    from typing import Union
+
 from pathlib import Path
 from os.path import dirname, exists, join
 from os import makedirs, remove, walk
 import re
-try:
-    from typing import Union, Literal
-except ImportError:
-    from typing import Union
-    from typing_extensions import Literal
 import numpy as np
 import pandas as pd
 import joblib

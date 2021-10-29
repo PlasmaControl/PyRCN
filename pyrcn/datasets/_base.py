@@ -1,14 +1,16 @@
-import collections
-try:
+import sys
+if sys.version_info >= (3, 8):
     from typing import Union, Literal
-except ImportError:
-    from typing import Union
+else:
     from typing_extensions import Literal
-import numpy as np
+    from typing import Union
 
+import numpy as np
+import collections
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.datasets import load_digits as sklearn_load_digits
 from sklearn.utils import Bunch
+
 
 def _mg_eq(xt, xtau, a=0.2, b=0.1, n=10):
     """
@@ -33,11 +35,11 @@ def _mg_rk4(xt, xtau, a, b, n, h=1.0):
 def mackey_glass(n_timesteps: Union[int, np.integer],
                  n_future: Union[int, np.integer] = 1,
                  tau: Union[int, np.integer] = 17,
-                 a: Union[float, np.float] = 0.2,
-                 b: Union[float, np.float] = 0.1,
+                 a: float = 0.2,
+                 b: float = 0.1,
                  n: Union[int, np.integer] = 10,
-                 x0: Union[float, np.float] = 1.2,
-                 h: Union[float, np.float] = 1.0,
+                 x0: float = 1.2,
+                 h: float = 1.0,
                  seed: Union[int, np.random.RandomState] = None) -> (np.ndarray, np.ndarray):
     """Mackey-Glass timeseries [#]_ [#]_, computed from the Mackey-Glass
     delayed differential equation:
@@ -54,19 +56,19 @@ def mackey_glass(n_timesteps: Union[int, np.integer],
             Time delay :math:`\\tau` of Mackey-Glass equation.
             By defaults, equal to 17. Other values can
             change the choatic behaviour of the timeseries.
-        a : Union[float, np.float], optional
+        a : float, optional
             :math:`a` parameter of the equation.
             By default, equal to 0.2.
-        b : Union[float, np.float], optional
+        b : float, optional
             :math:`b` parameter of the equation.
             By default, equal to 0.1.
         n : Union[int, np.integer], optional
             :math:`n` parameter of the equation.
             By default, equal to 10.
-        x0 : Union[float, np.float], optional
+        x0 : float, optional
             Initial condition of the timeseries.
             By default, equal to 1.2.
-        h : Union[float, np.float], optional
+        h : float, optional
             Time delta for the Runge-Kuta method. Can be assimilated
             to the number of discrete point computed per timestep.
             By default, equal to 1.0.

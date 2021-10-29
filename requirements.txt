@@ -8,6 +8,3 @@ pandas>=1.0.0
 matplotlib
 seaborn
 tqdm>=4.33.0
-pytest
-pytest-cov
-typeguard

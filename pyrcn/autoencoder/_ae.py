@@ -6,13 +6,13 @@ The :mod:`echo_state_network` contains the ESNRegressor and the ESNClassifier
 # License: BSD 3 clause
 
 import sys
+if sys.version_info >= (3, 8):
+    from typing import Union, Literal
+else:
+    from typing_extensions import literal
+    from typing import Union
 
 import numpy as np
-try:
-    from typing import Union, Literal
-except ImportError:
-    from typing import Union
-    from typing_extensions import Literal
 from sklearn.base import TransformerMixin
 from sklearn.neural_network import MLPRegressor
 from sklearn.utils.validation import _deprecate_positional_args
@@ -64,7 +64,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         both training time and validation score.
         For small datasets, however, 'lbfgs' can converge faster and perform
         better.
-    alpha : Union[float, np.float], default = 0.0001
+    alpha : float, default = 0.0001
         L2 penalty (regularization term) parameter.
     batch_size : Union[int, Literal['auto']], default = 'auto'
         Size of minibatches for stochastic optimizers.
@@ -83,10 +83,10 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
           least tol, or fail to increase validation score by at least tol if
           'early_stopping' is on, the current learning rate is divided by 5.
         Only used when solver='sgd'.
-    learning_rate_init : Union[float, np.float], default=0.001
+    learning_rate_init : float, default=0.001
         The initial learning rate used. It controls the step-size
         in updating the weights. Only used when solver='sgd' or 'adam'.
-    power_t : Union[float, np.float], default = 0.5
+    power_t : float, default = 0.5
         The exponent for inverse scaling learning rate.
         It is used in updating effective learning rate when the learning_rate
         is set to 'invscaling'. Only used when solver='sgd'.
@@ -105,7 +105,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         sampling when solver='sgd' or 'adam'.
         Pass an int for reproducible results across multiple function calls.
         See :term:`Glossary <random_state>`.
-    tol : Union[float, np.float], default = 1e-4
+    tol : float, default = 1e-4
         Tolerance for the optimization. When the loss or score is not improving
         by at least ``tol`` for ``n_iter_no_change`` consecutive iterations,
         unless ``learning_rate`` is set to 'adaptive', convergence is
@@ -116,7 +116,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         When set to True, reuse the solution of the previous
         call to fit as initialization, otherwise, just erase the
         previous solution. See :term:`the Glossary <warm_start>`.
-    momentum : Union[float, np.float], default = 0.9
+    momentum : float, default = 0.9
         Momentum for gradient descent update.  Should be between 0 and 1. Only
         used when solver='sgd'.
     nesterovs_momentum : bool, default = True
@@ -129,17 +129,17 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         validation score is not improving by at least ``tol`` for
         ``n_iter_no_change`` consecutive epochs.
         Only effective when solver='sgd' or 'adam'
-    validation_fraction : Union[float, np.float], default = 0.1
+    validation_fraction : float, default = 0.1
         The proportion of training data to set aside as validation set for
         early stopping. Must be between 0 and 1.
         Only used if early_stopping is True
-    beta_1 : Union[float, np.float], default = 0.9
+    beta_1 : float, default = 0.9
         Exponential decay rate for estimates of first moment vector in adam,
         should be in [0, 1). Only used when solver='adam'
-    beta_2 : Union[float, np.float], default = 0.999
+    beta_2 : float, default = 0.999
         Exponential decay rate for estimates of second moment vector in adam,
         should be in [0, 1). Only used when solver='adam'
-    epsilon : Union[float, np.float], default = 1e-8
+    epsilon : float, default = 1e-8
         Value for numerical stability in adam. Only used when solver='adam'
     n_iter_no_change : Union[int, np.integer], default = 10
         Maximum number of epochs to not meet ``tol`` improvement.
@@ -215,24 +215,24 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
                  hidden_layer_sizes: tuple = (100,), 
                  activation: Literal['identity', 'logistic', 'tanh', 'relu'] = "relu",
                  solver: Literal['lbfgs', 'sgd', 'adam'] = 'adam',
-                 alpha: Union[float, np.float] = 0.0001,
+                 alpha: float = 0.0001,
                  batch_size: Union[int, Literal['auto']] = 'auto', 
                  learning_rate: Literal['constant', 'invscaling', 'adaptive'] = "constant", 
-                 learning_rate_init: Union[float, np.float] = 0.001,
-                 power_t: Union[float, np.float] = 0.5, 
+                 learning_rate_init: float = 0.001,
+                 power_t: float = 0.5, 
                  max_iter: Union[int, np.integer]=200, 
                  shuffle: bool=True,
                  random_state: Union[None, int, np.random.RandomState] = None,
-                 tol: Union[float, np.float] = 1e-4, 
+                 tol: float = 1e-4, 
                  verbose: bool = False, 
                  warm_start: bool = False, 
-                 momentum: Union[float, np.float] = 0.9, 
+                 momentum: float = 0.9, 
                  nesterovs_momentum: bool = True, 
                  early_stopping: bool = False, 
-                 validation_fraction: Union[float, np.float] = 0.1, 
-                 beta_1: Union[float, np.float] = 0.9, 
-                 beta_2: Union[float, np.float] = 0.999, 
-                 epsilon: Union[float, np.float] = 1e-8, 
+                 validation_fraction: float = 0.1, 
+                 beta_1: float = 0.9, 
+                 beta_2: float = 0.999, 
+                 epsilon: float = 1e-8, 
                  n_iter_no_change: Union[int, np.integer] = 10,
                  max_fun: Union[int, np.integer] = 15000):
         super().__init__(hidden_layer_sizes=hidden_layer_sizes,

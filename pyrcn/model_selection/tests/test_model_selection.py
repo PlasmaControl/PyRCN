@@ -1,3 +1,10 @@
+import sys
+if sys.version_info >= (3, 8):
+    from typing import Union, Literal
+else:
+    from typing_extensions import literal
+    from typing import Union
+
 from sklearn import datasets
 from sklearn.model_selection import KFold, GridSearchCV, RandomizedSearchCV
 from sklearn.svm import SVC

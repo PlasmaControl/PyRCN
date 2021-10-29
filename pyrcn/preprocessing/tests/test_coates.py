@@ -65,7 +65,7 @@ def test_transform():
 
 if __name__ == "__main__":
     test_image_transform()
-    test_extract_random_patches()
-    test_extract_equidistant_patches()
+    # test_extract_random_patches()
+    # test_extract_equidistant_patches()
     test_fit()
     test_transform()

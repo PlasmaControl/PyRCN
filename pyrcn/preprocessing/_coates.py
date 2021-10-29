@@ -1,7 +1,13 @@
+import sys
+if sys.version_info >= (3, 8):
+    from typing import Union, Callable, Dict, Tuple, Literal
+else:
+    from typing_extensions import Literal
+    from typing import Union, Callable, Dict, Tuple
 import scipy
 import numpy as np
 
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, TransformerMixin, ClusterMixin
 from sklearn.utils import check_random_state
 from sklearn.exceptions import NotFittedError
 from sklearn.cluster import KMeans
@@ -10,19 +16,79 @@ from sklearn.decomposition import PCA
 from sklearn.feature_extraction.image import reconstruct_from_patches_2d, PatchExtractor
 
 
-def inplace_pool_max(X, axis=None):
+def inplace_pool_max(X: np.ndarray, axis: Union[None, int, np.integer] = None) -> Union[float, np.ndarray]:
+    """
+    Apply max-Pooling on an array.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        The patch on which to apply max pooling
+    axis : Union[None, int, np.integer], default=None
+        Axis along which to apply max-Pooling. This is important for batch processing.
+
+    Returns
+    -------
+    y : Union[float, np.ndarray]
+        The pooling value or array of pooling values in case of batch processing
+    """
     return np.max(X, axis=axis)
 
 
-def inplace_pool_min(X, axis=None):
+def inplace_pool_min(X: np.ndarray, axis: Union[None, int, np.integer] = None) -> Union[float, np.ndarray]:
+    """
+    Apply min-Pooling on an array.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        The patch on which to apply min pooling
+    axis : Union[None, int, np.integer], default=None
+        Axis along which to apply min-Pooling. This is important for batch processing.
+
+    Returns
+    -------
+    y : Union[float, np.ndarray]
+        The pooling value or array of pooling values in case of batch processing
+    """
     return np.min(X, axis=axis)
 
 
-def inplace_pool_average(X, axis=None):
+def inplace_pool_average(X: np.ndarray, axis: Union[None, int, np.integer] = None) -> Union[float, np.ndarray]:
+    """
+    Apply average-Pooling on an array.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        The patch on which to apply average pooling
+    axis : Union[None, int, np.integer], default=None
+        Axis along which to apply average-Pooling. This is important for batch processing.
+
+    Returns
+    -------
+    y : Union[float, np.ndarray]
+        The pooling value or array of pooling values in case of batch processing
+    """
     return np.average(X, axis=axis)
 
 
-def inplace_pool_mean(X, axis=None):
+def inplace_pool_mean(X: np.ndarray, axis: None = None) -> np.number:
+    """
+    Apply mean-Pooling on an array.
+
+    Parameters
+    ----------
+    X : np.ndarray
+        The patch on which to apply mean pooling
+    axis : None
+        Axis along which to apply mean-Pooling. This is important for batch processing.
+
+    Returns
+    -------
+    y : Union[float, np.ndarray]
+        The pooling value or array of pooling values in case of batch processing
+    """
     return np.mean(X, axis=axis)
 
 
@@ -33,18 +99,29 @@ POOLINGS = {'max': inplace_pool_max,
 
 
 class Coates(BaseEstimator, TransformerMixin):
-    def __init__(
-            self,
-            image_size=(),
-            patch_size=(),
-            stride_size=(),
-            n_patches: int = 200,
-            normalize=True,
-            whiten=True,
-            clusterer=KMeans(),
-            pooling_func='max',
-            pooling_size=(),
-            random_state=None):
+    """
+    Coates Preprocessing
+
+    Parameters
+    ----------
+    image_size : Tuple, default=()
+    patch_size : Tuple, default=()
+    stride_size : Tuple, default=(),
+    n_patches : Union[int, np.integer], default=200,
+    normalize : bool, default=True,
+    whiten : bool, default=True,
+    clusterer : Callable, default=KMeans(),
+    pooling_func : Literal['max', 'min', 'average', 'mean'], default='max',
+    pooling_size : Tuple, default=(),
+    random_state : Union[None, int, np.random.RandomState], default=None
+    """
+    def __init__(self, image_size: Tuple = (), patch_size: Tuple = (), stride_size: Tuple = (),
+                 n_patches: Union[int, np.integer] = 200, normalize: bool = True,
+                 whiten: bool = True,
+                 clusterer: ClusterMixin = KMeans(),
+                 pooling_func: Literal['max', 'min', 'average', 'mean'] = 'max',
+                 pooling_size: Tuple = (),
+                 random_state: Union[None, int, np.random.RandomState] = None):
         self.image_size = image_size
         self.patch_size = patch_size
         self.stride_size = stride_size
@@ -55,10 +132,23 @@ class Coates(BaseEstimator, TransformerMixin):
         self.pooling_func = pooling_func
         self.pooling_size = pooling_size
         self.random_state = check_random_state(random_state)
-        self._normalizer = None
-        self._whitener = None
+        self._normalizer = StandardScaler()
+        self._whitener = PCA(whiten=True)
 
-    def fit(self, X, y=None):
+    def fit(self, X: np.ndarray, y: None = None) -> TransformerMixin:
+        """
+        Fit the Coates.
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+        y : None
+            ignored
+
+        Returns
+        -------
+        self : returns a trained Coates.
+        """
         self._validate_hyperparameters()
         self.clusterer.fit(self._preprocessing(Coates._extract_random_patches(
             X,
@@ -68,13 +158,26 @@ class Coates(BaseEstimator, TransformerMixin):
             random_state=self.random_state)))
         return self
 
-    def transform(self, X, y=None):
+    def transform(self, X : np.ndarray, y: None = None) -> np.ndarray:
+        """
+        Transform with the fitted clusterer
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+        y : None
+            ignored
+
+        Returns
+        -------
+        features : returns the transformed features.
+        """
         # patches[#samples][#patches][#features]
         patches = Coates._extract_equidistant_patches(
             X, image_size=self.image_size, patch_size=self.patch_size, stride_size=self.stride_size)
 
         # preprocessing
-        patches_2d = patches.reshape((patches.shape[0] * patches.shape[1], np.prod(self.patch_size)))
+        patches_2d = patches.reshape([patches.shape[0] * patches.shape[1], int(np.prod(self.patch_size, axis=None))])
         patches_2d_preprocessed = self._preprocessing(patches_2d)
         patches_preprocessed = patches_2d_preprocessed.reshape(patches.shape)
 
@@ -84,7 +187,18 @@ class Coates(BaseEstimator, TransformerMixin):
         # pooling
         return self._pooling(features)
 
-    def inverse_transform(self, X):
+    def inverse_transform(self, X: np.ndarray) -> np.ndarray:
+        """
+        inverse transform with the fitted clusterer
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+
+        Returns
+        -------
+        patches : returns the original features.
+        """
         patch_array = Coates._reshape_arrays_to_images(X, image_size=(
             int(X.shape[-1] / self.clusterer.cluster_centers_.shape[0]),
             self.clusterer.cluster_centers_.shape[0]))
@@ -95,11 +209,9 @@ class Coates(BaseEstimator, TransformerMixin):
 
         return patches
 
-    def _validate_hyperparameters(self):
+    def _validate_hyperparameters(self) -> None:
         """
         Validate the hyperparameter. Ensure that the parameter ranges and dimensions are valid.
-        Returns
-        -------
 
         """
         if len(self.patch_size) not in {2, 3}:
@@ -126,66 +238,100 @@ class Coates(BaseEstimator, TransformerMixin):
             raise TypeError('clusterer must be of type clusterer, got {0}'.format(self.clusterer))
 
     @staticmethod
-    def _reshape_arrays_to_images(X, image_size):
+    def _reshape_arrays_to_images(X: np.ndarray, image_size: Tuple) -> np.ndarray:
         """
         Reshapes an array to image
-        :param X: (..., n_image_array)
-        :param image_size: (n_height, n_width) or (n_height, n_width, n_channels)
-        :return: (..., n_height, n_width) or (..., n_height, n_width, n_channels)
+
+        Parameters
+        ----------
+        X : ndarray of shape (..., n_image_array)
+        param image_size : Tuple (n_height, n_width) or (n_height, n_width, n_channels)
+
+        Returns
+        -------
+        y : ndarray of shape (..., n_height, n_width) or (..., n_height, n_width, n_channels)
         """
         index_dimensions = X.shape[:-1]
         return X.reshape(index_dimensions + image_size)
 
     @staticmethod
-    def _reshape_images_to_arrays(X, image_size):
+    def _reshape_images_to_arrays(X: np.ndarray, image_size: Tuple) -> np.ndarray:
         """
         Reshapes an image to array
-        :param X: (..., n_height, n_width) or (..., n_height, n_width, n_channels)
-        :param image_size: (n_height, n_width) or (n_height, n_width, n_channels)
-        :return: (..., n_image_array)
+
+        Parameters
+        ----------
+        X : ndarray of shape (..., n_height, n_width) or (..., n_height, n_width, n_channels)
+        image_size : Tuple (n_height, n_width) or (n_height, n_width, n_channels)
+
+        Returns
+        -------
+        y : ndarray of shape (..., n_image_array)
         """
         index_dimensions = X.shape[:-len(image_size)]
         return X.reshape(index_dimensions + (int(np.prod(image_size)), ))
 
     @staticmethod
-    def _patches_per_image(image_size, stride_size):
+    def _patches_per_image(image_size : Tuple, stride_size: Tuple) -> Tuple:
         """
-        Returns tuple strides fitting in image
-        :param image_size: (n_height, n_width) or (n_height, n_width, n_channels)
-        :param stride_size: (n_height, n_width) or (n_height, n_width, n_channels)
-        :return:
+        Computes tuple strides fitting in image
+
+        Parameters
+        ----------
+        image_size : Tuple (n_height, n_width) or (n_height, n_width, n_channels)
+        stride_size : Tuple (n_height, n_width) or (n_height, n_width, n_channels)
+
+        Returns
+        -------
+        Tuple, strides in x and y directions
         """
         return image_size[0] // stride_size[0], image_size[1] // stride_size[1]
 
     @staticmethod
-    def _extract_random_patches(X, image_size, patch_size, n_patches, random_state=None):
+    def _extract_random_patches(X: np.ndarray, image_size: Tuple, 
+                                patch_size: Tuple, n_patches: Union[int, np.integer], 
+                                random_state: Union[None, int, np.random.RandomState] = None) -> np.ndarray:
         """
         Extracts random patches from image array
-        :param X: (n_samples, n_image_array)
-        :param image_size: (n_height, n_width) or (n_height, n_width, n_channels) Image size
-        :param patch_size: (n_height, n_width) or (n_height, n_width, n_channels) Patch size, features to extract
-        :param n_patches: Number of patches to extract
-        :param random_state: None or int or np.RandomState
-        :return: (n_samples, n_patch_features)
+
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_samples, n_image_array)
+        image_size : Tuple (n_height, n_width) or (n_height, n_width, n_channels) 
+            Image size
+        patch_size : Tuple (n_height, n_width) or (n_height, n_width, n_channels) 
+            Patch size, features to extract
+        n_patches : Union[int, np.integer]
+            Number of patches to extract
+        random_state : Union[None, int, np.random.RandomState], default=None
+
+        Returns
+        -------
+        ndarray of shape (n_samples, n_patch_features)
         """
         rs = check_random_state(random_state)
-
         random_images = Coates._reshape_arrays_to_images(X[rs.randint(0, high=X.shape[0], size=n_patches)], image_size)
-
-        random_patches = PatchExtractor(
-            patch_size=(patch_size[0], patch_size[1]), max_patches=1, random_state=rs).transform(random_images)
+        random_patches = PatchExtractor(patch_size=(patch_size[0], patch_size[1]), 
+                                        max_patches=1, random_state=rs).transform(random_images)
 
         return Coates._reshape_images_to_arrays(random_patches, patch_size)
 
     @staticmethod
-    def _extract_equidistant_patches(X, image_size, patch_size, stride_size):
+    def _extract_equidistant_patches(X: np.ndarray, image_size: Tuple, 
+                                     patch_size: Tuple, stride_size: Tuple) -> np.ndarray:
         """
         Extracts equidistant patches from image array
-        :param X: (..., n_image_array)
-        :param image_size: (n_height, n_width) or (n_height, n_width, n_channels)
-        :param patch_size: (n_height, n_width) or (n_height, n_width, n_channels)
-        :param stride_size: (n_height, n_width) or (n_height, n_width, n_channels)
-        :return: (..., n_patches, n_features)
+
+        Parameters
+        ----------
+        X : np.ndarray of shape (..., n_image_array)
+        image_size : Tuple (n_height, n_width) or (n_height, n_width, n_channels)
+        patch_size : Tuple (n_height, n_width) or (n_height, n_width, n_channels)
+        stride_size : Tuple (n_height, n_width) or (n_height, n_width, n_channels)
+
+        Returns
+        -------
+        ndarray of shape (..., n_patches, n_features)
         """
         nm_patches = Coates._patches_per_image(image_size=image_size, stride_size=stride_size)
 
@@ -201,35 +347,51 @@ class Coates(BaseEstimator, TransformerMixin):
                 indices_patches[y, x, :] = y * stride_size[0] * image_size[1] + x * stride_size[1] + indices_patch
 
         # indices matrix to array
-        indices_patches = indices_patches.reshape((np.prod(nm_patches) * np.prod(patch_size), )).astype(int)
+        indices_patches = indices_patches.reshape([int(np.prod(nm_patches, axis=None)) * int(np.prod(patch_size, axis=None)), ]).astype(int)
 
         patches = X[..., np.array(indices_patches, dtype=int)]
 
         return Coates._reshape_arrays_to_images(patches, image_size=(np.prod(nm_patches), np.prod(patch_size)))
 
     @staticmethod
-    def _feature_mapping(patches, centroids):
+    def _feature_mapping(patches: np.ndarray, centroids: np.ndarray) -> np.ndarray:
         """
-        :param patches: (..., n_patch_features)
-        :param centroids: (n_features, n_patch_features)
-        :return: features (..., n_features)
+        Parameters
+        ----------
+        patches : ndarray of shape (..., n_patch_features)
+        centroids : ndarray of shape (n_features, n_patch_features)
+        
+        Returns
+        -------
+        features : ndarray (..., n_features)
         """
         return np.dot(patches, centroids.T)
 
     @staticmethod
-    def _inverse_feature_mapping(features, centroids):
+    def _inverse_feature_mapping(features: np.ndarray, centroids: np.ndarray) -> np.ndarray:
         """
-        :param features: (..., n_features)
-        :param centroids: (n_features, n_patch_features)
-        :return: patches: (..., n_patch_features)
+        Parameters
+        ----------
+        features : ndarray of shape (..., n_features)
+        centroids : ndarray of shape (n_features, n_patch_features)
+
+        Returns
+        -------
+        patches : ndarray of shape (..., n_patch_features)
         """
         return np.dot(features, np.linalg.pinv(centroids.T))
 
-    def _pooling(self, X):
+    def _pooling(self, X: np.ndarray) -> np.ndarray:
         """
         Pools patch features by pooling function
-        :param X:
-        :return:
+
+        Parameters
+        ----------
+        X : np.ndarray
+        
+        Returns
+        -------
+        y : np.ndarray
         """
         nm_patches = Coates._patches_per_image(image_size=self.image_size, stride_size=self.stride_size)
 
@@ -247,46 +409,49 @@ class Coates(BaseEstimator, TransformerMixin):
             np.prod(Coates._patches_per_image(nm_patches, self.pooling_size))
         ))
 
-    def _preprocessing(self, X):
+    def _preprocessing(self, X: np.ndarray) -> np.ndarray:
         """
         Applies preprocessing on input data
-        :param X: (n_samples, n_features)
-        :return: (n_samples, n_features)
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+
+        Returns
+        -------
+        y : ndarray of shape (n_samples, n_features)
         """
         X_preprocessed = X
 
         if self.normalize:
-            if self._normalizer is None:
-                self._normalizer = StandardScaler().fit(X_preprocessed)
-
+            self._normalizer.fit(X_preprocessed)
             X_preprocessed = self._normalizer.transform(X_preprocessed)
 
         if self.whiten:
-            if self._whitener is None:
-                self._whitener = PCA(whiten=True).fit(X_preprocessed)
-
+            self._whitener = PCA(whiten=True).fit(X_preprocessed)
             X_preprocessed = self._whitener.transform(X_preprocessed)
 
         return X_preprocessed
 
-    def _inverse_preprocessing(self, X):
+    def _inverse_preprocessing(self, X: np.ndarray) -> np.ndarray:
         """
         Applies inverse preprocessing on input data
-        :param X: (n_samples, n_features)
-        :return: (n_samples, n_features)
+
+        Parameters
+        ----------
+        X: ndarray of shape (n_samples, n_features)
+
+        Returns
+        -------
+        y : ndarray of shape (n_samples, n_features)
         """
         X_preprocessed = X
-
         if self.normalize:
             if self._normalizer is None:
                 raise NotFittedError('normalizer has not been fitted!')
-
             X_preprocessed = self._normalizer.inverse_transform(X_preprocessed)
-
         if self.whiten:
             if self._whitener is None:
                 raise NotFittedError('whitener has not been fitted!')
-
             X_preprocessed = self._whitener.inverse_transform(X_preprocessed)
-
         return X_preprocessed

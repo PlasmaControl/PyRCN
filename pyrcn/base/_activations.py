@@ -2,7 +2,7 @@
 from sklearn.neural_network._base import ACTIVATIONS
 
 
-def inplace_bounded_relu(X: np.ndarray):
+def inplace_bounded_relu(X: np.ndarray) -> None:
     """
     Compute the bounded rectified linear unit function inplace.
 
@@ -14,7 +14,7 @@ def inplace_bounded_relu(X: np.ndarray):
     np.minimum(np.maximum(X, 0, out=X), 1, out=X)
 
 
-def inplace_tanh_inverse(X: np.ndarray):
+def inplace_tanh_inverse(X: np.ndarray) -> None:
     """
     Compute the tanh inverse function inplace.
 
@@ -26,7 +26,7 @@ def inplace_tanh_inverse(X: np.ndarray):
     np.arctanh(X, out=X)
 
 
-def inplace_identity_inverse(X: np.ndarray):
+def inplace_identity_inverse(X: np.ndarray) -> None:
     """
     Compute the identity inverse function inplace.
 
@@ -38,7 +38,7 @@ def inplace_identity_inverse(X: np.ndarray):
     ACTIVATIONS['identity'](X)
 
 
-def inplace_logistic_inverse(X: np.ndarray):
+def inplace_logistic_inverse(X: np.ndarray) -> None:
     """
     Compute the logistic inverse function inplace.
 
@@ -50,7 +50,7 @@ def inplace_logistic_inverse(X: np.ndarray):
     np.negative(np.log(1 - X, out=X), out=X)
 
 
-def inplace_relu_inverse(X: np.ndarray):
+def inplace_relu_inverse(X: np.ndarray) -> None:
     """
     Compute the relu inverse function inplace.
 
@@ -65,7 +65,7 @@ def inplace_relu_inverse(X: np.ndarray):
     ACTIVATIONS['relu'](X)
 
 
-def inplace_bounded_relu_inverse(X: np.ndarray):
+def inplace_bounded_relu_inverse(X: np.ndarray) -> None:
     """
     Compute the bounded relu inverse function inplace.
 

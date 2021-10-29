@@ -1,10 +1,12 @@
+import sys
+if sys.version_info >= (3, 8):
+    from typing import Union, Literal
+else:
+    from typing_extensions import literal
+    from typing import Union
+
 import numpy as np
 import scipy
-try:
-    from typing import Union, Literal
-except ImportError:
-    from typing import Union
-    from typing_extensions import Literal
 from sklearn.base import BaseEstimator, ClusterMixin, TransformerMixin
 from sklearn.utils import check_random_state
 from sklearn.preprocessing import StandardScaler
@@ -129,7 +131,7 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
                                                    'kulsinski', 'mahalanobis', 'matching', 'minkowski', 'rogerstanimoto', 
                                                    'russellrao', 'seuclidean', 'sokalmichener', 'sokalsneath', 'sqeuclidean', 
                                                    'wminkowski', 'yule'], callable], 
-                             max_iter: Union[int, np.integer]) -> (np.ndarray, Union[float, np.float], np.ndarray, Union[int, np.integer]):
+                             max_iter: Union[int, np.integer]) -> (np.ndarray, float, np.ndarray, Union[int, np.integer]):
         """
         Calculate the centroids iteratively based on the selected metric.
 
@@ -152,7 +154,7 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
         -------
         cluster_centers : ndarray of shape (n_clusters, n_features) : 
             The final cluster centers
-        inertia : Union[float, np.float]
+        inertia : float
             Sum of squared distances of samples to their closest cluster center.
         labels : ndarray of shape (n_samples, )
             Labels of each point

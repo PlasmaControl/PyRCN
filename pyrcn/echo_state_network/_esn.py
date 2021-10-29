@@ -2,20 +2,20 @@
 # License: BSD 3 clause
 
 import sys
-import warnings
-
-import numpy as np
-try:
+if sys.version_info >= (3, 8):
     from typing import Union, Literal
-except ImportError:
-    from typing import Union
+else:
     from typing_extensions import Literal
+    from typing import Union
+
+import warnings
+import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin, MultiOutputMixin, is_regressor, clone
 from sklearn.exceptions import DataDimensionalityWarning
 from pyrcn.base.blocks import InputToNode, NodeToNode
 from pyrcn.util import concatenate_sequences
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.projection import MatrixToIndexProjection
+from pyrcn.projection import MatrixToValueProjection
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
@@ -675,7 +675,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         y = super().predict(X)
         if self.requires_sequence and self._sequence_to_value:
             for k, _ in enumerate(y):
-                y[k] = MatrixToIndexProjection(output_strategy=self._decision_strategy).fit_transform(y[k])
+                y[k] = MatrixToValueProjection(output_strategy=self._decision_strategy).fit_transform(y[k])
             return y
         elif self.requires_sequence:
             for k, _ in enumerate(y):
@@ -701,7 +701,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         y = super().predict(X)
         if self.requires_sequence and self._sequence_to_value:
             for k, _ in enumerate(y):
-                y[k] = MatrixToIndexProjection(output_strategy=self._decision_strategy,
+                y[k] = MatrixToValueProjection(output_strategy=self._decision_strategy,
                                                needs_proba=True).fit_transform(y[k])
                 y[k] = np.clip(y[k], a_min=1e-5, a_max=None)
             return y

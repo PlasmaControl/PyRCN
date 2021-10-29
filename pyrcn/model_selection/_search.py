@@ -211,7 +211,7 @@ class SequentialSearchCV(BaseSearchCV):
             return self.all_best_estimator_[self.searches[-1][0]]
 
     @property
-    def best_score_(self) -> Union[float, np.float]:
+    def best_score_(self) -> float:
         """
         Mean cross-validated score of the best_estimator
 
@@ -221,7 +221,7 @@ class SequentialSearchCV(BaseSearchCV):
 
         Returns
         -------
-        Union[float, np.float]
+        float
         """
         if self.refit:
             return self.all_best_score_[self.searches[-1][0]]
@@ -281,7 +281,7 @@ class SequentialSearchCV(BaseSearchCV):
         return self.all_n_splits_[self.searches[-1][0]]
 
     @property
-    def refit_time_(self) -> Union[float, np.float]:
+    def refit_time_(self) -> float:
         """
         Seconds used for refitting the best model on the whole dataset.
 

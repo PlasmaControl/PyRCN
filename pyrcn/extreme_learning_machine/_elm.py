@@ -6,13 +6,13 @@ The :mod:`extreme_learning_machine` contains the ELMRegressor and the ELMClassif
 # License: BSD 3 clause
 
 import sys
+if sys.version_info >= (3, 8):
+    from typing import Union, Literal
+else:
+    from typing_extensions import Literal
+    from typing import Union
 
 import numpy as np
-try:
-    from typing import Union, Literal
-except ImportError:
-    from typing import Union
-    from typing_extensions import Literal
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin, MultiOutputMixin, is_regressor, clone
 from pyrcn.base.blocks import InputToNode
 from pyrcn.linear_model import IncrementalRegression
