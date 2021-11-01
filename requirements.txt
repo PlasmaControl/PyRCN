@@ -1,4 +1,4 @@
-scikit-learn>=0.23.1
+scikit-learn>0.23.1
 ipywidgets
 ipympl
 numpy>=1.18.1

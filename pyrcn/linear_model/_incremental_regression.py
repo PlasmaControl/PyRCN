@@ -15,6 +15,7 @@ else:
 import numpy as np
 import scipy
 from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
@@ -51,7 +52,8 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         Independent term in decision function. Set to 0.0 if
         ``fit_intercept = False``.
     """
-    def __init__(self, alpha: float = 1e-5, 
+    @_deprecate_positional_args
+    def __init__(self, *, alpha: float = 1e-5, 
                  fit_intercept: bool = True, 
                  normalize: bool = False):
         self.alpha = alpha
@@ -65,7 +67,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray, 
                     partial_normalize: bool = True, reset: bool = False, 
-                    validate: bool = True, postpone_inverse: bool = False) -> RegressorMixin:
+                    validate: bool = True, postpone_inverse: bool = False) -> BaseEstimator:
         """
         Fits the regressor partially.
         
@@ -121,7 +123,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
             # self._output_weights += np.matmul(P, self._xTy - np.matmul(self._K, self._output_weights))
         return self
 
-    def fit(self, X: np.ndarray, y: np.ndarray) -> RegressorMixin:
+    def fit(self, X: np.ndarray, y: np.ndarray) -> BaseEstimator:
         """
         Fits the regressor.
         

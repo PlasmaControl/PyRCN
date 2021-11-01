@@ -1,16 +1,17 @@
 """
-The :mod:`echo_state_network` contains the ESNRegressor and the ESNClassifier
+The :mod:`autoencoder` contains a simple Autoencoder
 """
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Azarakhsh Jalalvand <azarakhsh.jalalvand@ugent.be>
+# Authors: Peter Steiner <peter.steiner@tu-dresden.de>,
+# Azarakhsh Jalalvand <azarakhsh.jalalvand@ugent.be>
 # License: BSD 3 clause
 
 import sys
 if sys.version_info >= (3, 8):
-    from typing import Union, Literal
+    from typing import Union, List, Literal
 else:
     from typing_extensions import Literal
-    from typing import Union
+    from typing import Union, List
 
 import numpy as np
 from sklearn.base import TransformerMixin
@@ -24,7 +25,8 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
     """
     Autoencoder based on Multilayer Perceptron.
 
-    This model optimizes the squared error loss function using LBFGS or stochastic gradient descent.
+    This model optimizes the squared error loss function using LBFGS or
+    stochastic gradient descent.
 
     Parameters
     ----------
@@ -99,7 +101,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
     shuffle : bool, default = True
         Whether to shuffle samples in each iteration. Only used when
         solver='sgd' or 'adam'.
-    random_state : Union[None, int, np.random.RandomState], RandomState instance, default = None
+    random_state : Union[None, int, np.random.RandomState], default = None
         Determines random number generation for weights and bias
         initialization, train-test split if early stopping is used, and batch
         sampling when solver='sgd' or 'adam'.
@@ -209,38 +211,40 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         optimization." arXiv preprint arXiv:1412.6980 (2014).
     """
     @_deprecate_positional_args
-    def __init__(self, *, transform_type: Literal['full', 'only_encode', 'only_decode'] = 'full', 
+    def __init__(self, *,
+                 transform_type: Literal['full', 'only_encode', 'only_decode'] = 'full',
                  discard_unused: bool = False,
                  bottleneck_index: Union[int, np.integer] = 1,
-                 hidden_layer_sizes: tuple = (100,), 
+                 hidden_layer_sizes: tuple = (100,),
                  activation: Literal['identity', 'logistic', 'tanh', 'relu'] = "relu",
                  solver: Literal['lbfgs', 'sgd', 'adam'] = 'adam',
                  alpha: float = 0.0001,
-                 batch_size: Union[int, Literal['auto']] = 'auto', 
-                 learning_rate: Literal['constant', 'invscaling', 'adaptive'] = "constant", 
+                 batch_size: Union[int, Literal['auto']] = 'auto',
+                 learning_rate: Literal['constant', 'invscaling',
+                                        'adaptive'] = "constant",
                  learning_rate_init: float = 0.001,
-                 power_t: float = 0.5, 
-                 max_iter: Union[int, np.integer]=200, 
-                 shuffle: bool=True,
+                 power_t: float = 0.5,
+                 max_iter: Union[int, np.integer] = 200,
+                 shuffle: bool = True,
                  random_state: Union[None, int, np.random.RandomState] = None,
-                 tol: float = 1e-4, 
-                 verbose: bool = False, 
-                 warm_start: bool = False, 
-                 momentum: float = 0.9, 
-                 nesterovs_momentum: bool = True, 
-                 early_stopping: bool = False, 
-                 validation_fraction: float = 0.1, 
-                 beta_1: float = 0.9, 
-                 beta_2: float = 0.999, 
-                 epsilon: float = 1e-8, 
+                 tol: float = 1e-4,
+                 verbose: bool = False,
+                 warm_start: bool = False,
+                 momentum: float = 0.9,
+                 nesterovs_momentum: bool = True,
+                 early_stopping: bool = False,
+                 validation_fraction: float = 0.1,
+                 beta_1: float = 0.9,
+                 beta_2: float = 0.999,
+                 epsilon: float = 1e-8,
                  n_iter_no_change: Union[int, np.integer] = 10,
                  max_fun: Union[int, np.integer] = 15000):
         super().__init__(hidden_layer_sizes=hidden_layer_sizes,
                          activation=activation, solver=solver, alpha=alpha,
                          batch_size=batch_size, learning_rate=learning_rate,
                          learning_rate_init=learning_rate_init, power_t=power_t,
-                         max_iter=max_iter, shuffle=shuffle, random_state=random_state, 
-                         tol=tol, verbose=verbose, warm_start=warm_start, 
+                         max_iter=max_iter, shuffle=shuffle, random_state=random_state,
+                         tol=tol, verbose=verbose, warm_start=warm_start,
                          momentum=momentum, nesterovs_momentum=nesterovs_momentum,
                          early_stopping=early_stopping,
                          validation_fraction=validation_fraction,
@@ -250,7 +254,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         self.discard_unused = discard_unused
         self.bottleneck_index = bottleneck_index
 
-    def fit(self, X: np.ndarray, y=None):
+    def fit(self, X: np.ndarray, y: Union[np.ndarray, None] = None) -> MLPRegressor:
         """
         Fit the model to data matrix X.
 
@@ -267,15 +271,14 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         """
         return super().fit(X=X, y=X)
         if self.discard_unused and self.transform_type == 'only_encode':
-            self.transformer_weights_ = self.coefs_[:self.bottleneck_index]
-            self.coefs_ = self.coefs_[:self.bottleneck_index]
+            self.transformer_weights_: List = self.coefs_[:self.bottleneck_index]
+            self.coefs_: List = self.coefs_[:self.bottleneck_index]
         elif self.discard_unused and self.transform_type == 'only_decode':
-            self.intercepts_ = self.intercepts_[self.bottleneck_index:]
+            self.intercepts_: List = self.intercepts_[self.bottleneck_index:]
             self.intercepts_ = self.intercepts_[self.bottleneck_index:]
         return self
 
-    @property
-    def partial_fit(self):
+    def partial_fit(self, X: np.ndarray, y: Union[np.ndarray, None]) -> MLPRegressor:
         """
         Update the model with a single iteration over the given data.
 
@@ -283,7 +286,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         ----------
         X : ndarray of shape (n_samples, n_features)
             The input data.
-        y : None
+        y : Union[np.ndarray, None]
             Ignored.
 
         Returns

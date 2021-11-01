@@ -92,10 +92,10 @@ def inplace_pool_mean(X: np.ndarray, axis: None = None) -> np.number:
     return np.mean(X, axis=axis)
 
 
-POOLINGS = {'max': inplace_pool_max,
-            'min': inplace_pool_min,
-            'average': inplace_pool_average,
-            'mean': inplace_pool_mean}
+POOLINGS: Dict[str, Callable] = {'max': inplace_pool_max,
+                                 'min': inplace_pool_min,
+                                 'average': inplace_pool_average,
+                                 'mean': inplace_pool_mean}
 
 
 class Coates(BaseEstimator, TransformerMixin):

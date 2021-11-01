@@ -1,8 +1,7 @@
 ﻿import sys
 if sys.version_info >= (3, 8):
-    from typing import Union, Literal
+    from typing import Union
 else:
-    from typing_extensions import Literal
     from typing import Union
 
 import numpy as np
@@ -15,17 +14,20 @@ else:
     from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
 
 
-def _uniform_random_input_weights(n_features_in: int, 
-                                  hidden_layer_size: int, 
+def _uniform_random_input_weights(n_features_in: int,
+                                  hidden_layer_size: Union[int, np.integer],
                                   fan_in: int,
-                                  random_state: np.random.RandomState) -> Union[np.ndarray, scipy.sparse.csr.csr_matrix]:
+                                  random_state: np.random.RandomState) \
+                                      -> Union[np.ndarray, scipy.sparse.csr.csr_matrix]:
     """
     Returns uniform random input weights in range [-1, 1]
 
     Parameters
     ----------
-    n_features_in : Union[int, np.integer]
+    n_features_in : int
     hidden_layer_size : Union[int, np.integer]
+    fan_in : int
+        Determines how many features are mapped to one neuron.
     random_state : numpy.random.RandomState
 
     Returns
@@ -41,14 +43,16 @@ def _uniform_random_input_weights(n_features_in: int,
         indptr = np.arange(start=0, stop=(n_features_in + 1) * fan_in, step=fan_in)
 
         for en in range(0, n_features_in * fan_in, fan_in):
-            indices[en: en + fan_in] = random_state.permutation(hidden_layer_size)[:fan_in].astype(int)
+            indices[en: en + fan_in] = \
+                random_state.permutation(hidden_layer_size)[:fan_in].astype(int)
         return scipy.sparse.csr_matrix(
-            (weights_array, indices, indptr), shape=(n_features_in, hidden_layer_size), dtype='float64')
+            (weights_array, indices, indptr), shape=(n_features_in, hidden_layer_size),
+            dtype='float64')
     else:
         return weights_array.reshape((n_features_in, hidden_layer_size))
 
 
-def _uniform_random_bias(hidden_layer_size: Union[int, np.integer], 
+def _uniform_random_bias(hidden_layer_size: Union[int, np.integer],
                          random_state: np.random.RandomState) -> np.ndarray:
     """
     Returns uniform random bias in range [-1, 1].
@@ -60,16 +64,17 @@ def _uniform_random_bias(hidden_layer_size: Union[int, np.integer],
         Determines how many features are mapped to one neuron.
     random_state : numpy.random.RandomState
 
-    Returns
+Returns
     -------
     uniform_random_bias : ndarray of size (hidden_layer_size)
     """
     return random_state.uniform(low=-1., high=1., size=hidden_layer_size)
 
 
-def _normal_random_recurrent_weights(hidden_layer_size: int, 
-                                     fan_in: int, 
-                                     random_state: np.random.RandomState) -> Union[np.ndarray, scipy.sparse.csr.csr_matrix]:
+def _normal_random_recurrent_weights(hidden_layer_size: int, fan_in: int,
+                                     random_state: np.random.RandomState) \
+                                         -> Union[np.ndarray,
+                                                  scipy.sparse.csr.csr_matrix]:
     """
     Returns normally distributed random reservoir weights
 
@@ -82,7 +87,7 @@ def _normal_random_recurrent_weights(hidden_layer_size: int,
 
     Returns
     -------
-    normal_random_recurrent_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix] 
+    normal_random_recurrent_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
         of size (hidden_layer_size, hidden_layer_size)
     """
     nr_entries = int(hidden_layer_size * fan_in)
@@ -93,19 +98,22 @@ def _normal_random_recurrent_weights(hidden_layer_size: int,
         indptr = np.arange(start=0, stop=(hidden_layer_size + 1) * fan_in, step=fan_in)
 
         for en in range(0, hidden_layer_size * fan_in, fan_in):
-            indices[en: en + fan_in] = random_state.permutation(hidden_layer_size)[:fan_in].astype(int)
-        recurrent_weights_init = scipy.sparse.csr_matrix(
-            (weights_array, indices, indptr), shape=(hidden_layer_size, hidden_layer_size), dtype='float64')
+            indices[en: en + fan_in] = \
+                random_state.permutation(hidden_layer_size)[:fan_in].astype(int)
+        recurrent_weights_init = scipy.sparse.csr_matrix((weights_array, indices,
+                                                          indptr),
+                                                         shape=(hidden_layer_size,
+                                                                hidden_layer_size),
+                                                         dtype='float64')
     else:
-        recurrent_weights_init = weights_array.reshape((hidden_layer_size, hidden_layer_size))
-
+        recurrent_weights_init = weights_array.reshape((hidden_layer_size,
+                                                        hidden_layer_size))
     try:
-        we = eigens(recurrent_weights_init, 
-                    k=np.minimum(10, hidden_layer_size - 2), 
-                    which='LM', 
-                    return_eigenvectors=False, 
-                    v0=random_state.normal(loc=0., scale=1., size=hidden_layer_size)
-                    )
+        we = eigens(recurrent_weights_init,
+                    k=np.minimum(10, hidden_layer_size - 2),
+                    which='LM',
+                    return_eigenvectors=False,
+                    v0=random_state.normal(loc=0., scale=1., size=hidden_layer_size))
     except ArpackNoConvergence:
         print("WARNING: No convergence! Returning possibly invalid values!!!")
         we = ArpackNoConvergence.eigenvalues

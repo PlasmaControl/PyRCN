@@ -67,7 +67,7 @@ def get_mnist(directory: str = os.getcwd()) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def concatenate_sequences(X: Union[list, np.ndarray], y: Union[list, np.ndarray], 
-                          sequence_to_value: bool = False) ->  Tuple[np.ndarray, np.ndarray, Union[np.ndarray, None]]:
+                          sequence_to_value: bool = False) ->  Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Concatenate multiple sequences to scikit-learn compatible numpy arrays.
 
@@ -100,7 +100,7 @@ def concatenate_sequences(X: Union[list, np.ndarray], y: Union[list, np.ndarray]
             y[k] = np.repeat(y[k], X[k].shape[0])
 
     check_consistent_length(X, y)
-    sequence_ranges = None
+    sequence_ranges = np.ndarray([])
     if X.ndim == 1:
         sequence_ranges = np.zeros((X.shape[0], 2), dtype=int)
         sequence_ranges[:, 1] = np.cumsum([X[k].shape[0] for k, _ in enumerate(X)])

@@ -1,5 +1,6 @@
 ﻿import numpy as np
 from sklearn.neural_network._base import ACTIVATIONS
+from typing import Dict
 
 
 def inplace_bounded_relu(X: np.ndarray) -> None:
@@ -51,11 +52,12 @@ def inplace_logistic_inverse(X: np.ndarray) -> None:
 
 
 def inplace_relu_inverse(X: np.ndarray) -> None:
-    """
+    r"""
     Compute the relu inverse function inplace.
 
     The relu function is not invertible!
-    This is an approximation assuming $x = f^{-1}(y=0) = 0$. It is valid in $x \in [0, \infty]$.
+    This is an approximation assuming $x = f^{-1}(y=0) = 0$.
+    It is valid in $x \in [0, \infty]$.
 
     Parameters
     ----------
@@ -66,11 +68,12 @@ def inplace_relu_inverse(X: np.ndarray) -> None:
 
 
 def inplace_bounded_relu_inverse(X: np.ndarray) -> None:
-    """
+    r"""
     Compute the bounded relu inverse function inplace.
 
     The bounded relu function is not invertible!
-    This is an approximation assuming $x = f^{-1}(y=0) = 0$ and $x = f^{-1}(y=1) = 1$. It is valid in $x \in [0, 1]$.
+    This is an approximation assuming $x = f^{-1}(y=0) = 0$ and $x = f^{-1}(y=1) = 1$.
+    It is valid in $x \in [0, 1]$.
 
     Parameters
     ----------
@@ -90,7 +93,7 @@ ACTIVATIONS_INVERSE = {
     'bounded_relu': inplace_bounded_relu_inverse
 }
 
-ACTIVATIONS_INVERSE_BOUNDS = {
+ACTIVATIONS_INVERSE_BOUNDS: Dict[str, list] = {
     'tanh': [-.99, .99],
     'identity': [-np.inf, np.inf],
     'logistic': [0.01, .99],

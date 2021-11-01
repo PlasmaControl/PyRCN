@@ -8,7 +8,7 @@ setuptools.setup(
     version="0.0.14",
     author="Peter Steiner",
     author_email="peter.steiner@tu-dresden.de",
-    description="A Python3 framework for Reservoir Computing with a scikit-learn-compatible API",
+    description="A scikit-learn-compatible framework for Reservoir Computing in Python",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url="https://github.com/TUD-STKS/PyRCN",

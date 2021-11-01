@@ -1,8 +1,7 @@
 import sys
 if sys.version_info >= (3, 8):
-    from typing import Union, Literal
+    from typing import Union
 else:
-    from typing_extensions import Literal
     from typing import Union
 
 import numpy as np
@@ -40,11 +39,14 @@ def mackey_glass(n_timesteps: Union[int, np.integer],
                  n: Union[int, np.integer] = 10,
                  x0: float = 1.2,
                  h: float = 1.0,
-                 seed: Union[int, np.random.RandomState] = None) -> (np.ndarray, np.ndarray):
-    """Mackey-Glass timeseries [#]_ [#]_, computed from the Mackey-Glass
+                 seed: Union[int, np.random.RandomState] = None) -> (np.ndarray,
+                                                                     np.ndarray):
+    """
+    Mackey-Glass timeseries [#]_ [#]_, computed from the Mackey-Glass
     delayed differential equation:
     .. math::
         \\frac{x}{t} = \\frac{ax(t-\\tau)}{1+x(t-\\tau)^n} - bx(t)
+
     Parameters
     ----------
         n_timesteps : Union[int, np.integer]
@@ -110,7 +112,8 @@ def mackey_glass(n_timesteps: Union[int, np.integer],
     # generate random first step based on the value
     # of the initial condition
     history_length = int(np.floor(tau/h))
-    history = collections.deque(x0 * np.ones(history_length) + 0.2 * (rs.rand(history_length) - 0.5))
+    history = collections.deque(x0 * np.ones(history_length)
+                                + 0.2 * (rs.rand(history_length) - 0.5))
     xt = x0
     X = np.zeros(n_timesteps + 1)
     for i in range(0, n_timesteps):
@@ -129,13 +132,13 @@ def mackey_glass(n_timesteps: Union[int, np.integer],
 
 
 @_deprecate_positional_args
-def load_digits(*, n_class: Union[int, np.integer] = 10, 
-                return_X_y: bool = False, 
-                as_frame: bool = False, 
+def load_digits(*, n_class: Union[int, np.integer] = 10,
+                return_X_y: bool = False,
+                as_frame: bool = False,
                 as_sequence: bool = False) -> Union[Bunch, tuple]:
     """
     Load and return the digits dataset (classification).
-    
+
     Each datapoint is a 8x8 image of a digit.
     =================   ==============
     Classes                         10
@@ -189,12 +192,10 @@ def load_digits(*, n_class: Union[int, np.integer] = 10,
         DESCR: str
             The full description of the dataset.
     (data, target) : tuple if ``return_X_y`` is True
-
-    This is a copy of the test set of the UCI ML hand-written digits datasets
-    https://archive.ics.uci.edu/ml/datasets/Optical+Recognition+of+Handwritten+Digits
     """
     if as_sequence and return_X_y and not as_frame:
-        X_ori, y_ori = sklearn_load_digits(n_class=n_class, return_X_y=return_X_y, as_frame=as_frame)
+        X_ori, y_ori = sklearn_load_digits(n_class=n_class, return_X_y=return_X_y,
+                                           as_frame=as_frame)
         X = np.empty(shape=(X_ori.shape[0],), dtype=object)
         y = np.empty(shape=(X_ori.shape[0],), dtype=object)
         for k, (X_single, y_single) in enumerate(zip(X_ori, y_ori)):
@@ -202,4 +203,5 @@ def load_digits(*, n_class: Union[int, np.integer] = 10,
             y[k] = np.atleast_1d(y_single)
         return X, y
     else:
-        return sklearn_load_digits(n_class=n_class, return_X_y=return_X_y, as_frame=as_frame)
+        return sklearn_load_digits(n_class=n_class, return_X_y=return_X_y,
+                                   as_frame=as_frame)

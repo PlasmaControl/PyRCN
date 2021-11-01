@@ -7,10 +7,10 @@ The :mod:`extreme_learning_machine` contains the ELMRegressor and the ELMClassif
 
 import sys
 if sys.version_info >= (3, 8):
-    from typing import Union, Literal
+    from typing import Union, Any, Literal
 else:
     from typing_extensions import Literal
-    from typing import Union
+    from typing import Union, Any
 
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin, TransformerMixin, MultiOutputMixin, is_regressor, clone
@@ -39,22 +39,22 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         Regressor object such as derived from ``RegressorMixin``. This
         regressor will automatically be cloned each time prior to fitting.
         If ```None```, a ```pyrcn.linear_model.IncrementalRegression()``` object is instantiated.
-    chunk_size : Union[int, np.integer], default=None
+    chunk_size : Union[int, None], default=None
          if X.shape[0] > chunk_size, calculate results incrementally with partial_fit
     decision_strategy : Literal['winner_takes_all', 'median', 'weighted', 'last_value', 'mode'], default='winner_takes_all'
         Decision strategy for sequence-to-label task. Ignored if the target output is a sequence
     verbose : bool = False
         Verbosity output
-    kwargs : dict, default = None
+    kwargs : Any, default = None
         keyword arguments passed to the subestimators if this is desired, default=None
     """
     @_deprecate_positional_args
     def __init__(self, *,
                  input_to_node: Union[InputToNode, TransformerMixin] = None,
                  regressor: Union[IncrementalRegression, RegressorMixin] = None,
-                 chunk_size: Union[int, np.integer] = None,
-                 verbose=False,
-                 **kwargs):
+                 chunk_size: Union[int, None] = None,
+                 verbose: bool = False,
+                 **kwargs: Any):
         if input_to_node is None:
             i2n_params = InputToNode()._get_param_names()
             self.input_to_node = InputToNode(**{ key: kwargs[key] for key in kwargs.keys() if key in i2n_params})
@@ -67,10 +67,11 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         else:
             reg_params = regressor._get_param_names()
             self.regressor = regressor.set_params(**{ key: kwargs[key] for key in kwargs.keys() if key in reg_params})
+        self._regressor = self.regressor
         self._chunk_size = chunk_size
         self.verbose = verbose
 
-    def __add__(self, other):
+    def __add__(self, other: BaseEstimator) -> BaseEstimator:
         """
         Sum up two instances of an ```ELMRegressor```. 
         
@@ -89,7 +90,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self.regressor._xTy = self.regressor._xTy  + other.regressor._xTy
         return self
 
-    def __radd__(self, other):
+    def __radd__(self, other: BaseEstimator) -> BaseEstimator:
         """
         Sum up multiple instances of an ```ELMRegressor```. 
         
@@ -109,13 +110,13 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         else:
             return self.__add__(other)
 
-    def get_params(self, deep=True):
+    def get_params(self, deep: bool = True) -> dict:
         if deep:
             return {**self.input_to_node.get_params(), **{"alpha": self.regressor.get_params()["alpha"]}}
         else:
             return {"input_to_node": self.input_to_node, "regressor": self.regressor, "chunk_size": self.chunk_size}
 
-    def set_params(self, **parameters):
+    def set_params(self, **parameters: dict) -> BaseEstimator:
         i2n_params = self.input_to_node._get_param_names()
         self.input_to_node = self.input_to_node.set_params(**{ key: parameters[key] for key in parameters.keys() if key in i2n_params})
         reg_params = self.regressor._get_param_names()
@@ -127,8 +128,8 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray, 
-                    transformer_weights = None, 
-                    postpone_inverse: bool = False):
+                    transformer_weights: Union[np.ndarray, None] = None, 
+                    postpone_inverse: bool = False) -> BaseEstimator:
         """
         Fits the regressor partially.
 
@@ -137,7 +138,8 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         X : ndarray of shape (n_samples, n_features)
         y : ndarray of shape (n_samples,) or (n_samples, n_targets)
             The targets to predict.
-        transformer_weights : ignored
+        transformer_weights : Union[np.ndarray, None], default=None
+            ignored
         postpone_inverse : bool, default=False
             If the output weights have not been fitted yet, regressor might be hinted at
             postponing inverse calculation. Refer to ```IncrementalRegression``` for details.
@@ -167,8 +169,8 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self
 
     def fit(self, X: np.ndarray, y: np.ndarray, 
-            n_jobs: Union[int, np.integer]= None,
-            transformer_weights = None):
+            n_jobs: Union[int, np.integer, None] = None,
+            transformer_weights: Union[np.ndarray, None] = None) -> BaseEstimator:
         """
         Fits the regressor.
 
@@ -180,7 +182,8 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         n_jobs : int, default=None
             The number of jobs to run in parallel. ```-1``` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
-        transformer_weights : ignored
+        transformer_weights :  Union[np.ndarray, None], default=None
+            ignored
 
         Returns
         -------
@@ -203,7 +206,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             # setup chunk list
             chunks = list(range(0, X.shape[0], self._chunk_size))
             # postpone inverse calculation for chunks n-1
-            if n_jobs < 2:
+            if n_jobs is None or n_jobs < 2:
                 [ELMRegressor.partial_fit(self,
                                           X[idx:idx + self._chunk_size, ...], y[idx:idx + self._chunk_size, ...],
                                           transformer_weights=transformer_weights, postpone_inverse=True) 
@@ -214,7 +217,8 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                                                transformer_weights=transformer_weights, postpone_inverse=True) 
                                               for idx in chunks[:-1])
             # last chunk, calculate inverse and bias
-            self._regressor = sum(reg)._regressor
+            reg = sum(reg)
+            self._regressor = reg._regressor
             ELMRegressor.partial_fit(self,
                                      X=X[chunks[-1]:, ...], y=y[chunks[-1]:, ...],
                                      transformer_weights=transformer_weights, postpone_inverse=False)
@@ -242,7 +246,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
         return self._regressor.predict(hidden_layer_state)
 
-    def _validate_hyperparameters(self):
+    def _validate_hyperparameters(self) -> None:
         """
         Validates the hyperparameters.
 
@@ -261,14 +265,14 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                             "and implement fit and predict"
                             "'%s' (type %s) doesn't" % (self._regressor, type(self._regressor)))
 
-    def __sizeof__(self):
+    def __sizeof__(self) -> int:
         """
         Returns the size of the object in bytes.
 
         Returns
         -------
         size : int
-        Object memory in bytes.
+            Object memory in bytes.
         """
         return object.__sizeof__(self) + \
             sys.getsizeof(self._input_to_node) + \
@@ -286,7 +290,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self._regressor
 
     @regressor.setter
-    def regressor(self, regressor: RegressorMixin):
+    def regressor(self, regressor: RegressorMixin) -> None:
         """
         Sets the regressor.
 
@@ -308,7 +312,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self._input_to_node
 
     @input_to_node.setter
-    def input_to_node(self, input_to_node: Union[InputToNode, TransformerMixin]):
+    def input_to_node(self, input_to_node: Union[InputToNode, TransformerMixin]) -> None:
         """
         Sets the input_to_node Transformer.
 
@@ -341,13 +345,13 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self._chunk_size
 
     @chunk_size.setter
-    def chunk_size(self, chunk_size: Union[int, np.integer]):
+    def chunk_size(self, chunk_size: Union[int, None]) -> None:
         """
         Sets the chunk_size, in which X will be chopped.
 
         Parameters
         ----------
-        chunk_size : Union[int, np.integer]
+        chunk_size : Union[int, None]
         """
         self._chunk_size = chunk_size
 
@@ -379,16 +383,17 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
     def __init__(self, *,
                  input_to_node: Union[InputToNode, TransformerMixin] = None,
                  regressor: Union[IncrementalRegression, RegressorMixin] = None,
-                 chunk_size: Union[int, np.integer] = None,
-                 verbose=False,
-                 **kwargs):
+                 chunk_size: Union[int, None] = None,
+                 verbose: bool = False,
+                 **kwargs: Any):
         super().__init__(input_to_node=input_to_node, regressor=regressor, 
                          chunk_size=chunk_size, verbose=verbose, **kwargs)
-        self._encoder = None
+        self._encoder = LabelBinarizer()
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray, 
-                    classes: np.ndarray=None, transformer_weights = None, 
-                    postpone_inverse: bool = False):
+                    transformer_weights: Union[np.ndarray, None] = None, 
+                    postpone_inverse: bool = False,
+                    classes: Union[np.ndarray, None] = None) -> BaseEstimator:
         """
         Fits the classifier partially.
 
@@ -415,15 +420,14 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         """
         self._validate_data(X, y, multi_output=True)
 
-        if self._encoder is None:
-            self._encoder = LabelBinarizer().fit(classes)
+        self._encoder.fit(classes)
 
         return super().partial_fit(X, self._encoder.transform(y), transformer_weights=None,
                                    postpone_inverse=postpone_inverse)
 
     def fit(self, X: np.ndarray, y: np.ndarray, 
-            n_jobs: Union[int, np.integer]= None,
-            transformer_weights = None):
+            n_jobs: Union[int, np.integer, None]= None,
+            transformer_weights: Union[np.ndarray, None] = None) -> BaseEstimator:
         """
         Fits the classifier.
 
@@ -435,7 +439,8 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         n_jobs : int, default=None
             The number of jobs to run in parallel. ```-1``` means using all processors.
             See :term:`Glossary <n_jobs>` for more details.
-        transformer_weights : ignored
+        transformer_weights : Union[np.ndarray, None], default=None
+            ignored
 
         Returns
         -------
@@ -477,7 +482,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
             The predicted probability estimates.
         """
         predicted_positive = np.clip(super().predict(X), a_min=1e-5, a_max=None)
-        return predicted_positive
+        return np.asarray(predicted_positive)
 
     def predict_log_proba(self, X: np.ndarray) -> np.ndarray:
         """
