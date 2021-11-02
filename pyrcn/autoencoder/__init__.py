@@ -1,6 +1,4 @@
-"""
-The :mod:`pyrcn.ae` module includes Autoencoder algorithms.
-"""
+"""The :mod:`pyrcn.ae` module includes Autoencoder algorithms."""
 
 # See https://github.com/TUD-STKS/PyRCN for complete
 # documentation.
@@ -10,5 +8,5 @@ The :mod:`pyrcn.ae` module includes Autoencoder algorithms.
 
 from pyrcn.autoencoder._ae import MLPAutoEncoder
 
-__all__ = ['MLPAutoEncoder',
-           ]
+__all__ = ('MLPAutoEncoder',
+           )

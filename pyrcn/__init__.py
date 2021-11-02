@@ -1,6 +1,4 @@
-"""
-The :mod:`pyrcn` module includes various reservoir computing algorithms.
-"""
+"""The :mod:`pyrcn` module includes various reservoir computing algorithms."""
 # See https://github.com/TUD-STKS/PyRCN for complete
 # documentation.
 # Author: Peter Steiner <peter.steiner@tu-dresden.de>.
@@ -11,9 +9,9 @@ The :mod:`pyrcn` module includes various reservoir computing algorithms.
 from pyrcn import (extreme_learning_machine, echo_state_network, base, preprocessing,
                    postprocessing, util)
 
-__all__ = ['extreme_learning_machine',
+__all__ = ('extreme_learning_machine',
            'echo_state_network',
            'base',
            'preprocessing',
            'postprocessing',
-           'util']
+           'util')

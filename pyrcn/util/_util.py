@@ -1,8 +1,7 @@
-"""
-The :mod:`pyrcn.util` contains utilities for runnung, testing and analyzing the reservoir computing modules
-"""
+"""The :mod:`pyrcn.util` contains utilities for running, testing and analyzing."""
 
-# Author: Peter Steiner <peter.steiner@tu-dresden.de>, Michael Schindler <michael.schindler@maschindler.de>
+# Author: Peter Steiner <peter.steiner@tu-dresden.de>,
+# Michael Schindler <michael.schindler@maschindler.de>
 # License: BSD 3 clause
 
 import sys
@@ -11,17 +10,18 @@ from typing import Union, Tuple
 import os
 import logging
 import argparse
-import csv
 import numpy as np
 
 from sklearn.utils import check_X_y, check_consistent_length
-from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.datasets import fetch_openml
 
 
-argument_parser = argparse.ArgumentParser(description='Standard input parser for HPC on PyRCN.')
-argument_parser.add_argument('-o', '--out', metavar='outdir', nargs='?', help='output directory', dest='out', type=str)
-argument_parser.add_argument(dest='params', metavar='params', nargs='*', help='optional parameter for scripts')
+argument_parser = argparse.ArgumentParser(
+    description='Standard input parser for HPC on PyRCN.')
+argument_parser.add_argument('-o', '--out', metavar='outdir', nargs='?',
+                             help='output directory', dest='out', type=str)
+argument_parser.add_argument(dest='params', metavar='params', nargs='*',
+                             help='optional parameter for scripts')
 
 tud_colors = {
     'darkblue': (0 / 255., 48 / 255., 94 / 255., 1.0),
@@ -43,6 +43,7 @@ logging.basicConfig(
 
 
 def new_logger(name: str, directory: str = os.getcwd()) -> logging.Logger:
+    """Register a new logger for logfiles."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.NOTSET)
     formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s')
@@ -53,6 +54,7 @@ def new_logger(name: str, directory: str = os.getcwd()) -> logging.Logger:
 
 
 def get_mnist(directory: str = os.getcwd()) -> Tuple[np.ndarray, np.ndarray]:
+    """Load the MNIST dataset from harddisk."""
     npzfilepath = os.path.join(directory, 'MNIST.npz')
 
     if os.path.isfile(npzfilepath):
@@ -66,18 +68,19 @@ def get_mnist(directory: str = os.getcwd()) -> Tuple[np.ndarray, np.ndarray]:
         return X, y
 
 
-def concatenate_sequences(X: Union[list, np.ndarray], y: Union[list, np.ndarray], 
-                          sequence_to_value: bool = False) ->  Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def concatenate_sequences(X: Union[list, np.ndarray], y: Union[list, np.ndarray],
+                          sequence_to_value: bool = False) \
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Concatenate multiple sequences to scikit-learn compatible numpy arrays.
 
     ´Parameters
     -----------
     X : Union[list, np.ndarray] of shape=(n_sequences, )
-        All sequences. Note that all elements in ```X``` 
+        All sequences. Note that all elements in ```X```
         must have at least one equal dimension.
     y : Union[list, np.ndarray] of shape=(n_sequences, )
-        All sequences. Note that all elements in ```X``` 
+        All sequences. Note that all elements in ```X```
         must have at least one equal dimension.
     sequence_to_value : bool, default=False
         If true, expand each element of y to the sequence length

@@ -1,15 +1,11 @@
+"""The :mod:`normal_distribution` contains a class for NormalDistribution."""
+
 from typing import Union, Dict
 import scipy
 import scipy.stats
 import numpy as np
 
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils import check_random_state
-from sklearn.exceptions import NotFittedError
-from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
-from sklearn.feature_extraction.image import reconstruct_from_patches_2d, PatchExtractor
 
 
 class NormalDistribution(BaseEstimator, TransformerMixin):
@@ -21,15 +17,17 @@ class NormalDistribution(BaseEstimator, TransformerMixin):
     size : Union[int, np.integer], default=1
         Defining number of random variates
     """
+
     def __init__(self, size: Union[int, np.integer] = 1):
+        """Construct the NormalDistribution."""
         self._transformer = scipy.stats.norm
         self._mean = 0
         self._std = 0
         self._size = size
 
-    def fit(self, X: np.ndarray, y: None=None) -> TransformerMixin:
+    def fit(self, X: np.ndarray, y: None = None) -> TransformerMixin:
         """
-        Fit the NormalDistribution
+        Fit the NormalDistribution.
 
         Parameters
         ----------
@@ -45,9 +43,9 @@ class NormalDistribution(BaseEstimator, TransformerMixin):
         self._mean, self._std = self._transformer.fit(X)
         return self
 
-    def transform(self, X: np.ndarray, y: None=None) -> np.ndarray:
+    def transform(self, X: np.ndarray, y: None = None) -> np.ndarray:
         """
-        Transforms the input matrix X.
+        Transform the input matrix X.
 
         Parameters
         ----------
@@ -59,7 +57,7 @@ class NormalDistribution(BaseEstimator, TransformerMixin):
         """
         return self._transformer.rvs(loc=self._mean, scale=self._std, size=self._size)
 
-    def fit_transform(self, X: np.ndarray, y: None=None, 
+    def fit_transform(self, X: np.ndarray, y: None = None,
                       **fit_params: Union[Dict, None]) -> np.ndarray:
         """
         Fit the Estimator and transforms the input matrix X.
@@ -69,8 +67,8 @@ class NormalDistribution(BaseEstimator, TransformerMixin):
         X : ndarray of size (n_samples, n_features)
         y : None
             ignored
-        **fit_params : Union[Dict, None]
-            ignored            
+        fit_params : Union[Dict, None]
+            ignored
 
         Returns
         -------

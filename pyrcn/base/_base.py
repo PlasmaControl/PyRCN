@@ -1,4 +1,6 @@
-﻿import sys
+﻿"""The :mod:`autoencoder` contains base functionalities for PyRCN."""
+
+import sys
 if sys.version_info >= (3, 8):
     from typing import Union
 else:
@@ -20,7 +22,7 @@ def _uniform_random_input_weights(n_features_in: int,
                                   random_state: np.random.RandomState) \
                                       -> Union[np.ndarray, scipy.sparse.csr.csr_matrix]:
     """
-    Returns uniform random input weights in range [-1, 1]
+    Return uniform random input weights in range [-1, 1].
 
     Parameters
     ----------
@@ -55,7 +57,7 @@ def _uniform_random_input_weights(n_features_in: int,
 def _uniform_random_bias(hidden_layer_size: Union[int, np.integer],
                          random_state: np.random.RandomState) -> np.ndarray:
     """
-    Returns uniform random bias in range [-1, 1].
+    Return uniform random bias in range [-1, 1].
 
     Parameters
     ----------
@@ -64,7 +66,7 @@ def _uniform_random_bias(hidden_layer_size: Union[int, np.integer],
         Determines how many features are mapped to one neuron.
     random_state : numpy.random.RandomState
 
-Returns
+    Returns
     -------
     uniform_random_bias : ndarray of size (hidden_layer_size)
     """
@@ -76,7 +78,7 @@ def _normal_random_recurrent_weights(hidden_layer_size: int, fan_in: int,
                                          -> Union[np.ndarray,
                                                   scipy.sparse.csr.csr_matrix]:
     """
-    Returns normally distributed random reservoir weights
+    Return normally distributed random reservoir weights.
 
     Parameters
     ----------

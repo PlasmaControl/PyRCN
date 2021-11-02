@@ -1,6 +1,4 @@
-"""
-The :mod:`pyrcn.datasets` includes toy datasets to quickly develop reference experiments
-"""
+"""The :mod:`pyrcn.datasets` includes toy datasets to develop reference experiments."""
 
 # See https://github.com/TUD-STKS/PyRCN for complete
 # documentation.
@@ -13,7 +11,7 @@ from pyrcn.datasets._maps_piano_dataset import fetch_maps_piano_dataset
 from pyrcn.datasets._ptdb_tug import fetch_ptdb_tug_dataset
 
 
-__all__ = ['mackey_glass',
+__all__ = ('mackey_glass',
            'load_digits',
            'fetch_maps_piano_dataset',
-           'fetch_ptdb_tug_dataset']
+           'fetch_ptdb_tug_dataset')

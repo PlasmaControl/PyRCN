@@ -11,7 +11,7 @@ from pyrcn.autoencoder import MLPAutoEncoder
 X_iris, y_iris = load_iris(return_X_y=True)
 
 
-def test_ae_full():
+def test_ae_full() -> None:
     print('\test_ae_full():')
     X_train, X_test, y_train, y_test = train_test_split(X_iris, y_iris, test_size=5,
                                                         random_state=42)
@@ -25,7 +25,7 @@ def test_ae_full():
     assert mean_squared_error(X_test, X_predicted) < 1.
 
 
-def test_ae_only_encode():
+def test_ae_only_encode() -> None:
     print('\test_ae_only_encode():')
     X_train, X_test, y_train, y_test = train_test_split(X_iris, y_iris, test_size=5,
                                                         random_state=42)
@@ -35,8 +35,3 @@ def test_ae_only_encode():
     X_predicted = ae.transform(X_test)
 
     assert X_predicted.shape == (5, 100)
-
-
-if __name__ == "__main__":
-    test_ae_full()
-    test_ae_only_encode()

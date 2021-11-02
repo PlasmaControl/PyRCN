@@ -1,3 +1,5 @@
+"""The :mod:`node_to_node` contains NodeToNode classes and derivatives."""
+
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
@@ -54,11 +56,12 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         parameter to determine the degree of leaky integration.
     bidirectional : bool, default = False.
         Whether to work bidirectional.
-    k_rec : Union[int, np.integer], default = None.
+    k_rec : Union[int, np.integer, None], default = None.
         recurrent weights per node. By default, it is None.
         If set, it overrides sparsity.
-    random_state : Union[None, int, np.random.RandomState], default = 42
+    random_state : Union[int, np.random.RandomState, None], default = 42
     """
+
     @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500,
@@ -68,8 +71,9 @@ class NodeToNode(BaseEstimator, TransformerMixin):
                  spectral_radius: float = 1.,
                  leakage: float = 1.,
                  bidirectional: bool = False,
-                 k_rec: Union[None, int, np.integer] = None,
-                 random_state: Union[int, np.random.RandomState] = 42):
+                 k_rec: Union[int, np.integer, None] = None,
+                 random_state: Union[int, np.random.RandomState, None] = 42) -> None:
+        """Construct the NodeToNode."""
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
         self.reservoir_activation = reservoir_activation
@@ -112,7 +116,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
     def transform(self, X: np.ndarray, y: None = None) -> np.ndarray:
         """
-        Transforms the input matrix X.
+        Transform the input matrix X.
 
         Parameters
         ----------
@@ -155,7 +159,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
                                                     'logistic', 'relu',
                                                     'bounded_relu']) -> np.ndarray:
         """
-        Returns the reservoir state matrix.
+        Return the reservoir state matrix.
 
         Parameters
         ----------
@@ -186,9 +190,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         return hidden_layer_state[1:, :]
 
     def _validate_hyperparameters(self) -> None:
-        """
-        Validates the hyperparameters.
-        """
+        """Validate the hyperparameters."""
         self._random_state = check_random_state(self.random_state)
 
         if self.hidden_layer_size <= 0:
@@ -215,7 +217,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
     def __sizeof__(self) -> int:
         """
-        Returns the size of the object in bytes.
+        Return the size of the object in bytes.
 
         Returns
         -------
@@ -233,7 +235,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
     @property
     def recurrent_weights(self) -> Union[np.ndarray, csr_matrix]:
         """
-        Returns the recurrent weights.
+        Return the recurrent weights.
 
         Returns
         -------
@@ -253,9 +255,6 @@ class PredefinedWeightsNodeToNode(NodeToNode):
         A set of predefined recurrent weights.
     hidden_layer_size : Union[int, np.integer], default=500
         Sets the number of nodes in hidden layer. Equals number of output features.
-    sparsity : float, default = 1.
-        Quotient of recurrent weights per node (k_rec)
-        and number of input features (n_features)
     reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
     'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
@@ -272,10 +271,8 @@ class PredefinedWeightsNodeToNode(NodeToNode):
         parameter to determine the degree of leaky integration.
     bidirectional : bool, default = False.
         Whether to work bidirectional.
-    k_rec : Union[int, np.integer], default = None.
-        recurrent weights per node. By default, it is None.
-        If set, it overrides sparsity.
     """
+
     @_deprecate_positional_args
     def __init__(self,
                  predefined_recurrent_weights: np.ndarray, *,
@@ -283,7 +280,8 @@ class PredefinedWeightsNodeToNode(NodeToNode):
                                                'bounded_relu'] = 'tanh',
                  spectral_radius: float = 1.,
                  leakage: float = 1.,
-                 bidirectional: bool = False):
+                 bidirectional: bool = False) -> None:
+        """Construct the PredefinedWeightsNodeToNode."""
         super().__init__(hidden_layer_size=predefined_recurrent_weights.shape[0],
                          reservoir_activation=reservoir_activation,
                          spectral_radius=spectral_radius,
@@ -357,10 +355,10 @@ class HebbianNodeToNode(NodeToNode):
         parameter to determine the degree of leaky integration.
     bidirectional : bool, default = False.
         Whether to work bidirectional.
-    k_rec : Union[None, int, np.integer], default = None.
+    k_rec : Union[int, np.integer, None], default = None.
         recurrent weights per node. By default, it is None.
         If set, it overrides sparsity.
-    random_state : Union[None, int, np.random.RandomState], default = 42
+    random_state : Union[int, np.random.RandomState, None], default = 42
     learning_rate : float, default = 0.01.
         Determines how fast the weight values are updated.
     epochs : Union[int, np.integer], default=100
@@ -369,6 +367,7 @@ class HebbianNodeToNode(NodeToNode):
     default = "hebbian"
         Method used to fit the recurrent weights.
     """
+
     @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500,
@@ -378,12 +377,13 @@ class HebbianNodeToNode(NodeToNode):
                  spectral_radius: float = 1.,
                  leakage: float = 1.,
                  bidirectional: bool = False,
-                 k_rec: Union[None, int, np.integer] = None,
-                 random_state: Union[int, np.random.RandomState] = 42,
+                 k_rec: Union[int, np.integer, None] = None,
+                 random_state: Union[int, np.random.RandomState, None] = 42,
                  learning_rate: float = 0.01,
                  epochs: Union[int, np.integer] = 100,
                  training_method:  Literal['hebbian', 'anti_hebbian', 'oja',
                                            'anti_oja'] = 'hebbian'):
+        """Construct the HebbianNodeToNode."""
         super().__init__(hidden_layer_size=hidden_layer_size,
                          sparsity=sparsity,
                          reservoir_activation=reservoir_activation,
@@ -435,6 +435,7 @@ class HebbianNodeToNode(NodeToNode):
         return self
 
     def _hebbian_learning(self, X: np.ndarray, y: None = None) -> None:
+        """Use the Hebbian learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
             X, self.hidden_layer_size, self.bidirectional, self._recurrent_weights,
             self.spectral_radius, self.leakage, self.reservoir_activation)
@@ -444,6 +445,7 @@ class HebbianNodeToNode(NodeToNode):
                                 hidden_layer_state[k:k+1, :]) * self._recurrent_weights
 
     def _anti_hebbian_learning(self, X: np.ndarray, y: None = None) -> None:
+        """Use the Anti-Hebbian learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
             X, self.hidden_layer_size, self.bidirectional, self._recurrent_weights,
             self.spectral_radius, self.leakage, self.reservoir_activation)
@@ -453,6 +455,7 @@ class HebbianNodeToNode(NodeToNode):
                                 hidden_layer_state[k:k+1, :]) * self._recurrent_weights
 
     def _oja_learning(self, X: np.ndarray, y: None = None) -> None:
+        """Use the Oja learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
             X, self.hidden_layer_size, self.bidirectional, self._recurrent_weights,
             self.spectral_radius, self.leakage, self.reservoir_activation)
@@ -466,6 +469,7 @@ class HebbianNodeToNode(NodeToNode):
                 * self._recurrent_weights
 
     def _anti_oja_learning(self, X: np.ndarray, y: None = None) -> None:
+        """Use the Anti-Oja learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
             X, self.hidden_layer_size, self.bidirectional, self._recurrent_weights,
             self.spectral_radius, self.leakage, self.reservoir_activation)

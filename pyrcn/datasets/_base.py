@@ -1,9 +1,6 @@
-import sys
-if sys.version_info >= (3, 8):
-    from typing import Union
-else:
-    from typing import Union
+"""The :mod:`pyrcn.datasets` includes base toy datasets."""
 
+from typing import Union, Tuple
 import numpy as np
 import collections
 from sklearn.utils.validation import _deprecate_positional_args
@@ -11,17 +8,15 @@ from sklearn.datasets import load_digits as sklearn_load_digits
 from sklearn.utils import Bunch
 
 
-def _mg_eq(xt, xtau, a=0.2, b=0.1, n=10):
-    """
-    Mackey-Glass time delay diffential equation, at values x(t) and x(t-tau).
-    """
+def _mg_eq(xt: float, xtau: float, a: float = 0.2, b: float = 0.1,
+           n: int = 10) -> float:
+    """Mackey-Glass time delay diffential equation, at values x(t) and x(t-tau)."""
     return -b*xt + a*xtau / (1+xtau**n)
 
 
-def _mg_rk4(xt, xtau, a, b, n, h=1.0):
-    """
-    Runge-Kuta method (RK4) for Mackey-Glass timeseries discretization.
-    """
+def _mg_rk4(xt: float, xtau: float, a: float, b: float, n: int,
+            h: float = 1.0) -> float:
+    """Runge-Kuta method (RK4) for Mackey-Glass timeseries discretization."""
     k1 = h * _mg_eq(xt, xtau, a, b, n)
     k2 = h * _mg_eq(xt + 0.5*k1, xtau, a, b, n)
     k3 = h * _mg_eq(xt + 0.5*k2, xtau, a, b, n)
@@ -31,17 +26,14 @@ def _mg_rk4(xt, xtau, a, b, n, h=1.0):
 
 
 @_deprecate_positional_args
-def mackey_glass(n_timesteps: Union[int, np.integer],
-                 n_future: Union[int, np.integer] = 1,
-                 tau: Union[int, np.integer] = 17,
-                 a: float = 0.2,
-                 b: float = 0.1,
-                 n: Union[int, np.integer] = 10,
-                 x0: float = 1.2,
-                 h: float = 1.0,
-                 seed: Union[int, np.random.RandomState] = None) -> (np.ndarray,
-                                                                     np.ndarray):
-    """
+def mackey_glass(n_timesteps: int, n_future: Union[int, np.integer] = 1,
+                 tau: Union[int, np.integer] = 17, a: float = 0.2, b: float = 0.1,
+                 n: int = 10, x0: float = 1.2, h: float = 1.0,
+                 seed: Union[int, np.random.RandomState, None] = None) \
+        -> Tuple[np.ndarray, np.ndarray]:
+    r"""
+    Mackey-Glass time-series.
+
     Mackey-Glass timeseries [#]_ [#]_, computed from the Mackey-Glass
     delayed differential equation:
     .. math::
@@ -74,7 +66,7 @@ def mackey_glass(n_timesteps: Union[int, np.integer],
             Time delta for the Runge-Kuta method. Can be assimilated
             to the number of discrete point computed per timestep.
             By default, equal to 1.0.
-        seed : Union[int, np.random.RandomState], default=None
+        seed : Optional[int, np.random.RandomState], default=None
             Random state seed for reproducibility.
     Returns
     -------

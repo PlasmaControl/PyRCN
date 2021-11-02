@@ -1,6 +1,4 @@
-"""
-The :mod:`pyrcn.elm` module includes a Cluster Algorithm compareable to KMeans.
-"""
+"""The :mod:`pyrcn.cluster` module includes a Cluster Algorithm comparable to KMeans."""
 
 # See https://github.com/TUD-STKS/PyRCN for complete
 # documentation.
@@ -10,4 +8,4 @@ The :mod:`pyrcn.elm` module includes a Cluster Algorithm compareable to KMeans.
 
 from pyrcn.cluster._kcluster import KCluster
 
-__all__ = ['KCluster']
+__all__ = ('KCluster',)

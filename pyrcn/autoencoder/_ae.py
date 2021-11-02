@@ -1,9 +1,6 @@
-"""
-The :mod:`autoencoder` contains a simple Autoencoder
-"""
+"""The :mod:`autoencoder` contains a simple Autoencoder."""
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>,
-# Azarakhsh Jalalvand <azarakhsh.jalalvand@ugent.be>
+# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
 import sys
@@ -101,7 +98,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
     shuffle : bool, default = True
         Whether to shuffle samples in each iteration. Only used when
         solver='sgd' or 'adam'.
-    random_state : Union[None, int, np.random.RandomState], default = None
+    random_state : Union[int, np.random.RandomState, None], default = None
         Determines random number generation for weights and bias
         initialization, train-test split if early stopping is used, and batch
         sampling when solver='sgd' or 'adam'.
@@ -210,6 +207,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
     Kingma, Diederik, and Jimmy Ba. "Adam: A method for stochastic
         optimization." arXiv preprint arXiv:1412.6980 (2014).
     """
+
     @_deprecate_positional_args
     def __init__(self, *,
                  transform_type: Literal['full', 'only_encode', 'only_decode'] = 'full',
@@ -226,7 +224,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
                  power_t: float = 0.5,
                  max_iter: Union[int, np.integer] = 200,
                  shuffle: bool = True,
-                 random_state: Union[None, int, np.random.RandomState] = None,
+                 random_state: Union[int, np.random.RandomState, None] = None,
                  tol: float = 1e-4,
                  verbose: bool = False,
                  warm_start: bool = False,
@@ -239,6 +237,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
                  epsilon: float = 1e-8,
                  n_iter_no_change: Union[int, np.integer] = 10,
                  max_fun: Union[int, np.integer] = 15000):
+        """Initialize an Autoencoder."""
         super().__init__(hidden_layer_sizes=hidden_layer_sizes,
                          activation=activation, solver=solver, alpha=alpha,
                          batch_size=batch_size, learning_rate=learning_rate,
@@ -313,7 +312,7 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """
-        Transforms the input matrix X.
+        Transform the input matrix X.
 
         Parameters
         ----------

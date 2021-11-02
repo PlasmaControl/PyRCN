@@ -1,5 +1,5 @@
 """
-Testing for blocks module (pyrcn.base.blocks)
+Testing for blocks module
 """
 import scipy
 import numpy as np
@@ -10,7 +10,7 @@ from pyrcn.base.blocks import InputToNode, NodeToNode, BatchIntrinsicPlasticity,
     HebbianNodeToNode
 
 
-def test_input_to_node_dense():
+def test_input_to_node_dense() -> None:
     print('\ntest_input_to_node_dense():')
     i2n = InputToNode(
         hidden_layer_size=5, sparsity=1., input_activation='tanh', input_scaling=1.,
@@ -22,7 +22,7 @@ def test_input_to_node_dense():
     assert safe_sparse_dot(X, i2n._input_weights).shape == (10, 5)
 
 
-def test_input_to_node_sparse():
+def test_input_to_node_sparse() -> None:
     print('\ntest_input_to_node_sparse():')
     i2n = InputToNode(
         hidden_layer_size=5, sparsity=2/5, input_activation='tanh', input_scaling=1.,
@@ -34,7 +34,7 @@ def test_input_to_node_sparse():
     assert safe_sparse_dot(X, i2n._input_weights).shape == (10, 5)
 
 
-def test_node_to_node_dense():
+def test_node_to_node_dense() -> None:
     print('\ntest_node_to_node_dense():')
     i2n = InputToNode(hidden_layer_size=5, sparsity=1., input_activation='tanh',
                       input_scaling=1., bias_scaling=1., random_state=42)
@@ -51,7 +51,7 @@ def test_node_to_node_dense():
     assert safe_sparse_dot(i2n.transform(X), n2n._recurrent_weights).shape == (10, 5)
 
 
-def test_node_to_node_sparse():
+def test_node_to_node_sparse() -> None:
     print('\ntest_node_to_node_sparse():')
     i2n = InputToNode(hidden_layer_size=5, sparsity=2/5, input_activation='tanh',
                       input_scaling=1., bias_scaling=1., random_state=42)
@@ -67,7 +67,7 @@ def test_node_to_node_sparse():
     assert safe_sparse_dot(i2n.transform(X), n2n._recurrent_weights).shape == (10, 5)
 
 
-def test_transform_bounded_relu():
+def test_transform_bounded_relu() -> None:
     print('\ntest_transform_bounded_relu():')
     rs = np.random.RandomState(42)
     i2n = InputToNode(hidden_layer_size=5, sparsity=1., input_activation='bounded_relu',
@@ -80,7 +80,7 @@ def test_transform_bounded_relu():
     assert y.shape == (10, 5)
 
 
-def test_bip():
+def test_bip() -> None:
     print('\ntest_bip()')
     rs = np.random.RandomState(42)
     i2n = BatchIntrinsicPlasticity(
@@ -97,7 +97,7 @@ def test_bip():
           "y is uniformly distributed in [-.75, .75]")
 
 
-def test_node_to_node_hebbian():
+def test_node_to_node_hebbian() -> None:
     print('\ntest_node_to_node_hebbian():')
     i2n = InputToNode(hidden_layer_size=5, sparsity=2/5, input_activation='tanh',
                       input_scaling=1., bias_scaling=1., random_state=42)
@@ -112,13 +112,3 @@ def test_node_to_node_hebbian():
     print(n2n._recurrent_weights)
     assert n2n._recurrent_weights.shape == (5, 5)
     assert safe_sparse_dot(i2n.transform(X), n2n._recurrent_weights).shape == (10, 5)
-
-
-if __name__ == "__main__":
-    test_input_to_node_dense()
-    test_input_to_node_sparse()
-    test_node_to_node_dense()
-    test_node_to_node_sparse()
-    test_node_to_node_hebbian()
-    test_transform_bounded_relu()
-    test_bip()

@@ -1,9 +1,11 @@
+"""The KCluster algorithm, a comparable algorithm to K-Means."""
+
 import sys
 if sys.version_info >= (3, 8):
-    from typing import Union, Literal
+    from typing import Union, Callable, Tuple, Literal
 else:
     from typing_extensions import Literal
-    from typing import Union
+    from typing import Union, Callable, Tuple
 
 import numpy as np
 import scipy
@@ -39,13 +41,14 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
         Number of time the k-means algorithm will be run with different centroid seeds.
         The final results will be the best output of ```n_init``` consecutive runs
         in terms of inertia.
-    random_state : Union[int, np.random.RandomState], default = None
+    random_state : Optional[int, np.random.RandomState], default = None
         Scales the input bias of the activation.
     max_iter : Union[int, np.integer], default = 300.
         Maximum number of iterations of the cluster algorithm for a single run.
     """
+
     def __init__(self,
-                 n_clusters: Union[int, np.integer] = 10,
+                 n_clusters: int = 10,
                  metric: Union[Literal['braycurtis', 'canberra', 'chebyshev',
                                        'cityblock', 'correlation', 'cosine', 'dice',
                                        'euclidean', 'hamming', 'jaccard',
@@ -53,25 +56,25 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
                                        'matching', 'minkowski', 'rogerstanimoto',
                                        'russellrao', 'seuclidean', 'sokalmichener',
                                        'sokalsneath', 'sqeuclidean', 'wminkowski',
-                                       'yule'], callable] = 'cityblock',
+                                       'yule'], Callable] = 'cityblock',
                  init: Union[Literal['random'], np.ndarray] = 'random',
-                 n_inits:  Union[int, np.integer] = 10,
-                 random_state: Union[int, np.random.RandomState] = None,
-                 max_iter: Union[int, np.integer] = 300):
+                 n_inits:  int = 10,
+                 random_state: Union[int, np.random.RandomState, None] = None,
+                 max_iter: int = 300) -> None:
+        """Construct the KCluster."""
         self.n_clusters = n_clusters
         self.metric = metric
         self.init = init
         self.n_inits = n_inits
         self.random_state = random_state
         self.max_iter = max_iter
-        self.cluster_centers_ = None
-        self.labels_ = None
-        self.inertia_ = None
-        self.n_iter_ = None
-        self.scaler = None
-        return
+        self.cluster_centers_ = np.ndarray([])
+        self.labels_ = np.ndarray([])
+        self.inertia_ = np.nan
+        self.n_iter_: int
+        self.scaler = StandardScaler()
 
-    def fit(self, X: np.ndarray):
+    def fit(self, X: np.ndarray) -> ClusterMixin:
         """
         Fit the KCluster. Compute K clusters from the input data.
 
@@ -83,7 +86,7 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
         -------
         self : returns a Fitted estimator.
         """
-        self.scaler = StandardScaler().fit(X)
+        self.scaler.fit(X)
         X = self.scaler.transform(X)
 
         if self.init == 'random':
@@ -95,12 +98,13 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
                     cluster_centers_init=X[np.random.RandomState(init).randint(
                         low=0, high=X.shape[0], size=self.n_clusters), ...],
                     metric=self.metric, max_iter=self.max_iter)
-                if self.inertia_ is None or self.inertia_ > inertia:
+                if self.inertia_ > inertia:
                     self.cluster_centers_ = centroids
                     self.labels_ = labels
                     self.inertia_ = inertia
                     self.n_iter_ = iterations
-        elif self.init.shape == (self.n_clusters, X.shape[1]):
+        elif (isinstance(self.init, np.ndarray)
+              and self.init.shape == (self.n_clusters, X.shape[1])):
             self.cluster_centers_ = self.init
             self.cluster_centers_, self.inertia_, self.labels_, self.n_iter_ = \
                 KCluster._calculate_centroids(X, cluster_centers_init=self.init,
@@ -133,15 +137,15 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
 
     @staticmethod
     def _calculate_centroids(
-        X: np.ndarray, cluster_centers_init: np.ndarray,
-        metric: Union[Literal['braycurtis', 'canberra', 'chebyshev', 'cityblock',
-                              'correlation', 'cosine', 'dice', 'euclidean', 'hamming',
-                              'jaccard', 'jensenshannon', 'kulsinski', 'mahalanobis',
-                              'matching', 'minkowski', 'rogerstanimoto', 'russellrao',
-                              'seuclidean', 'sokalmichener', 'sokalsneath',
-                              'sqeuclidean', 'wminkowski', 'yule'], callable],
-        max_iter: Union[int, np.integer]) -> (np.ndarray, float, np.ndarray,
-                                              Union[int, np.integer]):
+            X: np.ndarray, cluster_centers_init: np.ndarray,
+            metric: Union[Literal['braycurtis', 'canberra', 'chebyshev', 'cityblock',
+                                  'correlation', 'cosine', 'dice', 'euclidean',
+                                  'hamming', 'jaccard', 'jensenshannon', 'kulsinski',
+                                  'mahalanobis', 'matching', 'minkowski',
+                                  'rogerstanimoto', 'russellrao', 'seuclidean',
+                                  'sokalmichener', 'sokalsneath', 'sqeuclidean',
+                                  'wminkowski', 'yule'], Callable],
+            max_iter: int) -> Tuple[np.ndarray, float, np.ndarray, int]:
         """
         Calculate the centroids iteratively based on the selected metric.
 
@@ -158,7 +162,7 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
                                'seuclidean', 'sokalmichener', 'sokalsneath',
                                'sqeuclidean', 'wminkowski', 'yule'], callable]
             The chosen metric for cluster centroid computation
-        max_iter : Union[int, np.integer]
+        max_iter : int
             Maximum number of iterations after which the centroid computation
             is interrupted.
 
@@ -174,7 +178,7 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
             Number of iterations run
         """
         cluster_centers = cluster_centers_init
-        iteration = max_iter
+        iteration: int = max_iter
 
         distance = scipy.spatial.distance.cdist(X, cluster_centers, metric=metric)
         # labels = (previous labels, next labels)
@@ -197,7 +201,6 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
             distance = scipy.spatial.distance.cdist(X, cluster_centers, metric=metric)
 
             labels = labels[1], distance.argmin(axis=1)
-
             iteration -= 1
 
         inertia = np.sum(np.take_along_axis(distance, labels[1].reshape(-1, 1), axis=1))

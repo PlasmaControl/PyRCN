@@ -1,9 +1,11 @@
-﻿import sys
+﻿"""The :mod:`value_projection` contains the MatrixToValueProjection."""
+
+import sys
 if sys.version_info >= (3, 8):
-    from typing import Union, Literal, cast
+    from typing import Literal, cast
 else:
     from typing_extensions import Literal
-    from typing import Union, cast
+    from typing import cast
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -11,23 +13,28 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 class MatrixToValueProjection(BaseEstimator, TransformerMixin):
     """
-    Returns any kind of indices of a matrix, e.g. of the maximum value.
+    Projection of a matrix to any kind of indices, e.g. of the maximum value.
 
     Parameters
     ----------
-    output_strategy : Literal["winner_takes_all", "median", "last_value"], default=winner_takes_all"
+    output_strategy : Literal["winner_takes_all", "median", "last_value"],
+    default=winner_takes_all"
         Strategy utilized to compute the index
     needs_proba : bool, default=False
         Whether to return a probability estimate or the index.
     """
-    def __init__(self, output_strategy: Literal["winner_takes_all", "median", "last_value"] = "winner_takes_all", 
+
+    def __init__(self, output_strategy: Literal["winner_takes_all",
+                                                "median",
+                                                "last_value"] = "winner_takes_all",
                  needs_proba: bool = False):
+        """Construct the MatrixToValueProjection."""
         self._output_strategy = output_strategy
-        self._needs_proba= needs_proba
+        self._needs_proba = needs_proba
 
     def fit(self, X: np.ndarray, y: None = None) -> TransformerMixin:
         """
-        Fits the MatrixToValueProjection.
+        Fit the MatrixToValueProjection.
 
         Parameters
         ----------
@@ -43,7 +50,7 @@ class MatrixToValueProjection(BaseEstimator, TransformerMixin):
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """
-        Transforms matrix to a value as defined.
+        Transform matrix to a value as defined.
 
         Parameters
         ----------

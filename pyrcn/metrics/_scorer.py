@@ -1,5 +1,7 @@
 """
-The :mod:`sklearn.metrics.scorer` submodule implements a flexible
+The :mod:`sklearn.metrics.scorer`.
+
+The submodule implements a flexible
 interface for model selection and evaluation using
 arbitrary score functions.
 A scorer object is a callable that can be passed to
@@ -12,24 +14,27 @@ ground truth labeling (or ``None`` in the case of unsupervised models).
 """
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de.de>
-
+from typing import no_type_check
 from collections.abc import Iterable
 from functools import partial
 from collections import Counter
 
 import numpy as np
 
-from pyrcn.metrics import (r2_score, median_absolute_error, max_error, mean_absolute_error,
-                           mean_squared_error, mean_squared_log_error,
-                           mean_poisson_deviance, mean_gamma_deviance, accuracy_score,
-                           f1_score, precision_score, recall_score,
-                           log_loss, balanced_accuracy_score, explained_variance_score,
-                           brier_score_loss, jaccard_score, mean_absolute_percentage_error)
+from pyrcn.metrics import (r2_score, median_absolute_error, max_error,
+                           mean_absolute_error, mean_squared_error,
+                           mean_squared_log_error, mean_poisson_deviance,
+                           mean_gamma_deviance, accuracy_score, f1_score,
+                           precision_score, recall_score, log_loss,
+                           balanced_accuracy_score, explained_variance_score,
+                           brier_score_loss, jaccard_score,
+                           mean_absolute_percentage_error)
 
 from sklearn.utils.multiclass import type_of_target
 from sklearn.base import is_regressor
 
 
+@no_type_check
 def _cached_call(cache, estimator, method, *args, **kwargs):
     """Call estimator with method and args and kwargs."""
     if cache is None:
@@ -44,19 +49,26 @@ def _cached_call(cache, estimator, method, *args, **kwargs):
 
 
 class _MultimetricScorer:
-    """Callable for multimetric scoring used to avoid repeated calls
+    """
+    Callable for multimetric scoring used to avoid repeated calls.
+
     to `predict_proba`, `predict`, and `decision_function`.
     `_MultimetricScorer` will return a dictionary of scores corresponding to
     the scorers in the dictionary. Note that `_MultimetricScorer` can be
     created with a dictionary with one key  (i.e. only one actual scorer).
+
     Parameters
     ----------
     scorers : dict
         Dictionary mapping names to callable scorers.
     """
+
+    @no_type_check
     def __init__(self, **scorers):
+        """Construct the MultiMetricScorer."""
         self._scorers = scorers
 
+    @no_type_check
     def __call__(self, estimator, *args, **kwargs):
         """Evaluate predicted target values."""
         scores = {}
@@ -72,8 +84,11 @@ class _MultimetricScorer:
             scores[name] = score
         return scores
 
+    @no_type_check
     def _use_cache(self, estimator):
-        """Return True if using a cache is beneficial.
+        """
+        Return True if using a cache is beneficial.
+
         Caching may be beneficial when one of these conditions holds:
           - `_ProbaScorer` will be called twice.
           - `_PredictScorer` will be called twice.
@@ -95,34 +110,39 @@ class _MultimetricScorer:
         if counter[_ThresholdScorer]:
             if is_regressor(estimator) and counter[_PredictScorer]:
                 return True
-            elif (counter[_ProbaScorer] and
-                  not hasattr(estimator, "decision_function")):
+            elif (counter[_ProbaScorer]
+                  and not hasattr(estimator, "decision_function")):
                 return True
         return False
 
 
 class _BaseScorer:
+    @no_type_check
     def __init__(self, score_func, sign, kwargs):
         self._kwargs = kwargs
         self._score_func = score_func
         self._sign = sign
 
     @staticmethod
+    @no_type_check
     def _check_pos_label(pos_label, classes):
         if pos_label not in list(classes):
             raise ValueError(
                 f"pos_label={pos_label} is not a valid label: {classes}"
             )
 
+    @no_type_check
     def _select_proba_binary(self, y_pred, classes):
-        """Select the column of the positive label in `y_pred` when
-        probabilities are provided.
+        """
+        Select column of the positive label in `y_pred` when probabilities are provided.
+
         Parameters
         ----------
         y_pred : ndarray of shape (n_samples, n_classes)
             The prediction given by `predict_proba`.
         classes : ndarray of shape (n_classes,)
             The class labels for the estimator.
+
         Returns
         -------
         y_pred : ndarray of shape (n_samples,)
@@ -141,6 +161,7 @@ class _BaseScorer:
         )
         raise ValueError(err_msg)
 
+    @no_type_check
     def __repr__(self):
         kwargs_string = "".join([", %s=%s" % (str(k), str(v))
                                  for k, v in self._kwargs.items()])
@@ -149,8 +170,11 @@ class _BaseScorer:
                    "" if self._sign > 0 else ", greater_is_better=False",
                    self._factory_args(), kwargs_string))
 
+    @no_type_check
     def __call__(self, estimator, X, y_true, sample_weight=None):
-        """Evaluate predicted target values for X relative to y_true.
+        """
+        Evaluate predicted target values for X relative to y_true.
+
         Parameters
         ----------
         estimator : object
@@ -162,6 +186,7 @@ class _BaseScorer:
             Gold standard target values for X.
         sample_weight : array-like of shape (n_samples,), default=None
             Sample weights.
+
         Returns
         -------
         score : float
@@ -170,14 +195,18 @@ class _BaseScorer:
         return self._score(partial(_cached_call, None), estimator, X, y_true,
                            sample_weight=sample_weight)
 
+    @no_type_check
     def _factory_args(self):
         """Return non-default make_scorer arguments for repr."""
         return ""
 
 
 class _PredictScorer(_BaseScorer):
+    @no_type_check
     def _score(self, method_caller, estimator, X, y_true, sample_weight=None):
-        """Evaluate predicted target values for X relative to y_true.
+        """
+        Evaluate predicted target values for X relative to y_true.
+
         Parameters
         ----------
         method_caller : callable
@@ -192,12 +221,12 @@ class _PredictScorer(_BaseScorer):
             Gold standard target values for X.
         sample_weight : array-like of shape (n_samples,), default=None
             Sample weights.
+
         Returns
         -------
         score : float
             Score function applied to prediction of estimator on X.
         """
-
         y_pred = method_caller(estimator, "predict", X)
         if sample_weight is not None:
             return self._sign * self._score_func(y_true, y_pred,
@@ -209,8 +238,11 @@ class _PredictScorer(_BaseScorer):
 
 
 class _ProbaScorer(_BaseScorer):
+    @no_type_check
     def _score(self, method_caller, clf, X, y, sample_weight=None):
-        """Evaluate predicted probabilities for X relative to y_true.
+        """
+        Evaluate predicted probabilities for X relative to y_true.
+
         Parameters
         ----------
         method_caller : callable
@@ -226,12 +258,12 @@ class _ProbaScorer(_BaseScorer):
             not probabilities.
         sample_weight : array-like, default=None
             Sample weights.
+
         Returns
         -------
         score : float
             Score function applied to prediction of estimator on X.
         """
-
         y_type = type_of_target(y)
         y_pred = method_caller(clf, "predict_proba", X)
         if y_type == "binary" and y_pred.shape[1] <= 2:
@@ -246,13 +278,17 @@ class _ProbaScorer(_BaseScorer):
         else:
             return self._sign * self._score_func(y, y_pred, **self._kwargs)
 
+    @no_type_check
     def _factory_args(self):
         return ", needs_proba=True"
 
 
 class _ThresholdScorer(_BaseScorer):
+    @no_type_check
     def _score(self, method_caller, clf, X, y, sample_weight=None):
-        """Evaluate decision function output for X relative to y_true.
+        """
+        Evaluate decision function output for X relative to y_true.
+
         Parameters
         ----------
         method_caller : callable
@@ -270,12 +306,12 @@ class _ThresholdScorer(_BaseScorer):
             not decision function values.
         sample_weight : array-like, default=None
             Sample weights.
+
         Returns
         -------
         score : float
             Score function applied to prediction of estimator on X.
         """
-
         y_type = type_of_target(y)
         if y_type not in ("binary", "multilabel-indicator"):
             raise ValueError("{0} format is not supported".format(y_type))
@@ -314,17 +350,21 @@ class _ThresholdScorer(_BaseScorer):
         else:
             return self._sign * self._score_func(y, y_pred, **self._kwargs)
 
+    @no_type_check
     def _factory_args(self):
         return ", needs_threshold=True"
 
 
+@no_type_check
 def get_scorer(scoring):
-    """Get a scorer from string.
-    Read more in the :ref:`User Guide <scoring_parameter>`.
+    """
+    Get a scorer from string. Read more in the :ref:`User Guide <scoring_parameter>`.
+
     Parameters
     ----------
     scoring : str or callable
         Scoring method as string. If callable it is returned as is.
+
     Returns
     -------
     scorer : callable
@@ -342,14 +382,19 @@ def get_scorer(scoring):
     return scorer
 
 
+@no_type_check
 def _passthrough_scorer(estimator, *args, **kwargs):
-    """Function that wraps estimator.score"""
+    """Function that wraps estimator.score."""
     return estimator.score(*args, **kwargs)
 
 
+@no_type_check
 def check_scoring(estimator, scoring=None, *, allow_none=False):
-    """Determine scorer from user options.
+    """
+    Determine scorer from user options.
+
     A TypeError will be thrown if the estimator cannot be scored.
+
     Parameters
     ----------
     estimator : estimator object implementing 'fit'
@@ -361,6 +406,7 @@ def check_scoring(estimator, scoring=None, *, allow_none=False):
     allow_none : bool, default=False
         If no scoring is specified and the estimator has no score function, we
         can either return None or raise an exception.
+
     Returns
     -------
     scoring : callable
@@ -404,8 +450,11 @@ def check_scoring(estimator, scoring=None, *, allow_none=False):
                          " None. %r was passed" % scoring)
 
 
+@no_type_check
 def _check_multimetric_scoring(estimator, scoring):
-    """Check the scoring parameter in cases when multiple metrics are allowed.
+    """
+    Check the scoring parameter in cases when multiple metrics are allowed.
+
     Parameters
     ----------
     estimator : sklearn estimator instance
@@ -419,6 +468,7 @@ def _check_multimetric_scoring(estimator, scoring):
           names and the values are the metric scores;
         - a dictionary with metric names as keys and callables a values.
         See :ref:`multimetric_grid_search` for an example.
+
     Returns
     -------
     scorers_dict : dict
@@ -472,10 +522,12 @@ def _check_multimetric_scoring(estimator, scoring):
     return scorers
 
 
+@no_type_check
 def make_scorer(score_func, *, greater_is_better=True, needs_proba=False,
                 needs_threshold=False, **kwargs):
     """
     Make a scorer from a performance metric or loss function.
+
     This factory function wraps scoring functions for use in
     :class:`~sklearn.model_selection.GridSearchCV` and
     :func:`~sklearn.model_selection.cross_val_score`.

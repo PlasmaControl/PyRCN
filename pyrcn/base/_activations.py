@@ -1,4 +1,6 @@
-﻿import numpy as np
+﻿"""The :mod:`activations` contains various activation functions for PyRCN."""
+
+import numpy as np
 from sklearn.neural_network._base import ACTIVATIONS
 from typing import Dict
 

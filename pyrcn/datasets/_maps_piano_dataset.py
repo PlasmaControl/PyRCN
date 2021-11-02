@@ -1,37 +1,38 @@
 """MAPS piano dataset.
+
 The original database is available at
 
     https://adasp.telecom-paris.fr/resources/2010-07-08-maps-database/
 
 The license is restricted, and one needs to register and download the dataset.
-
 """
+from typing import no_type_check
 import sys
 if sys.version_info >= (3, 8):
-    from typing import Union, Literal
+    from typing import Optional, Tuple, Literal
 else:
     from typing_extensions import Literal
-    from typing import Union
+    from typing import Optional, Tuple
 
+import csv
 from pathlib import Path
-from os.path import dirname, exists, join
-from os import makedirs, remove
+from os.path import exists, join
+from os import makedirs
 import numpy as np
 import pandas as pd
 import joblib
 
 from sklearn.base import TransformerMixin
 from sklearn.datasets import get_data_home
-from sklearn.datasets._base import RemoteFileMetadata, _pkl_filepath
+from sklearn.datasets._base import _pkl_filepath
 from sklearn.utils.validation import _deprecate_positional_args
 
 
-def _combine_events(events: Union[list, np.ndarray], 
-                    delta : float, 
+def _combine_events(events: np.ndarray, delta: float,
                     combine: Literal['mean', 'left', 'right']) -> np.ndarray:
     """
     Combine all events within a certain range.
-    
+
     Parameters
     ----------
     events : Union[list, ndarray]
@@ -43,7 +44,7 @@ def _combine_events(events: Union[list, np.ndarray],
             - 'mean': replace by the mean of the two events
             - 'left': replace by the left of the two events
             - 'right': replace by the right of the two events
-    
+
     Returns
     -------
     events : ndarray
@@ -55,7 +56,7 @@ def _combine_events(events: Union[list, np.ndarray],
     if len(events) <= 1:
         return events
     # convert to numpy array or create a copy if needed
-    events = np.array(events, dtype=np.float)
+    events = np.array(events, dtype=float)
     # can handle only 1D events
     if events.ndim > 1:
         raise ValueError('only 1-dimensional events supported.')
@@ -84,18 +85,19 @@ def _combine_events(events: Union[list, np.ndarray],
     return events[:idx + 1]
 
 
-def _quantize_notes(notes: np.ndarray, fps: float, 
-                    length: Union[int, np.integer] = None, 
-                    num_pitches: Union[int, np.integer] = None, 
-                    velocity: float = None) -> np.ndarray:
+def _quantize_notes(notes: np.ndarray, fps: float, length: Optional[int] = None,
+                    num_pitches: Optional[int] = None,
+                    velocity: Optional[float] = None) -> np.ndarray:
     """
     Quantize the notes with the given resolution.
+
     Create a sparse 2D array with rows corresponding to points in time
     (according to `fps` and `length`), and columns to note pitches (according
     to `num_pitches`). The values of the array correspond to the velocity of a
     sounding note at a given point in time (based on the note pitch, onset,
     duration and velocity). If no values for `length` and `num_pitches` are
     given, they are inferred from `notes`.
+
     Parameters
     ----------
     notes : np.ndarray
@@ -106,10 +108,10 @@ def _quantize_notes(notes: np.ndarray, fps: float,
         of 1 is assumed.
     fps : float
         Quantize with `fps` frames per second.
-    length : Union[int, np.integer]
+    length : Optional[int, np.integer], default=None
         Length of the returned array. If 'None', the length will be set
         according to the latest sounding note.
-    num_pitches : Union[int, np.integer]
+    num_pitches : Optional[int, np.integer], default=None
         Number of pitches of the returned array. If 'None', the number of
         pitches will be based on the highest pitch in the `notes` array.
     velocity : float
@@ -122,7 +124,7 @@ def _quantize_notes(notes: np.ndarray, fps: float,
         Quantized notes.
     """
     # convert to numpy array or create a copy if needed
-    notes = np.array(np.array(notes).T, dtype=np.float, ndmin=2).T
+    notes = np.array(np.array(notes).T, dtype=float).T
     # check supported dims and shapes
     if notes.ndim != 2:
         raise ValueError('only 2-dimensional notes supported.')
@@ -130,7 +132,7 @@ def _quantize_notes(notes: np.ndarray, fps: float,
         raise ValueError('notes must have at least 2 columns.')
     # split the notes into columns
     note_onsets = notes[:, 0]
-    note_numbers = notes[:, 1].astype(np.int)
+    note_numbers = notes[:, 1].astype(int)
     note_offsets = np.copy(note_onsets)
     if notes.shape[1] > 2:
         note_offsets += notes[:, 2]
@@ -148,8 +150,8 @@ def _quantize_notes(notes: np.ndarray, fps: float,
     # init array
     quantized = np.zeros((length, num_pitches))
     # quantize onsets and offsets
-    note_onsets = np.round((note_onsets * fps)).astype(np.int)
-    note_offsets = np.round((note_offsets * fps)).astype(np.int) + 1
+    note_onsets = np.round((note_onsets * fps)).astype(int)
+    note_offsets = np.round((note_offsets * fps)).astype(int) + 1
     # iterate over all notes
     for n, note in enumerate(notes):
         # use only the notes which fit in the array and note number >= 0
@@ -160,16 +162,16 @@ def _quantize_notes(notes: np.ndarray, fps: float,
     return quantized
 
 
+@no_type_check
 @_deprecate_positional_args
-def fetch_maps_piano_dataset(*, data_origin: str = None, data_home: str = None, 
-                             preprocessor: TransformerMixin = None, 
-                             force_preprocessing: bool = False, 
-                             label_type: Literal["pitch", "onset", "offset"]) -> (np.ndarray, 
-                                                                                  np.ndarray, 
-                                                                                  np.ndarray, 
-                                                                                  np.ndarray):
+def fetch_maps_piano_dataset(*, data_origin: Optional[str] = None,
+                             data_home: Optional[str] = None,
+                             preprocessor: Optional[TransformerMixin] = None,
+                             force_preprocessing: bool = False,
+                             label_type: Literal["pitch", "onset", "offset"]) \
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Load the MAPS piano dataset from Telecom Paris (classification)
+    Load the MAPS piano dataset from Telecom Paris (classification).
 
     =================   =====================
     Classes                              TODO
@@ -180,16 +182,16 @@ def fetch_maps_piano_dataset(*, data_origin: str = None, data_home: str = None,
 
     Parameters
     ----------
-    data_origin : str, default=None
+    data_origin : Optional[str], default=None
         Specify where the original dataset can be found. By default,
         all pyrcn data is stored in '~/pyrcn_data' and all scikit-learn data in
        '~/scikit_learn_data' subfolders.
-    data_home : str, default=None
+    data_home : Optional[str], default=None
         Specify another download and cache folder fo the datasets. By default,
         all pyrcn data is stored in '~/pyrcn_data' and all scikit-learn data in
        '~/scikit_learn_data' subfolders.
-    preprocessor : sklearn.TransformerMixin, default=None,
-        Estimator for preprocessing the dataset (create features and targets from 
+    preprocessor : Optional[sklearn.TransformerMixin], default=None,
+        Estimator for preprocessing the dataset (create features and targets from
         audio and label files).
     force_preprocessing: bool, default=False
         Force preprocessing (label computation and feature extraction)
@@ -199,7 +201,8 @@ def fetch_maps_piano_dataset(*, data_origin: str = None, data_home: str = None,
 
     Returns
     -------
-    (X_train, X_test, y_train, y_test) : tuple(np.ndarray, np.ndarray, np.ndarray, np.ndarray)
+    (X_train, X_test, y_train, y_test) : tuple(np.ndarray, np.ndarray,
+    np.ndarray, np.ndarray)
     """
     data_home = get_data_home(data_home=data_home)
     if not exists(data_home):
@@ -209,8 +212,12 @@ def fetch_maps_piano_dataset(*, data_origin: str = None, data_home: str = None,
 
         print('preprocessing MAPS dataset from %s to %s'
               % (data_origin, data_home))
-        train_files = np.loadtxt(join(data_origin, Path("mapsSplits/sigtia-conf3-splits/train")), dtype=object)
-        test_files = np.loadtxt(join(data_origin, Path("mapsSplits/sigtia-conf3-splits/test")), dtype=object)
+        train_files = np.loadtxt(
+            join(data_origin, Path("mapsSplits/sigtia-conf3-splits/train")),
+            dtype=object)
+        test_files = np.loadtxt(
+            join(data_origin, Path("mapsSplits/sigtia-conf3-splits/test")),
+            dtype=object)
 
         X_train = np.empty(shape=(len(train_files),), dtype=object)
         X_test = np.empty(shape=(len(test_files),), dtype=object)
@@ -229,35 +236,30 @@ def fetch_maps_piano_dataset(*, data_origin: str = None, data_home: str = None,
     else:
         X_train, X_test, y_train, y_test = joblib.load(filepath)
 
-    x_shape_zero = np.unique([X.shape[0] for X in X_train] + [X.shape[0] for X in X_test])
-    x_shape_one = np.unique([X.shape[1] for X in X_train] + [X.shape[1] for X in X_test])
+    x_shape_zero = np.unique(
+        [X.shape[0] for X in X_train] + [X.shape[0] for X in X_test])
+    x_shape_one = np.unique(
+        [X.shape[1] for X in X_train] + [X.shape[1] for X in X_test])
     if len(x_shape_zero) == 1 and len(x_shape_one) > 1:
         for k in range(len(X_train)):
             X_train[k] = X_train[k].T
         for k in range(len(X_test)):
-            X_test[k] = X_test[k].T 
+            X_test[k] = X_test[k].T
     elif len(x_shape_zero) > 1 and len(x_shape_one) == 1:
         pass
     else:
-        raise TypeError("Invalid dataformat. Expected at least one equal dimension of all sequences.")
+        raise TypeError("Invalid dataformat."
+                        "Expected at least one equal dimension of all sequences.")
 
     for k in range(len(X_train)):
         if label_type == "pitch":
             y_train[k] = _get_pitch_labels(X_train[k], y_train[k])
-        elif label_type == "onset":
-            y_train[k] = _get_onset_labels(X_train[k], y_train[k])
-        elif label_type == "onset":
-            y_train[k] = _get_offset_labels(X_train[k], y_train[k])
         else:
             raise TypeError("Invalid label type.")
 
     for k in range(len(X_test)):
         if label_type == "pitch":
             y_test[k] = _get_pitch_labels(X_test[k], y_test[k])
-        elif label_type == "onset":
-            y_test[k] = _get_onset_labels(X_test[k], y_test[k])
-        elif label_type == "onset":
-            y_test[k] = _get_offset_labels(X_test[k], y_test[k])
         else:
             raise TypeError("Invalid label type.")
 
@@ -266,7 +268,7 @@ def fetch_maps_piano_dataset(*, data_origin: str = None, data_home: str = None,
 
 def _get_pitch_labels(X: np.ndarray, df_label: pd.DataFrame) -> np.ndarray:
     """
-    Get the pitch labels of a recording
+    Get the pitch labels of a recording.
 
     Parameters
     ----------
@@ -287,7 +289,7 @@ def _get_pitch_labels(X: np.ndarray, df_label: pd.DataFrame) -> np.ndarray:
     return y
 
 
-def get_note_events(utterance: str):
+def get_note_events(utterance: str) -> np.ndarray:
     """
     Obtain note events from a stored file.
 
@@ -298,7 +300,7 @@ def get_note_events(utterance: str):
 
     Returns
     -------
-    notes : ndarray 
+    notes : ndarray
         MIDI pitches, start and stop in seconds
     """
     notes = []
@@ -310,49 +312,3 @@ def get_note_events(utterance: str):
             note = int(label['MidiPitch'])
             notes.append([start_time, note, end_time - start_time])
     return np.array(notes)
-
-def get_onset_events(utterance: str) -> np.ndarray:
-    """
-    Obtain onset events from a stored file.
-
-    Parameters
-    ----------
-    utterance : str
-        file name of an utterance
-
-    Returns
-    -------
-    onset_events : ndarray 
-        onset times in seconds
-    """
-    onset_labels = []
-    with open(utterance, 'r') as f:
-        reader = csv.DictReader(f, delimiter='\t')
-        for label in reader:
-            start_time = float(label['OnsetTime'])
-            note = int(label['MidiPitch'])
-            onset_labels.append([start_time, note])
-    return _combine_events(list(dict.fromkeys(onset_labels)), 0.03, combine='mean')
-
-def get_offset_events(utterance: str) -> np.ndarray:
-    """
-    Obtain onset events from a stored file.
-
-    Parameters
-    ----------
-    utterance : str
-        file name of an utterance
-
-    Returns
-    -------
-    offset_events : ndarray 
-        offset times in seconds
-    """
-    offset_labels = []
-    with open(utterance, 'r') as f:
-        reader = csv.DictReader(f, delimiter='\t')
-        for label in reader:
-            start_time = float(label['OnsetTime'])
-            note = int(label['MidiPitch'])
-            offset_labels.append([start_time, note])
-    return _combine_events(list(dict.fromkeys(offset_labels)), 0.03, combine='mean')

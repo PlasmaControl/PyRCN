@@ -1,6 +1,7 @@
 """
-The :mod:`pyrcn.echo_state_network` contains  a simple object-oriented implementation 
-of Echo State Networks [#]_ [#]_.
+The :mod:`pyrcn.echo_state_network`.
+
+It contains  a simple object-oriented implementation of Echo State Networks [#]_ [#]_.
 
 Separate implementations of Classifiers and Regressors as specified by scikit-learn
 
@@ -16,11 +17,11 @@ References
 # See https://github.com/TUD-STKS/PyRCN for complete
 # documentation.
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>, Azarakhsh Jalalvand <azarakhsh.jalalvand@ugent.be>
+# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
 from pyrcn.echo_state_network._esn import ESNClassifier, ESNRegressor
 
-__all__ = ['ESNClassifier',
+__all__ = ('ESNClassifier',
            'ESNRegressor',
-           ]
+           )

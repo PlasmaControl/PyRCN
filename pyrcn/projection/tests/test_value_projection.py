@@ -1,13 +1,12 @@
 """
-Testing for Echo State Network module (pyrcn.echo_state_network)
+Testing for projection module (pyrcn.projection)
 """
+
 import numpy as np
 from pyrcn.projection import MatrixToValueProjection
 
-import pytest
 
-
-def test_matrix_to_value_projection():
+def test_matrix_to_value_projection() -> None:
     print('\ntest_matrix_to_value_projection():')
     X = np.random.rand(5, 3)
     idx_true = np.array([0, 0, 0, 1, 2])
@@ -16,7 +15,7 @@ def test_matrix_to_value_projection():
     np.testing.assert_equal(y, 0)
 
 
-def test_matrix_to_value_projection_median():
+def test_matrix_to_value_projection_median() -> None:
     print('\ntest_matrix_to_value_projection_median():')
     trf = MatrixToValueProjection(output_strategy="median")
     X = np.random.rand(5, 3)
@@ -26,7 +25,7 @@ def test_matrix_to_value_projection_median():
     np.testing.assert_equal(y, np.argmax(np.median(X, axis=0)))
 
 
-def test_matrix_to_value_projection_lv():
+def test_matrix_to_value_projection_lv() -> None:
     print('\ntest_matrix_to_value_projection_lv():')
     X = np.random.rand(5, 3)
     idx_true = np.array([0, 0, 0, 1, 2])
@@ -36,7 +35,7 @@ def test_matrix_to_value_projection_lv():
     np.testing.assert_equal(y, np.argmax(X[-1, :]))
 
 
-def test_matrix_to_value_projection_proba():
+def test_matrix_to_value_projection_proba() -> None:
     print('\ntest_matrix_to_value_projection_predict_proba():')
     X = np.random.rand(5, 3)
     idx_true = np.array([0, 0, 0, 1, 2])

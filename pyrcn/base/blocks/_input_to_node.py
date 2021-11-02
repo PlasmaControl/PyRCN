@@ -1,4 +1,6 @@
-﻿# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
+﻿"""The :mod:`input_to_node` contains InputToNode classes and derivatives."""
+
+# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
 import sys
@@ -46,10 +48,11 @@ class InputToNode(BaseEstimator, TransformerMixin):
         Scales the input weight matrix.
     bias_scaling : float, default = 1.
         Scales the input bias of the activation.
-    k_in : Union[None, int, np.integer], default = None.
+    k_in : Union[int, np.integer, None], default = None.
         input weights per node. By default, it is None. If set, it overrides sparsity.
-    random_state : Union[int, np.random.RandomState], default = 42
+    random_state : Union[int, np.random.RandomState, None], default = 42
     """
+
     @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500,
@@ -58,8 +61,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
                                            'bounded_relu'] = 'tanh',
                  input_scaling: float = 1.,
                  bias_scaling: float = 1.,
-                 k_in: Union[None, int, np.integer] = None,
-                 random_state: Union[int, np.random.RandomState] = 42):
+                 k_in: Union[int, np.integer, None] = None,
+                 random_state: Union[int, np.random.RandomState, None] = 42) -> None:
+        """Construct the InputToNode."""
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
         self.input_activation = input_activation
@@ -101,7 +105,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """
-        Transforms the input matrix X.
+        Transform the input matrix X.
 
         Parameters
         ----------
@@ -126,8 +130,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
                      input_scaling: float, bias: np.ndarray,
                      bias_scaling: float) -> np.ndarray:
         """
-        Returns the node inputs scaled by input_scaling, multiplied by input_weights
-        and bias added.
+        Scale the node inputs input_scaling, Multiply with input_weights and add bias.
 
         Parameters
         ----------
@@ -145,13 +148,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
             np.ones(shape=(X.shape[0], 1)) * bias * bias_scaling
 
     def _validate_hyperparameters(self) -> None:
-        """
-        Validates the hyperparameters.
-
-        Returns
-        -------
-
-        """
+        """Validate the hyperparameters."""
         self._random_state = check_random_state(self.random_state)
 
         if self.hidden_layer_size <= 0:
@@ -174,7 +171,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     def __sizeof__(self) -> int:
         """
-        Returns the size of the object in bytes.
+        Return the size of the object in bytes.
 
         Returns
         -------
@@ -194,7 +191,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
     @property
     def input_weights(self) -> Union[np.ndarray, scipy.sparse.csr.csr_matrix]:
         """
-        Returns the input weights.
+        Return the input weights.
 
         Returns
         -------
@@ -206,7 +203,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
     @property
     def bias_weights(self) -> np.ndarray:
         """
-        Returns the bias.
+        Return the bias.
 
         Returns
         -------
@@ -237,10 +234,9 @@ class PredefinedWeightsInputToNode(InputToNode):
         Scales the input weight matrix.
     bias_scaling : float, default = 1.
         Scales the input bias of the activation.
-    k_in : Union[int, np.integer], default = None.
-        input weights per node. By default, it is None. If set, it overrides sparsity.
-    random_state : Union[None, int, np.random.RandomState], default = 42
+    random_state : Union[int, np.random.RandomState, None], default = 42
     """
+
     @_deprecate_positional_args
     def __init__(self,
                  predefined_input_weights: np.ndarray, *,
@@ -248,7 +244,8 @@ class PredefinedWeightsInputToNode(InputToNode):
                                            'bounded_relu'] = 'tanh',
                  input_scaling: float = 1.,
                  bias_scaling: float = 0.,
-                 random_state: Union[None, int, np.random.RandomState] = 42):
+                 random_state: Union[int, np.random.RandomState, None] = 42) -> None:
+        """Construct the PredefinedWeightsInputToNode."""
         super().__init__(hidden_layer_size=predefined_input_weights.shape[1],
                          input_activation=input_activation,
                          input_scaling=input_scaling,
@@ -258,8 +255,7 @@ class PredefinedWeightsInputToNode(InputToNode):
 
     def fit(self, X: np.ndarray, y: None = None) -> InputToNode:
         """
-        Fit the PredefinedWeightsInputToNode. Sets the input weights and initializes
-        bias.
+        Fit the PredefinedWeightsInputToNode. Set input weights and initialize bias.
 
         Parameters
         ----------
@@ -314,8 +310,9 @@ class BatchIntrinsicPlasticity(InputToNode):
     sparsity : float, default = 1.
         Quotient of input weights per node (k_in)
         and number of input features (n_features)
-    random_state : Union[None, int, np.random.RandomState], default = 42
+    random_state : Union[int, np.random.RandomState, None], default = 42
     """
+
     @_deprecate_positional_args
     def __init__(self, *,
                  distribution: Literal['exponential', 'uniform', 'normal'] = 'normal',
@@ -324,7 +321,8 @@ class BatchIntrinsicPlasticity(InputToNode):
                                            'bounded_relu'] = 'tanh',
                  hidden_layer_size: Union[int, np.integer] = 500,
                  sparsity: float = 1.,
-                 random_state: Union[None, int, np.random.RandomState] = 42):
+                 random_state: Union[int, np.random.RandomState, None] = 42):
+        """Construct the BatchIntrinsicPlasticity InputToNode."""
         super().__init__(input_activation=input_activation,
                          hidden_layer_size=hidden_layer_size,
                          sparsity=sparsity, random_state=random_state)
@@ -368,7 +366,7 @@ class BatchIntrinsicPlasticity(InputToNode):
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         """
-        Transforms the input matrix X.
+        Transform the input matrix X.
 
         Parameters
         ----------
@@ -392,7 +390,7 @@ class BatchIntrinsicPlasticity(InputToNode):
 
     def _fit_neumann(self, X: np.ndarray, y: None = None) -> InputToNode:
         """
-        Fits according to the Neumann paper.
+        Fit according to the Neumann paper.
 
         Parameters
         ----------
@@ -446,7 +444,7 @@ class BatchIntrinsicPlasticity(InputToNode):
 
     def _fit_dresden(self, X: np.ndarray, y: None = None) -> InputToNode:
         """
-        Fits with a slightly different method.
+        Fit with a slightly different method.
 
         Parameters
         ----------
