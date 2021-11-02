@@ -83,8 +83,8 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self.k_rec = k_rec
         self.random_state = random_state
 
-        self._recurrent_weights = np.ndarray([])
-        self._hidden_layer_state = np.ndarray([])
+        self._recurrent_weights: np.ndarray = np.ndarray([])
+        self._hidden_layer_state: np.ndarray = np.ndarray([])
 
     def fit(self, X: np.ndarray, y: None = None) -> TransformerMixin:
         """

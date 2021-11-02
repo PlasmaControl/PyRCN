@@ -66,10 +66,10 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
         self.metric = metric
         self.init = init
         self.n_inits = n_inits
-        self.random_state = random_state
+        self.random_state = check_random_state(random_state)
         self.max_iter = max_iter
-        self.cluster_centers_ = np.ndarray([])
-        self.labels_ = np.ndarray([])
+        self.cluster_centers_: np.ndarray = np.ndarray([])
+        self.labels_: np.ndarray = np.ndarray([])
         self.inertia_ = np.nan
         self.n_iter_: int
         self.scaler = StandardScaler()
@@ -90,8 +90,6 @@ class KCluster(BaseEstimator, ClusterMixin, TransformerMixin):
         X = self.scaler.transform(X)
 
         if self.init == 'random':
-            self.random_state = check_random_state(self.random_state)
-
             for init in self.random_state.randint(low=1e6, size=self.n_inits):
                 centroids, inertia, labels, iterations = KCluster._calculate_centroids(
                     X,

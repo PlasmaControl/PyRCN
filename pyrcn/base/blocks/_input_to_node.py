@@ -72,9 +72,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self.random_state = random_state
         self.k_in = k_in
 
-        self._input_weights = np.ndarray([])
-        self._bias_weights = np.ndarray([])
-        self._hidden_layer_state = np.ndarray([])
+        self._input_weights: np.ndarray = np.ndarray([])
+        self._bias_weights: np.ndarray = np.ndarray([])
+        self._hidden_layer_state: np.ndarray = np.ndarray([])
 
     def fit(self, X: np.ndarray, y: None = None) -> TransformerMixin:
         """
