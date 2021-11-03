@@ -179,28 +179,28 @@ def _get_labels(X: np.ndarray, df_label: pd.DataFrame) -> np.ndarray:
         y[1:1+len(labels), :] = labels
         return y
     elif X.shape[0] == 2*labels.shape[0]:
-        y[:, 0] = np.interp(np.arange(len(labels), step=0.5),  # type: ignore
-                            xp=np.arange(len(labels), step=1),  # type: ignore
-                            fp=labels[:, 0])
-        y[:, 1] = np.interp(np.arange(len(labels), step=0.5),  # type: ignore
-                            xp=np.arange(len(labels), step=1),  # type: ignore
-                            fp=labels[:, 1])
+        y[:, 0] = np.interp(
+            np.arange(len(labels), step=0.5),  # type: ignore
+            xp=np.arange(len(labels), step=1), fp=labels[:, 0])  # type: ignore
+        y[:, 1] = np.interp(
+            np.arange(len(labels), step=0.5),  # type: ignore
+            xp=np.arange(len(labels), step=1), fp=labels[:, 1])  # type: ignore
         return y
     elif X.shape[0] == 2*labels.shape[0] - 1:
-        y[1:1+2*len(labels)-1, 0] = np.interp(np.arange(len(labels) - 1, step=0.5),
-                                              xp=np.arange(len(labels), step=1),
-                                              fp=labels[:, 0])
-        y[1:1+2*len(labels)-1, 1] = np.interp(np.arange(len(labels) - 1, step=0.5),
-                                              xp=np.arange(len(labels), step=1),
-                                              fp=labels[:, 1])
+        y[1:1+2*len(labels)-1, 0] = np.interp(
+            np.arange(len(labels) - 1, step=0.5),  # type: ignore
+            xp=np.arange(len(labels), step=1), fp=labels[:, 0])  # type: ignore
+        y[1:1+2*len(labels)-1, 1] = np.interp(
+            np.arange(len(labels) - 1, step=0.5),
+            xp=np.arange(len(labels), step=1), fp=labels[:, 1])  # type: ignore
         return y
     elif X.shape[0] == 2*labels.shape[0] + 1:
-        y[1:1+2*len(labels)+1, 0] = np.interp(np.arange(len(labels), step=0.5),
-                                              xp=np.arange(len(labels), step=1),
-                                              fp=labels[:, 0])
-        y[1:1+2*len(labels)+1, 1] = np.interp(np.arange(len(labels), step=0.5),
-                                              xp=np.arange(len(labels), step=1),
-                                              fp=labels[:, 1])
+        y[1:1+2*len(labels)+1, 0] = np.interp(
+            np.arange(len(labels), step=0.5),  # type: ignore
+            xp=np.arange(len(labels), step=1), fp=labels[:, 0])  # type: ignore
+        y[1:1+2*len(labels)+1, 1] = np.interp(
+            np.arange(len(labels), step=0.5),  # type: ignore
+            xp=np.arange(len(labels), step=1), fp=labels[:, 1])  # type: ignore
         return y
     else:
         return np.ndarray([])
