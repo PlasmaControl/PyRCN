@@ -56,9 +56,9 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self.normalize = normalize
         self.scaler = StandardScaler(copy=False)
 
-        self._K = np.ndarray([])
-        self._xTy = np.ndarray([])
-        self._output_weights = np.ndarray([])
+        self._K: np.ndarray = np.ndarray([])
+        self._xTy: np.ndarray = np.ndarray([])
+        self._output_weights: np.ndarray = np.ndarray([])
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
                     partial_normalize: bool = True,
