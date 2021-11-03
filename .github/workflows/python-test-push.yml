@@ -1,4 +1,4 @@
-name: Python Check Push Request
+name: Python Check Push
 
 on: [push]
 
