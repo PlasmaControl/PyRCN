@@ -1,13 +1,11 @@
-import scipy
-import numpy as np
+"""Testing for Linear model module"""
 
-import pytest
+import numpy as np
 
 from sklearn.base import is_regressor
 from sklearn.datasets import load_diabetes
 from sklearn.model_selection import train_test_split
 
-from pyrcn.base import InputToNode
 from pyrcn.linear_model import IncrementalRegression
 from sklearn.linear_model import Ridge
 
@@ -15,7 +13,7 @@ from sklearn.linear_model import Ridge
 X_diabetes, y_diabetes = load_diabetes(return_X_y=True)
 
 
-def test_linear():
+def test_linear() -> None:
     print('\ntest_linear():')
     rs = np.random.RandomState(42)
     index = range(1000)
@@ -25,7 +23,8 @@ def test_linear():
     transformation = rs.random(size=(3, 2))
     y = np.matmul(X, transformation)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=10, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=10,
+                                                        random_state=42)
     reg = IncrementalRegression()
     assert is_regressor(reg)
 
@@ -37,8 +36,9 @@ def test_linear():
     np.testing.assert_allclose(y_reg, y_test, rtol=.01, atol=.15)
 
 
-def test_compare_ridge():
-    X_train, X_test, y_train, y_test = train_test_split(X_diabetes, y_diabetes, test_size=10, random_state=42)
+def test_compare_ridge() -> None:
+    X_train, X_test, y_train, y_test = train_test_split(X_diabetes, y_diabetes,
+                                                        test_size=10, random_state=42)
 
     i_reg = IncrementalRegression(alpha=.01).fit(X_train, y_train)
     ridge = Ridge(alpha=.01, solver='svd').fit(X_train, y_train)

@@ -1,175 +1,352 @@
-import os
-import glob
 import numpy as np
-from tqdm import tqdm
-import time
-
-from sklearn.base import clone
-from sklearn.model_selection import train_test_split, ParameterGrid
-from sklearn.preprocessing import StandardScaler
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.metrics import mean_squared_error, zero_one_loss
-from sklearn.cluster import MiniBatchKMeans, KMeans
-# from sklearn_extra.cluster import KMedoids
-from sklearn.manifold import TSNE
-from joblib import Parallel, delayed, dump, load
-from pyrcn.echo_state_network import ESNRegressor
-import matplotlib
-from matplotlib import pyplot as plt
-#Options
-params = {'image.cmap' : 'jet',
-          'text.usetex' : False,
-          'font.size' : 11,
-          'axes.titlesize' : 24,
-          'axes.labelsize' : 20,
-          'lines.linewidth' : 3,
-          'lines.markersize' : 10,
-          'xtick.labelsize' : 16,
-          'ytick.labelsize' : 16,
-          'text.latex.unicode': False,
-          }
-plt.rcParams.update(params)
-# plt.rcParams['pdf.fonttype'] = 42
-# plt.rcParams['ps.fonttype'] = 42
-matplotlib.rcParams['text.usetex'] = False
-
-from IPython.display import set_matplotlib_formats
-set_matplotlib_formats('png', 'pdf')
-
 import librosa
-import librosa.display
 
-# Print number of files that are included in the dataset
-training_files = np.loadtxt(r"Z:\Projekt-Pitch-Datenbank\SPEECH_DATA\SPEECH_DATAsplit\training.txt", dtype=str)
-validation_files = np.loadtxt(r"Z:\Projekt-Pitch-Datenbank\SPEECH_DATA\SPEECH_DATAsplit\validation.txt", dtype=str)
-test_files = np.loadtxt(r"Z:\Projekt-Pitch-Datenbank\SPEECH_DATA\SPEECH_DATAsplit\test.txt", dtype=str)
-print("{0}\t{1}\t{2}".format(len(training_files), len(validation_files), len(test_files)))
+from joblib import dump, load
 
-
-# helper function for feature extraction
-def extract_features(file_name):
-    x, sr = librosa.core.load(file_name, sr=None, mono=False)
-    stft_frames = np.abs(librosa.stft(x, n_fft=2048, hop_length=int(0.01*sr), win_length=int(0.04*sr)))**2
-    S = librosa.power_to_db(stft_frames, ref=np.max)
-    X = np.pad(S.T[:, :257], ((2, 2), (0, 0)), 'edge')
-    U = np.concatenate((X[:-4, :], X[1:-3, :], X[2:-2, :], X[3:-1, :], X[4:, :]), axis=1)
-    y = np.zeros(shape=(S.T.shape[0], 2))
-    txt_data = np.loadtxt(file_name.replace("MIC", "REF").replace("mic", "ref").replace(".wav", ".f0"), usecols=(0, 1))
-    y[2:2+len(txt_data), :] = txt_data
-    return U, y
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import shuffle
+from sklearn.utils.fixes import loguniform
+from scipy.stats import uniform
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import ParameterGrid, GridSearchCV, RandomizedSearchCV
+from sklearn.metrics import make_scorer, zero_one_loss
+from pyrcn.model_selection import SequentialSearchCV
+from pyrcn.util import FeatureExtractor
+from pyrcn.datasets import fetch_ptdb_tug_dataset
+from pyrcn.echo_state_network import SeqToSeqESNRegressor
+from pyrcn.base.blocks import PredefinedWeightsInputToNode
 
 
-# prepare a scaler to standardize features
-scaler = StandardScaler()
-try:
-    scaler = load("scaler.joblib")
-except FileNotFoundError:
-    print("Fitting scaler with features from the training set...")
-    with tqdm(total=len(training_files)) as pbar:
-        for k, file_name in enumerate(training_files):
-            X, y = extract_features(file_name)
-            scaler.partial_fit(X=X)
-            pbar.update(1)
-    print("done!")
-    dump(scaler, "scaler.joblib")
+def create_feature_extraction_pipeline(sr=16000):
+    audio_loading = Pipeline([("load_audio", FeatureExtractor(func=librosa.load,
+                                                              kw_args={"sr": sr,
+                                                                       "mono": True})),
+                              ("normal", FeatureExtractor(func=librosa.util.normalize,
+                                                          kw_args={"norm": np.inf}))])
+
+    feature_extractor = Pipeline([("mel_spectrogram",
+                                   FeatureExtractor(func=librosa.feature.melspectrogram,
+                                                    kw_args={"sr": sr, "n_fft": 1024,
+                                                             "hop_length": 160,
+                                                             "window": 'hann',
+                                                             "center": False,
+                                                             "power": 2.0,
+                                                             "n_mels": 80, "fmin": 40,
+                                                             "fmax": 4000, "htk": True})
+                                   ),
+                                  ("power_to_db",
+                                   FeatureExtractor(func=librosa.power_to_db,
+                                                    kw_args={"ref": 1}))])
+
+    feature_extraction_pipeline = Pipeline([("audio_loading", audio_loading),
+                                            ("feature_extractor", feature_extractor)])
+    return feature_extraction_pipeline
 
 
-# Define several error functions for f0 extraction
+# Load and preprocess the dataset
+feature_extraction_pipeline = create_feature_extraction_pipeline()
+
+X_train, X_test, y_train, y_test = fetch_ptdb_tug_dataset(
+    data_origin="Z:/Projekt-Pitch-Datenbank/SPEECH_DATA",
+    data_home=None, preprocessor=feature_extraction_pipeline,
+    force_preprocessing=False, augment=0)
+X_train, y_train = shuffle(X_train, y_train, random_state=0)
+
+scaler = StandardScaler().fit(np.concatenate(X_train))
+for k, X in enumerate(X_train):
+    X_train[k] = scaler.transform(X=X)
+for k, X in enumerate(X_test):
+    X_test[k] = scaler.transform(X=X)
+
+
+# Define several error functions for $f_{0}$ extraction
 def gpe(y_true, y_pred):
     """
-    Gross pitch error:
+    Gross pitch error
+    -----------------
 
     All frames that are considered voiced by both pitch tracker and ground truth,
-    for which the relative pitch error is higher than a certain threshold (\SI{20}{\percent}).
-
+    for which the relative pitch error is higher than a certain threshold
+    (20 percent).
     """
-    idx = np.nonzero(y_true * y_pred)[0]
-    return np.mean(np.abs(y_true[idx] - y_pred[idx]) > 0.2 * y_true[idx])
+    idx = np.nonzero(y_true*y_pred)[0]
+    return np.sum(np.abs(y_true[idx] - y_pred[idx]) > 0.2 * y_true[idx]) \
+        / len(np.nonzero(y_true)[0])
+
+
+def new_gpe(y_true, y_pred):
+    """
+    Gross pitch error
+    -----------------
+
+    All frames that are considered voiced by both pitch tracker and ground truth,
+    for which the relative pitch error is higher than a certain threshold
+    (20 percent).
+    """
+    idx = np.nonzero(y_true*y_pred)[0]
+    return np.sum(np.abs(1/y_true[idx] - 1/y_pred[idx]) > 1.5e-3) \
+        / len(np.nonzero(y_true)[0])
 
 
 def vde(y_true, y_pred):
     """
-    Voicing Decision Error:
+    Voicing Decision Error
+    ----------------------
 
     Proportion of frames for which an incorrect voiced/unvoiced decision is made.
-
     """
     return zero_one_loss(y_true, y_pred)
 
 
 def fpe(y_true, y_pred):
     """
-    Fine Pitch Error:
+    Fine Pitch Error
+    ----------------
 
-    Standard deviation of the distribution of relative error values (in cents) from the frames
-    that do not have gross pitch errors
+    Standard deviation of the distribution of relative error values (in cents) from the
+    frames that do not have gross pitch errors.
     """
     idx_voiced = np.nonzero(y_true * y_pred)[0]
     idx_correct = np.argwhere(np.abs(y_true - y_pred) <= 0.2 * y_true).ravel()
     idx = np.intersect1d(idx_voiced, idx_correct)
-    return 100 * np.std(np.log2(y_pred[idx] / y_true[idx]))
+    if idx.size == 0:
+        return 0
+    else:
+        return 100 * np.std(np.log2(y_pred[idx] / y_true[idx]))
+
+
+def mu_fpe(y_true, y_pred):
+    """
+    Fine Pitch Error
+    ----------------
+
+    Standard deviation of the distribution of relative error values (in cents) from the
+    frames that do not have gross pitch errors.
+    """
+    idx_voiced = np.nonzero(y_true * y_pred)[0]
+    idx_correct = np.argwhere(np.abs(1/y_true - 1/y_pred) <= 1.5e-3).ravel()
+    idx = np.intersect1d(idx_voiced, idx_correct)
+    if idx.size == 0:
+        return 0
+    else:
+        return np.mean(np.abs(y_pred[idx] - y_true[idx]))
+
+
+def sigma_fpe(y_true, y_pred):
+    """
+    Fine Pitch Error
+    ----------------
+
+    Standard deviation of the distribution of relative error values (in cents) from the
+    frames that do not have gross pitch errors.
+    """
+    idx_voiced = np.nonzero(y_true * y_pred)[0]
+    idx_correct = np.argwhere(np.abs(1 / y_true - 1 / y_pred) <= 1.5e-3).ravel()
+    idx = np.intersect1d(idx_voiced, idx_correct)
+    if idx.size == 0:
+        return 0
+    else:
+        return np.std(np.abs(y_pred[idx] - y_true[idx]))
 
 
 def ffe(y_true, y_pred):
     """
-    $f_{0}$ Frame Error:
+    $f_{0}$ Frame Error
+    -------------------
 
-    Proportion of frames for which an error (either according to the GPE or the VDE criterion) is made.
-    FFE can be seen as a single measure for assessing the overall performance of a pitch tracker.
+    Proportion of frames for which an error (either according to the GPE or the VDE
+    criterion) is made.
+
+    FFE can be seen as a single measure for assessing the overall performance of a pitch
+    tracker.
     """
     idx_correct = np.argwhere(np.abs(y_true - y_pred) <= 0.2 * y_true).ravel()
     return 1 - len(idx_correct) / len(y_true)
 
 
-# Initialize an Echo State Network
-base_esn = ESNRegressor(k_in=10, input_scaling=0.1, spectral_radius=0.0, bias=0.0, leakage=1.0, reservoir_size=500,
-                        k_res=10, reservoir_activation='tanh', teacher_scaling=1.0, teacher_shift=0.0,
-                        bi_directional=False, solver='ridge', beta=1e-3, random_state=0)
+def custom_scorer(y_true, y_pred):
+    gross_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        gross_pitch_error[k] = gpe(y_true=y_t[:, 0]*y_t[:, 1],
+                                   y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(gross_pitch_error)
 
 
-# Define a helper function to optimize hyper-parameters
-def loss_function(base_esn, params, scaler, training_files, validation_files):
-    esn = clone(base_esn).set_params(**params)
-    for k, file_name in enumerate(training_files):
-        X, y = extract_features(file_name)
-        X = scaler.transform(X)
-        esn.partial_fit(X=X, y=y, update_output_weights=False)
-    esn.finalize()
-    ffe_training = [None] * len(training_files)
-    for k, file_name in enumerate(training_files):
-        X, y = extract_features(file_name)
-        X = scaler.transform(X)
-        y_pred = esn.predict(X=X)
-        ffe_training[k] = ffe(y_true=y[:, 0]*y[:, 1], y_pred=y_pred[:, 0]*(y_pred[:, 1] >= .5))
-    ffe_validation = [None] * len(validation_files)
-    for k, file_name in enumerate(validation_files):
-        X, y = extract_features(file_name)
-        X = scaler.transform(X)
-        y_pred = esn.predict(X=X)
-        ffe_validation[k] = ffe(y_true=y[:, 0]*y[:, 1], y_pred=y_pred[:, 0]*(y_pred[:, 1] >= .5))
-    return [np.mean(ffe_training), np.mean(ffe_validation)]
+def custom_scorer(y_true, y_pred):
+    gross_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        gross_pitch_error[k] = gpe(y_true=y_t[:, 0]*y_t[:, 1],
+                                   y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(gross_pitch_error)
 
 
-base_esn = ESNRegressor(k_in=10, input_scaling=0.1, spectral_radius=0.9, bias=0.0, leakage=1.0, reservoir_size=500,
-                        k_res=10, reservoir_activation='tanh', teacher_scaling=1.0, teacher_shift=0.0,
-                        bi_directional=False, solver='ridge', beta=1e-3, random_state=0)
+gpe_scorer = make_scorer(custom_scorer, greater_is_better=False)
 
-esn = clone(base_esn)
-for k, file_name in enumerate(training_files):
-    X, y = extract_features(file_name)
-    X = scaler.transform(X)
-    esn.partial_fit(X=X, y=y, update_output_weights=False)
-esn.finalize()
+# Set up a ESN
+# To develop an ESN model for f0 estimation, we need to tune several hyper-parameters,
+# e.g., input_scaling, spectral_radius, bias_scaling and leaky integration.
+# We follow the way proposed in the paper for multipitch tracking and for acoustic
+# modeling of piano music to optimize hyper-parameters sequentially.
+# We define the search spaces for each step together with the type of search
+# (a grid search in this context).
+# At last, we initialize a SeqToSeqESNRegressor with the desired output strategy and
+# with the initially fixed parameters.
 
-ffe_training = [None] * len(training_files)
-for k, file_name in enumerate(training_files):
-    X, y = extract_features(file_name)
-    X = scaler.transform(X)
-    y_pred = esn.predict(X=X)
-    ffe_training[k] = ffe(y_true=y[:, 0] * y[:, 1], y_pred=y_pred[:, 0] * (y_pred[:, 1] >= .5))
-ffe_validation = [None] * len(validation_files)
-for k, file_name in enumerate(validation_files):
-    X, y = extract_features(file_name)
-    X = scaler.transform(X)
-    y_pred = esn.predict(X=X)
-    ffe_validation[k] = ffe(y_true=y[:, 0] * y[:, 1], y_pred=y_pred[:, 0] * (y_pred[:, 1] >= .5))
+initially_fixed_params = {'hidden_layer_size': 500,
+                          'k_in': 10,
+                          'input_scaling': 0.4,
+                          'input_activation': 'identity',
+                          'bias_scaling': 0.0,
+                          'spectral_radius': 0.0,
+                          'leakage': 1.0,
+                          'k_rec': 10,
+                          'reservoir_activation': 'tanh',
+                          'bidirectional': False,
+                          'wash_out': 0,
+                          'continuation': False,
+                          'alpha': 1e-3,
+                          'random_state': 42}
+
+step1_esn_params = {'input_scaling': uniform(loc=1e-2, scale=1),
+                    'spectral_radius': uniform(loc=0, scale=2)}
+
+step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
+step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
+step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
+
+kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+                'scoring': gpe_scorer}
+kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+                'scoring': gpe_scorer}
+kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': gpe_scorer}
+kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+                'scoring': gpe_scorer}
+
+# The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
+searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
+            ('step2', RandomizedSearchCV, step2_esn_params, kwargs_step2),
+            ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
+            ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
+
+base_esn = SeqToSeqESNRegressor(**initially_fixed_params)
+
+try:
+    sequential_search = load("f0/sequential_search_f0_mel_km_50.joblib")
+except FileNotFoundError:
+    print(FileNotFoundError)
+    sequential_search = SequentialSearchCV(base_esn,
+                                           searches=searches).fit(X_train, y_train)
+    dump(sequential_search, "f0/sequential_search_f0_mel_km_50.joblib")
+
+print(sequential_search)
+
+
+def gpe_scorer(y_true, y_pred):
+    gross_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        gross_pitch_error[k] = gpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5),
+                                   y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(gross_pitch_error)
+
+
+def new_gpe_scorer(y_true, y_pred):
+    gross_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        gross_pitch_error[k] = new_gpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5),
+                                       y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(gross_pitch_error)
+
+
+def fpe_scorer(y_true, y_pred):
+    fine_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        fine_pitch_error[k] = fpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5),
+                                  y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(fine_pitch_error)
+
+
+def mu_fpe_scorer(y_true, y_pred):
+    fine_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        fine_pitch_error[k] = mu_fpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5),
+                                     y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(fine_pitch_error)
+
+
+def sigma_fpe_scorer(y_true, y_pred):
+    fine_pitch_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        fine_pitch_error[k] = sigma_fpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5),
+                                        y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(fine_pitch_error)
+
+
+def vde_scorer(y_true, y_pred):
+    voicing_decision_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        voicing_decision_error[k] = vde(y_true=(y_t[:, 1] > 0.5),
+                                        y_pred=y_p[:, 1] >= .5)
+    return np.mean(voicing_decision_error)
+
+
+def ffe_scorer(y_true, y_pred):
+    frame_fault_error = [None] * len(y_true)
+    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
+        frame_fault_error[k] = ffe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5),
+                                   y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
+    return np.mean(frame_fault_error)
+
+
+y_pred = load("f0/km_esn_dense_2000_0_0.joblib").predict(X_test)
+gpe_scorer(y_test, y_pred)
+new_gpe_scorer(y_test, y_pred)
+fpe_scorer(y_test, y_pred)
+mu_fpe_scorer(y_test, y_pred)
+sigma_fpe_scorer(y_test, y_pred)
+vde_scorer(y_test, y_pred)
+ffe_scorer(y_test, y_pred)
+
+param_grid = {'hidden_layer_size': [6400]}
+for params in ParameterGrid(param_grid):
+    kmeans = load("f0/kmeans_6400.joblib")
+    w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_,
+                                                             axis=1)[:, None])
+    print(w_in.shape)
+    base_input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
+    all_params = sequential_search.best_estimator_.get_params()
+    all_params["hidden_layer_size"] = params["hidden_layer_size"]
+    esn = SeqToSeqESNRegressor(input_to_node=base_input_to_node, **all_params)
+    print(esn._base_estimator)
+    esn.fit(X_train, y_train, n_jobs=4)
+    dump(esn, "f0/km_esn_dense_6400_4_0.joblib")
+
+"""
+try:
+    gs = load("f0/sequential_search_f0_mel_km_50_final_2.joblib")
+except:
+    param_grid = {'hidden_layer_size': [6400],  # TODO
+                  'random_state': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
+    gs = []
+    for params in ParameterGrid(param_grid):
+        try:
+            print("Attempting to load KMeans from disk...")
+            kmeans = load("f0/kmeans_" + str(params["hidden_layer_size"]) + ".joblib")
+            print("Loaded.")
+        except FileNotFoundError:
+            print("Fitting kmeans with features from the training set...")
+            t1 = time.time()
+            kmeans = MiniBatchKMeans(n_clusters=params["hidden_layer_size"], n_init=200,
+                                     reassignment_ratio=0, max_no_improvement=50,
+                                     init='k-means++', verbose=0, random_state=0)
+            kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
+            dump(kmeans, "f0/kmeans_" + str(params["hidden_layer_size"]) + ".joblib")
+            print("done in {0}!".format(time.time() - t1))
+        w_in = np.divide(kmeans.cluster_centers_,
+                         np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
+        input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
+        esn = SeqTo clone(sequential_search.best_estimator_)
+        esn.input_to_node = input_to_node
+        esn.set_params(**params)
+        esn.fit(X_train, y=y_train, n_jobs=4)
+    dump(gs, "f0/sequential_search_f0_mel_km_50_final_2.joblib")
+"""

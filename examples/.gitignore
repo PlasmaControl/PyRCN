@@ -2,6 +2,16 @@
 *.png
 *.log
 *.csv
+*.txt
+*.pdf
+*.pgf
+*.npz
+*.joblib
+*.pickle
 
-dataset/
 .ipynb_checkpoints/
+/dataset/
+/mnist-elm*
+/plots*
+/preprocessing-mnist*
+/misc.py

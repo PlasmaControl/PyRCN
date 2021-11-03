@@ -12,127 +12,210 @@
 # \dot{y}(t) = \alpha y(t-\tau) / (1 + y(t - \tau)^{\beta}) - \gamma y(t)
 # \end{align}
 
-# In[1]:
+# In[ ]:
 
 
 import numpy as np
-from sklearn.metrics import mean_squared_error
+from sklearn.linear_model import Ridge
+from sklearn.metrics import mean_squared_error, make_scorer
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 
 from matplotlib import pyplot as plt
-plt.rcParams['image.cmap'] = 'jet'
-plt.rcParams['pdf.fonttype'] = 42
-plt.rcParams['ps.fonttype'] = 42
-get_ipython().run_line_magic('matplotlib', 'inline')
+import seaborn as sns
 
-from IPython.display import set_matplotlib_formats
-set_matplotlib_formats('png', 'pdf')
+sns.set_theme()
 
 from pyrcn.echo_state_network import ESNRegressor
+from pyrcn.extreme_learning_machine import ELMRegressor
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.base import InputToNode, NodeToNode
+from pyrcn.model_selection import SequentialSearchCV
+from pyrcn.datasets import mackey_glass
+
+
+# Load the dataset and rescale it to a range of [-1, 1]
+
+# In[ ]:
 
 
 # Load the dataset
-
-# In[2]:
-
-
-data = np.loadtxt("./dataset/MackeyGlass_t17.txt")
-
-
-# The first 500 samples are visualized.
-
-# In[3]:
-
-
-plt.figure()
-plt.plot(data[:500])
-plt.xlabel("n")
-plt.ylabel("X[n]")
-plt.grid()
-
-
-# Standardization -> From here on, we have a numpy array!!!
-
-# In[4]:
-
-
-data = data / (data.max() - data.min())
+X, y = mackey_glass(n_timesteps=20000)
+scaler = MinMaxScaler(feature_range=(-1, 1)).fit(X=X.reshape(-1, 1))
+X = scaler.transform(X=X.reshape(-1, 1))
+y = scaler.transform(y.reshape(-1, 1)).ravel()
 
 
 # Define Train/Test lengths
 
-# In[5]:
+# In[ ]:
 
 
-initLen = 100 # number of time steps during which internal activations are washed-out during training
-# we consider trainLen including the warming-up period (i.e. internal activations that are washed-out when training)
-trainLen = initLen + 1900 # number of time steps during which we train the network
+trainLen = 1900 # number of time steps during which we train the network
 testLen = 2000 # number of time steps during which we test/run the network
 
-
-# Echo State Network preparation
-
-# In[10]:
-
-
-base_input_to_nodes = InputToNode(hidden_layer_size=500, activation='identity', k_in=1, input_scaling=1.0, bias_scaling=0.0)
-base_nodes_to_nodes = NodeToNode(hidden_layer_size=500, spectral_radius=1.2, leakage=1.0, bias_scaling=0.0, k_rec=10)
-
-esn = ESNRegressor(input_to_nodes=[('default', base_input_to_nodes)],
-                   nodes_to_nodes=[('default', base_nodes_to_nodes)],
-                   regressor=IncrementalRegression(alpha=1e-4), random_state=10)
+X_train = X[:trainLen]
+y_train = y[:trainLen]
+X_test = X[trainLen:trainLen+testLen]
+y_test = y[trainLen:trainLen+testLen]
 
 
-# Training and Prediction. Be careful, this can take a longer time!!!
-# 
-# The lowest MSE obtained with this settings were \num{5.97e-06} for the training set and \num{43.1e-06} for the test set.
+# Visualization
 
-# In[11]:
+# In[ ]:
 
 
-train_in = data[None,0:trainLen]
-train_out = data[None,0+1:trainLen+1]
-test_in = data[None,trainLen:trainLen+testLen]
-test_out = data[None,trainLen+1:trainLen+testLen+1]
-
-train_in, train_out = train_in.T, train_out.T
-test_in, test_out = test_in.T, test_out.T
-
-esn.fit(X=train_in, y=train_out)
-train_pred = esn.predict(X=train_in)
-test_pred = esn.predict(X=test_in)
-
-train_err = mean_squared_error(y_true=train_out, y_pred=train_pred)
-test_err = mean_squared_error(y_true=test_out, y_pred=test_pred)
-
-print("Train MSE:\t{0}".format(train_err))
-print("Test MSE:\t{0}".format(test_err))
+fix, axs = plt.subplots()
+sns.lineplot(data=X_train.ravel(), ax=axs)
+sns.lineplot(data=y_train.ravel(), ax=axs)
+axs.set_xlim([0, 1900])
+axs.set_xlabel('n')
+axs.set_ylabel('u[n]')
+plt.legend(["Input", "Target"])
 
 
-# Prediction of the training set.
+# Training and Prediction using vanilla ESNs and ELMs
 
-# In[12]:
+# In[ ]:
 
 
-plt.figure()
-plt.plot(train_out)
-plt.plot(train_pred)
-plt.xlabel("n")
-plt.ylabel("X[n]")
+# initialize an ESNRegressor
+esn = ESNRegressor()  # IncrementalRegression()
 
+# initialize an ELMRegressor
+elm = ELMRegressor(regressor=Ridge())  # Ridge()
+
+# train a model
+esn.fit(X=X_train.reshape(-1, 1), y=y_train)
+elm.fit(X=X_train.reshape(-1, 1), y=y_train)
+
+# evaluate the models
+y_test_pred = esn.predict(X=X_test)
+print(mean_squared_error(y_test, y_test_pred))
+y_test_pred = elm.predict(X=X_test)
+print(mean_squared_error(y_test, y_test_pred))
+
+
+# Hyperparameter optimization ESN
+
+# In[ ]:
+
+
+# Echo State Network sequential hyperparameter tuning
+initially_fixed_params = {'hidden_layer_size': 100,
+                          'input_activation': 'identity',
+                          'bias_scaling': 0.0,
+                          'reservoir_activation': 'tanh',
+                          'leakage': 1.0,
+                          'bidirectional': False,
+                          'k_rec': 10,
+                          'wash_out': 0,
+                          'continuation': False,
+                          'alpha': 1e-5,
+                          'random_state': 42,
+                          'requires_sequence': False}
+
+step1_esn_params = {'input_scaling': np.linspace(0.1, 5.0, 50),
+                    'spectral_radius': np.linspace(0.0, 1.5, 16)}
+step2_esn_params = {'leakage': np.linspace(0.1, 1.0, 10)}
+step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.5, 16)}
+
+scorer = make_scorer(score_func=mean_squared_error, greater_is_better=False)
+
+kwargs = {'verbose': 5,
+          'scoring': scorer,
+          'n_jobs': -1,
+          'cv': TimeSeriesSplit()}
+
+esn = ESNRegressor(regressor=Ridge(), **initially_fixed_params)
+
+searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
+            ('step2', GridSearchCV, step2_esn_params, kwargs),
+            ('step3', GridSearchCV, step3_esn_params, kwargs)]
+
+
+sequential_search_esn = SequentialSearchCV(esn, searches=searches).fit(X_train.reshape(-1, 1), y_train)
+
+
+# Hyperparameter optimization ELM
+
+# In[ ]:
+
+
+# Extreme Learning Machine sequential hyperparameter tuning
+initially_fixed_elm_params = {'hidden_layer_size': 100,
+                              'activation': 'tanh',
+                              'k_in': 1,
+                              'alpha': 1e-5,
+                              'random_state': 42 }
+
+step1_elm_params = {'input_scaling': np.linspace(0.1, 5.0, 50)}
+step2_elm_params = {'bias_scaling': np.linspace(0.0, 1.5, 16)}
+
+scorer = make_scorer(score_func=mean_squared_error, greater_is_better=False)
+
+kwargs = {'verbose': 5,
+          'scoring': scorer,
+          'n_jobs': -1,
+          'cv': TimeSeriesSplit()}
+
+elm = ELMRegressor(regressor=Ridge(), **initially_fixed_elm_params)
+
+searches = [('step1', GridSearchCV, step1_elm_params, kwargs),
+            ('step2', GridSearchCV, step2_elm_params, kwargs)]
+
+sequential_search_elm = SequentialSearchCV(elm, searches=searches).fit(X_train.reshape(-1, 1), y_train)
+
+
+# Final prediction and visualization
+
+# In[ ]:
+
+
+sequential_search_esn.all_best_score_
+
+
+# In[ ]:
+
+
+sequential_search_elm.all_best_score_
+
+
+# In[ ]:
+
+
+esn = sequential_search_esn.best_estimator_
+elm = sequential_search_elm.best_estimator_
+
+y_train_pred_esn = esn.predict(X=X_train)
+y_train_pred_elm = elm.predict(X=X_train)
+y_test_pred_esn = esn.predict(X=X_test)
+y_test_pred_elm = elm.predict(X=X_test)
+
+test_err_esn = mean_squared_error(y_true=y_test, y_pred=y_test_pred_esn)
+test_err_elm = mean_squared_error(y_true=y_test, y_pred=y_test_pred_elm)
+
+print("Test MSE ESN:\t{0}".format(test_err_esn))
+print("Test MSE ELM:\t{0}".format(test_err_elm))
 
 # Prediction of the test set.
-# 
+fix, axs = plt.subplots()
+sns.lineplot(data=y_test_pred_esn, ax=axs)
+sns.lineplot(data=y_test_pred_elm, ax=axs)
+axs.set_xlim([0, 1900])
+axs.set_xlabel('n')
+axs.set_ylabel('u[n]')
+plt.legend(["ESN prediction", "ELM prediction"])
 
-# In[13]:
+
+# In[ ]:
 
 
-plt.figure()
-plt.plot(test_out)
-plt.plot(test_pred)
-plt.xlabel("n")
-plt.ylabel("X[n]")
+fig, axs = plt.subplots(1, 2, sharey=True)
+sns.heatmap(data=esn.hidden_layer_state[:100, :].T, ax=axs[0], cbar=False)
+axs[0].set_xlabel("Time Step")
+axs[0].set_ylabel("Neuron Index")
+sns.heatmap(data=elm.hidden_layer_state[:100, :].T, ax=axs[1])
+axs[1].set_xlabel("Time Step")
 
 
 # In[ ]:

@@ -1,5 +1,4 @@
-scikit-learn>=0.22.1
-numpy>=1.18.1
-scipy>=1.2.0
-joblib>=0.13.2
-matplotlib>=3.0.2
+docutils<0.18
+sphinx-rtd-theme==0.5.1
+sphinx-copybutton==0.3.1
+pyrcn
