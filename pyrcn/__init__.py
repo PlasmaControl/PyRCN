@@ -6,12 +6,18 @@
 # ELMs and ESNs are copyright of their respective owners.
 # License: BSD 3-Clause (C) TU Dresden 2021
 
-from pyrcn import (extreme_learning_machine, echo_state_network, base, preprocessing,
-                   postprocessing, util)
+from pyrcn import (autoencoder, base, cluster, echo_state_network,
+                   extreme_learning_machine, linear_model, model_selection,
+                   postprocessing, preprocessing, projection, util)
 
-__all__ = ('extreme_learning_machine',
-           'echo_state_network',
+__all__ = ('autoencoder',
            'base',
-           'preprocessing',
+           'cluster',
+           'echo_state_network',
+           'extreme_learning_machine',
+           'linear_model',
+           'model_selection',
            'postprocessing',
+           'preprocessing',
+           'projection',
            'util')

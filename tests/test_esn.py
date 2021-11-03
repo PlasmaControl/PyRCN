@@ -18,21 +18,18 @@ def test_esn_regressor_jobs() -> None:
     X, y = mackey_glass(n_timesteps=8000)
     X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False)
     param_grid = {
-        'input_to_node': [InputToNode(
-            bias_scaling=.1, hidden_layer_size=10, input_activation='identity',
-            random_state=42),
-                          InputToNode(
-                              bias_scaling=.1, hidden_layer_size=50,
-                              input_activation='identity', random_state=42)],
-        'node_to_node': [NodeToNode(
-            spectral_radius=0., hidden_layer_size=10, random_state=42),
-                         NodeToNode(
-                             spectral_radius=1, hidden_layer_size=50, random_state=42)],
-        'regressor': [IncrementalRegression(alpha=.0001),
-                      IncrementalRegression(alpha=.01)],
-        'random_state': [42]
-    }
-    esn = GridSearchCV(ESNRegressor(), param_grid)
+        "input_to_node": [
+            InputToNode(bias_scaling=.1, hidden_layer_size=10,
+                        input_activation='identity', random_state=42),
+            InputToNode(bias_scaling=.1, hidden_layer_size=50,
+                        input_activation='identity', random_state=42)],
+        "node_to_node": [
+            NodeToNode(spectral_radius=0., hidden_layer_size=10, random_state=42),
+            NodeToNode(spectral_radius=1, hidden_layer_size=50, random_state=42)],
+        "regressor": [
+            IncrementalRegression(alpha=.0001), IncrementalRegression(alpha=.01)],
+        'random_state': [42]}
+    esn = GridSearchCV(estimator=ESNRegressor(), param_grid=param_grid)
     esn.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
     y_esn = esn.predict(X_test.reshape(-1, 1))
     print("tests - esn:\n sin | cos \n {0}".format(y_test-y_esn))

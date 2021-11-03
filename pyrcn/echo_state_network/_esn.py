@@ -615,7 +615,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
                  input_to_node: Union[InputToNode, TransformerMixin, None] = None,
                  node_to_node: Union[NodeToNode, TransformerMixin, None] = None,
                  regressor: Union[IncrementalRegression, RegressorMixin, None] = None,
-                 requires_sequence: Union[Literal["auto"], bool] = False,
+                 requires_sequence: Union[Literal["auto"], bool] = "auto",
                  decision_strategy: Literal["winner_takes_all", "median",
                                             "last_value"] = "winner_takes_all",
                  verbose: bool = False,
