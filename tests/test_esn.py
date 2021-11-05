@@ -116,6 +116,14 @@ def test_esn_regressor_wrong_sequence_format() -> None:
 
 def test_esn_classifier_sequence_to_value() -> None:
     X, y = load_digits(return_X_y=True, as_sequence=True)
+    shape1 = y[0].shape
+    esn = ESNClassifier(hidden_layer_size=50).fit(X, y)
+    shape2 = y[0].shape
+    assert(shape1 == shape2)
+
+
+def test_esn_classifier_sequence_to_value() -> None:
+    X, y = load_digits(return_X_y=True, as_sequence=True)
     esn = ESNClassifier(hidden_layer_size=50).fit(X, y)
     y_pred = esn.predict(X)
     assert(len(y) == len(y_pred))

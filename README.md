@@ -53,7 +53,7 @@ PyRCN is developed using Python 3.7 or newer. It depends on the following packag
 The easiest and recommended way to install ``PyRCN`` is to use ``pip`` from [PyPI](https://pypi.org) :
 
 ```python
-pip install pyrcn   
+pip install pyrcn
 ```
 
 ### Installation from source
