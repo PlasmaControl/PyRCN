@@ -114,7 +114,7 @@ def test_esn_regressor_wrong_sequence_format() -> None:
         ESNRegressor(verbose=True, **param_grid).fit(X_train, y_train, n_jobs=2)
 
 
-def test_esn_classifier_sequence_to_value() -> None:
+def test_esn_output_unchanged() -> None:
     X, y = load_digits(return_X_y=True, as_sequence=True)
     shape1 = y[0].shape
     esn = ESNClassifier(hidden_layer_size=50).fit(X, y)
