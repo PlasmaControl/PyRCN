@@ -10,7 +10,7 @@ the lower the better.
 # License: BSD 3 clause
 import sys
 if sys.version_info >= (3, 8):
-    from typing import Any, Tuple, Union, Optional, Dict, List, Literal, no_type_check
+    from typing import Any, Tuple, Union, Optional, Dict, List, Literal
 else:
     from typing_extensions import Literal
     from typing import Any, Tuple, Union, Optional, Dict, List
@@ -692,7 +692,6 @@ def mean_poisson_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
     return mean_tweedie_deviance( y_true, y_pred, sample_weight=sample_weight, power=1)
 
 
-@no_type_check
 @_deprecate_positional_args
 def mean_gamma_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
                         sample_weight: Optional[np.ndarray] = None) -> float:
