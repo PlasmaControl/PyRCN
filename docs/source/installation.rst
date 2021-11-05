@@ -52,7 +52,7 @@ Installation from source
 
 You can find the source code of PyRCN on `GitHub <https://github.com/TUD-STKS/PyRCN>`_.
 
-Download the latest version on the ``master`` branch, or any other branch you would like
+Download the latest version on the ``main`` branch, or any other branch you would like
 to install (``dev`` branch or older versions branches). You can also fork the project from
 GitHub.
 
