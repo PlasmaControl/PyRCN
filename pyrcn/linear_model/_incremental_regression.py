@@ -107,7 +107,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
             self._xTy += safe_sparse_dot(X_preprocessed.T, y)
 
         # can only be postponed if output weights have not been initialized yet
-        if postpone_inverse and self._output_weights is None:
+        if postpone_inverse and self._output_weights.shape == ():
             return self
 
         P = np.linalg.inv(self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
@@ -160,7 +160,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         -------
         y : ndarray of shape (n_samples,) or (n_samples, n_targets)
         """
-        if self._output_weights is None:
+        if self._output_weights.shape == ():
             raise NotFittedError(self)
 
         return safe_sparse_dot(self._preprocessing(X, partial_normalize=False),

@@ -68,7 +68,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                  requires_sequence: Union[Literal["auto"], bool] = "auto",
                  decision_strategy: Literal["winner_takes_all", "median",
                                             "last_value"] = "winner_takes_all",
-                 verbose: bool = False,
+                 verbose: bool = True,
                  **kwargs: Any) -> None:
         """Construct the ESNRegressor."""
         if input_to_node is None:
@@ -184,28 +184,10 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         y : np.ndarray
             The target data
         """
-        if isinstance(X, list):
-            lengths_X = np.unique([x.shape[0] for x in X])
-            if len(lengths_X) == 1 and self.verbose:
-                warnings.warn("Treat input as instance, not as sequences."
-                              "If not desired, explicitly pass requires_sequence=True.",
-                              DataDimensionalityWarning)
-            X = np.asarray(X)
-        if isinstance(y, list):
-            lengths_y = np.unique([yt.shape[0] for yt in y])
-            if len(lengths_y) == 1 and self.verbose:
-                warnings.warn("Treat target as instance, not as sequences."
-                              "If not desired, explicitly pass requires_sequence=True.",
-                              DataDimensionalityWarning)
-            y = np.asarray(y)
-        if X.ndim > 2:
+        if X.ndim > 2 or y.ndim > 2:
             raise ValueError("Could not determine a valid structure,"
-                             "because X has {0} dimensions."
-                             "Only 1 or 2 dimensions are allowed.".format(X.ndim))
-        if y.ndim > 2:
-            raise ValueError("Could not determine a valid structure,"
-                             "because y has {0} dimensions."
-                             "Only 1 or 2 dimensions are allowed.".format(y.ndim))
+                             "because X has {0} and y has {1} dimensions."
+                             "Only 1 or 2 dimensions allowed.".format(X.ndim, y.ndim))
         self.requires_sequence = X.ndim == 1
 
     def _check_if_sequence_to_value(self, X: np.ndarray, y: np.ndarray) -> None:
@@ -700,7 +682,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         self._node_to_node.fit(self._input_to_node.transform(X))
         self._regressor = self._regressor.__class__()
         if not self.requires_sequence:
-            return self._instance_fit(X, y)
+            return super().partial_fit(X, y)
         else:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
 
@@ -754,11 +736,10 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
             return y
         elif self.requires_sequence:
             for k, _ in enumerate(y):
-                y[k] = self._encoder.inverse_transform(y[k], threshold=None)
                 y[k] = np.clip(y[k], a_min=1e-5, a_max=None)
             return y
         else:
-            return self._encoder.inverse_transform(super().predict(X), threshold=None)
+            return np.asarray(np.clip(y, a_min=1e-5, a_max=None))
 
     def predict_log_proba(self, X: np.ndarray) -> np.ndarray:
         """

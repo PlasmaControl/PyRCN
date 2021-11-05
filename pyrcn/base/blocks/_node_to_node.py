@@ -12,12 +12,8 @@ else:
 
 import scipy
 from scipy.sparse.csr import csr_matrix
-if scipy.__version__ == '0.9.0' or scipy.__version__ == '0.10.1':
-    from scipy.sparse.linalg import eigs as eigens
-    from scipy.sparse.linalg import ArpackNoConvergence
-else:
-    from scipy.sparse.linalg.eigen.arpack import eigs as eigens
-    from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
+from scipy.sparse.linalg.eigen.arpack import eigs as eigens
+from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
 
 import numpy as np
 from sklearn.utils.validation import _deprecate_positional_args
@@ -100,10 +96,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self : returns a trained NodeToNode.
         """
         self._validate_hyperparameters()
-        if y is None:
-            self._validate_data(X, y)
-        else:
-            self._validate_data(X, y, multi_output=True)
+        self._validate_data(X, y)
         self._check_n_features(X, reset=True)
 
         if self.k_rec is not None:
@@ -212,7 +205,8 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         if self.bidirectional not in [False, True]:
             raise ValueError("bidirectional must be either False or True,, got {0}."
                              .format(self.bidirectional))
-        if self.k_rec is not None and self.k_rec <= 0:
+        if self.k_rec is not None and (self.k_rec <= 0
+                                       or self.k_rec >= self.hidden_layer_size):
             raise ValueError("k_rec must be > 0, got {0}.".format(self.k_rec))
 
     def __sizeof__(self) -> int:
@@ -251,7 +245,7 @@ class PredefinedWeightsNodeToNode(NodeToNode):
 
     Parameters
     ----------
-    predefined_input_weights : np.ndarray
+    predefined_recurrent_weights : np.ndarray
         A set of predefined recurrent weights.
     hidden_layer_size : Union[int, np.integer], default=500
         Sets the number of nodes in hidden layer. Equals number of output features.
@@ -282,6 +276,9 @@ class PredefinedWeightsNodeToNode(NodeToNode):
                  leakage: float = 1.,
                  bidirectional: bool = False) -> None:
         """Construct the PredefinedWeightsNodeToNode."""
+        if predefined_recurrent_weights.ndim != 2:
+            raise ValueError('predefined_recurrent_weights has not the expected ndim {0}'
+                             ', given 2.'.format(predefined_recurrent_weights.shape))
         super().__init__(hidden_layer_size=predefined_recurrent_weights.shape[0],
                          reservoir_activation=reservoir_activation,
                          spectral_radius=spectral_radius,
@@ -303,15 +300,8 @@ class PredefinedWeightsNodeToNode(NodeToNode):
         self : returns a trained PredefinedWeightsNodeToNode.
         """
         self._validate_hyperparameters()
-        if y is None:
-            self._validate_data(X, y)
-        else:
-            self._validate_data(X, y, multi_output=True)
+        self._validate_data(X, y)
         self._check_n_features(X, reset=True)
-
-        if self.predefined_recurrent_weights is None:
-            raise ValueError('predefined_recurrent_weights have to be defined,'
-                             'use NodeToNode class!')
 
         if self.predefined_recurrent_weights.shape[0] != X.shape[1]:
             raise ValueError('X has not the expected shape {0}, given {1}.'.format(

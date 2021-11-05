@@ -156,9 +156,6 @@ def load_digits(*, n_class: Union[int, np.integer] = 10,
         If `return_X_y` is True, then (`data`, `target`) will be pandas
         DataFrames or Series as described below.
         .. versionadded:: 0.23
-    as_frame : bool, default=False
-        If True, the data is returned as a sequence in the data format required
-        by PyRCN.
 
     Returns
     -------

@@ -1,3 +1,4 @@
+"""Testing for pyrcn.utils module"""
 import os
 from pyrcn.util import new_logger, argument_parser, get_mnist
 

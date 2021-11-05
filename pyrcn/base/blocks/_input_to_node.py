@@ -166,8 +166,10 @@ class InputToNode(BaseEstimator, TransformerMixin):
                              .format(self.input_scaling))
         if self.bias_scaling < 0:
             raise ValueError("bias must be > 0, got {0}.".format(self.bias_scaling))
-        if self.k_in is not None and self.k_in <= 0:
-            raise ValueError("k_in must be > 0, got {0}.".format(self.k_in))
+        if self.k_in is not None and (self.k_in <= 0
+                                      or self.k_in >= self.hidden_layer_size):
+            raise ValueError("k_in must be > 0 and < self.hidden_layer_size {0}"
+                             ", got {1}.".format(self.hidden_layer_size, self.k_in))
 
     def __sizeof__(self) -> int:
         """
@@ -218,7 +220,7 @@ class PredefinedWeightsInputToNode(InputToNode):
 
     Parameters
     ----------
-    predefined_input_weights : np.ndarray
+    predefined_input_weights : np.ndarray, shape=(n_features, hidden_layer_size)
         A set of predefined input weights.
     input_activation : Literal['tanh', 'identity', 'logistic', 'relu', 'bounded_relu'],
     default = 'tanh'
@@ -246,6 +248,9 @@ class PredefinedWeightsInputToNode(InputToNode):
                  bias_scaling: float = 0.,
                  random_state: Union[int, np.random.RandomState, None] = 42) -> None:
         """Construct the PredefinedWeightsInputToNode."""
+        if predefined_input_weights.ndim != 2:
+            raise ValueError('predefined_input_weights has not the expected ndim {0}'
+                             ', given 2.'.format(predefined_input_weights.shape))
         super().__init__(hidden_layer_size=predefined_input_weights.shape[1],
                          input_activation=input_activation,
                          input_scaling=input_scaling,
@@ -269,9 +274,6 @@ class PredefinedWeightsInputToNode(InputToNode):
         self._validate_hyperparameters()
         self._validate_data(X, y)
         self._check_n_features(X, reset=True)
-        if self.predefined_input_weights is None:
-            raise ValueError('predefined_input_weights have to be defined,'
-                             'use InputToNode class!')
 
         if self.predefined_input_weights.shape[0] != X.shape[1]:
             raise ValueError('X has not the expected shape {0}, given {1}.'.format(
@@ -279,9 +281,8 @@ class PredefinedWeightsInputToNode(InputToNode):
 
         self._input_weights = self.predefined_input_weights
 
-        self._bias_weights = self._uniform_random_bias(
-            hidden_layer_size=self.hidden_layer_size,
-            random_state=self._random_state)
+        self._bias_weights = _uniform_random_bias(
+            hidden_layer_size=self.hidden_layer_size, random_state=self._random_state)
         return self
 
 

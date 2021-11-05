@@ -1,6 +1,4 @@
-"""
-Testing for Autoenocder module (pyrcn.autoencoder)
-"""
+"""Testing for Autoenocder module (pyrcn.autoencoder)"""
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
 from sklearn.datasets import load_iris

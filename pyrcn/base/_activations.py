@@ -2,7 +2,7 @@
 
 import numpy as np
 from sklearn.neural_network._base import ACTIVATIONS
-from typing import Dict
+from typing import Dict, Callable
 
 
 def inplace_bounded_relu(X: np.ndarray) -> None:
@@ -87,7 +87,7 @@ def inplace_bounded_relu_inverse(X: np.ndarray) -> None:
 
 ACTIVATIONS.update({'bounded_relu': inplace_bounded_relu})
 
-ACTIVATIONS_INVERSE = {
+ACTIVATIONS_INVERSE: Dict[str, Callable] = {
     'tanh': inplace_tanh_inverse,
     'identity': inplace_identity_inverse,
     'logistic': inplace_logistic_inverse,
@@ -95,10 +95,10 @@ ACTIVATIONS_INVERSE = {
     'bounded_relu': inplace_bounded_relu_inverse
 }
 
-ACTIVATIONS_INVERSE_BOUNDS: Dict[str, list] = {
-    'tanh': [-.99, .99],
-    'identity': [-np.inf, np.inf],
-    'logistic': [0.01, .99],
-    'relu': [0, np.inf],
-    'bounded_relu': [0, 1]
+ACTIVATIONS_INVERSE_BOUNDS: Dict[str, tuple] = {
+    'tanh': (-.99, .99),
+    'identity': (-np.inf, np.inf),
+    'logistic': (0.01, .99),
+    'relu': (0, np.inf),
+    'bounded_relu': (0, 1)
 }

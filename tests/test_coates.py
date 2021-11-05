@@ -1,6 +1,4 @@
-"""
-Testing for coates preprocessing module (pyrcn.coates)
-"""
+"""Testing for coates preprocessing module (pyrcn.preprocessing.coates)."""
 import numpy as np
 
 from sklearn.datasets import load_digits

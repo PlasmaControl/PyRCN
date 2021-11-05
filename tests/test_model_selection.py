@@ -1,4 +1,4 @@
-"""Testing for model selection module"""
+"""Testing for model selection module."""
 
 from sklearn import datasets
 from sklearn.model_selection import KFold, GridSearchCV, RandomizedSearchCV
@@ -24,9 +24,17 @@ def test_sequentialSearchCV_equivalence() -> None:
     ss = SequentialSearchCV(svm2,
                             searches=[('gs1', GridSearchCV, param_grid1, {'cv': cv}),
                                       ('gs2', RandomizedSearchCV, param_grid2,
-                                       {'cv': cv, 'random_state': 42})]).fit(X, y)
+                                       {'cv': cv, 'random_state': 42, 'refit': True}),
+                                      ('gs3', GridSearchCV, param_grid1)]).fit(X, y)
     assert gs1.best_params_ == ss.all_best_params_['gs1']
     assert gs2.best_params_ == ss.all_best_params_['gs2']
+    assert(isinstance(ss.cv_results_, dict))
+    assert(ss.best_estimator_ is not None)
+    assert(isinstance(ss.best_score_, float))
+    print(ss.best_index_)
+    assert(isinstance(ss.n_splits_, int))
+    assert(isinstance(ss.refit_time_, float))
+    assert(isinstance(ss.multimetric, bool))
 
 
 if __name__ == '__main__':

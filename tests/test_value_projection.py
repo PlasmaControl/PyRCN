@@ -1,6 +1,4 @@
-"""
-Testing for projection module (pyrcn.projection)
-"""
+"""Testing for projection module (pyrcn.projection)."""
 
 import numpy as np
 from pyrcn.projection import MatrixToValueProjection

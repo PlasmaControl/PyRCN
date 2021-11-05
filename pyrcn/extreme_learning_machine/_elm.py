@@ -230,9 +230,9 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                                                transformer_weights=transformer_weights,
                                                postpone_inverse=True)
                                               for idx in chunks[:-1])
+                reg = sum(reg)
+                self._regressor = reg._regressor
             # last chunk, calculate inverse and bias
-            reg = sum(reg)
-            self._regressor = reg._regressor
             ELMRegressor.partial_fit(self, X=X[chunks[-1]:, ...], y=y[chunks[-1]:, ...],
                                      transformer_weights=transformer_weights,
                                      postpone_inverse=False)
@@ -253,9 +253,6 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         y : ndarray of (n_samples,) or (n_samples, n_targets)
             The predicted targets
         """
-        if self._input_to_node is None or self._regressor is None:
-            raise NotFittedError(self)
-
         hidden_layer_state = self._input_to_node.transform(X)
 
         return self._regressor.predict(hidden_layer_state)
@@ -345,7 +342,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         -------
         hidden_layer_state : np.ndarray
         """
-        return self._node_to_node._hidden_layer_state
+        return self._input_to_node._hidden_layer_state
 
     @property
     def chunk_size(self) -> Union[None, int, np.integer]:
