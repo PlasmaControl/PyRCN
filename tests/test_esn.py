@@ -118,6 +118,7 @@ def test_esn_output_unchanged() -> None:
     X, y = load_digits(return_X_y=True, as_sequence=True)
     shape1 = y[0].shape
     esn = ESNClassifier(hidden_layer_size=50).fit(X, y)
+    print(esn)
     shape2 = y[0].shape
     assert(shape1 == shape2)
 
