@@ -22,7 +22,7 @@ import numpy as np
 import pandas as pd
 import joblib
 
-from sklearn.base import TransformerMixin
+from sklearn.base import BaseEstimator
 from sklearn.datasets import get_data_home
 from sklearn.datasets._base import _pkl_filepath
 from sklearn.utils.validation import _deprecate_positional_args
@@ -166,7 +166,7 @@ def _quantize_notes(notes: np.ndarray, fps: float, length: Optional[int] = None,
 @_deprecate_positional_args
 def fetch_maps_piano_dataset(*, data_origin: Optional[str] = None,
                              data_home: Optional[str] = None,
-                             preprocessor: Optional[TransformerMixin] = None,
+                             preprocessor: Optional[BaseEstimator] = None,
                              force_preprocessing: bool = False,
                              label_type: Literal["pitch", "onset", "offset"]) \
         -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:

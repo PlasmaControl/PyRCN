@@ -49,8 +49,6 @@ initially_fixed_params = {'hidden_layer_size': 50,
                           'k_rec': 10,
                           'reservoir_activation': 'tanh',
                           'bidirectional': False,
-                          'wash_out': 0,
-                          'continuation': False,
                           'alpha': 1e-3,
                           'random_state': 42}
 

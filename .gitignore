@@ -177,3 +177,7 @@ dmypy.json
 /docs/source/_build
 /junit
 /MNIST.npz
+/pyrcn/junit
+/tests/junit
+*.npz
+/examples/junit

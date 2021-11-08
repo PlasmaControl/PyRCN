@@ -7,4 +7,4 @@ the Extreme Learning Machine (ELM), which is a feed-forward network, can also be
 The `Scholarpedia article about Echo State Networks <http://www.scholarpedia.org/article/Echo_state_network>`_ give an excellent introduction to the topic.
 
 Many examples can be found in the PyRCN repository.
-Some useful examples can also be found in the `PyRCN repository <https://github.com/TUD-STKS/PyRCN/tree/master/examples>`_ with many Jupyter notebooks.
+Some useful examples can also be found in the `PyRCN repository <https://github.com/TUD-STKS/PyRCN/tree/main/examples>`_ with many Jupyter notebooks.

@@ -98,6 +98,8 @@ def concatenate_sequences(X: Union[list, np.ndarray], y: Union[list, np.ndarray]
         X = np.asarray(X)
     if isinstance(y, list):
         y = np.asarray(y)
+    X = np.array(X)
+    y = np.array(y)
     if sequence_to_value:
         for k, _ in enumerate(y):
             y[k] = np.repeat(y[k], X[k].shape[0])

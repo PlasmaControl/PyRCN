@@ -8,12 +8,8 @@ else:
 
 import numpy as np
 import scipy
-if scipy.__version__ == '0.9.0' or scipy.__version__ == '0.10.1':
-    from scipy.sparse.linalg import eigs as eigens
-    from scipy.sparse.linalg import ArpackNoConvergence
-else:
-    from scipy.sparse.linalg.eigen.arpack import eigs as eigens
-    from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
+from scipy.sparse.linalg.eigen.arpack import eigs as eigens
+from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
 
 
 def _uniform_random_input_weights(n_features_in: int,

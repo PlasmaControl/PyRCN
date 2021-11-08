@@ -19,14 +19,14 @@ import joblib
 from sklearn.datasets import get_data_home
 from sklearn.datasets._base import _pkl_filepath
 from sklearn.utils.validation import _deprecate_positional_args
-from sklearn.base import TransformerMixin
+from sklearn.base import BaseEstimator
 
 
 @no_type_check
 @_deprecate_positional_args
 def fetch_ptdb_tug_dataset(*, data_origin: Union[str, bytes],
-                           data_home: Union[str, bytes],
-                           preprocessor: Optional[TransformerMixin] = None,
+                           data_home: Optional[Union[str, bytes]] = None,
+                           preprocessor: Optional[BaseEstimator] = None,
                            augment: Union[int, np.integer] = 0,
                            force_preprocessing: bool = False) -> Tuple[np.ndarray,
                                                                        np.ndarray,
@@ -54,7 +54,7 @@ def fetch_ptdb_tug_dataset(*, data_origin: Union[str, bytes],
         Specify another download and cache folder fo the datasets. By default,
         all pyrcn data is stored in '~/pyrcn_data' and all scikit-learn data in
        '~/scikit_learn_data' subfolders.
-    preprocessor : Optional[sklearn.TransformerMixin], default=None,
+    preprocessor : Optional[BaseEstimator], default=None,
         Estimator for preprocessing the dataset (create features and targets from
         audio and label files).
     augment : Union[int, np.integer], default = 0

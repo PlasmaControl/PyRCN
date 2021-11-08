@@ -3,12 +3,11 @@ Example for BatchIntrinsicPlasticity
 """
 import os
 import numpy as np
+from pyrcn.base.blocks import BatchIntrinsicPlasticity
 
 import matplotlib.pyplot as plt
 import seaborn as sns
 sns.set_theme()
-
-from pyrcn.base.blocks import BatchIntrinsicPlasticity
 
 
 tud_colors = {

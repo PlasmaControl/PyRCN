@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="PyRCN",
-    version="0.0.14",
+    version="0.0.15",
     author="Peter Steiner",
     author_email="peter.steiner@tu-dresden.de",
     description="A scikit-learn-compatible framework for Reservoir Computing in Python",
@@ -24,15 +24,15 @@ setuptools.setup(
     project_urls={
         'Documentation': 'https://pyrcn.readthedocs.io/',
         'Funding': 'https://pyrcn.readthedocs.io/',
-        'Source': 'https://github.com/TUD-STKS/PyRCN',
+        'Source': 'https://pyrcn.net',
         'Tracker': 'https://github.com/TUD-STKS/PyRCN/issues',
     },
     install_requires=[
-        'scikit-learn>=0.23.1',
+        'scikit-learn>=1.0',
         'ipywidgets',
         'ipympl',
         'numpy>=1.18.1',
-        'scipy>=1.2.0',
+        'scipy>=1.4.0',
         'joblib>=0.13.2',
         'pandas>=1.0.0',
         'matplotlib',

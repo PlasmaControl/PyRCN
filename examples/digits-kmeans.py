@@ -10,10 +10,15 @@ matplotlib.rc('image', cmap='binary')
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
 
+import seaborn as sns
+
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 
 from pyrcn.util import get_mnist, tud_colors
+
+
+sns.set_theme()
 
 
 # define norm

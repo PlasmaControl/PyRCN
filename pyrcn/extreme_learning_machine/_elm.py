@@ -7,7 +7,7 @@ from typing import Union, Any, Optional
 
 import numpy as np
 from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
-                          TransformerMixin, MultiOutputMixin, is_regressor, clone)
+                          MultiOutputMixin, is_regressor, clone)
 from pyrcn.base.blocks import InputToNode
 from pyrcn.linear_model import IncrementalRegression
 from sklearn.utils.validation import _deprecate_positional_args
@@ -25,11 +25,11 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     Parameters
     ----------
-    input_to_node : Union[InputToNode, TransformerMixin, None], default=None
-        Any ```sklearn.base.TransformerMixin``` object that transforms the inputs.
+    input_to_node : Union[InputToNode, BaseEstimator, None], default=None
+        Any ```sklearn.base.BaseEstimator``` object that transforms the inputs.
         If ```None```, a ```pyrcn.base.blocks.InputToNode()``` object is instantiated.
-    regressor : Union[IncrementalRegression, RegressorMixin, None], default=None
-        Regressor object such as derived from ``RegressorMixin``. This
+    regressor : Union[IncrementalRegression, BaseEstimator, None], default=None
+        Regressor object such as derived from ``BaseEstimator``. This
         regressor will automatically be cloned each time prior to fitting.
         If ```None```, a ```pyrcn.linear_model.IncrementalRegression()``` object is
         instantiated.
@@ -47,8 +47,8 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
 
     @_deprecate_positional_args
     def __init__(self, *,
-                 input_to_node: Union[InputToNode, TransformerMixin, None] = None,
-                 regressor: Union[IncrementalRegression, RegressorMixin, None] = None,
+                 input_to_node: Union[InputToNode, BaseEstimator, None] = None,
+                 regressor: Union[IncrementalRegression, BaseEstimator, None] = None,
                  chunk_size: Optional[int] = None,
                  verbose: bool = False,
                  **kwargs: Any) -> None:
@@ -230,9 +230,9 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
                                                transformer_weights=transformer_weights,
                                                postpone_inverse=True)
                                               for idx in chunks[:-1])
+                reg = sum(reg)
+                self._regressor = reg._regressor
             # last chunk, calculate inverse and bias
-            reg = sum(reg)
-            self._regressor = reg._regressor
             ELMRegressor.partial_fit(self, X=X[chunks[-1]:, ...], y=y[chunks[-1]:, ...],
                                      transformer_weights=transformer_weights,
                                      postpone_inverse=False)
@@ -253,9 +253,6 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         y : ndarray of (n_samples,) or (n_samples, n_targets)
             The predicted targets
         """
-        if self._input_to_node is None or self._regressor is None:
-            raise NotFittedError(self)
-
         hidden_layer_state = self._input_to_node.transform(X)
 
         return self._regressor.predict(hidden_layer_state)
@@ -314,25 +311,24 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._regressor = regressor
 
     @property
-    def input_to_node(self) -> Union[InputToNode, TransformerMixin]:
+    def input_to_node(self) -> Union[InputToNode, BaseEstimator]:
         """
-        Return the input_to_node Transformer.
+        Return the input_to_node Estimator.
 
         Returns
         -------
-        input_to_node : TransformerMixin
+        input_to_node : BaseEstimator
         """
         return self._input_to_node
 
     @input_to_node.setter
-    def input_to_node(self, input_to_node: Union[InputToNode,
-                                                 TransformerMixin]) -> None:
+    def input_to_node(self, input_to_node: Union[InputToNode, BaseEstimator]) -> None:
         """
         Set the input_to_node Transformer.
 
         Parameters
         ----------
-        input_to_node : TransformerMixin
+        input_to_node : BaseEstimator
         """
         self._input_to_node = input_to_node
 
@@ -345,7 +341,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         -------
         hidden_layer_state : np.ndarray
         """
-        return self._node_to_node._hidden_layer_state
+        return self._input_to_node._hidden_layer_state
 
     @property
     def chunk_size(self) -> Union[None, int, np.integer]:
@@ -378,11 +374,11 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
 
     Parameters
     ----------
-    input_to_node : Union[InputToNode, TransformerMixin, None], default=None
-        Any ```sklearn.base.TransformerMixin``` object that transforms the inputs.
+    input_to_node : Union[InputToNode, BaseEstimator, None], default=None
+        Any ```sklearn.base.BaseEstimator``` object that transforms the inputs.
         If ```None```, a ```pyrcn.base.blocks.InputToNode()``` object is instantiated.
-    regressor : Union[IncrementalRegression, RegressorMixin, None], default=None
-        Regressor object such as derived from ``RegressorMixin``. This
+    regressor : Union[IncrementalRegression, BaseEstimator, None], default=None
+        Regressor object such as derived from ``BaseEstimator``. This
         regressor will automatically be cloned each time prior to fitting.
         If ```None```, a ```pyrcn.linear_model.IncrementalRegression()``` object
         is instantiated.
@@ -400,8 +396,8 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
 
     @_deprecate_positional_args
     def __init__(self, *,
-                 input_to_node: Union[InputToNode, TransformerMixin, None] = None,
-                 regressor: Union[IncrementalRegression, RegressorMixin, None] = None,
+                 input_to_node: Union[InputToNode, BaseEstimator, None] = None,
+                 regressor: Union[IncrementalRegression, BaseEstimator, None] = None,
                  chunk_size: Union[int, None] = None, verbose: bool = False,
                  **kwargs: Any) -> None:
         """Construct the ELMClassifier."""
