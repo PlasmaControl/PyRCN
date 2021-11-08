@@ -39,15 +39,17 @@ def test_accuracy_score() -> None:
     step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
     step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
     scoring = {"Acc": make_scorer(accuracy_score),
-               "MSE": make_scorer(mean_squared_error, greater_is_better=False, needs_proba=True)}
+               "MSE": make_scorer(mean_squared_error, greater_is_better=False,
+                                  needs_proba=True)}
 
-    kwargs_step1 = {'cv': 2, 'n_iter': 10, 'random_state': 42, 'verbose': 1, 'n_jobs': 1,
-                    'scoring': scoring, 'refit': "MSE"}
-    kwargs_step2 = {'cv': 2, 'n_iter': 5, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                    'scoring': scoring, 'refit': "MSE"}
-    kwargs_step3 = {'cv': 2, 'verbose': 1, 'n_jobs': -1, 'scoring': scoring, 'refit': "MSE"}
-    kwargs_step4 = {'cv': 2, 'n_iter': 5, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                    'scoring': scoring, 'refit': "MSE"}  # TODO: refit=MSE
+    kwargs_step1 = {'cv': 2, 'n_iter': 10, 'random_state': 42, 'verbose': 1,
+                    'n_jobs': 1, 'scoring': scoring, 'refit': "MSE"}
+    kwargs_step2 = {'cv': 2, 'n_iter': 5, 'random_state': 42, 'verbose': 1,
+                    'n_jobs': -1, 'scoring': scoring, 'refit': "MSE"}
+    kwargs_step3 = {'cv': 2, 'verbose': 1, 'n_jobs': -1, 'scoring': scoring,
+                    'refit': "MSE"}
+    kwargs_step4 = {'cv': 2, 'n_iter': 5, 'random_state': 42, 'verbose': 1,
+                    'n_jobs': -1, 'scoring': scoring, 'refit': "MSE"}  # TODO: refit=MSE
     searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
                 ('step2', RandomizedSearchCV, step2_esn_params, kwargs_step2),
                 ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
