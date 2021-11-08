@@ -1,3 +1,5 @@
+"""Testing for Metrics module.
+
 from pyrcn.echo_state_network import ESNClassifier
 from pyrcn.metrics import accuracy_score, mean_squared_error
 from sklearn.datasets import make_blobs
@@ -7,15 +9,16 @@ from scipy.stats import uniform
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from pyrcn.model_selection import SequentialSearchCV
+"""
 
 
-def test_accuracy_score():
+def test_accuracy_score() -> None:
     pass
     """
     X = np.empty(shape=(10, ), dtype=object)
     y = np.empty(shape=(10, ), dtype=object)
     for k in range(10):
-        X[k], y[k] = make_blobs(n_samples=10*k, n_features=20)
+        X[k], y[k] = make_blobs(n_samples=10 * (k + 1), n_features=20)
     initially_fixed_params = {'hidden_layer_size': 50,
                               'k_in': 10,
                               'input_scaling': 0.4,
@@ -35,15 +38,16 @@ def test_accuracy_score():
     step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
     step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
     step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
-    scoring = make_scorer(accuracy_score)
+    scoring = {"Acc": make_scorer(accuracy_score),
+               "MSE": make_scorer(mean_squared_error, greater_is_better=False, needs_proba=True)}
 
-    kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                    'scoring': scoring}
-    kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                    'scoring': scoring}
-    kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': scoring}
-    kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                    'scoring': scoring}  # TODO: refit=MSE
+    kwargs_step1 = {'cv': 2, 'n_iter': 10, 'random_state': 42, 'verbose': 1, 'n_jobs': 1,
+                    'scoring': scoring, 'refit': "MSE"}
+    kwargs_step2 = {'cv': 2, 'n_iter': 5, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+                    'scoring': scoring, 'refit': "MSE"}
+    kwargs_step3 = {'cv': 2, 'verbose': 1, 'n_jobs': -1, 'scoring': scoring, 'refit': "MSE"}
+    kwargs_step4 = {'cv': 2, 'n_iter': 5, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+                    'scoring': scoring, 'refit': "MSE"}  # TODO: refit=MSE
     searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
                 ('step2', RandomizedSearchCV, step2_esn_params, kwargs_step2),
                 ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
@@ -53,4 +57,3 @@ def test_accuracy_score():
     searches = SequentialSearchCV(esn, searches=searches).fit(X, y)
     searches
     """
-
