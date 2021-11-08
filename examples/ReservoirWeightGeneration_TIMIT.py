@@ -1,10 +1,8 @@
 from pathlib import Path
 import numpy as np
+from scipy.stats import uniform
 import librosa
 from tqdm import tqdm
-
-import pandas as pd
-import seaborn as sns
 
 from joblib import dump, load
 
@@ -12,21 +10,12 @@ from sklearn.preprocessing import StandardScaler, FunctionTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.utils import shuffle
 from sklearn.utils.fixes import loguniform
-from scipy.stats import uniform
-
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
-from sklearn.cluster import MiniBatchKMeans
 from sklearn.metrics import make_scorer
 from pyrcn.metrics import mean_squared_error, accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.echo_state_network import ESNClassifier
-from pyrcn.base.blocks import PredefinedWeightsInputToNode, PredefinedWeightsNodeToNode
 from pyrcn.util import FeatureExtractor
-
-from matplotlib import ticker
-import matplotlib.pyplot as plt
-
-sns.set_theme()
 
 
 training_sentences = list(
@@ -119,7 +108,7 @@ scaler = StandardScaler()
 X_train = []
 y_train = []
 for k, f in tqdm(enumerate(shuffle(training_sentences, random_state=42))):
-    if not "sa" in str(f):
+    if "sa" not in str(f):
         mel = mel_spectrogram.transform(X=str(f))
         mel_delta = delta_spectrogram.transform(X=str(f))
         mel_delta_delta = delta_delta_spectrogram.transform(X=str(f))
@@ -134,7 +123,7 @@ for k, f in tqdm(enumerate(shuffle(training_sentences, random_state=42))):
 X_test = []
 y_test = []
 for k, f in tqdm(enumerate(shuffle(test_sentences, random_state=42))):
-    if not "sa" in str(f):
+    if "sa" not in str(f):
         mel = mel_spectrogram.transform(X=str(f))
         mel_delta = delta_spectrogram.transform(X=str(f))
         mel_delta_delta = delta_delta_spectrogram.transform(X=str(f))
@@ -153,16 +142,6 @@ for k, X in enumerate(X_train):
     X_train[k] = scaler.transform(X)
 for k, X in enumerate(X_test):
     X_test[k] = scaler.transform(X)
-
-for k in [50, 100, 200, 400, 500, 800, 1000, 1600, 2000, 3200, 4000, 6400, 8000, 16000]:
-    try:
-        kmeans = load("../kmeans_" + str(k) + ".joblib")
-    except FileNotFoundError:
-        kmeans = MiniBatchKMeans(n_clusters=k, n_init=200, reassignment_ratio=0,
-                                 max_no_improvement=50, init='k-means++', verbose=2,
-                                 random_state=42)
-        kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
-        dump(kmeans, "../kmeans_" + str(k) + ".joblib")
 
 initially_fixed_params = {'hidden_layer_size': 50,
                           'k_in': 10,
@@ -205,7 +184,7 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
 base_esn = ESNClassifier().set_params(**initially_fixed_params)
 
 try:
-    sequential_search = load("../sequential_search_speech_timit_kmeans_rec.joblib")
+    sequential_search = load("../sequential_search_speech_timit_random.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn,
                                            searches=searches).fit(X_train, y_train)
