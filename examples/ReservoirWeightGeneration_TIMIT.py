@@ -168,18 +168,15 @@ step1_esn_params = {'input_scaling': uniform(loc=1e-2, scale=1),
 step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
 step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
 step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
-scoring = {"MSE": make_scorer(mean_squared_error, greater_is_better=False,
-                              needs_proba=True),
-           "Acc": make_scorer(accuracy_score)}
+scoring = make_scorer(accuracy_score)
 
 kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': scoring, 'refit': 'MSE'}
+                'scoring': scoring}
 kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': scoring, 'refit': 'MSE'}
-kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': scoring,
-                'refit': 'MSE'}
+                'scoring': scoring}
+kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': scoring}
 kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': scoring, 'refit': 'MSE'}
+                'scoring': scoring}  # TODO: refit=MSE
 
 # The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
