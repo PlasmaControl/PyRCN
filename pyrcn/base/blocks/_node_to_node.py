@@ -277,8 +277,9 @@ class PredefinedWeightsNodeToNode(NodeToNode):
                  bidirectional: bool = False) -> None:
         """Construct the PredefinedWeightsNodeToNode."""
         if predefined_recurrent_weights.ndim != 2:
-            raise ValueError('predefined_recurrent_weights has not the expected ndim {0}'
-                             ', given 2.'.format(predefined_recurrent_weights.shape))
+            raise ValueError('predefined_recurrent_weights has not the '
+                             'expected ndim {0}, given 2.'
+                             .format(predefined_recurrent_weights.shape))
         super().__init__(hidden_layer_size=predefined_recurrent_weights.shape[0],
                          reservoir_activation=reservoir_activation,
                          spectral_radius=spectral_radius,

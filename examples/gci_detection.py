@@ -3,7 +3,7 @@ import librosa
 import librosa.display
 import glob
 from pyrcn.echo_state_network import ESNRegressor
-from pyrcn.linear_model import FastIncrementalRegression
+from pyrcn.linear_model import IncrementalRegression
 from pyrcn.base.blocks import InputToNode, NodeToNode
 from sklearn.base import clone
 from scipy.signal import find_peaks
@@ -42,9 +42,9 @@ def train_esn(base_input_to_node, base_node_to_node, base_reg, frame_length, fil
                            regressor=reg, random_state=0)
         for file in file_list[:7]:
             X, y = extract_features(file, sr=4000., frame_length=frame_length, target_widening=True)
-            esn.partial_fit(X=X, y=y, update_output_weights=False)
+            esn.partial_fit(X=X, y=y, postpone_inverse=True)
         X , y = extract_features(file_list[8], sr=4000., frame_length=frame_length, target_widening=True)
-        esn.partial_fit(X=X, y=y, update_output_weights=True)
+        esn.partial_fit(X=X, y=y, postpone_inverse=False)
         dump(esn, "esn_500b_" + str(frame_length) + ".joblib")
 
 
@@ -108,78 +108,22 @@ all_wavs_m = glob.glob(r"C:\Temp\SpLxDataLondonStudents2008\M\*.wav")
 print(len(all_wavs_m))
 all_wavs_n = glob.glob(r"C:\Temp\SpLxDataLondonStudents2008\N\*.wav")
 print(len(all_wavs_n))
-"""
-frame_length = 5
-reg = load("esn_500b_" + str(frame_length) + ".joblib")
-for file in all_wavs_m[8:13]:
-    print(file)
-    X, y = extract_features(file, sr = 4000., frame_length = frame_length, target_widening=False)
-    y_pred = reg.predict(X=X)
-    print(y_pred)
-    detections = (peak_picking(y= y_pred, thr=0.02)) / 4000.
-    detection_annotations = np.zeros(shape=(detections.shape[0]+1, ))
-    detection_intervals = np.zeros(shape=(detections.shape[0]+1, 2))
-    for count in range(len(detections)):
-        if count == 0:
-            detection_intervals[count, 0] = 0.0
-            detection_intervals[count, 1] = detections[count]
-            detection_annotations[count] = 0.0
-        else:
-            detection_intervals[count, 0] = detections[count-1]
-            detection_intervals[count, 1] = detections[count]
-            detection_annotations[count] = 1. / (detection_intervals[count, 1] - detection_intervals[count, 0])
-    detection_annotations[-1] = 0
-    detection_intervals[-1, :] = np.asarray([detections[-1], len(y) / 4000.])
-    write_output_file(file_name="output/predicted/esn_bi/" + str(frame_length) + "/" + file.split("\\")[-1].replace(".wav", ".csv"), times=detections)
-    write_annotation_file("output/predicted/esn_bi/" + str(frame_length) + "/" + file.split("\\")[-1].replace(".wav", "_ann.csv"), detection_intervals, detection_annotations)
-    t, a = annot_to_time_series(annot=detection_annotations, intervals=detection_intervals, hop_len=0.01)
-    write_output_file("output/predicted/esn_bi/" + str(frame_length) + "/" + file.split("\\")[-1].replace(".wav", "_ts.csv"), times=t, annotations=a)
 
+base_input_to_node = InputToNode(hidden_layer_size=500, input_activation='identity', k_in=5, input_scaling=14.6,
+                                 bias_scaling=0.0, random_state=1)
+base_node_to_node = NodeToNode(hidden_layer_size=500, spectral_radius=0.8, leakage=0.5, k_rec=16,
+                               bidirectional=True, random_state=1)
+base_reg = IncrementalRegression(alpha=1.7e-10)
 
-# Extract features for training and hyperparameter optimization
-X_train = []
-y_train = []
-X_val = []
-y_val = []
-X_test = []
-y_test = []
-print("Training files:")
-for file in all_wavs_m[:8]:
-    print(file)
-    X, y = extract_features(file, sr = 4000., frame_length = 21)
-    X_train.append(X)
-    y_train.append(y)
-    print(X_train[-1].shape)
-    print(y_train[-1].shape)
-print("Test files:")
-for file in all_wavs_m[8:13]:
-    print(file)
-    X, y = extract_features(file, sr = 4000., frame_length = 21)
-    X_test.append(X)
-    y_test.append(y)
-    print(X_test[-1].shape)
-    print(y_test[-1].shape)
-print("Validation files:")
-for file in all_wavs_m[13:]:
-    print(file)
-    X, y = extract_features(file, sr = 4000., frame_length = 21)
-    X_val.append(X)
-    y_val.append(y)
-    print(X_val[-1].shape)
-    print(y_val[-1].shape)
-"""
-base_input_to_node = InputToNode(hidden_layer_size=500, activation='identity', k_in=5, input_scaling=14.6, bias_scaling=0.0, random_state=1)
-base_node_to_node = NodeToNode(hidden_layer_size=500, spectral_radius=0.8, leakage=0.5, bias_scaling=0.5, k_rec=16, bidirectional=True, random_state=1)
-base_reg = FastIncrementalRegression(alpha=1.7e-10)
-
-base_esn = ESNRegressor(input_to_node=[('default', base_input_to_node)],
-                        node_to_node=[('default', base_node_to_node)],
-                        regressor=base_reg, random_state=0)
+base_esn = ESNRegressor(input_to_node=base_input_to_node,
+                        node_to_node=base_node_to_node,
+                        regressor=base_reg)
 
 esn = base_esn
 t1 = time.time()
-Parallel(n_jobs=1, verbose=50)(delayed(train_esn)(base_input_to_node, base_node_to_node, base_reg, frame_length, all_wavs_m) for frame_length in [5, 7, 9, 11, 21, 31, 41, 81])
+Parallel(n_jobs=1, verbose=50)(delayed(train_esn)(base_input_to_node,base_node_to_node, base_reg,
+                                                  frame_length, all_wavs_m)
+                               for frame_length in [5, 7, 9, 11, 21, 31, 41, 81])
 print("Finished in {0} seconds!".format(time.time() - t1))
-
 
 exit(0)

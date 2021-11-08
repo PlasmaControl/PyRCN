@@ -14,7 +14,6 @@ if sys.version_info >= (3, 8):
 else:
     from typing_extensions import Literal
     from typing import Tuple, Union, Optional, Dict
-import warnings
 import numpy as np
 
 from sklearn.utils.validation import check_consistent_length, _deprecate_positional_args
@@ -51,8 +50,8 @@ def _check_targets(y_true: np.ndarray, y_pred: np.ndarray,
     """
     if sample_weight is not None:
         check_consistent_length(y_true, y_pred, sample_weight)
-        [check_consistent_length(y_t, y_p, s_w)\
-            for y_t, y_p, s_w in zip(y_true, y_pred, sample_weight)]
+        [check_consistent_length(y_t, y_p, s_w)
+         for y_t, y_p, s_w in zip(y_true, y_pred, sample_weight)]
         sample_weight = np.concatenate(sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
@@ -470,8 +469,8 @@ def matthews_corrcoef(y_true: np.ndarray, y_pred: np.ndarray, *,
 
 
 @_deprecate_positional_args
-def zero_one_loss(y_true: np.ndarray, y_pred: np.ndarray,*, normalize: bool = True,
-                   sample_weight: Optional[np.ndarray] = None) -> float:
+def zero_one_loss(y_true: np.ndarray, y_pred: np.ndarray, *, normalize: bool = True,
+                  sample_weight: Optional[np.ndarray] = None) -> float:
     """
     Zero-one classification loss.
 
@@ -728,7 +727,8 @@ def precision_recall_fscore_support(y_true: np.ndarray, y_pred: np.ndarray, *,
                                     average: Optional[Literal['micro', 'macro',
                                                               'samples', 'weighted',
                                                               'binary']] = 'binary',
-                                    warn_for: Tuple = ('precision', 'recall', 'f-score'),
+                                    warn_for: Tuple = ('precision', 'recall',
+                                                       'f-score'),
                                     sample_weight: Optional[np.ndarray] = None,
                                     zero_division: Literal["warn", 0, 1] = "warn")\
                                         -> Tuple[float, float, float, None]:

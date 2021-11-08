@@ -158,13 +158,15 @@ def test_esn_classifier_partial_fit() -> None:
     X, y = load_digits(return_X_y=True, as_sequence=True)
     esn = ESNClassifier(hidden_layer_size=50, verbose=True)
     for k in range(10):
-        esn.partial_fit(X[k], np.repeat(y[k], 8), classes=np.arange(10))
+        esn.partial_fit(X[k], np.repeat(y[k], 8), classes=np.arange(10),
+                        postpone_inverse=True)
     print(esn.__sizeof__())
     print(esn.hidden_layer_state)
     esn = ESNClassifier(hidden_layer_size=50, regressor=Ridge())
     with pytest.raises(BaseException):
         for k in range(10):
-            esn.partial_fit(X[k], np.repeat(y[k], 8), classes=np.arange(10))
+            esn.partial_fit(X[k], np.repeat(y[k], 8), classes=np.arange(10),
+                            postpone_inverse=True)
 
 
 def test_esn_classifier_not_fitted() -> None:

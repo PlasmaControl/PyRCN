@@ -13,7 +13,7 @@ from sklearn.metrics import make_scorer, zero_one_loss
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.util import FeatureExtractor
 from pyrcn.datasets import fetch_ptdb_tug_dataset
-from pyrcn.echo_state_network import SeqToSeqESNRegressor
+from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.base.blocks import PredefinedWeightsInputToNode
 
 
@@ -202,8 +202,6 @@ initially_fixed_params = {'hidden_layer_size': 500,
                           'k_rec': 10,
                           'reservoir_activation': 'tanh',
                           'bidirectional': False,
-                          'wash_out': 0,
-                          'continuation': False,
                           'alpha': 1e-3,
                           'random_state': 42}
 
@@ -228,7 +226,7 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
             ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-base_esn = SeqToSeqESNRegressor(**initially_fixed_params)
+base_esn = ESNRegressor(**initially_fixed_params)
 
 try:
     sequential_search = load("f0/sequential_search_f0_mel_km_50.joblib")
@@ -315,38 +313,6 @@ for params in ParameterGrid(param_grid):
     base_input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
     all_params = sequential_search.best_estimator_.get_params()
     all_params["hidden_layer_size"] = params["hidden_layer_size"]
-    esn = SeqToSeqESNRegressor(input_to_node=base_input_to_node, **all_params)
-    print(esn._base_estimator)
+    esn = ESNRegressor(input_to_node=base_input_to_node, **all_params)
     esn.fit(X_train, y_train, n_jobs=4)
     dump(esn, "f0/km_esn_dense_6400_4_0.joblib")
-
-"""
-try:
-    gs = load("f0/sequential_search_f0_mel_km_50_final_2.joblib")
-except:
-    param_grid = {'hidden_layer_size': [6400],  # TODO
-                  'random_state': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]}
-    gs = []
-    for params in ParameterGrid(param_grid):
-        try:
-            print("Attempting to load KMeans from disk...")
-            kmeans = load("f0/kmeans_" + str(params["hidden_layer_size"]) + ".joblib")
-            print("Loaded.")
-        except FileNotFoundError:
-            print("Fitting kmeans with features from the training set...")
-            t1 = time.time()
-            kmeans = MiniBatchKMeans(n_clusters=params["hidden_layer_size"], n_init=200,
-                                     reassignment_ratio=0, max_no_improvement=50,
-                                     init='k-means++', verbose=0, random_state=0)
-            kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
-            dump(kmeans, "f0/kmeans_" + str(params["hidden_layer_size"]) + ".joblib")
-            print("done in {0}!".format(time.time() - t1))
-        w_in = np.divide(kmeans.cluster_centers_,
-                         np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
-        input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
-        esn = SeqTo clone(sequential_search.best_estimator_)
-        esn.input_to_node = input_to_node
-        esn.set_params(**params)
-        esn.fit(X_train, y=y_train, n_jobs=4)
-    dump(gs, "f0/sequential_search_f0_mel_km_50_final_2.joblib")
-"""

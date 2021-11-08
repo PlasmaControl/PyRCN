@@ -5,13 +5,14 @@
 
 import sys
 if sys.version_info >= (3, 8):
-    from typing import Union, Literal
+    from typing import Union, Literal, Optional
 else:
-    from typing_extensions import Literal
+    from typing_extensions import Literal, Optional
     from typing import Union
 
 import scipy
 import numpy as np
+from sklearn.cluster import MiniBatchKMeans
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state
@@ -479,3 +480,94 @@ class BatchIntrinsicPlasticity(InputToNode):
         if self.distribution not in {'exponential', 'uniform', 'normal'}:
             raise ValueError('The selected distribution is unknown, got {0}'
                              .format(self.distribution))
+
+
+class PCAKMeansInputToNode(InputToNode):
+    """
+    PCAKMeansInputToNode class for reservoir computing modules.
+
+    Parameters
+    ----------
+    hidden_layer_size : int, default=500
+        Sets the number of nodes in hidden layer. Equals number of output features.
+    input_activation : Literal['tanh', 'identity', 'logistic', 'relu', 'bounded_relu'],
+    default = 'tanh'
+        This element represents the activation function in the hidden layer.
+            - 'identity', no-op activation, useful to implement linear bottleneck,
+            returns f(x) = x
+            - 'logistic', the logistic sigmoid function, returns f(x) = 1/(1+exp(-x)).
+            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'bounded_relu', the bounded rectified linear unit function,
+            returns f(x) = min(max(x, 0),1)
+    input_scaling :  float, default = 1.
+        Scales the input weight matrix.
+    bias_scaling : float, default = 1.
+        Scales the input bias of the activation.
+    random_state : Union[int, np.random.RandomState, None], default = 42
+    clusterer : Optional[BaseEstimator], default=None
+        Clusterer to be used to transform input features.
+    pca_components : np.ndarray, default=np.ndarray([])
+        PCA components to be used to transform the input features.
+    """
+
+    @_deprecate_positional_args
+    def __init__(self, *,
+                 hidden_layer_size: int = 500,
+                 input_activation: Literal['tanh', 'identity', 'logistic',
+                                           'relu', 'bounded_relu'] = 'relu',
+                 input_scaling: float = 1.,
+                 bias_scaling: float = 0.,
+                 random_state: Union[int, np.random.RandomState, None] = None,
+                 clusterer: Optional[BaseEstimator] = None,
+                 pca_components: np.ndarray = np.ndarray([])) -> None:
+        """Construct the PCAKMeansInputToNode."""
+        super().__init__(sparsity=1., hidden_layer_size=hidden_layer_size,
+                         activation=input_activation, input_scaling=input_scaling,
+                         bias_scaling=bias_scaling, random_state=random_state)
+        if clusterer is None:
+            self.clusterer = MiniBatchKMeans(init='k-means++', batch_size=5000,
+                                             n_init=5)
+        else:
+            self.clusterer = clusterer
+        self.pca_components = pca_components
+
+    def fit(self, X: np.ndarray, y: None = None) -> InputToNode:
+        """
+        Fit the InputToNode. Initialize input weights and bias.
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+        y : None
+            ignored
+
+        Returns
+        -------
+        self : returns a trained PCAKMeansInputToNode.
+        """
+        # no validation!
+        if self.random_state is None:
+            self.random_state = np.random.RandomState()
+        elif isinstance(self.random_state, (int, np.integer)):
+            self.random_state = np.random.RandomState(self.random_state)
+        elif isinstance(self.random_state, np.random.RandomState):
+            pass
+        else:
+            raise ValueError('random_state is not valid, got {0}.'
+                             .format(self.random_state))
+
+        if self.pca_components.size != 0:
+            X_preprocessed = np.matmul(X - np.mean(X, axis=0), self.pca_components.T)
+        else:
+            X_preprocessed = X
+
+        dict_params = {'n_clusters': self.hidden_layer_size,
+                       'random_state': self.random_state}
+        self.clusterer.set_params(**dict_params)
+        self.clusterer.fit(X_preprocessed)
+        self._input_weights = np.matmul(self.pca_components.T,
+                                        self.clusterer.cluster_centers_.T)
+        self._bias = _uniform_random_bias(hidden_layer_size=self.hidden_layer_size,
+                                          random_state=self.random_state)
+        return self

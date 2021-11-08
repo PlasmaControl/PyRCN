@@ -2,29 +2,18 @@
 An example of the Coates Idea on the digits dataset.
 """
 import os
-import sys
-import logging
-import time
-
-import scipy
 import numpy as np
 
-from sklearn.preprocessing import LabelBinarizer, StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV
-
-from sklearn.datasets import fetch_openml
-from sklearn.cluster import KMeans
 from pyrcn.base.blocks import InputToNode
 
-from pyrcn.util import tud_colors, new_logger, get_mnist
+from pyrcn.util import tud_colors, get_mnist
 
-import matplotlib
-# matplotlib.use('pgf')
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize
+import seaborn as sns
 
+
+sns.set_theme()
 example_image_idx = 5
 min_var = 3088.6875
 
@@ -102,5 +91,4 @@ def input2node_distribution(directory):
 
 if __name__ == "__main__":
     directory = os.path.abspath('./examples/input-to-node/')
-
     input2node_distribution(directory=directory)
