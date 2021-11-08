@@ -30,9 +30,9 @@ sns.set_theme()
 
 
 training_sentences = list(
-    Path("E:/TIMIT/train").rglob("*.wav"))
+    Path("/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/TIMIT/train").rglob("*.wav"))
 test_sentences = list(
-    Path("E:/TIMIT/test").rglob("*.wav"))
+    Path("/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/TIMIT/test").rglob("*.wav"))
 
 
 def add_constant(x, constant=1e-5):

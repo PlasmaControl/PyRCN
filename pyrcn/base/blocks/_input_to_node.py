@@ -7,8 +7,8 @@ import sys
 if sys.version_info >= (3, 8):
     from typing import Union, Literal, Optional
 else:
-    from typing_extensions import Literal, Optional
-    from typing import Union
+    from typing_extensions import Literal
+    from typing import Union, Optional
 
 import scipy
 import numpy as np
