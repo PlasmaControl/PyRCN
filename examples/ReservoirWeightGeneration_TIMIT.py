@@ -15,7 +15,7 @@ from sklearn.metrics import make_scorer
 from pyrcn.metrics import mean_squared_error, accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.echo_state_network import ESNClassifier
-from pyrcn.base.blocks import PredefinedWeightsInputToNode
+from pyrcn.base.blocks import PredefinedWeightsInputToNode, PredefinedWeightsNodeToNode
 from pyrcn.util import FeatureExtractor
 
 
@@ -148,6 +148,9 @@ kmeans = load("../kmeans_50.joblib")
 w_in = np.divide(kmeans.cluster_centers_,
                  np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
 input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
+w_rec = transition_matrix(kmeans.labels_)
+node_to_node = PredefinedWeightsNodeToNode(
+    predefined_recurrent_weights=w_rec/np.max(np.abs(np.linalg.eigvals(w_rec))))
 
 initially_fixed_params = {'hidden_layer_size': 50,
                           'k_in': 10,
@@ -184,13 +187,13 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
             ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-base_esn = ESNClassifier()\
-    .set_params(**initially_fixed_params)
+base_esn = ESNClassifier(input_to_node=input_to_node,
+                         node_to_node=node_to_node).set_params(**initially_fixed_params)
 
 try:
-    sequential_search = load("../sequential_search_speech_timit_random.joblib")
+    sequential_search = load("../sequential_search_speech_timit_kmeans_rec.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn,
                                            searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "../sequential_search_speech_timit_random.joblib")
+    dump(sequential_search, "../sequential_search_speech_timit_kmeans_rec.joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
