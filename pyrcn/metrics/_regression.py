@@ -116,25 +116,9 @@ def mean_absolute_error(y_true: np.ndarray, y_pred: np.ndarray, *,
         If multioutput is 'uniform_average' or an ndarray of weights, then the
         weighted average of all output errors is returned.
         MAE output is non-negative floating point. The best value is 0.0.
-
-    Examples
-    --------
-    >>> from sklearn.metrics import mean_absolute_error
-    >>> y_true = [3, -0.5, 2, 7]
-    >>> y_pred = [2.5, 0.0, 2, 8]
-    >>> mean_absolute_error(y_true, y_pred)
-    0.5
-    >>> y_true = [[0.5, 1], [-1, 1], [7, -6]]
-    >>> y_pred = [[0, 2], [-1, 2], [8, -5]]
-    >>> mean_absolute_error(y_true, y_pred)
-    0.75
-    >>> mean_absolute_error(y_true, y_pred, multioutput='raw_values')
-    array([0.5, 1. ])
-    >>> mean_absolute_error(y_true, y_pred, multioutput=[0.3, 0.7])
-    0.85...
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
-        y_true, y_pred, sample_weight)
+        y_true, y_pred, sample_weight, multioutput=multioutput)
     if sample_weight is not None:
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
@@ -188,23 +172,9 @@ def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
         But note the fact that bad predictions can lead to arbitarily large
         MAPE values, especially if some y_true values are very close to zero.
         Note that we return a large value instead of `inf` when y_true is zero.
-
-    Examples
-    --------
-    >>> from sklearn.metrics import mean_absolute_percentage_error
-    >>> y_true = [3, -0.5, 2, 7]
-    >>> y_pred = [2.5, 0.0, 2, 8]
-    >>> mean_absolute_percentage_error(y_true, y_pred)
-    0.3273...
-    >>> y_true = [[0.5, 1], [-1, 1], [7, -6]]
-    >>> y_pred = [[0, 2], [-1, 2], [8, -5]]
-    >>> mean_absolute_percentage_error(y_true, y_pred)
-    0.5515...
-    >>> mean_absolute_percentage_error(y_true, y_pred, multioutput=[0.3, 0.7])
-    0.6198...
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
-        y_true, y_pred, sample_weight)
+        y_true, y_pred, sample_weight, multioutput=multioutput)
     if sample_weight is not None:
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
@@ -250,31 +220,9 @@ def mean_squared_error(y_true: np.ndarray, y_pred: np.ndarray, *,
     loss : float or ndarray of floats
         A non-negative floating point value (the best value is 0.0), or an
         array of floating point values, one for each individual target.
-
-    Examples
-    --------
-    >>> from sklearn.metrics import mean_squared_error
-    >>> y_true = [3, -0.5, 2, 7]
-    >>> y_pred = [2.5, 0.0, 2, 8]
-    >>> mean_squared_error(y_true, y_pred)
-    0.375
-    >>> y_true = [3, -0.5, 2, 7]
-    >>> y_pred = [2.5, 0.0, 2, 8]
-    >>> mean_squared_error(y_true, y_pred, squared=False)
-    0.612...
-    >>> y_true = [[0.5, 1],[-1, 1],[7, -6]]
-    >>> y_pred = [[0, 2],[-1, 2],[8, -5]]
-    >>> mean_squared_error(y_true, y_pred)
-    0.708...
-    >>> mean_squared_error(y_true, y_pred, squared=False)
-    0.822...
-    >>> mean_squared_error(y_true, y_pred, multioutput='raw_values')
-    array([0.41666667, 1.        ])
-    >>> mean_squared_error(y_true, y_pred, multioutput=[0.3, 0.7])
-    0.825...
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
-        y_true, y_pred, sample_weight)
+        y_true, y_pred, sample_weight, multioutput=multioutput)
     if sample_weight is not None:
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
@@ -318,25 +266,9 @@ def mean_squared_log_error(y_true: np.ndarray, y_pred: np.ndarray, *,
     loss : float or ndarray of floats
         A non-negative floating point value (the best value is 0.0), or an
         array of floating point values, one for each individual target.
-
-    Examples
-    --------
-    >>> from sklearn.metrics import mean_squared_log_error
-    >>> y_true = [3, 5, 2.5, 7]
-    >>> y_pred = [2.5, 5, 4, 8]
-    >>> mean_squared_log_error(y_true, y_pred)
-    0.039...
-    >>> y_true = [[0.5, 1], [1, 2], [7, 6]]
-    >>> y_pred = [[0.5, 2], [1, 2.5], [8, 8]]
-    >>> mean_squared_log_error(y_true, y_pred)
-    0.044...
-    >>> mean_squared_log_error(y_true, y_pred, multioutput='raw_values')
-    array([0.00462428, 0.08377444])
-    >>> mean_squared_log_error(y_true, y_pred, multioutput=[0.3, 0.7])
-    0.060...
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
-        y_true, y_pred, sample_weight)
+        y_true, y_pred, sample_weight, multioutput=multioutput)
     if sample_weight is not None:
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
@@ -383,25 +315,9 @@ def median_absolute_error(y_true: np.ndarray, y_pred: np.ndarray, *,
         for each output separately.
         If multioutput is 'uniform_average' or an ndarray of weights, then the
         weighted average of all output errors is returned.
-
-    Examples
-    --------
-    >>> from sklearn.metrics import median_absolute_error
-    >>> y_true = [3, -0.5, 2, 7]
-    >>> y_pred = [2.5, 0.0, 2, 8]
-    >>> median_absolute_error(y_true, y_pred)
-    0.5
-    >>> y_true = [[0.5, 1], [-1, 1], [7, -6]]
-    >>> y_pred = [[0, 2], [-1, 2], [8, -5]]
-    >>> median_absolute_error(y_true, y_pred)
-    0.75
-    >>> median_absolute_error(y_true, y_pred, multioutput='raw_values')
-    array([0.5, 1. ])
-    >>> median_absolute_error(y_true, y_pred, multioutput=[0.3, 0.7])
-    0.85
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
-        y_true, y_pred, sample_weight)
+        y_true, y_pred, sample_weight, multioutput=multioutput)
     if sample_weight is not None:
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
@@ -451,21 +367,9 @@ def explained_variance_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     Notes
     -----
     This is not a symmetric function.
-
-    Examples
-    --------
-    >>> from sklearn.metrics import explained_variance_score
-    >>> y_true = [3, -0.5, 2, 7]
-    >>> y_pred = [2.5, 0.0, 2, 8]
-    >>> explained_variance_score(y_true, y_pred)
-    0.957...
-    >>> y_true = [[0.5, 1], [-1, 1], [7, -6]]
-    >>> y_pred = [[0, 2], [-1, 2], [8, -5]]
-    >>> explained_variance_score(y_true, y_pred, multioutput='uniform_average')
-    0.983...
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
-        y_true, y_pred, sample_weight)
+        y_true, y_pred, sample_weight, multioutput=multioutput)
     if sample_weight is not None:
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
@@ -532,34 +436,9 @@ def r2_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     ----------
     .. [1] `Wikipedia entry on the Coefficient of determination
             <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
-
-    Examples
-    --------
-    >>> from sklearn.metrics import r2_score
-    >>> y_true = [3, -0.5, 2, 7]
-    >>> y_pred = [2.5, 0.0, 2, 8]
-    >>> r2_score(y_true, y_pred)
-    0.948...
-    >>> y_true = [[0.5, 1], [-1, 1], [7, -6]]
-    >>> y_pred = [[0, 2], [-1, 2], [8, -5]]
-    >>> r2_score(y_true, y_pred,
-    ...          multioutput='variance_weighted')
-    0.938...
-    >>> y_true = [1, 2, 3]
-    >>> y_pred = [1, 2, 3]
-    >>> r2_score(y_true, y_pred)
-    1.0
-    >>> y_true = [1, 2, 3]
-    >>> y_pred = [2, 2, 2]
-    >>> r2_score(y_true, y_pred)
-    0.0
-    >>> y_true = [1, 2, 3]
-    >>> y_pred = [3, 2, 1]
-    >>> r2_score(y_true, y_pred)
-    -3.0
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
-        y_true, y_pred, sample_weight)
+        y_true, y_pred, sample_weight, multioutput=multioutput)
     if sample_weight is not None:
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
@@ -586,14 +465,6 @@ def max_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     -------
     max_error : float
         A positive floating point value (the best value is 0.0).
-
-    Examples
-    --------
-    >>> from sklearn.metrics import max_error
-    >>> y_true = [3, 2, 7, 1]
-    >>> y_pred = [4, 2, 7, 1]
-    >>> max_error(y_true, y_pred)
-    1
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
         y_true, y_pred, None)
@@ -641,14 +512,6 @@ def mean_tweedie_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
     -------
     loss : float
         A non-negative floating point value (the best value is 0.0).
-
-    Examples
-    --------
-    >>> from sklearn.metrics import mean_tweedie_deviance
-    >>> y_true = [2, 0, 1, 4]
-    >>> y_pred = [0.5, 0.5, 2., 2.]
-    >>> mean_tweedie_deviance(y_true, y_pred, power=1)
-    1.4260...
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
         y_true, y_pred, sample_weight)
@@ -682,14 +545,6 @@ def mean_poisson_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
     -------
     loss : float
         A non-negative floating point value (the best value is 0.0).
-
-    Examples
-    --------
-    >>> from sklearn.metrics import mean_poisson_deviance
-    >>> y_true = [2, 0, 1, 4]
-    >>> y_pred = [0.5, 0.5, 2., 2.]
-    >>> mean_poisson_deviance(y_true, y_pred)
-    1.4260...
     """
     return mean_tweedie_deviance(y_true, y_pred, sample_weight=sample_weight, power=1)
 
@@ -718,13 +573,5 @@ def mean_gamma_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
     -------
     loss : float
         A non-negative floating point value (the best value is 0.0).
-
-    Examples
-    --------
-    >>> from sklearn.metrics import mean_gamma_deviance
-    >>> y_true = [2, 0.5, 1, 4]
-    >>> y_pred = [0.5, 0.5, 2., 2.]
-    >>> mean_gamma_deviance(y_true, y_pred)
-    1.0568...
     """
     return mean_tweedie_deviance(y_true, y_pred, sample_weight=sample_weight, power=2)

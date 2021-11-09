@@ -27,8 +27,7 @@ from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.linear_model import Ridge
 
 from pyrcn.util import new_logger, argument_parser, get_mnist
-from pyrcn.base.blocks import (InputToNode, BatchIntrinsicPlasticity,
-                               PredefinedWeightsInputToNode, PCAKMeansInputToNode)
+from pyrcn.base.blocks import BatchIntrinsicPlasticity, PredefinedWeightsInputToNode
 
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier
@@ -883,95 +882,6 @@ def elm_coates_stacked(directory):
     if not list_filepaths:
         logger.warning('no input weights matrices found')
         return
-
-
-def significance(directory):
-    self_name = 'significance'
-    logger = new_logger(self_name, directory=directory)
-    X, y = get_mnist(directory)
-    logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
-
-    # preprocessing
-    label_encoder = LabelEncoder().fit(y)
-    y_encoded = label_encoder.transform(y)
-
-    X /= 255.
-    pca = PCA(n_components=50, random_state=42).fit(X)
-    # X_preprocessed = pca.transform(X)
-    # X_preprocessed = np.dot(X - np.mean(X, axis=0), pca.components_.T)
-    # logger.info('{0} features remaining after preprocessing.'.format(X_preprocessed.shape[1]))
-
-    # number of initializations
-    n_inits = 100
-    random_state = np.random.RandomState(43)
-    random_state_inits = random_state.choice(int(2**16-1), size=n_inits)
-
-    # prepare parameter grid
-    param_grid = [{
-        'input_to_nodes': [InputToNode()],
-        'input_to_nodes__hidden_layer_size': [200],
-        'input_to_nodes__input_scaling': [1.],
-        'input_to_nodes__bias_scaling': [0.],
-        'input_to_nodes__activation': ['relu'],
-        'input_to_nodes__random_state': [42],  # random_state_inits,
-        'regressor__alpha': [1e-5],
-        'random_state': [42],
-        'chunk_size': [1000],
-    }, {
-        'input_to_nodes': [PCAKMeansInputToNode()],
-        'input_to_nodes__hidden_layer_size': [200],
-        'input_to_nodes__input_scaling': [1.],
-        'input_to_nodes__bias_scaling': [0.],
-        'input_to_nodes__activation': ['relu'],
-        'input_to_nodes__pca_components': [pca.components_],
-        'input_to_nodes__random_state': random_state_inits,
-        'regressor__alpha': [1e-5],
-        'random_state': [42],
-        'chunk_size': [1000],
-    }]
-
-    # setup estimator
-    estimator = ELMClassifier(regressor=IncrementalRegression())
-    print(ELMClassifier(input_to_nodes=PCAKMeansInputToNode()).get_params().keys())
-
-    # setup grid search
-    cv = GridSearchCV(
-        estimator=estimator,
-        param_grid=param_grid,
-        scoring='accuracy',
-        n_jobs=1,
-        # pre_dispatch=2,
-        verbose=2,
-        refit=False,
-        cv=[(np.arange(0, train_size), np.arange(train_size, 70000))])
-
-    # run!
-    cv.fit(X, y_encoded)
-
-    # refine best params
-    logger.info('best parameters: {0} (score: {1})'
-                .format(cv.best_params_, cv.best_score_))
-
-    # refine results
-    cv_results = cv.cv_results_
-    del cv_results['params']
-    del cv_results['param_input_to_nodes__pca_components']
-    cv_results.update({
-        'param_input_to_node': [type(p).__name__
-                                for p in cv_results['param_input_to_node']]})
-    cv_results.update({
-        'mean_test_error_rate': [1 - v for v in cv_results['mean_test_score']]})
-
-    # save results
-    try:
-        with open(os.path.join(directory,
-                               '{0}_pca{1}_kmeans200_cosine_prepmatrix.csv'.format(
-                                   self_name, pca.n_components_)), 'a') as f:
-            f.write(','.join(cv_results.keys()) + '\n')
-            for row in list(map(list, zip(*cv_results.values()))):
-                f.write(','.join(map(str, row)) + '\n')
-    except PermissionError as e:
-        print('Missing privileges: {0}'.format(e))
 
 
 def silhouette_n_clusters(directory, *args, **kwargs):

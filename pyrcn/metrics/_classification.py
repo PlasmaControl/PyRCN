@@ -617,7 +617,7 @@ def f1_score(y_true: np.ndarray, y_pred: np.ndarray, *,
 
 
 @_deprecate_positional_args
-def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, *, beta: float,
+def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, beta: float, *,
                 labels: Optional[np.ndarray] = None, pos_label: Union[str, int] = 1,
                 average: Optional[Literal['micro', 'macro', 'samples',
                                           'weighted', 'binary']] = 'binary',
@@ -1178,8 +1178,7 @@ def classification_report(y_true: np.ndarray, y_pred: np.ndarray, *,
                                                  labels=labels,
                                                  target_names=target_names,
                                                  sample_weight=sample_weight,
-                                                 digits=digits,
-                                                 output_dict=output_dict,
+                                                 digits=digits, output_dict=output_dict,
                                                  zero_division=zero_division)
 
 
