@@ -680,11 +680,11 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         self._input_to_node.fit(X)
         self._node_to_node.fit(self._input_to_node.transform(X))
         self._regressor = self._regressor.__class__()
-        if not self.requires_sequence:
+        if self.requires_sequence:
+            return self._sequence_fit(X, y, sequence_ranges, n_jobs)
+        else:
             super().partial_fit(X, y)
             return self
-        else:
-            return self._sequence_fit(X, y, sequence_ranges, n_jobs)
 
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
