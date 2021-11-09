@@ -1,61 +1,95 @@
-"""Testing for Metrics module.
+"""Testing for Metrics module."""
 
-from pyrcn.echo_state_network import ESNClassifier
-from pyrcn.metrics import accuracy_score, mean_squared_error
-from sklearn.datasets import make_blobs
+import pyrcn.metrics
+import sklearn.metrics
+from sklearn.datasets import make_classification, make_multilabel_classification
 import numpy as np
-from sklearn.utils.fixes import loguniform
-from scipy.stats import uniform
-from sklearn.metrics import make_scorer
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
-from pyrcn.model_selection import SequentialSearchCV
-"""
+import pytest
+
+
+rng_true = np.random.RandomState(42)
+rng_pred = np.random.RandomState(1234)
+y_true_bin = np.empty(shape=(10,), dtype=object)
+y_pred_bin = np.empty(shape=(10,), dtype=object)
+sample_weight = np.empty(shape=(10,), dtype=object)
+for k in range(10):
+    _, y_true_bin[k] = make_classification(n_samples=10 * (k + 1), n_features=20,
+                                           random_state=rng_true)
+    _, y_pred_bin[k] = make_classification(n_samples=10 * (k + 1), n_features=20,
+                                           random_state=rng_pred)
+    sample_weight[k] = np.ones_like(y_true_bin[k])
+
+y_true_mlb = np.empty(shape=(10,), dtype=object)
+y_pred_mlb = np.empty(shape=(10,), dtype=object)
+for k in range(10):
+    _, y_true_mlb[k] = make_multilabel_classification(n_samples=10 * (k + 1),
+                                                      n_features=20,
+                                                      random_state=rng_true)
+    _, y_pred_mlb[k] = make_multilabel_classification(n_samples=10 * (k + 1),
+                                                      n_features=20,
+                                                      random_state=rng_pred)
 
 
 def test_accuracy_score() -> None:
-    pass
-    """
-    X = np.empty(shape=(10, ), dtype=object)
-    y = np.empty(shape=(10, ), dtype=object)
-    for k in range(10):
-        X[k], y[k] = make_blobs(n_samples=10 * (k + 1), n_features=20)
-    initially_fixed_params = {'hidden_layer_size': 50,
-                              'k_in': 10,
-                              'input_scaling': 0.4,
-                              'input_activation': 'identity',
-                              'bias_scaling': 0.0,
-                              'spectral_radius': 1.0,
-                              'leakage': 0.1,
-                              'k_rec': 10,
-                              'reservoir_activation': 'tanh',
-                              'bidirectional': False,
-                              'alpha': 1e-5,
-                              'random_state': 42,
-                              'requires_sequence': True}
+    np.testing.assert_equal(
+        pyrcn.metrics.accuracy_score(y_true=y_true_bin, y_pred=y_true_bin), 1)
+    np.testing.assert_equal(
+        np.less(pyrcn.metrics.accuracy_score(y_true=y_true_bin, y_pred=y_pred_bin), 1),
+        True)
+    np.testing.assert_equal(
+        pyrcn.metrics.accuracy_score(y_true=y_true_bin, y_pred=y_pred_bin,
+                                     sample_weight=sample_weight),
+        sklearn.metrics.accuracy_score(y_true=np.concatenate(y_true_bin),
+                                       y_pred=np.concatenate(y_pred_bin)))
 
-    step1_esn_params = {'input_scaling': uniform(loc=1e-2, scale=1),
-                        'spectral_radius': uniform(loc=0, scale=2)}
-    step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
-    step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
-    step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
-    scoring = {"Acc": make_scorer(accuracy_score),
-               "MSE": make_scorer(mean_squared_error, greater_is_better=False,
-                                  needs_proba=True)}
+    np.testing.assert_equal(
+        pyrcn.metrics.accuracy_score(y_true=y_true_mlb, y_pred=y_true_mlb), 1)
+    np.testing.assert_equal(
+        np.less(pyrcn.metrics.accuracy_score(y_true=y_true_mlb, y_pred=y_pred_mlb), 1),
+        True)
+    np.testing.assert_equal(
+        pyrcn.metrics.accuracy_score(y_true=y_true_mlb, y_pred=y_pred_mlb),
+        sklearn.metrics.accuracy_score(y_true=np.concatenate(y_true_mlb),
+                                       y_pred=np.concatenate(y_pred_mlb)))
+    with pytest.raises(TypeError):
+        pyrcn.metrics.accuracy_score(y_true=y_true_bin[0], y_pred=y_pred_bin[0])
 
-    kwargs_step1 = {'cv': 2, 'n_iter': 10, 'random_state': 42, 'verbose': 1,
-                    'n_jobs': 1, 'scoring': scoring, 'refit': "MSE"}
-    kwargs_step2 = {'cv': 2, 'n_iter': 5, 'random_state': 42, 'verbose': 1,
-                    'n_jobs': -1, 'scoring': scoring, 'refit': "MSE"}
-    kwargs_step3 = {'cv': 2, 'verbose': 1, 'n_jobs': -1, 'scoring': scoring,
-                    'refit': "MSE"}
-    kwargs_step4 = {'cv': 2, 'n_iter': 5, 'random_state': 42, 'verbose': 1,
-                    'n_jobs': -1, 'scoring': scoring, 'refit': "MSE"}  # TODO: refit=MSE
-    searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
-                ('step2', RandomizedSearchCV, step2_esn_params, kwargs_step2),
-                ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
-                ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-    esn = ESNClassifier(**initially_fixed_params)
-    searches = SequentialSearchCV(esn, searches=searches).fit(X, y)
-    searches
-    """
+def test_confusion_matrix() -> None:
+    np.testing.assert_equal(
+        pyrcn.metrics.confusion_matrix(y_true=y_true_bin, y_pred=y_true_bin).shape,
+        (2, 2))
+    np.testing.assert_equal(
+        np.where(pyrcn.metrics.confusion_matrix(y_true=y_true_bin, y_pred=y_true_bin,
+                                                sample_weight=sample_weight)),
+        np.where(np.eye(2)))
+    np.testing.assert_equal(
+        pyrcn.metrics.confusion_matrix(y_true=y_true_bin, y_pred=y_pred_bin),
+        sklearn.metrics.confusion_matrix(y_true=np.concatenate(y_true_bin),
+                                         y_pred=np.concatenate(y_pred_bin)))
+
+    with pytest.raises(TypeError):
+        pyrcn.metrics.confusion_matrix(y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+
+
+def test_multilabel_confusion_matrix() -> None:
+    np.testing.assert_equal(
+        pyrcn.metrics.multilabel_confusion_matrix(y_true=y_true_mlb,
+                                                  y_pred=y_true_mlb).shape,
+        (5, 2, 2))
+    np.testing.assert_equal(
+        np.where(
+            pyrcn.metrics.multilabel_confusion_matrix(y_true=y_true_mlb,
+                                                      y_pred=y_true_mlb,
+                                                      sample_weight=sample_weight)),
+        np.where(
+            pyrcn.metrics.multilabel_confusion_matrix(y_true=y_true_mlb,
+                                                      y_pred=y_true_mlb)))
+    np.testing.assert_equal(
+        pyrcn.metrics.multilabel_confusion_matrix(y_true=y_true_mlb, y_pred=y_pred_mlb),
+        sklearn.metrics.multilabel_confusion_matrix(y_true=np.concatenate(y_true_mlb),
+                                                    y_pred=np.concatenate(y_pred_mlb)))
+
+
+if __name__ == "__main__":
+    test_multilabel_confusion_matrix()

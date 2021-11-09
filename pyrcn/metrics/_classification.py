@@ -118,7 +118,7 @@ def accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *, normalize: bool = 
 def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
                      labels: Optional[np.ndarray] = None,
                      sample_weight: Optional[np.ndarray] = None,
-                     normalize: Optional[Literal["true", "true", "true"]] = None)\
+                     normalize: Optional[Literal["true", "predicted"]] = None)\
                          -> np.ndarray:
     """
     Compute confusion matrix to evaluate the accuracy of a classification.
@@ -144,7 +144,7 @@ def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
         in ``y_true`` or ``y_pred`` are used in sorted order.
     sample_weight :  Optional[np.ndarray], default=None
         Sample weights.
-    normalize :  Optional[Literal["true", "true", "true"]], default=None
+    normalize :  Optional[Literal["true", "predicted"]], default=None
         Normalizes confusion matrix over the true (rows), predicted (columns)
         conditions or all the population. If None, confusion matrix will not be
         normalized.
@@ -183,8 +183,7 @@ def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
 def multilabel_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
                                 sample_weight: Optional[np.ndarray] = None,
                                 labels: Optional[np.ndarray] = None,
-                                samplewise: bool = False)\
-                                    -> np.ndarray:
+                                samplewise: bool = False) -> np.ndarray:
     """
     Compute a confusion matrix for each class or sample.
 
