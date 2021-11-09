@@ -179,7 +179,7 @@ kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
                 'scoring': scoring}
 kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': scoring}
 kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': scoring}  # TODO: refit=MSE
+                'scoring': scoring}
 
 # The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
