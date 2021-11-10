@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from pyrcn.base.blocks import InputToNode
 
-from src.pyrcn.util import tud_colors, get_mnist
+from pyrcn.util import tud_colors, get_mnist
 
 import matplotlib.pyplot as plt
 import seaborn as sns

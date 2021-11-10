@@ -16,7 +16,7 @@ from pyrcn.metrics import accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.echo_state_network import ESNClassifier
 from pyrcn.base.blocks import PredefinedWeightsInputToNode, PredefinedWeightsNodeToNode
-from src.pyrcn.util import FeatureExtractor
+from pyrcn.util import FeatureExtractor
 
 
 training_sentences = list(

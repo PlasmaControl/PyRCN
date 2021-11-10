@@ -11,7 +11,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import ParameterGrid, GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import make_scorer, zero_one_loss
 from pyrcn.model_selection import SequentialSearchCV
-from src.pyrcn.util import FeatureExtractor
+from pyrcn.util import FeatureExtractor
 from pyrcn.datasets import fetch_ptdb_tug_dataset
 from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.base.blocks import PredefinedWeightsInputToNode

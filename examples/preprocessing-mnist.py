@@ -12,7 +12,7 @@ from sklearn.decomposition import PCA
 
 from sklearn.cluster import KMeans
 
-from src.pyrcn.util import tud_colors, new_logger, get_mnist
+from pyrcn.util import tud_colors, new_logger, get_mnist
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
