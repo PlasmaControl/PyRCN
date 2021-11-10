@@ -12,11 +12,11 @@ from sklearn.utils import shuffle
 from sklearn.utils.fixes import loguniform
 from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
 from sklearn.metrics import make_scorer
-from pyrcn.metrics import mean_squared_error, accuracy_score
+from pyrcn.metrics import accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.echo_state_network import ESNClassifier
 from pyrcn.base.blocks import PredefinedWeightsInputToNode, PredefinedWeightsNodeToNode
-from pyrcn.util import FeatureExtractor
+from src.pyrcn.util import FeatureExtractor
 
 
 training_sentences = list(

@@ -14,7 +14,7 @@ import csv
 from sklearn.datasets import fetch_openml
 from sklearn.preprocessing import LabelEncoder
 
-from pyrcn.util import new_logger, argument_parser
+from src.pyrcn.util import new_logger, argument_parser
 
 
 def dataset_imbalance(directory, *args, **kwargs):

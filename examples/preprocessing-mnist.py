@@ -3,23 +3,17 @@ An example of the Coates Idea on the digits dataset.
 """
 import os
 import sys
-import logging
 import time
 
-import scipy
 import numpy as np
 
-from sklearn.preprocessing import LabelBinarizer, StandardScaler
+from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import silhouette_score
 
-from sklearn.datasets import fetch_openml
 from sklearn.cluster import KMeans
 
-from pyrcn.util import tud_colors, new_logger, get_mnist
+from src.pyrcn.util import tud_colors, new_logger, get_mnist
 
-import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
 

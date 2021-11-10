@@ -28,7 +28,7 @@ from madmom.audio.spectrogram import (FilteredSpectrogramProcessor,
                                       LogarithmicSpectrogramProcessor,
                                       SpectrogramDifferenceProcessor)
 
-from pyrcn.util import FeatureExtractor
+from src.pyrcn.util import FeatureExtractor
 from pyrcn.echo_state_network import ESNClassifier
 from pyrcn.datasets import fetch_maps_piano_dataset
 from pyrcn.metrics import accuracy_score

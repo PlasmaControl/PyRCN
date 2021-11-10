@@ -15,7 +15,7 @@ import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 
-from pyrcn.util import get_mnist, tud_colors
+from src.pyrcn.util import get_mnist, tud_colors
 
 
 sns.set_theme()

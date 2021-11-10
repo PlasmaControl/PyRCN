@@ -13,7 +13,7 @@ from scipy.signal import convolve2d
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
-from pyrcn.util import new_logger, argument_parser, get_mnist, tud_colors
+from src.pyrcn.util import new_logger, argument_parser, get_mnist, tud_colors
 
 train_size = 60000
 

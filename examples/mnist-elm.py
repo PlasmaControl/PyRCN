@@ -26,7 +26,7 @@ from sklearn.model_selection import (GridSearchCV, train_test_split,
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.linear_model import Ridge
 
-from pyrcn.util import new_logger, argument_parser, get_mnist
+from src.pyrcn.util import new_logger, argument_parser, get_mnist
 from pyrcn.base.blocks import BatchIntrinsicPlasticity, PredefinedWeightsInputToNode
 
 from pyrcn.linear_model import IncrementalRegression
