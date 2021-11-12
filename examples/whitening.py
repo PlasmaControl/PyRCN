@@ -1,7 +1,6 @@
 #!/bin/python3
 
 import os
-import sys
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -34,12 +33,15 @@ def image_whitening_cifar():
     cov = np.cov(X.T)
     u, s, v = np.linalg.svd(cov)
     print(np.allclose(u.T, v))
-    W = np.matmul(u, np.matmul(np.diag(np.sqrt(np.reciprocal(s, where=s != 0.))), u.T))
+    W = np.matmul(
+        u, np.matmul(np.diag(np.sqrt(np.reciprocal(s, where=s != 0.))), u.T))
     X_pca = np.matmul(W, X.T).T
 
     sample_image_idx = 195
-    sample_image = np.transpose(X[sample_image_idx, :].reshape((3, 32, 32)), axes=(1, 2, 0))
-    sample_image_pca = np.transpose(X_pca[sample_image_idx, :].reshape((3, 32, 32)), axes=(1, 2, 0))
+    sample_image = np.transpose(
+        X[sample_image_idx, :].reshape((3, 32, 32)), axes=(1, 2, 0))
+    sample_image_pca = np.transpose(
+        X_pca[sample_image_idx, :].reshape((3, 32, 32)), axes=(1, 2, 0))
 
     list_dict_filter = [
         {
@@ -58,11 +60,17 @@ def image_whitening_cifar():
 
     for dict_filter in list_dict_filter:
         sample_filter_idx = 32 * 16 + 16 + dict_filter['offset']
-        sample_filter = np.transpose(W[:, sample_filter_idx].reshape((3, 32, 32)), axes=(1, 2, 0))
-        plt.imsave(os.path.join(directory, 'cifar-filter-{0}-{1}x{2}.png'.format(dict_filter['color'], (sample_filter_idx % (32 ** 2)) // 32, (sample_filter_idx % (32 ** 2)) % 32)), scale(sample_filter))
+        sample_filter = np.transpose(
+            W[:, sample_filter_idx].reshape((3, 32, 32)), axes=(1, 2, 0))
+        plt.imsave(os.path.join(directory, 'cifar-filter-{0}-{1}x{2}.png'
+                                .format(dict_filter['color'],
+                                        (sample_filter_idx % (32 ** 2)) // 32,
+                                        (sample_filter_idx % (32 ** 2)) % 32)),
+                   scale(sample_filter))
 
     plt.imsave(os.path.join(directory, 'cifar-orignal.png'), sample_image)
-    plt.imsave(os.path.join(directory, 'cifar-whitened.png'), scale(sample_image_pca))
+    plt.imsave(os.path.join(
+        directory, 'cifar-whitened.png'), scale(sample_image_pca))
 
 
 def image_whitening_mnist():
@@ -87,7 +95,8 @@ def image_whitening_mnist():
     cov = np.cov(X.T)
     u, s, v = np.linalg.svd(cov)
     print(np.allclose(u.T, v))
-    W = np.matmul(u, np.matmul(np.diag(np.sqrt(np.reciprocal(s, where=s != 0.))), u.T))
+    W = np.matmul(
+        u, np.matmul(np.diag(np.sqrt(np.reciprocal(s, where=s != 0.))), u.T))
 
     X_pca = np.matmul(W, X.T).T
 
@@ -98,9 +107,14 @@ def image_whitening_mnist():
     sample_filter_idx = 28 * 14 + 14
     sample_filter = W[:, sample_filter_idx].reshape((28, 28))
 
-    plt.imsave(os.path.join(directory, 'mnist-original.png'), sample_image, cmap=plt.cm.gray_r)
-    plt.imsave(os.path.join(directory, 'mnist-whitened.png'), sample_image_pca, cmap=plt.cm.gray_r)
-    plt.imsave(os.path.join(directory, 'mnist-filter-{0}x{1}.png'.format(sample_filter_idx // 28, sample_filter_idx % 28)), sample_filter, cmap=plt.cm.gray_r)
+    plt.imsave(os.path.join(directory, 'mnist-original.png'), sample_image,
+               cmap=plt.cm.gray_r)
+    plt.imsave(os.path.join(directory, 'mnist-whitened.png'), sample_image_pca,
+               cmap=plt.cm.gray_r)
+    plt.imsave(os.path.join(directory, 'mnist-filter-{0}x{1}.png'
+                            .format(sample_filter_idx // 28,
+                                    sample_filter_idx % 28)),
+               sample_filter, cmap=plt.cm.gray_r)
 
 
 def main():

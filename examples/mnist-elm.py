@@ -20,18 +20,21 @@ from sklearn.decomposition import PCA
 
 from sklearn.metrics import silhouette_score, accuracy_score
 from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import (GridSearchCV, train_test_split,
-                                     StratifiedShuffleSplit)
+from sklearn.model_selection import (
+    GridSearchCV, train_test_split,
+    StratifiedShuffleSplit)
 
 from sklearn.cluster import KMeans, MiniBatchKMeans
 from sklearn.linear_model import Ridge
 
 from pyrcn.util import new_logger, argument_parser, get_mnist
-from pyrcn.base.blocks import (BatchIntrinsicPlasticity,
-                               PredefinedWeightsInputToNode)
+from pyrcn.base.blocks import (
+    BatchIntrinsicPlasticity,
+    PredefinedWeightsInputToNode)
 
 from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier
+
 
 train_size = 60000
 
@@ -63,9 +66,8 @@ def train_kmeans(directory):
                                                                   n_clusters)
 
             # only if file does not exist
-            if not os.path.isfile(
-                    os.path.join(directory, '{0}_matrix.npy'.
-                            format(kmeans_basename))):
+            if not os.path.isfile(os.path.join(
+                    directory, '{0}_matrix.npy'.format(kmeans_basename))):
                 clusterer = MiniBatchKMeans(
                     n_clusters=n_clusters, init='k-means++',
                     random_state=42, batch_size=5000, n_init=5).fit(X_pca)
@@ -76,8 +78,9 @@ def train_kmeans(directory):
 
                 # assemble pipeline
                 p = make_pipeline(pca, clusterer)
-                with open(os.path.join(directory, '{0}_pipeline.pickle'
-                        .format(kmeans_basename)), 'wb') as f:
+                with open(os.path.join(
+                        directory, '{0}_pipeline.pickle'
+                                   .format(kmeans_basename)), 'wb') as f:
                     pickle.dump(p, f)
 
                 logger.info('successfuly trained MiniBatchKMeans'
@@ -89,8 +92,8 @@ def train_kmeans(directory):
                                                                  n_clusters)
 
             if n_clusters < 2000 and not os.path.isfile(
-                    os.path.join(directory, '{0}_matrix.npy'
-                            .format(kmeans_basename))):
+                    os.path.join(
+                        directory, '{0}_matrix.npy'.format(kmeans_basename))):
                 clusterer = KMeans(n_clusters=n_clusters, init='k-means++',
                                    random_state=42, n_init=5).fit(X_pca)
                 np.save(
@@ -117,16 +120,15 @@ def elm_hyperparameters(directory):
     logger.info('Loaded MNIST successfully with {0} records'
                 .format(X.shape[0]))
 
-    X = X/255.
+    X = X / 255.
 
     label_encoder = LabelEncoder().fit(y)
     y_encoded = label_encoder.transform(y)
 
     # X_train, X_test, y_train, y_test = train_test_split(
     #     X, y_encoded, train_size=train_size, random_state=42, shuffle=True)
-    X_train, X_test, y_train, y_test = (X[:train_size, :], X[train_size:, :],
-                                        y_encoded[:train_size],
-                                        y_encoded[train_size:])
+    X_train, _, y_train, _ = (X[:train_size, :], X[train_size:, :],
+                              y_encoded[:train_size], y_encoded[train_size:])
 
     param_grid = {
         'hidden_layer_size': [2000],
@@ -146,8 +148,8 @@ def elm_hyperparameters(directory):
 
     cv_results = cv.cv_results_
     del cv_results['params']
-    with open(os.path.join(directory, '{0}_scaling.csv'
-            .format(self_name)), 'w') as f:
+    with open(os.path.join(
+            directory, '{0}_scaling.csv'.format(self_name)), 'w') as f:
         f.write(','.join(cv_results.keys()) + '\n')
         for row in list(map(list, zip(*cv_results.values()))):
             f.write(','.join(map(str, row)) + '\n')
@@ -170,8 +172,8 @@ def elm_hyperparameters(directory):
 
     cv_results = cv.cv_results_
     del cv_results['params']
-    with open(os.path.join(directory, '{0}_size.csv'
-            .format(self_name)), 'w') as f:
+    with open(os.path.join(
+            directory, '{0}_size.csv'.format(self_name)), 'w') as f:
         f.write(','.join(cv_results.keys()) + '\n')
         for row in list(map(list, zip(*cv_results.values()))):
             f.write(','.join(map(str, row)) + '\n')
@@ -182,7 +184,8 @@ def elm_hyperparameters(directory):
         'bias_scaling': [cv.best_params_['bias_scaling']],
         'input_activation': [cv.best_params_['input_activation']],
         'alpha': [.00001, .001, .1],
-        'random_state': [42]}
+        'random_state': [42]
+    }
 
     cv = GridSearchCV(estimator, param_grid, cv=5, n_jobs=1,
                       scoring='accuracy')
@@ -192,8 +195,8 @@ def elm_hyperparameters(directory):
 
     cv_results = cv.cv_results_
     del cv_results['params']
-    with open(os.path.join(directory, '{0}_alpha.csv'
-            .format(self_name)), 'w') as f:
+    with open(os.path.join(
+            directory, '{0}_alpha.csv'.format(self_name)), 'w') as f:
         f.write(','.join(cv_results.keys()) + '\n')
         for row in list(map(list, zip(*cv_results.values()))):
             f.write(','.join(map(str, row)) + '\n')
@@ -218,13 +221,13 @@ def elm_basic(directory):
         X, y_encoded, train_size=train_size, random_state=42)
 
     param_grid = [{
-            'hidden_layer_size': [500, 2000],
-            'input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
-            'bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
-            'input_activation': ['relu'],
-            'alpha': [1e-5],
-            'random_state': [42]
-        },
+        'hidden_layer_size': [500, 2000],
+        'input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+        'bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+        'input_activation': ['relu'],
+        'alpha': [1e-5],
+        'random_state': [42]
+    },
         {
             'hidden_layer_size': [2000],
             'input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
@@ -239,7 +242,7 @@ def elm_basic(directory):
     estimator = ELMClassifier(regressor=Ridge())
     cv = GridSearchCV(estimator=estimator, param_grid=param_grid,
                       scoring='accuracy', n_jobs=1, verbose=2, refit=False,
-                      cv=StratifiedShuffleSplit(n_splits=1, test_size=1/7,
+                      cv=StratifiedShuffleSplit(n_splits=1, test_size=1 / 7,
                                                 random_state=42))
 
     # run!
@@ -268,10 +271,6 @@ def elm_pca(directory):
     logger.info('Loaded MNIST successfully with {0} records'
                 .format(X.shape[0]))
 
-    # encode y
-    label_encoder = LabelEncoder().fit(y)
-    y_encoded = label_encoder.transform(y)
-
     # scale X
     X /= 255.
 
@@ -281,12 +280,12 @@ def elm_pca(directory):
 
     # prepare parameter grids
     param_grid_basic = {
-            'hidden_layer_size': 2000,
-            'input_scaling': 1.,
-            'bias_scaling': 0.,
-            'input_activation': 'relu',
-            'alpha': 1e-5,
-            'random_state': 42
+        'hidden_layer_size': 2000,
+        'input_scaling': 1.,
+        'bias_scaling': 0.,
+        'input_activation': 'relu',
+        'alpha': 1e-5,
+        'random_state': 42
     }
 
     # setup estimator
@@ -302,8 +301,10 @@ def elm_pca(directory):
     # initialize results dict
     results_dict_job = param_dict_job.copy()
     # add dummy results
-    results_dict_job.update({'time_fit': 0, 'time_pred': 0, 'score': 0,
-                             'pca_n_components': 0})
+    results_dict_job.update({
+                                'time_fit': 0, 'time_pred': 0, 'score': 0,
+                                'pca_n_components': 0
+                            })
 
     # preprocessing pca
     try:
@@ -319,7 +320,7 @@ def elm_pca(directory):
             # preprocessing
             pca = PCA(n_components=pca_n_components).fit(X_train)
             X_train_pca, X_test_pca = \
-                pca.transform(X_train),pca.transform(X_test)
+                pca.transform(X_train), pca.transform(X_test)
 
             # run!
             time_start = time.time()
@@ -372,19 +373,21 @@ def elm_preprocessed(directory):
 
     # prepare parameter grid
     param_grid = [{
-            'hidden_layer_size': [500, 2000],
-            'input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
-            'bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
-            'input_activation': ['relu'],
-            'alpha': [1e-5],
-            'random_state': [42]},
+        'hidden_layer_size': [500, 2000],
+        'input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+        'bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
+        'input_activation': ['relu'],
+        'alpha': [1e-5],
+        'random_state': [42]
+    },
         {
             'hidden_layer_size': [2000],
             'input_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
             'bias_scaling': np.logspace(start=-3, stop=1, base=10, num=6),
             'input_activation': ['tanh'],
             'alpha': [1e-5],
-            'random_state': [42]}
+            'random_state': [42]
+        }
     ]
 
     # setup estimator
@@ -398,7 +401,8 @@ def elm_preprocessed(directory):
         n_jobs=1,
         verbose=2,
         refit=False,
-        cv=StratifiedShuffleSplit(n_splits=1, test_size=1/7, random_state=42))
+        cv=StratifiedShuffleSplit(n_splits=1, test_size=1 / 7,
+                                  random_state=42))
 
     # run!
     cv.fit(X_train, y_train)
@@ -438,13 +442,13 @@ def elm_random_state(directory):
 
     # prepare parameter grid
     param_grid = [{
-            'hidden_layer_size': [2000],
-            'input_scaling': [1.],
-            'bias_scaling': [0.],
-            'input_activation': ['relu'],
-            'alpha': [1e-5],
-            'random_state': np.random.randint(low=1, high=2**16-1, size=10),
-        },
+        'hidden_layer_size': [2000],
+        'input_scaling': [1.],
+        'bias_scaling': [0.],
+        'input_activation': ['relu'],
+        'alpha': [1e-5],
+        'random_state': np.random.randint(low=1, high=2 ** 16 - 1, size=10),
+    },
     ]
 
     # setup estimator
@@ -471,8 +475,8 @@ def elm_random_state(directory):
 
     # save results
     try:
-        with open(os.path.join(directory, '{0}.csv'
-                .format(self_name)), 'w') as f:
+        with open(os.path.join(
+                directory, '{0}.csv'.format(self_name)), 'w') as f:
             f.write(','.join(cv_results.keys()) + '\n')
             for row in list(map(list, zip(*cv_results.values()))):
                 f.write(','.join(map(str, row)) + '\n')
@@ -532,8 +536,8 @@ def elm_bip(directory):
 
     # save results
     try:
-        with open(os.path.join(directory, '{0}.csv'
-                .format(self_name)), 'w') as f:
+        with open(os.path.join(
+                directory, '{0}.csv'.format(self_name)), 'w') as f:
             f.write(','.join(cv_results.keys()) + '\n')
             for row in list(map(list, zip(*cv_results.values()))):
                 f.write(','.join(map(str, row)) + '\n')
@@ -565,23 +569,23 @@ def elm_hidden_layer_size(directory):
 
     # prepare parameter grids
     param_grid_basic = {
-            'hidden_layer_size': 0,
-            'input_scaling': 1.,
-            'bias_scaling': 0.,
-            'activation': 'relu',
-            'chunk_size': 1000,
-            'alpha': 1e-5,
-            'random_state': 42
+        'hidden_layer_size': 0,
+        'input_scaling': 1.,
+        'bias_scaling': 0.,
+        'activation': 'relu',
+        'chunk_size': 1000,
+        'alpha': 1e-5,
+        'random_state': 42
     }
 
     param_grid_pca = {
-            'hidden_layer_size': 0,
-            'input_scaling': 1.,
-            'bias_scaling': 0.,
-            'activation': 'relu',
-            'chunk_size': 1000,
-            'alpha': 1e-5,
-            'random_state': 42
+        'hidden_layer_size': 0,
+        'input_scaling': 1.,
+        'bias_scaling': 0.,
+        'activation': 'relu',
+        'chunk_size': 1000,
+        'alpha': 1e-5,
+        'random_state': 42
     }
 
     # setup estimator
@@ -654,8 +658,8 @@ def elm_hidden_layer_size(directory):
 
         # preprocessing
         pca50 = PCA(n_components=50).fit(X_train)
-        X_train_pca50, X_test_pca50 = pca50.transform(X_train),\
-                                      pca50.transform(X_test)
+        X_train_pca50, X_test_pca50 = (pca50.transform(X_train),
+                                       pca50.transform(X_test))
 
         pca100 = PCA(n_components=100).fit(X_train)
         X_train_pca100, X_test_pca100 = (pca100.transform(X_train),
@@ -679,8 +683,10 @@ def elm_hidden_layer_size(directory):
         # initialize results dict
         results_dict_job = param_dict_job.copy()
         # add dummy results
-        results_dict_job.update({'time_fit': 0, 'time_pred': 0, 'score': 0,
-                                 'pca_n_components': 0})
+        results_dict_job.update({
+                                    'time_fit': 0, 'time_pred': 0, 'score': 0,
+                                    'pca_n_components': 0
+                                })
 
         # write header
         with open(csv_filepath, 'w') as f:
@@ -711,18 +717,20 @@ def elm_hidden_layer_size(directory):
                     'score': accuracy_score(y_test, y_pred)
                 })
 
-                logger.info('n_components: {2}, hidden_layer_size: {0}'
-                            ', score: {1}'.format(
-                    hls, results_dict_job['score'],
-                    results_dict_job['pca_n_components']))
+                logger.info(
+                    'n_components: {2}, hidden_layer_size: {0}, score:'' {1}'
+                    .format(hls, results_dict_job['score'],
+                            results_dict_job['pca_n_components']))
 
                 with open(csv_filepath, 'a') as f:
                     writer = csv.DictWriter(
                         f, fieldnames=results_dict_job.keys())
                     writer.writerow(results_dict_job)
 
-                with open(os.path.join(directory, 'elmc_hls{0}_pca{1}.pickle'
-                        .format(hls, results_dict_job['pca_n_components'])),
+                with open(
+                        os.path.join(
+                            directory, 'elmc_hls{0}_pca{1}.pickle'.format(
+                                hls, results_dict_job['pca_n_components'])),
                         'wb') as f:
                     pickle.dump(estimator, f)
     except MemoryError as e:
@@ -778,7 +786,7 @@ def elm_coates(directory):
 
         # only if files do not exist yet
         if (not os.path.isfile(csv_filepath)
-                or not os.path.isfile( est_filepath)
+                or not os.path.isfile(est_filepath)
                 or not os.path.isfile(pred_filpath)):
             # setup estimator
             estimator = ELMClassifier(
@@ -918,8 +926,8 @@ def elm_coates_stacked(directory):
 
     # save results
     try:
-        with open(os.path.join(directory, '{0}.csv'
-                .format(self_name)), 'w') as f:
+        with open(os.path.join(directory,
+                               '{0}.csv'.format(self_name)), 'w') as f:
             f.write(','.join(cv_results.keys()) + '\n')
             for row in list(map(list, zip(*cv_results.values()))):
                 f.write(','.join(map(str, row)) + '\n')
@@ -1049,7 +1057,6 @@ def silhouette_kcluster(directory, *args, **kwargs):
 
     X /= 255.
 
-    scaler = StandardScaler().fit(X)
     pca = PCA(n_components=50, whiten=False, random_state=42).fit(X)
 
     # PCA preprocessed
@@ -1245,7 +1252,7 @@ def silhouette_features(directory, *args, **kwargs):
         pred = clusterer.fit_predict(X[:, indices])
         dict_results['fittime_random'].append(time.time() - t)
         dict_results['silhouette_random'].append(
-            silhouette_score(X, pred,metric='euclidean', random_state=42))
+            silhouette_score(X, pred, metric='euclidean', random_state=42))
         dict_results['explainvar_random'].append(np.sum(scaler.var_[indices]))
         dict_results['explvarrat_random'].append(
             np.sum(scaler.var_[indices]) / np.sum(scaler.var_))
@@ -1275,8 +1282,8 @@ def silhouette_features(directory, *args, **kwargs):
 
     # save results to csv
     with open(
-            os.path.join(directory, 'silhouette_kmeans{0:.0f}_features.csv'
-                    .format(k)),
+            os.path.join(directory,
+                         'silhouette_kmeans{0:.0f}_features.csv'.format(k)),
             'w') as f:
         f.write(','.join(dict_results.keys()) + '\n')
         for row in list(map(list, zip(*dict_results.values()))):
@@ -1292,8 +1299,6 @@ def main(directory, params):
         except PermissionError as e:
             print('mkdir failed due to missing privileges: {0}'.format(e))
             exit(1)
-
-    workdir = directory
 
     # subfolder for results
     file_dir = os.path.join(directory, 'mnist-elm')
@@ -1315,7 +1320,6 @@ def main(directory, params):
         'elm_hidden_layer_size': elm_hidden_layer_size,
         'elm_coates': elm_coates,
         'elm_coates_stacked': elm_coates_stacked,
-        'significance': significance,
         'silhouette_n_clusters': silhouette_n_clusters,
         'silhouette_subset': silhouette_subset,
         'silhouette_kcluster': silhouette_kcluster,
