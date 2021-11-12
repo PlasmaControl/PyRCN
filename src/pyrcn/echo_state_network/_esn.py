@@ -444,7 +444,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             sys.getsizeof(self._node_to_node) + sys.getsizeof(self._regressor)
 
     @property
-    def regressor(self) -> LinearModel:
+    def regressor(self) -> Union[LinearModel, IncrementalRegression]:
         """
         Return the regressor.
 
@@ -455,7 +455,8 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         return self._regressor
 
     @regressor.setter
-    def regressor(self, regressor: LinearModel) -> None:
+    def regressor(self, regressor: Union[LinearModel,
+                                         IncrementalRegression]) -> None:
         """
         Set the regressor.
 

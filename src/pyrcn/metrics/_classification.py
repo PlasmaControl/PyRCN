@@ -16,6 +16,7 @@ import numpy as np
 from sklearn.utils.validation import (check_consistent_length,
                                       _deprecate_positional_args)
 import sklearn.metrics as sklearn_metrics
+from scipy.sparse import csr_matrix
 from sklearn.metrics._classification import\
     _check_targets as sklearn_check_targets
 
@@ -30,7 +31,9 @@ def _check_targets(y_true: np.ndarray, y_pred: np.ndarray,
                    sample_weight: Optional[np.ndarray] = None) \
                        -> Tuple[Literal["multilabel-indicator",
                                         "multiclass", "binary"],
-                                np.ndarray, np.ndarray, Optional[np.ndarray]]:
+                                Union[np.ndarray, csr_matrix],
+                                Union[np.ndarray, csr_matrix],
+                                Union[np.ndarray, csr_matrix, None]]:
     """
     Check that y_true and y_pred belong to the same classification task.
 
@@ -326,7 +329,8 @@ def jaccard_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                   average: Optional[Literal['micro', 'macro', 'samples',
                                             'weighted', 'binary']] = 'binary',
                   sample_weight: Optional[np.ndarray] = None,
-                  zero_division: Literal["warn", 0, 1] = "warn") -> float:
+                  zero_division: Literal["warn", 0, 1] = "warn")\
+        -> Union[float, np.ndarray]:
     """
     Jaccard similarity coefficient score.
 
@@ -532,7 +536,8 @@ def f1_score(y_true: np.ndarray, y_pred: np.ndarray, *,
              average: Optional[Literal['micro', 'macro', 'samples', 'weighted',
                                        'binary']] = 'binary',
              sample_weight: Optional[np.ndarray] = None,
-             zero_division: Literal["warn", 0, 1] = "warn") -> float:
+             zero_division: Literal["warn", 0, 1] = "warn")\
+        -> Union[float, np.ndarray]:
     """
     Compute the F1 score, also known as balanced F-score or F-measure.
 
@@ -634,7 +639,8 @@ def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, beta: float, *,
                 average: Optional[Literal['micro', 'macro', 'samples',
                                           'weighted', 'binary']] = 'binary',
                 sample_weight: Optional[np.ndarray] = None,
-                zero_division: Literal["warn", 0, 1] = "warn") -> float:
+                zero_division: Literal["warn", 0, 1] = "warn")\
+        -> Union[float, np.ndarray]:
     """
     Compute the F-beta score.
 
@@ -742,7 +748,8 @@ def precision_recall_fscore_support(y_true: np.ndarray, y_pred: np.ndarray, *,
                                     sample_weight: Optional[np.ndarray] = None,
                                     zero_division: Literal["warn",
                                                            0, 1] = "warn")\
-        -> Tuple[float, float, float, None]:
+        -> Tuple[Union[float, np.ndarray], Union[float, np.ndarray],
+                 Union[float, np.ndarray], Optional[np.ndarray]]:
     """
     Compute precision, recall, F-measure and support for each class.
 
