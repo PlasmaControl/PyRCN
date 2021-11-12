@@ -1,4 +1,4 @@
-"""The :mod:`pyrcn.linear_model` module implements incremental linear regression."""
+"""The :mod:`pyrcn.linear_model` module has incremental linear regression."""
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause

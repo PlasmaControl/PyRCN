@@ -1,4 +1,4 @@
-"""The :mod:`feature_extractor` contains a FeatureExtractor via FunctionTransformer."""
+"""The :mod:`feature_extractor` contains a FeatureExtractor for audio files."""
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>,
 # License: BSD 3 clause
@@ -15,16 +15,17 @@ class FeatureExtractor(FunctionTransformer):
     """
     Construct a transformer from an arbitrary callable.
 
-    A FunctionTransformer forwards its X (and optionally y) arguments to a user-defined
-    function or function object and returns the result of this function.
-    This is useful for stateless transformations such as taking the log of frequencies,
-    doing custom scaling, etc.
+    A FunctionTransformer forwards its X (and optionally y) arguments to a
+    user-defined function or function object and returns the result of this
+    function.
+    This is useful for stateless transformations such as taking the log of
+    frequencies, doing custom scaling, etc.
 
-    Compared to sklearn.preprocessing.FunctionTransformer, it is possible to pass a
-    filename as X and process the underlying file.
+    Compared to sklearn.preprocessing.FunctionTransformer, it is possible to
+    pass a filename as X and process the underlying file.
 
-    Note: If a lambda is used as the function, then the resulting transformer will not
-    be pickleable.
+    Note: If a lambda is used as the function, then the resulting transformer
+    will not be pickleable.
 
     Parameters
     ----------
@@ -38,11 +39,12 @@ class FeatureExtractor(FunctionTransformer):
 
     """
 
-    def __init__(self, func: Union[Callable, None], kw_args: Union[Dict, None] = None):
+    def __init__(self, func: Union[Callable, None],
+                 kw_args: Union[Dict, None] = None):
         """Construct the FeatureExtractor."""
         super().__init__(func=func, inverse_func=None, validate=False,
-                         accept_sparse=False, check_inverse=False, kw_args=kw_args,
-                         inv_kw_args=None)
+                         accept_sparse=False, check_inverse=False,
+                         kw_args=kw_args, inv_kw_args=None)
 
     def fit(self, X: Union[str, np.ndarray], y: Optional[np.ndarray] = None)\
             -> FeatureExtractor:

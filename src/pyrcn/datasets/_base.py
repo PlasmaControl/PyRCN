@@ -13,7 +13,9 @@ from sklearn.utils import Bunch
 
 def _mg_eq(xt: float, xtau: float, a: float = 0.2, b: float = 0.1,
            n: int = 10) -> float:
-    """Mackey-Glass time delay diffential equation, at values x(t) and x(t-tau)."""
+    """
+    Mackey-Glass time delay diffential equation, at values x(t) and x(t-tau).
+    """
     return -b*xt + a*xtau / (1+xtau**n)
 
 
@@ -30,8 +32,8 @@ def _mg_rk4(xt: float, xtau: float, a: float, b: float, n: int,
 
 @_deprecate_positional_args
 def mackey_glass(n_timesteps: int, n_future: Union[int, np.integer] = 1,
-                 tau: Union[int, np.integer] = 17, a: float = 0.2, b: float = 0.1,
-                 n: int = 10, x0: float = 1.2, h: float = 1.0,
+                 tau: Union[int, np.integer] = 17, a: float = 0.2,
+                 b: float = 0.1, n: int = 10, x0: float = 1.2, h: float = 1.0,
                  seed: Union[int, np.random.RandomState, None] = None) \
         -> Tuple[np.ndarray, np.ndarray]:
     r"""
@@ -88,9 +90,9 @@ def mackey_glass(n_timesteps: int, n_future: Union[int, np.integer] = 1,
 
     References
     ----------
-        .. [#] M. C. Mackey and L. Glass, ‘Oscillation and chaos in physiological
-               control systems’, Science, vol. 197, no. 4300, pp. 287–289, Jul. 1977,
-               doi: 10.1126/science.267326.
+        .. [#] M. C. Mackey and L. Glass, ‘Oscillation and chaos in
+        physiological control systems’, Science, vol. 197, no. 4300,
+        pp. 287–289, Jul. 1977, doi: 10.1126/science.267326.
         .. [#] `Mackey-Glass equations
                 <https://en.wikipedia.org/wiki/Mackey-Glass_equations>`_
                 on Wikipedia.
@@ -186,8 +188,8 @@ def load_digits(*, n_class: Union[int, np.integer] = 10,
     (data, target) : tuple if ``return_X_y`` is True
     """
     if as_sequence and return_X_y and not as_frame:
-        X_ori, y_ori = sklearn_load_digits(n_class=n_class, return_X_y=return_X_y,
-                                           as_frame=as_frame)
+        X_ori, y_ori = sklearn_load_digits(
+            n_class=n_class, return_X_y=return_X_y, as_frame=as_frame)
         X = np.empty(shape=(X_ori.shape[0],), dtype=object)
         y = np.empty(shape=(X_ori.shape[0],), dtype=object)
         for k, (X_single, y_single) in enumerate(zip(X_ori, y_ori)):
@@ -195,5 +197,5 @@ def load_digits(*, n_class: Union[int, np.integer] = 10,
             y[k] = np.atleast_1d(y_single)
         return X, y
     else:
-        return sklearn_load_digits(n_class=n_class, return_X_y=return_X_y,
-                                   as_frame=as_frame)
+        return sklearn_load_digits(
+            n_class=n_class, return_X_y=return_X_y, as_frame=as_frame)

@@ -5,9 +5,9 @@
 Recognizing hand-written digits
 -------------------------------
 
-This notebook adapts the existing example of applying support vector classification
-from scikit-learn to PyRCN to demonstrate, how PyRCN can be used to classify
-hand-written digits.
+This notebook adapts the existing example of applying support vector
+classification from scikit-learn to PyRCN to demonstrate, how PyRCN can be used
+to classify hand-written digits.
 
 The tutorial is based on numpy, scikit-learn and PyRCN.
 """
@@ -24,7 +24,7 @@ from pyrcn.metrics import accuracy_score
 from pyrcn.datasets import load_digits
 
 
-# Load the dataset (already part of scikit-learn) and consists of 1797 8x8 images.
+# Load the dataset (part of scikit-learn) and consists of 1797 8x8 images.
 # We are using our dataloader that is derived from scikit-learns dataloader and
 # returns arrays of 8x8 sequences and corresponding labels.
 X, y = load_digits(return_X_y=True, as_sequence=True)
@@ -33,10 +33,12 @@ print("Shape of digits {0}".format(X[0].shape))
 
 # Split dataset in training and test
 # Afterwards, we split the dataset into training and test sets.
-# We train the ESN using 80% of the digits and test it using the remaining images.
+# We train the ESN using 80% of the digits and test it using the remaining
+# images.
 X_train, X_test, y_train, y_test = \
     train_test_split(X, y, test_size=0.2,
-                     stratify=np.asarray([np.unique(yt) for yt in y]).flatten(),
+                     stratify=np.asarray(
+                         [np.unique(yt) for yt in y]).flatten(),
                      random_state=42)
 print("Number of digits in training set: {0}".format(len(X_train)))
 print("Shape of digits in training set: {0}".format(X_train[0].shape))
@@ -46,11 +48,11 @@ print("Shape of digits in test set: {0}".format(X_test[0].shape))
 
 # Set up a ESN
 # To develop an ESN model for digit recognition, we need to tune several
-# hyper-parameters, e.g., input_scaling, spectral_radius, bias_scaling and leaky
-# integration.
+# hyper-parameters, e.g., input_scaling, spectral_radius, bias_scaling and
+# leaky integration.
 #
-# We follow the way proposed in the introductory paper of PyRCN to optimize hyper-
-# parameters sequentially.
+# We follow the way proposed in the introductory paper of PyRCN to optimize
+# hyper-parameters sequentially.
 #
 # We define the search spaces for each step together with the type of search
 # (a grid search in this context).
@@ -83,7 +85,8 @@ step4_esn_params = {'alpha': [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2,
 
 kwargs = {'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
 
-# The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
+# The searches are defined similarly to the steps of a
+# sklearn.pipeline.Pipeline:
 searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
             ('step2', GridSearchCV, step2_esn_params, kwargs),
             ('step3', GridSearchCV, step3_esn_params, kwargs),
@@ -93,8 +96,9 @@ base_esn = ESNClassifier(**initially_fixed_params)
 
 
 # Optimization
-# We provide a SequentialSearchCV that basically iterates through the list of searches
-# that we have defined before. It can be combined with any model selection tool from
+# We provide a SequentialSearchCV that basically iterates through the list of
+# searches that we have defined before. It can be combined with any model
+# selection tool from
 # scikit-learn.
 sequential_search = SequentialSearchCV(base_esn,
                                        searches=searches).fit(X_train, y_train)
@@ -102,8 +106,8 @@ sequential_search = SequentialSearchCV(base_esn,
 
 # Use the ESN with final hyper-parameters
 #
-# After the optimization, we extract the ESN with final hyper-parameters as the result
-# of the optimization.
+# After the optimization, we extract the ESN with final hyper-parameters as the
+# result # of the optimization.
 base_esn = sequential_search.best_estimator_
 
 
@@ -116,17 +120,19 @@ param_grid = {'hidden_layer_size': [50, 100, 200, 400, 500],
 
 print("CV results\tFit time\tInference time\tAccuracy score\tSize[Bytes]")
 for params in ParameterGrid(param_grid):
-    esn_cv = cross_validate(clone(base_esn).set_params(**params), X=X_train, y=y_train,
-                            scoring=make_scorer(accuracy_score), n_jobs=-1)
+    esn_cv = cross_validate(clone(base_esn).set_params(**params), X=X_train,
+                            y=y_train, scoring=make_scorer(accuracy_score),
+                            n_jobs=-1)
     t1 = time.time()
     esn = clone(base_esn).set_params(**params).fit(X_train, y_train)
     t_fit = time.time() - t1
     t1 = time.time()
-    esn_par = clone(base_esn).set_params(**params).fit(X_train, y_train, n_jobs=-1)
+    esn_par = clone(base_esn).set_params(**params).fit(X_train, y_train,
+                                                       n_jobs=-1)
     t_fit_par = time.time() - t1
     mem_size = esn.__sizeof__()
     t1 = time.time()
     acc_score = accuracy_score(y_test, esn.predict(X_test))
     t_inference = time.time() - t1
-    print("{0}\t{1}\t{2}\t{3}\t{4}".format(esn_cv, t_fit, t_inference, acc_score,
-                                           mem_size))
+    print("{0}\t{1}\t{2}\t{3}\t{4}".format(esn_cv, t_fit, t_inference,
+                                           acc_score, mem_size))

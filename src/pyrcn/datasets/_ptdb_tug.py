@@ -32,12 +32,11 @@ def fetch_ptdb_tug_dataset(*, data_origin: Union[str, bytes],
                            data_home: Optional[Union[str, bytes]] = None,
                            preprocessor: Optional[BaseEstimator] = None,
                            augment: Union[int, np.integer] = 0,
-                           force_preprocessing: bool = False) -> Tuple[np.ndarray,
-                                                                       np.ndarray,
-                                                                       np.ndarray,
-                                                                       np.ndarray]:
+                           force_preprocessing: bool = False) \
+        -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """
-    Load the PTDB-TUG: Pitch Tracking Database from Graz University of Technology.
+    Load the PTDB-TUG: Pitch Tracking Database from
+    Graz University of Technology.
 
     (classification and regression)
 
@@ -59,8 +58,8 @@ def fetch_ptdb_tug_dataset(*, data_origin: Union[str, bytes],
         all pyrcn data is stored in '~/pyrcn_data' and all scikit-learn data in
        '~/scikit_learn_data' subfolders.
     preprocessor : Optional[BaseEstimator], default=None,
-        Estimator for preprocessing the dataset (create features and targets from
-        audio and label files).
+        Estimator for preprocessing the dataset (create features and targets
+        from audio and label files).
     augment : Union[int, np.integer], default = 0
         Semitone range used for data augmentation
     force_preprocessing: bool, default=False
@@ -98,41 +97,46 @@ def fetch_ptdb_tug_dataset(*, data_origin: Union[str, bytes],
             X_train = np.empty(shape=(len(all_training_files),), dtype=object)
             y_train = np.empty(shape=(len(all_training_files),), dtype=object)
         else:
-            X_train = np.empty(shape=((1 + len(augment)) * len(all_training_files),),
-                               dtype=object)
-            y_train = np.empty(shape=((1 + len(augment)) * len(all_training_files),),
-                               dtype=object)
+            X_train = np.empty(
+                shape=((1 + len(augment)) * len(all_training_files),),
+                dtype=object)
+            y_train = np.empty(
+                shape=((1 + len(augment)) * len(all_training_files),),
+                dtype=object)
         X_test = np.empty(shape=(len(all_test_files),), dtype=object)
         y_test = np.empty(shape=(len(all_test_files),), dtype=object)
 
         if len(augment) > 1:
             for k, f in enumerate(all_training_files):
                 X_train[k] = preprocessor.transform(f)
-                y_train[k] = pd.read_csv(f.replace("MIC", "REF").
-                                         replace("mic", "ref").replace(".wav", ".f0"),
-                                         sep=" ",
-                                         header=None)
+                y_train[k] = pd.read_csv(
+                    f.replace("MIC", "REF").replace("mic", "ref")
+                                           .replace(".wav", ".f0"),
+                    sep=" ", header=None)
             for m, st in enumerate(augment):
                 for k, f in enumerate(all_training_files):
                     X_train[k + int((m+1) * len(all_training_files))] = \
                         preprocessor.transform(
                             f.replace(".wav", "_" + str(st) + ".wav"))
-                    df = pd.read_csv(f.replace("MIC", "REF").
-                                     replace("mic", "ref").
-                                     replace(".wav", ".f0"), sep=" ", header=None)
+                    df = pd.read_csv(
+                        f.replace("MIC", "REF").replace("mic", "ref")
+                                               .replace(".wav", ".f0"),
+                        sep=" ", header=None)
                     df[[0]] = df[[0]] * 2**(st/12)
                     y_train[k + int((m+1) * len(all_training_files))] = df
         else:
             for k, f in enumerate(all_training_files):
                 X_train[k] = preprocessor.transform(f)
-                y_train[k] = pd.read_csv(f.replace("MIC", "REF").
-                                         replace("mic", "ref").
-                                         replace(".wav", ".f0"), sep=" ", header=None)
+                y_train[k] = pd.read_csv(
+                    f.replace("MIC", "REF").replace("mic", "ref")
+                                           .replace(".wav", ".f0"),
+                    sep=" ", header=None)
         for k, f in enumerate(all_test_files):
             X_test[k] = preprocessor.transform(f)
-            y_test[k] = pd.read_csv(f.replace("MIC", "REF").
-                                    replace("mic", "ref").
-                                    replace(".wav", ".f0"), sep=" ", header=None)
+            y_test[k] = pd.read_csv(
+                f.replace("MIC", "REF").replace("mic", "ref")
+                                       .replace(".wav", ".f0"),
+                sep=" ", header=None)
         joblib.dump([X_train, X_test, y_train, y_test], filepath, compress=6)
     else:
         X_train, X_test, y_train, y_test = joblib.load(filepath)
@@ -154,8 +158,8 @@ def fetch_ptdb_tug_dataset(*, data_origin: Union[str, bytes],
         for k in range(len(X_test)):
             y_test[k] = _get_labels(X_test[k], y_test[k])
     else:
-        raise TypeError("Invalid dataformat."
-                        "Expected at least one equal dimension of all sequences.")
+        raise TypeError("Invalid dataformat. Expected at least one equal "
+                        "dimension of all sequences.")
 
     return X_train, X_test, y_train, y_test
 
@@ -179,7 +183,9 @@ def _get_labels(X: np.ndarray, df_label: pd.DataFrame) -> np.ndarray:
     if X.shape[0] == labels.shape[0]:
         y[:, :] = labels
         return y
-    elif X.shape[0] == labels.shape[0] + 2 or X.shape[0] == labels.shape[0] + 1:
+    elif X.shape[0] == labels.shape[0] + 2\
+            or X.shape[0] == labels.shape[0] \
+            + 1:
         y[1:1+len(labels), :] = labels
         return y
     elif X.shape[0] == 2*labels.shape[0]:

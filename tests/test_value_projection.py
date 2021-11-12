@@ -42,6 +42,7 @@ def test_matrix_to_value_projection_proba() -> None:
     X = r.rand(5, 3)
     idx_true = np.array([0, 0, 0, 1, 2])
     X[range(5), idx_true] += 1
-    trf = MatrixToValueProjection(output_strategy="last_value", needs_proba=True).fit(X)
+    trf = MatrixToValueProjection(
+        output_strategy="last_value", needs_proba=True).fit(X)
     y = trf.transform(X)
     np.testing.assert_equal(y, X[-1, :])

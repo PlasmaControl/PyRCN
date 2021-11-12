@@ -11,7 +11,6 @@ from sklearn.model_selection import TimeSeriesSplit, GridSearchCV
 from matplotlib import pyplot as plt
 import seaborn as sns
 
-sns.set_theme()
 
 from pyrcn.echo_state_network import ESNRegressor
 from pyrcn.extreme_learning_machine import ELMRegressor
@@ -19,6 +18,7 @@ from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.datasets import mackey_glass
 
 
+sns.set_theme()
 # Load the dataset and rescale it to a range of [-1, 1]
 X, y = mackey_glass(n_timesteps=20000)
 scaler = MinMaxScaler(feature_range=(-1, 1)).fit(X=X.reshape(-1, 1))
@@ -102,7 +102,9 @@ searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
             ('step3', GridSearchCV, step3_esn_params, kwargs)]
 
 
-sequential_search_esn = SequentialSearchCV(esn, searches=searches).fit(X_train.reshape(-1, 1), y_train)
+sequential_search_esn = SequentialSearchCV(esn,
+                                           searches=searches).fit(
+    X_train.reshape(-1, 1), y_train)
 
 # Hyperparameter optimization ELM
 initially_fixed_elm_params = {'hidden_layer_size': 100,
@@ -126,7 +128,9 @@ elm = ELMRegressor(regressor=Ridge(), **initially_fixed_elm_params)
 searches = [('step1', GridSearchCV, step1_elm_params, kwargs),
             ('step2', GridSearchCV, step2_elm_params, kwargs)]
 
-sequential_search_elm = SequentialSearchCV(elm, searches=searches).fit(X_train.reshape(-1, 1), y_train)
+sequential_search_elm = SequentialSearchCV(elm,
+                                           searches=searches).fit(
+    X_train.reshape(-1, 1), y_train)
 
 
 # Final prediction and visualization

@@ -20,7 +20,8 @@ def _uniform_random_input_weights(n_features_in: int,
                                   hidden_layer_size: Union[int, np.integer],
                                   fan_in: int,
                                   random_state: np.random.RandomState) \
-                                      -> Union[np.ndarray, scipy.sparse.csr.csr_matrix]:
+                                      -> Union[np.ndarray,
+                                               scipy.sparse.csr.csr_matrix]:
     """
     Return uniform random input weights in range [-1, 1].
 
@@ -34,22 +35,23 @@ def _uniform_random_input_weights(n_features_in: int,
 
     Returns
     -------
-    uniform_random_input_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
-       of size (n_features, hidden_layer_size)
+    uniform_random_input_weights : Union[np.ndarray,
+    scipy.sparse.csr.csr_matrix] of size (n_features, hidden_layer_size)
     """
     nr_entries = int(n_features_in * fan_in)
     weights_array = random_state.uniform(low=-1., high=1., size=nr_entries)
 
     if fan_in < hidden_layer_size:
         indices = np.zeros(shape=nr_entries, dtype=int)
-        indptr = np.arange(start=0, stop=(n_features_in + 1) * fan_in, step=fan_in)
+        indptr = np.arange(start=0, stop=(n_features_in + 1) * fan_in,
+                           step=fan_in)
 
         for en in range(0, n_features_in * fan_in, fan_in):
-            indices[en: en + fan_in] = \
-                random_state.permutation(hidden_layer_size)[:fan_in].astype(int)
+            indices[en: en + fan_in] = random_state.permutation(
+                hidden_layer_size)[:fan_in].astype(int)
         return scipy.sparse.csr_matrix(
-            (weights_array, indices, indptr), shape=(n_features_in, hidden_layer_size),
-            dtype='float64')
+            (weights_array, indices, indptr),
+            shape=(n_features_in, hidden_layer_size), dtype='float64')
     else:
         return weights_array.reshape((n_features_in, hidden_layer_size))
 
@@ -89,24 +91,23 @@ def _normal_random_recurrent_weights(hidden_layer_size: int, fan_in: int,
 
     Returns
     -------
-    normal_random_recurrent_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
-        of size (hidden_layer_size, hidden_layer_size)
+    normal_random_recurrent_weights : Union[np.ndarray,
+    scipy.sparse.csr.csr_matrix] of size (hidden_layer_size, hidden_layer_size)
     """
     nr_entries = int(hidden_layer_size * fan_in)
     weights_array = random_state.normal(loc=0., scale=1., size=nr_entries)
 
     if fan_in < hidden_layer_size:
         indices = np.zeros(shape=nr_entries, dtype=int)
-        indptr = np.arange(start=0, stop=(hidden_layer_size + 1) * fan_in, step=fan_in)
+        indptr = np.arange(start=0, stop=(hidden_layer_size + 1) * fan_in,
+                           step=fan_in)
 
         for en in range(0, hidden_layer_size * fan_in, fan_in):
-            indices[en: en + fan_in] = \
-                random_state.permutation(hidden_layer_size)[:fan_in].astype(int)
-        recurrent_weights_init = scipy.sparse.csr_matrix((weights_array, indices,
-                                                          indptr),
-                                                         shape=(hidden_layer_size,
-                                                                hidden_layer_size),
-                                                         dtype='float64')
+            indices[en: en + fan_in] = random_state.permutation(
+                hidden_layer_size)[:fan_in].astype(int)
+        recurrent_weights_init = scipy.sparse.csr_matrix(
+            (weights_array, indices, indptr),
+            shape=(hidden_layer_size, hidden_layer_size), dtype='float64')
     else:
         recurrent_weights_init = weights_array.reshape((hidden_layer_size,
                                                         hidden_layer_size))
@@ -115,7 +116,8 @@ def _normal_random_recurrent_weights(hidden_layer_size: int, fan_in: int,
                     k=np.minimum(10, hidden_layer_size - 2),
                     which='LM',
                     return_eigenvectors=False,
-                    v0=random_state.normal(loc=0., scale=1., size=hidden_layer_size))
+                    v0=random_state.normal(loc=0., scale=1.,
+                                           size=hidden_layer_size))
     except ArpackNoConvergence:
         print("WARNING: No convergence! Returning possibly invalid values!!!")
         we = ArpackNoConvergence.eigenvalues

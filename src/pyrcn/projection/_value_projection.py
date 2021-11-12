@@ -29,9 +29,8 @@ class MatrixToValueProjection(BaseEstimator, TransformerMixin):
         Whether to return a probability estimate or the index.
     """
 
-    def __init__(self, output_strategy: Literal["winner_takes_all",
-                                                "median",
-                                                "last_value"] = "winner_takes_all",
+    def __init__(self, output_strategy: Literal[
+        "winner_takes_all", "median", "last_value"] = "winner_takes_all",
                  needs_proba: bool = False):
         """Construct the MatrixToValueProjection."""
         self._output_strategy = output_strategy

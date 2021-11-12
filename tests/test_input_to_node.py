@@ -64,19 +64,19 @@ def test_predefined_weights_input_to_node() -> None:
     weights = np.random.rand(5, 5)
     with pytest.raises(ValueError):
         i2n = PredefinedWeightsInputToNode(
-            predefined_input_weights=weights, input_activation='tanh', input_scaling=1.,
-            bias_scaling=1., random_state=42)
+            predefined_input_weights=weights, input_activation='tanh',
+            input_scaling=1., bias_scaling=1., random_state=42)
         i2n.fit(X)
     weights = np.random.rand(5, )
     with pytest.raises(ValueError):
         i2n = PredefinedWeightsInputToNode(
-            predefined_input_weights=weights, input_activation='tanh', input_scaling=1.,
-            bias_scaling=1., random_state=42)
+            predefined_input_weights=weights, input_activation='tanh',
+            input_scaling=1., bias_scaling=1., random_state=42)
         i2n.fit(X)
     weights = np.random.rand(3, 5)
     i2n = PredefinedWeightsInputToNode(
-        predefined_input_weights=weights, input_activation='tanh', input_scaling=1.,
-        bias_scaling=1., random_state=42)
+        predefined_input_weights=weights, input_activation='tanh',
+        input_scaling=1., bias_scaling=1., random_state=42)
     i2n.fit(X)
     print(i2n._input_weights)
     assert i2n._input_weights.shape == (3, 5)
@@ -137,8 +137,8 @@ def test_bip_invalid_params() -> None:
 def test_input_to_node_dense() -> None:
     print('\ntest_input_to_node_dense():')
     i2n = InputToNode(
-        hidden_layer_size=5, sparsity=1., input_activation='tanh', input_scaling=1.,
-        bias_scaling=1., random_state=42)
+        hidden_layer_size=5, sparsity=1., input_activation='tanh',
+        input_scaling=1., bias_scaling=1., random_state=42)
     X = np.zeros(shape=(10, 3))
     i2n.fit(X)
     print(i2n._input_weights)
@@ -152,16 +152,16 @@ def test_input_to_node_dense() -> None:
 def test_input_to_node_sparse() -> None:
     print('\ntest_input_to_node_sparse():')
     i2n = InputToNode(
-        hidden_layer_size=5, sparsity=2/5, input_activation='tanh', input_scaling=1.,
-        bias_scaling=1., random_state=42)
+        hidden_layer_size=5, sparsity=2/5, input_activation='tanh',
+        input_scaling=1., bias_scaling=1., random_state=42)
     X = np.zeros(shape=(10, 3))
     i2n.fit(X)
     print(i2n._input_weights.toarray())
     assert i2n._input_weights.shape == (3, 5)
     assert safe_sparse_dot(X, i2n._input_weights).shape == (10, 5)
     i2n = InputToNode(
-        hidden_layer_size=5, k_in=2, input_activation='tanh', input_scaling=1.,
-        bias_scaling=1., random_state=42)
+        hidden_layer_size=5, k_in=2, input_activation='tanh',
+        input_scaling=1., bias_scaling=1., random_state=42)
     X = np.zeros(shape=(10, 3))
     i2n.fit(X)
     print(i2n._input_weights.toarray())

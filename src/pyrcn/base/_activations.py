@@ -77,7 +77,8 @@ def inplace_bounded_relu_inverse(X: np.ndarray) -> None:
     Compute the bounded relu inverse function inplace.
 
     The bounded relu function is not invertible!
-    This is an approximation assuming $x = f^{-1}(y=0) = 0$ and $x = f^{-1}(y=1) = 1$.
+    This is an approximation assuming
+    $x = f^{-1}(y=0) = 0$ and $x = f^{-1}(y=1) = 1$.
     It is valid in $x \in [0, 1]$.
 
     Parameters

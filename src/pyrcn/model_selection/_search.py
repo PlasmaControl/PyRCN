@@ -36,71 +36,79 @@ class SequentialSearchCV(BaseSearchCV):
         on the test set.
 
         If ```scoring``` represents a single score, one can use:
-        -a single string (see The scoring parameter: defining model evaluation rules);
+        -a single string (see The scoring parameter:
+        defining model evaluation rules);
         - a callable (see Defining your scoring strategy from metric functions)
         that returns a single value.
 
         If ```scoring``` represents multiple scores, one can use:
         - a list or tuple of unique strings;
-        - a callable returning a dictionary where the keys are the metric names and
-        the values are the metric scores;
+        - a callable returning a dictionary where the keys are the metric names
+        and the values are the metric scores;
         - a dictionary with metric names as keys and callables a values.
     refit : bool, default = False
-        Refit an estimator using the best found parameters on the whole dataset.
+        Refit an estimator using the best found parameters on the whole
+        dataset.
 
-        For multiple metric evaluation, this needs to be a ```str``` denoting the scorer
-        that would be used to find the best parameters for refitting the estimator
-        at the end.
+        For multiple metric evaluation, this needs to be a ```str``` denoting
+        the scorer that would be used to find the best parameters for refitting
+        the estimator at the end.
 
-        Where there are considerations other than maximum score in choosing a best
-        estimator, refit can be set to a function which returns the selected
-        ```best_index_``` given ```cv_results_```. In that case, the
-        ```best_estimator_``` and ```best_params_``` will be set according to the
-        returned ```best_index_``` while the ```best_score_``` attribute will
-        not be available.
+        Where there are considerations other than maximum score in choosing a
+        best estimator, refit can be set to a function which returns the
+        selected ```best_index_``` given ```cv_results_```. In that case, the
+        ```best_estimator_``` and ```best_params_``` will be set according to
+        the returned ```best_index_``` while the ```best_score_``` attribute
+        will not be available.
 
-        The refitted estimator is made available at the ```best_estimator_``` attribute
-        and permits using predict directly on this ```GridSearchCV``` instance.
+        The refitted estimator is made available at the ```best_estimator_```
+        attribute and permits using predict directly on this ```GridSearchCV```
+        instance.
 
         Also for multiple metric evaluation, the attributes ```best_index_```,
-        ```best_score_``` and ```best_params_``` will only be available if refit is set
-        and all of them will be determined w.r.t this specific scorer.
+        ```best_score_``` and ```best_params_``` will only be available if
+        refit is set and all of them will be determined w.r.t this specific
+        scorer.
 
-        See ```scoring``` parameter to know more about multiple metric evaluation.
+        See ```scoring``` parameter to know more about multiple metric
+        evaluation.
     cv : Union[int, np.integer, Iterable, None], default=None
-        Determines the cross-validation splitting strategy. Possible inputs for ```cv```
-        are:
+        Determines the cross-validation splitting strategy.
+        Possible inputs for ```cv``` are:
         - ```None```, to use the default 5-fold cross validation,
         - integer, to specify the number of folds in a ```(Stratified)KFold```,
         - CV splitter,
         - An iterable yielding (train, test) splits as arrays of indices.
 
-        For integer/None inputs, if the estimator is a classifier and ```y``` is either
-        binary or multiclass, ```sklearn.model_selection.StratifiedKFold``` is used.
+        For integer/None inputs, if the estimator is a classifier and ```y```
+        is either binary or multiclass,
+        ```sklearn.model_selection.StratifiedKFold``` is used.
         In all other cases,  ```sklearn.model_selection.KFold``` is used.
-        These splitters are instantiated with ```shuffle=False``` so the splits will be
-        the same across calls.
+        These splitters are instantiated with ```shuffle=False``` so the splits
+        will be the same across calls.
     verbose : Union[int, np.integer]
         Controls the verbosity: the higher, the more messages.
-        - >1 : the computation time for each fold and parameter candidate is displayed;
+        - >1 : the computation time for each fold and parameter candidate is
+        displayed;
         - >2 : the score is also displayed;
-        - >3 : the fold and candidate parameter indexes are also displayed together with
-        the starting time of the computation.
+        - >3 : the fold and candidate parameter indexes are also displayed
+        together with the starting time of the computation.
     pre_dispatch: Union[int, np.integer, str], default = '2*n_jobs'
-        Controls the number of jobs that get dispatched during parallel execution.
-        Reducing this number can be useful to avoid an explosion of memory consumption
-        when more jobs get dispatched than CPUs can process. This parameter can be:
+        Controls the number of jobs that get dispatched during parallel
+        execution. Reducing this number can be useful to avoid an explosion
+        of memory consumption when more jobs get dispatched than CPUs can
+        process. This parameter can be:
         - None, in which case all the jobs are immediately created and spawned.
-        Use this for lightweight and fast-running jobs, to avoid delays due to on-demand
-        spawning of the jobs
+        Use this for lightweight and fast-running jobs, to avoid delays due to
+        on-demand spawning of the jobs
         - An int, giving the exact number of total jobs that are spawned
         - A str, giving an expression as a function of n_jobs, as in ‘2*n_jobs’
     error_score: Union[Literal['raise'], int, float, np.integer, np.float],
     default=np.nan
-        Value to assign to the score if an error occurs in estimator fitting. If set to
-        'raise', the error is raised.  If a numeric value is given, FitFailedWarning
-        is raised. This parameter does not affect the refit step,
-        which will always raise the error.
+        Value to assign to the score if an error occurs in estimator fitting.
+        If set to 'raise', the error is raised.  If a numeric value is given,
+        FitFailedWarning is raised. This parameter does not affect the refit
+        step, which will always raise the error.
     """
 
     def __init__(self, estimator: BaseEstimator,
@@ -115,9 +123,10 @@ class SequentialSearchCV(BaseSearchCV):
                                     float, np.integer] = np.nan) -> None:
         """Construct the SequentialSearchCV."""
         self.estimator: Optional[BaseEstimator] = None
-        super().__init__(estimator, scoring=scoring, n_jobs=n_jobs, refit=refit, cv=cv,
-                         verbose=verbose, pre_dispatch=pre_dispatch,
-                         error_score=error_score, return_train_score=True)
+        super().__init__(
+            estimator, scoring=scoring, n_jobs=n_jobs, refit=refit, cv=cv,
+            verbose=verbose, pre_dispatch=pre_dispatch,
+            error_score=error_score, return_train_score=True)
         self.searches = searches
 
     def _run_search(self, evaluate_candidates: Callable) -> None:
@@ -162,12 +171,15 @@ class SequentialSearchCV(BaseSearchCV):
             self.all_multimetric_: Dict[str, bool] = {}
             for name, search, params, *kwargs in searches:
                 if len(kwargs) == 1 and 'refit' in kwargs[0].keys():
-                    result = search(self.estimator, params, **kwargs[0]).fit(X, y)
+                    result = search(
+                        self.estimator, params, **kwargs[0]).fit(X, y)
                 elif len(kwargs) == 1 and 'refit' not in kwargs[0].keys():
-                    result = search(self.estimator, params, refit=True,
-                                    **kwargs[0]).fit(X, y)
+                    result = search(
+                        self.estimator, params, refit=True, **kwargs[0])\
+                        .fit(X, y)
                 else:
-                    result = search(self.estimator, params, refit=True).fit(X, y)
+                    result = search(
+                        self.estimator, params, refit=True).fit(X, y)
                 # Save the attributes of the intermediate search results
                 self.all_cv_results_[name] = result.cv_results_
                 self.all_best_estimator_[name] = result.best_estimator_
@@ -187,8 +199,8 @@ class SequentialSearchCV(BaseSearchCV):
         """
         A dict with keys as column headers and values as columns.
 
-        It can be imported into a pandas DataFrame. For instance the below given table
-        will be represented by a cv_results_ dict of:
+        It can be imported into a pandas DataFrame. For instance the below
+        given table will be represented by a cv_results_ dict of:
 
         {
         'param_kernel' : masked_array(data = ['rbf', 'rbf', 'rbf'],
@@ -218,9 +230,9 @@ class SequentialSearchCV(BaseSearchCV):
         The mean_fit_time, std_fit_time, mean_score_time and std_score_time
         are all in seconds.
 
-        For multi-metric evaluation, the scores for all the scorers are available in the
-        cv_results_ dict at the keys ending with that scorer’s name ('_<scorer_name>')
-        instead of '_score' shown above.
+        For multi-metric evaluation, the scores for all the scorers are
+        available in the cv_results_ dict at the keys ending with that scorer’s
+        name ('_<scorer_name>') instead of '_score' shown above.
         (‘split0_test_precision’, ‘mean_train_precision’ etc.)
 
         Returns
@@ -253,7 +265,8 @@ class SequentialSearchCV(BaseSearchCV):
         """
         Mean cross-validated score of the best_estimator.
 
-        For multi-metric evaluation, this is present only if refit is specified.
+        For multi-metric evaluation, this is present only if refit is
+        specified.
 
         This attribute is not available if refit is a function.
 
@@ -270,7 +283,8 @@ class SequentialSearchCV(BaseSearchCV):
         """
         Parameter setting that gave the best results on the hold out data.
 
-        For multi-metric evaluation, this is present only if refit is specified.
+        For multi-metric evaluation, this is present only if refit is
+        specified.
 
         Returns
         -------
@@ -283,13 +297,15 @@ class SequentialSearchCV(BaseSearchCV):
     @property
     def best_index_(self) -> Union[int, np.integer]:
         """
-        The index (of the cv_results_ arrays) which corresponds to the best candidate.
+        The index (of the cv_results_ arrays) which corresponds to the best
+        candidate.
 
-        The dict at search.cv_results_['params'][search.best_index_] gives the parameter
-        setting for the best model, that gives the highest mean score
+        The dict at search.cv_results_['params'][search.best_index_] gives the
+        parameter setting for the best model, that gives the highest mean score
         (search.best_score_).
 
-        For multi-metric evaluation, this is present only if refit is specified.
+        For multi-metric evaluation, this is present only if refit is
+        specified.
 
         Returns
         -------
@@ -306,8 +322,8 @@ class SequentialSearchCV(BaseSearchCV):
 
         To choose the best parameters for the model.
 
-        For multi-metric evaluation, this attribute holds the validated scoring dict
-        which maps the scorer key to the scorer callable.
+        For multi-metric evaluation, this attribute holds the validated scoring
+        dict which maps the scorer key to the scorer callable.
 
         Returns
         -------

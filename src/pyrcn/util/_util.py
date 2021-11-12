@@ -1,4 +1,4 @@
-"""The :mod:`pyrcn.util` contains utilities for running, testing and analyzing."""
+"""The :mod:`pyrcn.util` has utilities for running, testing and analyzing."""
 
 # Author: Peter Steiner <peter.steiner@tu-dresden.de>,
 # Michael Schindler <michael.schindler@maschindler.de>
@@ -46,8 +46,10 @@ def new_logger(name: str, directory: str = os.getcwd()) -> logging.Logger:
     """Register a new logger for logfiles."""
     logger = logging.getLogger(name)
     logger.setLevel(logging.NOTSET)
-    formatter = logging.Formatter(fmt='%(asctime)s %(levelname)s %(name)s %(message)s')
-    handler = logging.FileHandler(os.path.join(directory, '{0}.log'.format(name)))
+    formatter = logging.Formatter(
+        fmt='%(asctime)s %(levelname)s %(name)s %(message)s')
+    handler = logging.FileHandler(
+        os.path.join(directory, '{0}.log'.format(name)))
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     return logger
@@ -62,14 +64,16 @@ def get_mnist(directory: str = os.getcwd()) -> Tuple[np.ndarray, np.ndarray]:
         logging.info('Dataset loaded')
         return npzfile['X'], npzfile['y']
     else:
-        X, y = fetch_openml(data_id=554, return_X_y=True, cache=True, as_frame=False)
+        X, y = fetch_openml(
+            data_id=554, return_X_y=True, cache=True, as_frame=False)
         logging.info('Fetched dataset')
         np.savez(npzfilepath, X=X, y=y)
         return X, y
 
 
-def concatenate_sequences(X: Union[list, np.ndarray], y: Union[list, np.ndarray],
-                          sequence_to_value: bool = False) \
+def concatenate_sequences(X: Union[list, np.ndarray],
+                          y: Union[list, np.ndarray],
+                          sequence_to_value: bool = False)\
         -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Concatenate multiple sequences to scikit-learn compatible numpy arrays.
@@ -108,7 +112,8 @@ def concatenate_sequences(X: Union[list, np.ndarray], y: Union[list, np.ndarray]
     sequence_ranges: np.ndarray = np.ndarray([])
     if X.ndim == 1:
         sequence_ranges = np.zeros((X.shape[0], 2), dtype=int)
-        sequence_ranges[:, 1] = np.cumsum([X[k].shape[0] for k, _ in enumerate(X)])
+        sequence_ranges[:, 1] = np.cumsum(
+            [X[k].shape[0] for k, _ in enumerate(X)])
         sequence_ranges[1:, 0] = sequence_ranges[:-1, 1]
         for k, _ in enumerate(X):
             X[k], y[k] = check_X_y(X[k], y[k], multi_output=True)

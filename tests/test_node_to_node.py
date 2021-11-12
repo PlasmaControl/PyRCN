@@ -3,8 +3,8 @@ import numpy as np
 import pytest
 from sklearn.utils.extmath import safe_sparse_dot
 
-from pyrcn.base.blocks import InputToNode, NodeToNode, PredefinedWeightsNodeToNode,\
-    HebbianNodeToNode
+from pyrcn.base.blocks import (InputToNode, NodeToNode,
+                               PredefinedWeightsNodeToNode, HebbianNodeToNode)
 
 
 def test_input_to_node_invalid_spectral_radius() -> None:
@@ -104,8 +104,8 @@ def test_node_to_node_sparse() -> None:
     print(n2n._recurrent_weights.toarray())
     assert n2n._recurrent_weights.shape == (5, 5)
     n2n = NodeToNode(
-        hidden_layer_size=5, k_rec=2, reservoir_activation='tanh', spectral_radius=1.,
-        random_state=42)
+        hidden_layer_size=5, k_rec=2, reservoir_activation='tanh',
+        spectral_radius=1., random_state=42)
     n2n.fit(X)
     print(n2n._recurrent_weights.toarray())
     assert n2n._recurrent_weights.shape == (5, 5)
@@ -148,8 +148,9 @@ def test_node_to_node_invalid_leakage() -> None:
 
 def test_node_to_node_hebbian() -> None:
     print('\ntest_node_to_node_hebbian():')
-    i2n = InputToNode(hidden_layer_size=5, sparsity=2/5, input_activation='tanh',
-                      input_scaling=1., bias_scaling=1., random_state=42)
+    i2n = InputToNode(hidden_layer_size=5, sparsity=2/5,
+                      input_activation='tanh', input_scaling=1.,
+                      bias_scaling=1., random_state=42)
     X = np.zeros(shape=(10, 3))
     i2n.fit(X)
     n2n = HebbianNodeToNode(hidden_layer_size=5, sparsity=2/5,
@@ -175,4 +176,5 @@ def test_node_to_node_hebbian() -> None:
     print(n2n.transform(i2n_hidden))
     print(n2n._recurrent_weights)
     assert n2n._recurrent_weights.shape == (5, 5)
-    assert safe_sparse_dot(i2n.transform(X), n2n._recurrent_weights).shape == (10, 5)
+    assert safe_sparse_dot(
+        i2n.transform(X), n2n._recurrent_weights).shape == (10, 5)

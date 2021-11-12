@@ -4,8 +4,8 @@
 # License: BSD 3 clause
 
 from . import (autoencoder, base, echo_state_network, extreme_learning_machine,
-               linear_model, model_selection, postprocessing, preprocessing, projection,
-               util)
+               linear_model, model_selection, postprocessing, preprocessing,
+               projection, util)
 
 
 __all__ = ('autoencoder',

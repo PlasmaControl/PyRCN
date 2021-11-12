@@ -1,4 +1,4 @@
-"""The :mod:`pyrcn.util` contains utilities for running, testing and analyzing."""
+"""The :mod:`pyrcn.util` has utilities for running, testing and analyzing."""
 
 # Author: Peter Steiner <peter.steiner@tu-dresden.de> and
 # Michael Schindler <michael.schindler@maschindler.de>

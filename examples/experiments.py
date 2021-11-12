@@ -29,7 +29,8 @@ def picture_gradient(directory):
     self_name = 'picture_gradient'
     logger = new_logger(self_name, directory=directory)
     X, y = get_mnist(directory)
-    logger.info('Loaded MNIST successfully with {0} records'.format(X.shape[0]))
+    logger.info('Loaded MNIST successfully with {0} records'
+                .format(X.shape[0]))
     # scale X so X in [0, 1]
     X /= 255.
     # reshape X
@@ -59,18 +60,19 @@ def picture_gradient(directory):
     example_image_idx = 5
 
     fig, axs = plt.subplots(1, 4, figsize=(6, 2))
-    axs[0].imshow(X_images[example_image_idx], cmap=plt.cm.gray_r, interpolation='none')
+    axs[0].imshow(X_images[example_image_idx], cmap=plt.cm.gray_r,
+                  interpolation='none')
     axs[0].set_title('no filter')
-    axs[1].imshow(convolve2d(X_images[example_image_idx], list_kernels[0]['kernel'],
-                             mode='same'),
+    axs[1].imshow(convolve2d(X_images[example_image_idx],
+                             list_kernels[0]['kernel'], mode='same'),
                   cmap=plt.cm.gray_r, interpolation='none')
     axs[1].set_title('laplace')
-    axs[2].imshow(convolve2d(X_images[example_image_idx], list_kernels[2]['kernel'],
-                             mode='same'),
+    axs[2].imshow(convolve2d(X_images[example_image_idx],
+                             list_kernels[2]['kernel'], mode='same'),
                   cmap=plt.cm.gray_r, interpolation='none')
     axs[2].set_title('vertical\nprewitt')
-    axs[3].imshow(convolve2d(X_images[example_image_idx], list_kernels[5]['kernel'],
-                             mode='same'),
+    axs[3].imshow(convolve2d(X_images[example_image_idx],
+                             list_kernels[5]['kernel'], mode='same'),
                   cmap=plt.cm.gray_r, interpolation='none')
     axs[3].set_title('horizontal\nsobel')
 
@@ -81,15 +83,17 @@ def picture_gradient(directory):
         ax.set_yticklabels([0, 27])
 
     fig.tight_layout()
-    fig.savefig(os.path.join(directory, 'mnist-image-filters.pdf'), format='pdf')
-    fig.savefig(os.path.join(os.environ['PGFPATH'], 'mnist-image-filters.pgf'),
-                format='pgf')
+    fig.savefig(
+        os.path.join(directory, 'mnist-image-filters.pdf'), format='pdf')
+    fig.savefig(
+        os.path.join(os.environ['PGFPATH'], 'mnist-image-filters.pgf'),
+        format='pgf')
 
 
 def plot_confusion(directory):
-    filepath = os.path.join(os.environ['DATAPATH'],
-                            '/coates20210310/est_coates-minibatch-pca50+kmeans16000'
-                            '_matrix-predicted.npz')
+    filepath = os.path.join(os.environ['DATAPATH'], '/coates20210310/est_'
+                            'coates-minibatch-pca50+kmeans16000_matrix-'
+                                                    'predicted.npz')
 
     npzfile = np.load(filepath, allow_pickle=True)
     X_test = np.array(npzfile['X_test'])
@@ -101,34 +105,36 @@ def plot_confusion(directory):
     X_example = X_test[(y_pred == 5) & (y_test == 6), ...]
     img_example = X_example[3, ...]
     imgpath = os.path.join(directory, 'confused6for5.png')
-    plt.imsave(imgpath, img_example.reshape(28, 28), format='png', cmap=plt.cm.gray_r)
+    plt.imsave(
+        imgpath, img_example.reshape(28, 28), format='png', cmap=plt.cm.gray_r)
 
     for pred_idx in range(conf_matrix.shape[0]):
         for test_idx in range(conf_matrix.shape[1]):
-            conf_matrix[pred_idx, test_idx] = int(np.sum((y_pred == pred_idx)
-                                                         & (y_test == test_idx)))
+            conf_matrix[pred_idx, test_idx] = \
+                int(np.sum((y_pred == pred_idx) & (y_test == test_idx)))
 
     tpr = np.zeros(10)
     tnr = np.zeros(10)
 
     for idx in range(10):
-        tpr[idx] = conf_matrix[idx, idx] / np.sum(conf_matrix[idx, :])  # row sum
-        tnr[idx] = conf_matrix[idx, idx] / np.sum(conf_matrix[:, idx])  # col sum
+        tpr[idx] = conf_matrix[idx, idx] / np.sum(conf_matrix[idx, :])
+        tnr[idx] = conf_matrix[idx, idx] / np.sum(conf_matrix[:, idx])
 
     conf_matrix_norm = np.zeros((10, 10))
 
     # norm row by row! => TPR
     for idx in range(10):
-        conf_matrix_norm[idx, :] = conf_matrix[idx, :] / np.sum(conf_matrix[idx, :])
+        conf_matrix_norm[idx, :] =\
+            conf_matrix[idx, :] / np.sum(conf_matrix[idx, :])
         conf_matrix_norm[idx, idx] = 1 - conf_matrix_norm[idx, idx]
 
     # colormap
     n_colorsteps = 255  # in promille
     color_array = np.zeros((n_colorsteps, 4))
     lower_margin = 255
-    color_array[:lower_margin, :] += np.linspace(start=tud_colors['lightgreen'],
-                                                 stop=tud_colors['red'],
-                                                 num=lower_margin)
+    color_array[:lower_margin, :] += np.linspace(
+        start=tud_colors['lightgreen'], stop=tud_colors['red'],
+        num=lower_margin)
 
     cm = ListedColormap(color_array)
 
@@ -138,10 +144,12 @@ def plot_confusion(directory):
     img = ax.imshow(conf_matrix_norm * 100, interpolation='none', cmap=cm,
                     origin='lower', alpha=.7)
     ax.set_xticks(np.arange(10))
-    ax.set_xticklabels(['{0:.0f}'.format(pred_idx) for pred_idx in np.arange(10)])
+    ax.set_xticklabels(['{0:.0f}'
+                       .format(pred_idx) for pred_idx in np.arange(10)])
     ax.set_xlabel('true')
     ax.set_yticks(np.arange(10))
-    ax.set_yticklabels(['{0:.0f}'.format(pred_idx) for pred_idx in np.arange(10)])
+    ax.set_yticklabels(['{0:.0f}'
+                       .format(pred_idx) for pred_idx in np.arange(10)])
     ax.set_ylabel('predicted')
 
     plt.colorbar(img, ax=ax, shrink=1., label='deviation from ideal TPR [%]')
@@ -149,11 +157,13 @@ def plot_confusion(directory):
     for pred_idx in range(conf_matrix.shape[0]):
         for test_idx in range(conf_matrix.shape[1]):
             ax.text(x=pred_idx, y=test_idx, s='{0:.0f}'
-                    .format(conf_matrix.T[pred_idx][test_idx]), fontsize='xx-small',
-                    verticalalignment='center', horizontalalignment='center')
+                    .format(conf_matrix.T[pred_idx][test_idx]),
+                    fontsize='xx-small', verticalalignment='center',
+                    horizontalalignment='center')
 
     # plt.show()
-    plt.savefig(os.path.join('./experiments/', 'confusion_matrix.pdf'), format='pdf')
+    plt.savefig(os.path.join('./experiments/', 'confusion_matrix.pdf'),
+                format='pdf')
     plt.savefig(os.path.join(os.environ['PGFPATH'], 'confusion_matrix.pgf'),
                 format='pgf')
 

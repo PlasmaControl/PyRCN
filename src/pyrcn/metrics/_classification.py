@@ -13,9 +13,11 @@ import sys
 
 import numpy as np
 
-from sklearn.utils.validation import check_consistent_length, _deprecate_positional_args
+from sklearn.utils.validation import (check_consistent_length,
+                                      _deprecate_positional_args)
 import sklearn.metrics as sklearn_metrics
-from sklearn.metrics._classification import _check_targets as sklearn_check_targets
+from sklearn.metrics._classification import\
+    _check_targets as sklearn_check_targets
 
 if sys.version_info >= (3, 8):
     from typing import Tuple, Union, Optional, Dict, Literal
@@ -26,15 +28,16 @@ else:
 
 def _check_targets(y_true: np.ndarray, y_pred: np.ndarray,
                    sample_weight: Optional[np.ndarray] = None) \
-                       -> Tuple[Literal["multilabel-indicator", "multiclass", "binary"],
+                       -> Tuple[Literal["multilabel-indicator",
+                                        "multiclass", "binary"],
                                 np.ndarray, np.ndarray, Optional[np.ndarray]]:
     """
     Check that y_true and y_pred belong to the same classification task.
 
     This converts sequential types to  a common shape that can be handled by
     scikit-learn. It raises a ValueError if the conversion fails, e.g. due to
-    different sequence lengths or a a mix of sequence-to-sequence and sequence-to-label
-    tasks.
+    different sequence lengths or a a mix of sequence-to-sequence and
+    sequence-to-label tasks.
 
     Parameters
     ----------
@@ -66,7 +69,8 @@ def _check_targets(y_true: np.ndarray, y_pred: np.ndarray,
 
 
 @_deprecate_positional_args
-def accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *, normalize: bool = True,
+def accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
+                   normalize: bool = True,
                    sample_weight: Optional[np.ndarray] = None) -> float:
     """
     Accuracy classification score.
@@ -177,9 +181,9 @@ def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
-    return sklearn_metrics.confusion_matrix(y_true=y_true, y_pred=y_pred, labels=labels,
-                                            sample_weight=sample_weight,
-                                            normalize=normalize)
+    return sklearn_metrics.confusion_matrix(
+        y_true=y_true, y_pred=y_pred, labels=labels,
+        sample_weight=sample_weight, normalize=normalize)
 
 
 @_deprecate_positional_args
@@ -246,10 +250,9 @@ def multilabel_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
-    return sklearn_metrics.multilabel_confusion_matrix(y_true=y_true, y_pred=y_pred,
-                                                       sample_weight=sample_weight,
-                                                       labels=labels,
-                                                       samplewise=samplewise)
+    return sklearn_metrics.multilabel_confusion_matrix(
+        y_true=y_true, y_pred=y_pred, sample_weight=sample_weight,
+        labels=labels, samplewise=samplewise)
 
 
 @_deprecate_positional_args
@@ -318,9 +321,10 @@ def cohen_kappa_score(y1: np.ndarray, y2: np.ndarray, *,
 
 @_deprecate_positional_args
 def jaccard_score(y_true: np.ndarray, y_pred: np.ndarray, *,
-                  labels: Optional[np.ndarray] = None, pos_label: Union[str, int] = 1,
-                  average: Optional[Literal['micro', 'macro', 'samples', 'weighted',
-                                            'binary']] = 'binary',
+                  labels: Optional[np.ndarray] = None,
+                  pos_label: Union[str, int] = 1,
+                  average: Optional[Literal['micro', 'macro', 'samples',
+                                            'weighted', 'binary']] = 'binary',
                   sample_weight: Optional[np.ndarray] = None,
                   zero_division: Literal["warn", 0, 1] = "warn") -> float:
     """
@@ -351,8 +355,8 @@ def jaccard_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         If the data are multiclass or multilabel, this will be ignored;
         setting ``labels=[pos_label]`` and ``average != 'binary'`` will report
         scores for that label only.
-    average : Optional[Literal['micro', 'macro', 'samples', 'weighted', 'binary']],
-    default='binary'
+    average : Optional[Literal['micro', 'macro', 'samples', 'weighted',
+    'binary']], default='binary'
         If ``None``, the scores for each class are returned. Otherwise, this
         determines the type of averaging performed on the data:
         ``'binary'``:
@@ -405,10 +409,10 @@ def jaccard_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
-    return sklearn_metrics.jaccard_score(y_true=y_true, y_pred=y_pred, labels=labels,
-                                         pos_label=pos_label, average=average,
-                                         sample_weight=sample_weight,
-                                         zero_division=zero_division)
+    return sklearn_metrics.jaccard_score(
+        y_true=y_true, y_pred=y_pred, labels=labels, pos_label=pos_label,
+        average=average, sample_weight=sample_weight,
+        zero_division=zero_division)
 
 
 @_deprecate_positional_args
@@ -458,7 +462,8 @@ def matthews_corrcoef(y_true: np.ndarray, y_pred: np.ndarray, *,
         <https://www.sciencedirect.com/science/article/pii/S1476927104000799>`_.
     .. [4] `Jurman, Riccadonna, Furlanello, (2012). A Comparison of MCC and CEN
         Error Measures in MultiClass Prediction
-        <https://journals.plos.org/plosone/article?id=10.1371/journal.pone.0041882>`_.
+        <https://journals.plos.org/plosone/article?id=10.1371/
+        journal.pone.0041882>`_.
     """
     y_type, y_true, y_pred, sample_weight = _check_targets(
         y_true, y_pred, sample_weight)
@@ -471,7 +476,8 @@ def matthews_corrcoef(y_true: np.ndarray, y_pred: np.ndarray, *,
 
 
 @_deprecate_positional_args
-def zero_one_loss(y_true: np.ndarray, y_pred: np.ndarray, *, normalize: bool = True,
+def zero_one_loss(y_true: np.ndarray, y_pred: np.ndarray, *,
+                  normalize: bool = True,
                   sample_weight: Optional[np.ndarray] = None) -> float:
     """
     Zero-one classification loss.
@@ -521,7 +527,8 @@ def zero_one_loss(y_true: np.ndarray, y_pred: np.ndarray, *, normalize: bool = T
 
 @_deprecate_positional_args
 def f1_score(y_true: np.ndarray, y_pred: np.ndarray, *,
-             labels: Optional[np.ndarray] = None, pos_label: Union[str, int] = 1,
+             labels: Optional[np.ndarray] = None,
+             pos_label: Union[str, int] = 1,
              average: Optional[Literal['micro', 'macro', 'samples', 'weighted',
                                        'binary']] = 'binary',
              sample_weight: Optional[np.ndarray] = None,
@@ -560,8 +567,8 @@ def f1_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         If the data are multiclass or multilabel, this will be ignored;
         setting ``labels=[pos_label]`` and ``average != 'binary'`` will report
         scores for that label only.
-    average : Optional[Literal['micro', 'macro', 'samples','weighted', 'binary']],
-    default='binary'
+    average : Optional[Literal['micro', 'macro', 'samples','weighted',
+    'binary']], default='binary'
         This parameter is required for multiclass/multilabel targets.
         If ``None``, the scores for each class are returned. Otherwise, this
         determines the type of averaging performed on the data:
@@ -614,14 +621,16 @@ def f1_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     and ``UndefinedMetricWarning`` will be raised. This behavior can be
     modified with ``zero_division``.
     """
-    return fbeta_score(y_true, y_pred, beta=1, labels=labels, pos_label=pos_label,
-                       average=average, sample_weight=sample_weight,
-                       zero_division=zero_division)
+    return fbeta_score(
+        y_true, y_pred, beta=1, labels=labels, pos_label=pos_label,
+        average=average, sample_weight=sample_weight,
+        zero_division=zero_division)
 
 
 @_deprecate_positional_args
 def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, beta: float, *,
-                labels: Optional[np.ndarray] = None, pos_label: Union[str, int] = 1,
+                labels: Optional[np.ndarray] = None,
+                pos_label: Union[str, int] = 1,
                 average: Optional[Literal['micro', 'macro', 'samples',
                                           'weighted', 'binary']] = 'binary',
                 sample_weight: Optional[np.ndarray] = None,
@@ -660,8 +669,8 @@ def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, beta: float, *,
         If the data are multiclass or multilabel, this will be ignored;
         setting ``labels=[pos_label]`` and ``average != 'binary'`` will report
         scores for that label only.
-    average : Optional[Literal['micro', 'macro', 'samples','weighted', 'binary']],
-    default='binary'
+    average : Optional[Literal['micro', 'macro', 'samples','weighted',
+    'binary']], default='binary'
         This parameter is required for multiclass/multilabel targets.
         If ``None``, the scores for each class are returned. Otherwise, this
         determines the type of averaging performed on the data:
@@ -713,11 +722,10 @@ def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, beta: float, *,
     .. [2] `Wikipedia entry for the F1-score
            <https://en.wikipedia.org/wiki/F1_score>`_.
     """
-    _, _, f, _ = precision_recall_fscore_support(y_true, y_pred, beta=beta,
-                                                 labels=labels, pos_label=pos_label,
-                                                 average=average, warn_for=('f-score',),
-                                                 sample_weight=sample_weight,
-                                                 zero_division=zero_division)
+    _, _, f, _ = precision_recall_fscore_support(
+        y_true, y_pred, beta=beta, labels=labels, pos_label=pos_label,
+        average=average, warn_for=('f-score',), sample_weight=sample_weight,
+        zero_division=zero_division)
     return f
 
 
@@ -726,14 +734,15 @@ def precision_recall_fscore_support(y_true: np.ndarray, y_pred: np.ndarray, *,
                                     beta: float = 1.0,
                                     labels: Optional[np.ndarray] = None,
                                     pos_label: Union[str, int] = 1,
-                                    average: Optional[Literal['micro', 'macro',
-                                                              'samples', 'weighted',
-                                                              'binary']] = 'binary',
+                                    average: Optional[Literal[
+                                        'micro', 'macro', 'samples',
+                                        'weighted', 'binary']] = 'binary',
                                     warn_for: Tuple = ('precision', 'recall',
                                                        'f-score'),
                                     sample_weight: Optional[np.ndarray] = None,
-                                    zero_division: Literal["warn", 0, 1] = "warn")\
-                                        -> Tuple[float, float, float, None]:
+                                    zero_division: Literal["warn",
+                                                           0, 1] = "warn")\
+        -> Tuple[float, float, float, None]:
     """
     Compute precision, recall, F-measure and support for each class.
 
@@ -776,8 +785,8 @@ def precision_recall_fscore_support(y_true: np.ndarray, y_pred: np.ndarray, *,
         If the data are multiclass or multilabel, this will be ignored;
         setting ``labels=[pos_label]`` and ``average != 'binary'`` will report
         scores for that label only.
-    average : Optional[Literal['micro', 'macro', 'samples', 'weighted', 'binary']],
-    default=None
+    average : Optional[Literal['micro', 'macro', 'samples', 'weighted',
+    'binary']], default=None
         If ``None``, the scores for each class are returned. Otherwise, this
         determines the type of averaging performed on the data:
         ``'binary'``:
@@ -846,24 +855,22 @@ def precision_recall_fscore_support(y_true: np.ndarray, y_pred: np.ndarray, *,
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
-    return sklearn_metrics.precision_recall_fscore_support(y_true=y_true, y_pred=y_pred,
-                                                           beta=beta, labels=labels,
-                                                           pos_label=pos_label,
-                                                           average=average,
-                                                           warn_for=warn_for,
-                                                           sample_weight=sample_weight,
-                                                           zero_division=zero_division)
+    return sklearn_metrics.precision_recall_fscore_support(
+        y_true=y_true, y_pred=y_pred, beta=beta, labels=labels,
+        pos_label=pos_label, average=average, warn_for=warn_for,
+        sample_weight=sample_weight, zero_division=zero_division)
 
 
 @_deprecate_positional_args
 def precision_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                     labels: Optional[np.ndarray] = None,
                     pos_label: Union[str, int] = 1,
-                    average: Optional[Literal['micro', 'macro', 'samples', 'weighted',
-                                              'binary']] = 'binary',
+                    average: Optional[Literal[
+                        'micro', 'macro', 'samples', 'weighted', 'binary']]
+                    = 'binary',
                     sample_weight: Optional[np.ndarray] = None,
-                    zero_division: Literal["warn", 0, 1] = "warn") \
-                        -> Union[float, np.ndarray]:
+                    zero_division: Literal["warn", 0, 1] = "warn")\
+        -> Union[float, np.ndarray]:
     """
     Compute the precision.
 
@@ -941,23 +948,22 @@ def precision_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     raises ``UndefinedMetricWarning``. This behavior can be
     modified with ``zero_division``.
     """
-    p, _, _, _ = precision_recall_fscore_support(y_true=y_true, y_pred=y_pred,
-                                                 labels=labels, pos_label=pos_label,
-                                                 average=average,
-                                                 warn_for=('precision',),
-                                                 sample_weight=sample_weight,
-                                                 zero_division=zero_division)
+    p, _, _, _ = precision_recall_fscore_support(
+        y_true=y_true, y_pred=y_pred, labels=labels, pos_label=pos_label,
+        average=average, warn_for=('precision',), sample_weight=sample_weight,
+        zero_division=zero_division)
     return p
 
 
 @_deprecate_positional_args
 def recall_score(y_true: np.ndarray, y_pred: np.ndarray, *,
-                 labels: Optional[np.ndarray] = None, pos_label: Union[str, int] = 1,
-                 average: Optional[Literal['micro', 'macro', 'samples', 'weighted',
-                                           'binary']] = 'binary',
+                 labels: Optional[np.ndarray] = None,
+                 pos_label: Union[str, int] = 1,
+                 average: Optional[Literal['micro', 'macro', 'samples',
+                                           'weighted', 'binary']] = 'binary',
                  sample_weight: Optional[np.ndarray] = None,
-                 zero_division: Literal["warn", 0, 1] = "warn") \
-                     -> Union[float, np.ndarray]:
+                 zero_division: Literal["warn", 0, 1] = "warn")\
+        -> Union[float, np.ndarray]:
     """
     Compute the recall.
 
@@ -988,7 +994,8 @@ def recall_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         If the data are multiclass or multilabel, this will be ignored;
         setting ``labels=[pos_label]`` and ``average != 'binary'`` will report
         scores for that label only.
-    average : {'micro', 'macro', 'samples', 'weighted', 'binary'}, default='binary'
+    average : {'micro', 'macro', 'samples', 'weighted', 'binary'},
+    default='binary'
         This parameter is required for multiclass/multilabel targets.
         If ``None``, the scores for each class are returned. Otherwise, this
         determines the type of averaging performed on the data:
@@ -1033,11 +1040,10 @@ def recall_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     ``UndefinedMetricWarning``. This behavior can be modified with
     ``zero_division``.
     """
-    _, r, _, _ = precision_recall_fscore_support(y_true, y_pred, labels=labels,
-                                                 pos_label=pos_label, average=average,
-                                                 warn_for=('recall',),
-                                                 sample_weight=sample_weight,
-                                                 zero_division=zero_division)
+    _, r, _, _ = precision_recall_fscore_support(
+        y_true, y_pred, labels=labels, pos_label=pos_label, average=average,
+        warn_for=('recall',), sample_weight=sample_weight,
+        zero_division=zero_division)
     return r
 
 
@@ -1091,7 +1097,8 @@ def balanced_accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     .. [2] John. D. Kelleher, Brian Mac Namee, Aoife D'Arcy, (2015).
            `Fundamentals of Machine Learning for Predictive Data Analytics:
            Algorithms, Worked Examples, and Case Studies
-           <https://mitpress.mit.edu/books/fundamentals-machine-learning-predictive-data-analytics>`_.
+           <https://mitpress.mit.edu/books/fundamentals-machine-learning-
+           predictive-data-analytics>`_.
     """
     y_type, y_true, y_pred, sample_weight = _check_targets(
         y_true, y_pred, sample_weight)
@@ -1099,9 +1106,9 @@ def balanced_accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
-    return sklearn_metrics.balanced_accuracy_score(y_true=y_true, y_pred=y_pred,
-                                                   sample_weight=sample_weight,
-                                                   adjusted=adjusted)
+    return sklearn_metrics.balanced_accuracy_score(
+        y_true=y_true, y_pred=y_pred, sample_weight=sample_weight,
+        adjusted=adjusted)
 
 
 @_deprecate_positional_args
@@ -1177,12 +1184,10 @@ def classification_report(y_true: np.ndarray, y_pred: np.ndarray, *,
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
-    return sklearn_metrics.classification_report(y_true=y_true, y_pred=y_pred,
-                                                 labels=labels,
-                                                 target_names=target_names,
-                                                 sample_weight=sample_weight,
-                                                 digits=digits, output_dict=output_dict,
-                                                 zero_division=zero_division)
+    return sklearn_metrics.classification_report(
+        y_true=y_true, y_pred=y_pred, labels=labels, target_names=target_names,
+        sample_weight=sample_weight, digits=digits, output_dict=output_dict,
+        zero_division=zero_division)
 
 
 @_deprecate_positional_args
@@ -1243,12 +1248,14 @@ def hamming_loss(y_true: np.ndarray, y_pred: np.ndarray, *,
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
-    return sklearn_metrics.hamming_loss(y_true, y_pred, sample_weight=sample_weight)
+    return sklearn_metrics.hamming_loss(
+        y_true, y_pred, sample_weight=sample_weight)
 
 
 @_deprecate_positional_args
 def log_loss(y_true: np.ndarray, y_pred: np.ndarray, *, eps: float = 1e-15,
-             normalize: bool = True, sample_weight: Optional[np.ndarray] = None,
+             normalize: bool = True,
+             sample_weight: Optional[np.ndarray] = None,
              labels: Optional[np.ndarray] = None) -> float:
     r"""
     Log loss, aka logistic loss or cross-entropy loss.
@@ -1269,7 +1276,8 @@ def log_loss(y_true: np.ndarray, y_pred: np.ndarray, *, eps: float = 1e-15,
     ----------
     y_true : array-like or label indicator matrix
         Ground truth (correct) labels for n_samples samples.
-    y_pred : array-like of float, shape = (n_samples, n_classes) or (n_samples,)
+    y_pred : array-like of float, shape = (n_samples, n_classes)
+    or (n_samples,)
         Predicted probabilities, as returned by a classifier's
         predict_proba method. If ``y_pred.shape = (n_samples,)``
         the probabilities provided are assumed to be that of the
@@ -1309,9 +1317,9 @@ def log_loss(y_true: np.ndarray, y_pred: np.ndarray, *, eps: float = 1e-15,
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
-    return sklearn_metrics.log_loss(y_true=y_true, y_pred=y_pred, eps=eps,
-                                    normalize=normalize, sample_weight=sample_weight,
-                                    labels=labels)
+    return sklearn_metrics.log_loss(
+        y_true=y_true, y_pred=y_pred, eps=eps, normalize=normalize,
+        sample_weight=sample_weight, labels=labels)
 
 
 @_deprecate_positional_args
@@ -1368,8 +1376,9 @@ def hinge_loss(y_true: np.ndarray, pred_decision: np.ndarray, *,
         check_consistent_length(y_true, pred_decision, sample_weight)
     else:
         check_consistent_length(y_true, pred_decision)
-    return sklearn_metrics.hinge_loss(y_true=y_true, pred_decision=pred_decision,
-                                      labels=labels, sample_weight=sample_weight)
+    return sklearn_metrics.hinge_loss(
+        y_true=y_true, pred_decision=pred_decision, labels=labels,
+        sample_weight=sample_weight)
 
 
 @_deprecate_positional_args
@@ -1430,6 +1439,6 @@ def brier_score_loss(y_true: np.ndarray, y_prob: np.ndarray, *,
         check_consistent_length(y_true, y_prob, sample_weight)
     else:
         check_consistent_length(y_true, y_prob)
-    return sklearn_metrics.brier_score_loss(y_true=y_true, y_prob=y_prob,
-                                            sample_weight=sample_weight,
-                                            pos_label=pos_label)
+    return sklearn_metrics.brier_score_loss(
+        y_true=y_true, y_prob=y_prob, sample_weight=sample_weight,
+        pos_label=pos_label)

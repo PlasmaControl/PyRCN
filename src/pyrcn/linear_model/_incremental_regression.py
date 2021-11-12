@@ -27,16 +27,17 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
     References
     ----------
     N. Liang, G. Huang, P. Saratchandran and N. Sundararajan,
-    "A Fast and Accurate Online Sequential Learning Algorithm for Feedforward Networks,"
-    in IEEE Transactions on Neural Networks, vol. 17, no. 6, pp. 1411-1423,
-    Nov. 2006, doi: 10.1109/TNN.2006.880583.
+    "A Fast and Accurate Online Sequential Learning Algorithm for Feedforward
+    Networks," in IEEE Transactions on Neural Networks, vol. 17, no. 6,
+    pp. 1411-1423, Nov. 2006, doi: 10.1109/TNN.2006.880583.
 
     Parameters
     ----------
     alpha : float, default=1e-5
         L2 regularization parameter
     fit_intercept : bool, default=True
-        Fits a constant offset if True. Use this if input values are not average free.
+        Fits a constant offset if True. Use this if input values are not
+        average free.
     normalize : bool, default=False
         Performs a preprocessing normalization if True.
 
@@ -82,8 +83,8 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         validate: bool, default=True
             Validate input data if True.
         postpone_inverse : bool, default=False
-            If the output weights have not been fitted yet, regressor might be hinted at
-            postponing inverse calculation.
+            If the output weights have not been fitted yet, regressor might be
+            hinted at postponing inverse calculation.
 
         Returns
         -------
@@ -92,7 +93,8 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         if validate:
             self._validate_data(X, y, multi_output=True)
 
-        X_preprocessed = self._preprocessing(X, partial_normalize=partial_normalize)
+        X_preprocessed = self._preprocessing(
+            X, partial_normalize=partial_normalize)
 
         if reset:
             self._K = np.ndarray([])
@@ -113,15 +115,16 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         if postpone_inverse and self._output_weights.shape == ():
             return self
 
-        P = np.linalg.inv(self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
+        P = np.linalg.inv(
+            self._K + self.alpha * np.identity(X_preprocessed.shape[1]))
 
         if self._output_weights.shape == ():
             self._output_weights = np.matmul(P, cast(np.ndarray, self._xTy))
         else:
             self._output_weights += np.matmul(
-                P, safe_sparse_dot(X_preprocessed.T,
-                                   (y - safe_sparse_dot(X_preprocessed,
-                                                        self._output_weights))))
+                P, safe_sparse_dot(X_preprocessed.T, (
+                        y - safe_sparse_dot(X_preprocessed,
+                                            self._output_weights))))
             # self._output_weights += np.matmul(
             #     P, self._xTy - np.matmul(self._K, self._output_weights))
         return self
@@ -142,14 +145,15 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         validate: bool, default=True
             Validate input data if True.
         postpone_inverse : bool, default=False
-            If the output weights have not been fitted yet, regressor might be hinted at
-            postponing inverse calculation.
+            If the output weights have not been fitted yet, regressor might be
+            hinted at postponing inverse calculation.
 
         Returns
         -------
         self : returns a fitted IncrementalRegression model
         """
-        self.partial_fit(X, y, partial_normalize=False, reset=True, validate=True)
+        self.partial_fit(
+            X, y, partial_normalize=False, reset=True, validate=True)
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -188,11 +192,13 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         X_preprocessed = X
 
         if self.fit_intercept:
-            X_preprocessed = np.hstack((X_preprocessed, np.ones(shape=(X.shape[0], 1))))
+            X_preprocessed = np.hstack(
+                (X_preprocessed, np.ones(shape=(X.shape[0], 1))))
 
         if self.normalize:
             if partial_normalize:
-                self.scaler.partial_fit(X_preprocessed).transform(X_preprocessed)
+                self.scaler.partial_fit(X_preprocessed)\
+                    .transform(X_preprocessed)
             else:
                 self.scaler.fit_transform(X_preprocessed)
 
@@ -207,11 +213,8 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         size : int
             Object memory in bytes.
         """
-        return object.__sizeof__(self) + \
-            self._K.nbytes + \
-            self._xTy.nbytes + \
-            self._output_weights.nbytes + \
-            sys.getsizeof(self.scaler)
+        return object.__sizeof__(self) + self._K.nbytes + self._xTy.nbytes + \
+            self._output_weights.nbytes + sys.getsizeof(self.scaler)
 
     @property
     def coef_(self) -> Union[np.ndarray, None]:

@@ -1,9 +1,11 @@
 """
 The :mod:`pyrcn.echo_state_network`.
 
-It contains  a simple object-oriented implementation of Echo State Networks [#]_ [#]_.
+It contains  a simple object-oriented implementation of Echo State Networks
+[#]_ [#]_.
 
-Separate implementations of Classifiers and Regressors as specified by scikit-learn
+Separate implementations of Classifiers and Regressors as specified by
+scikit-learn
 
 References
 ----------

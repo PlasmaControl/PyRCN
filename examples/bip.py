@@ -35,15 +35,20 @@ def main():
     algorithm = 'dresden'
     sample_size = (1000, 1)
 
-    i2n_uniform = BatchIntrinsicPlasticity(hidden_layer_size=1, input_activation='tanh',
-                                           random_state=rs, distribution='uniform',
+    i2n_uniform = BatchIntrinsicPlasticity(hidden_layer_size=1,
+                                           input_activation='tanh',
+                                           random_state=rs,
+                                           distribution='uniform',
                                            algorithm=algorithm)
     i2n_exponential = BatchIntrinsicPlasticity(hidden_layer_size=1,
-                                               input_activation='tanh', random_state=rs,
+                                               input_activation='tanh',
+                                               random_state=rs,
                                                distribution='exponential',
                                                algorithm=algorithm)
-    i2n_normal = BatchIntrinsicPlasticity(hidden_layer_size=1, input_activation='tanh',
-                                          random_state=rs, distribution='normal',
+    i2n_normal = BatchIntrinsicPlasticity(hidden_layer_size=1,
+                                          input_activation='tanh',
+                                          random_state=rs,
+                                          distribution='normal',
                                           algorithm=algorithm)
 
     X_uniform = rs.uniform(size=sample_size)
@@ -100,12 +105,14 @@ def main():
                  legend=False)
     axs[1, 0].set_xlim((-1., 1.))
     axs[1, 0].set_ylim((0., 1.5))
-    sns.histplot(data=i2n_normal.fit_transform(X_normal), bins=bins, stat="density",
-                 color=tud_colors['lightgreen'], ax=axs[1, 1], legend=False)
+    sns.histplot(data=i2n_normal.fit_transform(X_normal), bins=bins,
+                 stat="density", color=tud_colors['lightgreen'],
+                 ax=axs[1, 1], legend=False)
     axs[1, 1].set_xlim((-1., 1.))
     axs[1, 1].set_ylim((0., 1.5))
-    sns.histplot(data=i2n_uniform.fit_transform(X_normal), bins=bins, stat="density",
-                 color=tud_colors['lightpurple'], ax=axs[1, 2], legend=False)
+    sns.histplot(data=i2n_uniform.fit_transform(X_normal), bins=bins,
+                 stat="density", color=tud_colors['lightpurple'],
+                 ax=axs[1, 2], legend=False)
     axs[1, 2].set_xlim((-1., 1.))
     axs[1, 2].set_ylim((0., 1.5))
 
@@ -114,23 +121,25 @@ def main():
                  legend=False)
     axs[2, 0].set_xlim((-1., 1.))
     axs[2, 0].set_ylim((0., 2.5))
-    sns.histplot(data=i2n_normal.fit_transform(X_uniform), bins=bins, stat="density",
-                 color=tud_colors['lightgreen'], ax=axs[2, 1], legend=False)
+    sns.histplot(data=i2n_normal.fit_transform(X_uniform), bins=bins,
+                 stat="density", color=tud_colors['lightgreen'],
+                 ax=axs[2, 1], legend=False)
     axs[2, 1].set_xlim((-1., 1.))
     axs[2, 1].set_ylim((0., 2.5))
-    sns.histplot(data=i2n_uniform.fit_transform(X_uniform), bins=bins, stat="density",
-                 color=tud_colors['lightpurple'], ax=axs[2, 2], legend=False)
+    sns.histplot(data=i2n_uniform.fit_transform(X_uniform), bins=bins,
+                 stat="density", color=tud_colors['lightpurple'],
+                 ax=axs[2, 2], legend=False)
     axs[2, 2].set_xlim((-1., 1.))
     axs[2, 2].set_ylim((0., 2.5))
 
-    sns.histplot(data=X_exponential, bins=bins, color=tud_colors['gray'], ax=axs[0, 3],
-                 legend=False)
+    sns.histplot(data=X_exponential, bins=bins, color=tud_colors['gray'],
+                 ax=axs[0, 3], legend=False)
     axs[0, 3].set_title('exponential')
-    sns.histplot(data=X_normal, bins=bins, color=tud_colors['gray'], ax=axs[1, 3],
-                 legend=False)
+    sns.histplot(data=X_normal, bins=bins, color=tud_colors['gray'],
+                 ax=axs[1, 3], legend=False)
     axs[1, 3].set_title('normal')
-    sns.histplot(data=X_uniform, bins=bins, color=tud_colors['gray'], ax=axs[2, 3],
-                 legend=False)
+    sns.histplot(data=X_uniform, bins=bins, color=tud_colors['gray'],
+                 ax=axs[2, 3], legend=False)
     axs[2, 3].set_title('uniform')
 
     plt.tight_layout()

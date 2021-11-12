@@ -1,4 +1,4 @@
-"""The :mod:`pyrcn.projection` module implements different kinds of projections."""
+"""The :mod:`pyrcn.projection` module implements value projections."""
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>,
 # License: BSD 3 clause

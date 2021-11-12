@@ -1,7 +1,8 @@
 """Testing for activation functions in the module (pyrcn.base)."""
 import numpy as np
 from scipy.special import expit as logistic_sigmoid
-from pyrcn.base import ACTIVATIONS, ACTIVATIONS_INVERSE, ACTIVATIONS_INVERSE_BOUNDS
+from pyrcn.base import (ACTIVATIONS, ACTIVATIONS_INVERSE,
+                        ACTIVATIONS_INVERSE_BOUNDS)
 
 
 def test_all_activations_callable() -> None:
@@ -11,7 +12,8 @@ def test_all_activations_callable() -> None:
 
 def test_all_inverse_activations_callable() -> None:
     print('\test_all_inverse_activations_callable():')
-    assert any([not callable(func) for func in ACTIVATIONS_INVERSE.values()]) is False
+    assert any(
+        [not callable(func) for func in ACTIVATIONS_INVERSE.values()]) is False
 
 
 def test_inverse_subset_of_activations() -> None:
@@ -21,7 +23,8 @@ def test_inverse_subset_of_activations() -> None:
 
 def test_each_inverse_has_boundaries() -> None:
     print('\test_each_inverse_has_boundaries():')
-    assert set(ACTIVATIONS_INVERSE.keys()) == set(ACTIVATIONS_INVERSE_BOUNDS.keys())
+    assert set(ACTIVATIONS_INVERSE.keys()) ==\
+           set(ACTIVATIONS_INVERSE_BOUNDS.keys())
 
 
 def test_each_inverse_boundary_tuple() -> None:

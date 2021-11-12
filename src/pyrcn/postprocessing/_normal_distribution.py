@@ -60,9 +60,10 @@ class NormalDistribution(BaseEstimator, TransformerMixin):
         -------
         y: ndarray of size (n_samples, )
         """
-        return self._transformer.rvs(loc=self._mean, scale=self._std, size=self._size)
+        return self._transformer.rvs(
+            loc=self._mean, scale=self._std, size=self._size)
 
-    def fit_transform(self, X: np.ndarray, y: None = None, **fit_params: Any) \
+    def fit_transform(self, X: np.ndarray, y: None = None, **fit_params: Any)\
             -> np.ndarray:
         """
         Fit the Estimator and transforms the input matrix X.

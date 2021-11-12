@@ -8,7 +8,7 @@ from pyrcn.model_selection import SequentialSearchCV
 
 
 def test_sequentialSearchCV_equivalence() -> None:
-    """Test the functional equivalence of SequentialSearchCV to a manual sequence."""
+    """Test the equivalence of SequentialSearchCV to a manual sequence."""
     iris = datasets.load_iris()
     X = iris.data[:, [0, 2]]
     y = iris.target
@@ -21,11 +21,12 @@ def test_sequentialSearchCV_equivalence() -> None:
     gs2 = RandomizedSearchCV(gs1.best_estimator_, param_grid2,
                              cv=cv, random_state=42).fit(X, y)
 
-    ss = SequentialSearchCV(svm2,
-                            searches=[('gs1', GridSearchCV, param_grid1, {'cv': cv}),
-                                      ('gs2', RandomizedSearchCV, param_grid2,
-                                       {'cv': cv, 'random_state': 42, 'refit': True}),
-                                      ('gs3', GridSearchCV, param_grid1)]).fit(X, y)
+    ss = SequentialSearchCV(
+        svm2, searches=[
+            ('gs1', GridSearchCV, param_grid1, {'cv': cv}),
+            ('gs2', RandomizedSearchCV, param_grid2,
+             {'cv': cv, 'random_state': 42, 'refit': True}),
+            ('gs3', GridSearchCV, param_grid1)]).fit(X, y)
     assert gs1.best_params_ == ss.all_best_params_['gs1']
     assert gs2.best_params_ == ss.all_best_params_['gs2']
     assert(isinstance(ss.cv_results_, dict))

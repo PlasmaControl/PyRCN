@@ -4,8 +4,8 @@ The original database is available at
 
     https://adasp.telecom-paris.fr/resources/2010-07-08-maps-database/
 
-The license for the dataset is restricted, and one needs to register to download the
-dataset.
+The license for the dataset is restricted, and one needs to register
+to download the dataset.
 """
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
@@ -91,7 +91,8 @@ def _combine_events(events: np.ndarray, delta: float,
     return events[:idx + 1]
 
 
-def _quantize_notes(notes: np.ndarray, fps: float, length: Optional[int] = None,
+def _quantize_notes(notes: np.ndarray, fps: float,
+                    length: Optional[int] = None,
                     num_pitches: Optional[int] = None,
                     velocity: Optional[float] = None) -> np.ndarray:
     """
@@ -197,13 +198,13 @@ def fetch_maps_piano_dataset(*, data_origin: Optional[str] = None,
         all pyrcn data is stored in '~/pyrcn_data' and all scikit-learn data in
        '~/scikit_learn_data' subfolders.
     preprocessor : Optional[sklearn.TransformerMixin], default=None,
-        Estimator for preprocessing the dataset (create features and targets from
-        audio and label files).
+        Estimator for preprocessing the dataset (create features and targets
+        from audio and label files).
     force_preprocessing: bool, default=False
         Force preprocessing (label computation and feature extraction)
     label_type : Literal["pitch", "onset", "offset"], default="pitch",
-        Type of labels to return. Possible are pitch labels or onset and offset labels
-        for each pitch.
+        Type of labels to return. Possible are pitch labels or onset and offset
+        labels for each pitch.
 
     Returns
     -------
@@ -231,12 +232,16 @@ def fetch_maps_piano_dataset(*, data_origin: Optional[str] = None,
         y_test = np.empty(shape=(len(test_files),), dtype=object)
 
         for k, f in enumerate(train_files):
-            X_train[k] = preprocessor.transform(join(data_origin, Path(f + ".wav")))
-            y_train[k] = pd.read_csv(join(data_origin, Path(f + ".txt")), sep="\t")
+            X_train[k] = preprocessor.transform(
+                join(data_origin, Path(f + ".wav")))
+            y_train[k] = pd.read_csv(
+                join(data_origin, Path(f + ".txt")), sep="\t")
 
         for k, f in enumerate(test_files):
-            X_test[k] = preprocessor.transform(join(data_origin, Path(f + ".wav")))
-            y_test[k] = pd.read_csv(join(data_origin, Path(f + ".txt")), sep="\t")
+            X_test[k] = preprocessor.transform(
+                join(data_origin, Path(f + ".wav")))
+            y_test[k] = pd.read_csv(
+                join(data_origin, Path(f + ".txt")), sep="\t")
 
         joblib.dump([X_train, X_test, y_train, y_test], filepath, compress=6)
     else:
@@ -254,8 +259,8 @@ def fetch_maps_piano_dataset(*, data_origin: Optional[str] = None,
     elif len(x_shape_zero) > 1 and len(x_shape_one) == 1:
         pass
     else:
-        raise TypeError("Invalid dataformat."
-                        "Expected at least one equal dimension of all sequences.")
+        raise TypeError("Invalid dataformat. Expected at least one equal "
+                        "dimension of all sequences.")
 
     for k in range(len(X_train)):
         if label_type == "pitch":
@@ -288,7 +293,8 @@ def _get_pitch_labels(X: np.ndarray, df_label: pd.DataFrame) -> np.ndarray:
     """
     df_label["Duration"] = df_label["OffsetTime"] - df_label["OnsetTime"]
     notes = df_label[["OnsetTime", "MidiPitch", "Duration"]].to_numpy()
-    pitch_labels = _quantize_notes(notes, fps=100., num_pitches=128, length=X.shape[0])
+    pitch_labels = _quantize_notes(
+        notes, fps=100., num_pitches=128, length=X.shape[0])
     y = np.zeros(shape=(pitch_labels.shape[0], pitch_labels.shape[1] + 1))
     y[:, 1:] = pitch_labels
     y[np.argwhere(pitch_labels.sum(axis=1) == 0), 0] = 1

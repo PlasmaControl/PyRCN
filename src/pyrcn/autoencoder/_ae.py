@@ -29,7 +29,8 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
 
     Parameters
     ----------
-    transform_type : Literal['full', 'only_encode', 'only_decode'], default = 'full'
+    transform_type : Literal['full', 'only_encode', 'only_decode'],
+    default = 'full'
         Which kind of transform to be performed.
         - 'full', entire autoencoder
           returns the encoded input
@@ -44,7 +45,8 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
     hidden_layer_sizes : tuple, length = n_layers - 2, default = (100,)
         The ith element represents the number of neurons in the ith
         hidden layer.
-    activation : Literal['identity', 'logistic', 'tanh', 'relu'], default = 'relu'
+    activation : Literal['identity', 'logistic', 'tanh', 'relu'],
+    default = 'relu'
         Activation function for the hidden layer.
         - 'identity', no-op activation, useful to implement linear bottleneck,
           returns f(x) = x
@@ -71,7 +73,8 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         Size of minibatches for stochastic optimizers.
         If the solver is 'lbfgs', the classifier will not use minibatch.
         When set to "auto", `batch_size=min(200, n_samples)`
-    learning_rate : Literal['constant', 'invscaling', 'adaptive'], default = 'constant'
+    learning_rate : Literal['constant', 'invscaling', 'adaptive'],
+    default = 'constant'
         Learning rate schedule for weight updates.
         - 'constant' is a constant learning rate given by
           'learning_rate_init'.
@@ -212,10 +215,12 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
 
     @_deprecate_positional_args
     def __init__(self, *,
-                 transform_type: Literal['full', 'only_encode', 'only_decode'] = 'full',
+                 transform_type: Literal['full', 'only_encode',
+                                         'only_decode'] = 'full',
                  discard_unused: bool = False, bottleneck_index: int = 1,
                  hidden_layer_sizes: tuple = (100,),
-                 activation: Literal['identity', 'logistic', 'tanh', 'relu'] = "relu",
+                 activation: Literal['identity', 'logistic', 'tanh',
+                                     'relu'] = "relu",
                  solver: Literal['lbfgs', 'sgd', 'adam'] = 'adam',
                  alpha: float = 0.0001,
                  batch_size: Union[int, Literal['auto']] = 'auto',
@@ -242,10 +247,11 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         super().__init__(hidden_layer_sizes=hidden_layer_sizes,
                          activation=activation, solver=solver, alpha=alpha,
                          batch_size=batch_size, learning_rate=learning_rate,
-                         learning_rate_init=learning_rate_init, power_t=power_t,
-                         max_iter=max_iter, shuffle=shuffle, random_state=random_state,
-                         tol=tol, verbose=verbose, warm_start=warm_start,
-                         momentum=momentum, nesterovs_momentum=nesterovs_momentum,
+                         learning_rate_init=learning_rate_init,
+                         power_t=power_t, max_iter=max_iter, shuffle=shuffle,
+                         random_state=random_state, tol=tol, verbose=verbose,
+                         warm_start=warm_start, momentum=momentum,
+                         nesterovs_momentum=nesterovs_momentum,
                          early_stopping=early_stopping,
                          validation_fraction=validation_fraction,
                          beta_1=beta_1, beta_2=beta_2, epsilon=epsilon,
@@ -254,7 +260,8 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         self.discard_unused = discard_unused
         self.bottleneck_index = bottleneck_index
 
-    def fit(self, X: np.ndarray, y: Union[np.ndarray, None] = None) -> MLPAutoEncoder:
+    def fit(self, X: np.ndarray,
+            y: Union[np.ndarray, None] = None) -> MLPAutoEncoder:
         """
         Fit the model to data matrix X.
 
@@ -271,14 +278,16 @@ class MLPAutoEncoder(MLPRegressor, TransformerMixin):
         """
         super().fit(X=X, y=X)
         if self.discard_unused and self.transform_type == 'only_encode':
-            self.transformer_weights_: List = self.coefs_[:self.bottleneck_index]
+            self.transformer_weights_: List =\
+                self.coefs_[:self.bottleneck_index]
             self.coefs_: List = self.coefs_[:self.bottleneck_index]
         elif self.discard_unused and self.transform_type == 'only_decode':
             self.intercepts_: List = self.intercepts_[self.bottleneck_index:]
             self.intercepts_ = self.intercepts_[self.bottleneck_index:]
         return self
 
-    def partial_fit(self, X: np.ndarray, y: Union[np.ndarray, None]) -> MLPAutoEncoder:
+    def partial_fit(self, X: np.ndarray,
+                    y: Union[np.ndarray, None]) -> MLPAutoEncoder:
         """
         Update the model with a single iteration over the given data.
 

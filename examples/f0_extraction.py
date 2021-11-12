@@ -8,7 +8,8 @@ from sklearn.utils import shuffle
 from sklearn.utils.fixes import loguniform
 from scipy.stats import uniform
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import ParameterGrid, GridSearchCV, RandomizedSearchCV
+from sklearn.model_selection import (ParameterGrid, GridSearchCV,
+                                     RandomizedSearchCV)
 from sklearn.metrics import make_scorer, zero_one_loss
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.util import FeatureExtractor
@@ -18,28 +19,30 @@ from pyrcn.base.blocks import PredefinedWeightsInputToNode
 
 
 def create_feature_extraction_pipeline(sr=16000):
-    audio_loading = Pipeline([("load_audio", FeatureExtractor(func=librosa.load,
-                                                              kw_args={"sr": sr,
-                                                                       "mono": True})),
-                              ("normal", FeatureExtractor(func=librosa.util.normalize,
-                                                          kw_args={"norm": np.inf}))])
+    audio_loading = Pipeline([("load_audio",
+                               FeatureExtractor(func=librosa.load,
+                                                kw_args={"sr": sr,
+                                                         "mono": True})),
+                              ("normal",
+                               FeatureExtractor(func=librosa.util.normalize,
+                                                kw_args={"norm": np.inf}))])
 
     feature_extractor = Pipeline([("mel_spectrogram",
-                                   FeatureExtractor(func=librosa.feature.melspectrogram,
-                                                    kw_args={"sr": sr, "n_fft": 1024,
-                                                             "hop_length": 160,
-                                                             "window": 'hann',
-                                                             "center": False,
-                                                             "power": 2.0,
-                                                             "n_mels": 80, "fmin": 40,
-                                                             "fmax": 4000, "htk": True})
-                                   ),
+                                   FeatureExtractor(
+                                       func=librosa.feature.melspectrogram,
+                                       kw_args={"sr": sr, "n_fft": 1024,
+                                                "hop_length": 160,
+                                                "window": 'hann',
+                                                "center": False, "power": 2.0,
+                                                "n_mels": 80, "fmin": 40,
+                                                "fmax": 4000, "htk": True})),
                                   ("power_to_db",
                                    FeatureExtractor(func=librosa.power_to_db,
                                                     kw_args={"ref": 1}))])
 
-    feature_extraction_pipeline = Pipeline([("audio_loading", audio_loading),
-                                            ("feature_extractor", feature_extractor)])
+    feature_extraction_pipeline = Pipeline(
+        [("audio_loading", audio_loading),
+         ("feature_extractor", feature_extractor)])
     return feature_extraction_pipeline
 
 
@@ -65,9 +68,9 @@ def gpe(y_true, y_pred):
     Gross pitch error
     -----------------
 
-    All frames that are considered voiced by both pitch tracker and ground truth,
-    for which the relative pitch error is higher than a certain threshold
-    (20 percent).
+    All frames that are considered voiced by both pitch tracker and ground
+    truth, for which the relative pitch error is higher than a certain
+    threshold (20 percent).
     """
     idx = np.nonzero(y_true*y_pred)[0]
     return np.sum(np.abs(y_true[idx] - y_pred[idx]) > 0.2 * y_true[idx]) \
@@ -79,9 +82,9 @@ def new_gpe(y_true, y_pred):
     Gross pitch error
     -----------------
 
-    All frames that are considered voiced by both pitch tracker and ground truth,
-    for which the relative pitch error is higher than a certain threshold
-    (20 percent).
+    All frames that are considered voiced by both pitch tracker and ground
+    truth, for which the relative pitch error is higher than a certain
+    threshold (20 percent).
     """
     idx = np.nonzero(y_true*y_pred)[0]
     return np.sum(np.abs(1/y_true[idx] - 1/y_pred[idx]) > 1.5e-3) \
@@ -93,7 +96,8 @@ def vde(y_true, y_pred):
     Voicing Decision Error
     ----------------------
 
-    Proportion of frames for which an incorrect voiced/unvoiced decision is made.
+    Proportion of frames for which an incorrect voiced/unvoiced decision is
+    made.
     """
     return zero_one_loss(y_true, y_pred)
 
@@ -103,8 +107,8 @@ def fpe(y_true, y_pred):
     Fine Pitch Error
     ----------------
 
-    Standard deviation of the distribution of relative error values (in cents) from the
-    frames that do not have gross pitch errors.
+    Standard deviation of the distribution of relative error values (in cents)
+    from the frames that do not have gross pitch errors.
     """
     idx_voiced = np.nonzero(y_true * y_pred)[0]
     idx_correct = np.argwhere(np.abs(y_true - y_pred) <= 0.2 * y_true).ravel()
@@ -120,8 +124,8 @@ def mu_fpe(y_true, y_pred):
     Fine Pitch Error
     ----------------
 
-    Standard deviation of the distribution of relative error values (in cents) from the
-    frames that do not have gross pitch errors.
+    Standard deviation of the distribution of relative error values (in cents)
+    from the frames that do not have gross pitch errors.
     """
     idx_voiced = np.nonzero(y_true * y_pred)[0]
     idx_correct = np.argwhere(np.abs(1/y_true - 1/y_pred) <= 1.5e-3).ravel()
@@ -137,11 +141,12 @@ def sigma_fpe(y_true, y_pred):
     Fine Pitch Error
     ----------------
 
-    Standard deviation of the distribution of relative error values (in cents) from the
-    frames that do not have gross pitch errors.
+    Standard deviation of the distribution of relative error values (in cents)
+    from the frames that do not have gross pitch errors.
     """
     idx_voiced = np.nonzero(y_true * y_pred)[0]
-    idx_correct = np.argwhere(np.abs(1 / y_true - 1 / y_pred) <= 1.5e-3).ravel()
+    idx_correct =\
+        np.argwhere(np.abs(1 / y_true - 1 / y_pred) <= 1.5e-3).ravel()
     idx = np.intersect1d(idx_voiced, idx_correct)
     if idx.size == 0:
         return 0
@@ -154,11 +159,11 @@ def ffe(y_true, y_pred):
     $f_{0}$ Frame Error
     -------------------
 
-    Proportion of frames for which an error (either according to the GPE or the VDE
-    criterion) is made.
+    Proportion of frames for which an error (either according to the GPE or the
+    VDE criterion) is made.
 
-    FFE can be seen as a single measure for assessing the overall performance of a pitch
-    tracker.
+    FFE can be seen as a single measure for assessing the overall performance
+    of a pitch tracker.
     """
     idx_correct = np.argwhere(np.abs(y_true - y_pred) <= 0.2 * y_true).ravel()
     return 1 - len(idx_correct) / len(y_true)
@@ -172,24 +177,17 @@ def custom_scorer(y_true, y_pred):
     return np.mean(gross_pitch_error)
 
 
-def custom_scorer(y_true, y_pred):
-    gross_pitch_error = [None] * len(y_true)
-    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
-        gross_pitch_error[k] = gpe(y_true=y_t[:, 0]*y_t[:, 1],
-                                   y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
-    return np.mean(gross_pitch_error)
-
-
 gpe_scorer = make_scorer(custom_scorer, greater_is_better=False)
 
 # Set up a ESN
-# To develop an ESN model for f0 estimation, we need to tune several hyper-parameters,
-# e.g., input_scaling, spectral_radius, bias_scaling and leaky integration.
-# We follow the way proposed in the paper for multipitch tracking and for acoustic
-# modeling of piano music to optimize hyper-parameters sequentially.
+# To develop an ESN model for f0 estimation, we need to tune several hyper-
+# parameters, e.g., input_scaling, spectral_radius, bias_scaling and leaky
+# integration.
+# We follow the way proposed in the paper for multipitch tracking and for
+# acoustic modeling of piano music to optimize hyper-parameters sequentially.
 # We define the search spaces for each step together with the type of search
 # (a grid search in this context).
-# At last, we initialize a SeqToSeqESNRegressor with the desired output strategy and
+# At last, we initialize an ESNRegressor with the desired output strategy and
 # with the initially fixed parameters.
 
 initially_fixed_params = {'hidden_layer_size': 500,
@@ -220,7 +218,6 @@ kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': gpe_scorer}
 kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
                 'scoring': gpe_scorer}
 
-# The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step2', RandomizedSearchCV, step2_esn_params, kwargs_step2),
             ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
@@ -232,8 +229,8 @@ try:
     sequential_search = load("f0/sequential_search_f0_mel_km_50.joblib")
 except FileNotFoundError:
     print(FileNotFoundError)
-    sequential_search = SequentialSearchCV(base_esn,
-                                           searches=searches).fit(X_train, y_train)
+    sequential_search = SequentialSearchCV(
+        base_esn, searches=searches).fit(X_train, y_train)
     dump(sequential_search, "f0/sequential_search_f0_mel_km_50.joblib")
 
 print(sequential_search)
@@ -307,10 +304,11 @@ ffe_scorer(y_test, y_pred)
 param_grid = {'hidden_layer_size': [6400]}
 for params in ParameterGrid(param_grid):
     kmeans = load("f0/kmeans_6400.joblib")
-    w_in = np.divide(kmeans.cluster_centers_, np.linalg.norm(kmeans.cluster_centers_,
-                                                             axis=1)[:, None])
+    w_in = np.divide(kmeans.cluster_centers_,
+                     np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
     print(w_in.shape)
-    base_input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
+    base_input_to_node = PredefinedWeightsInputToNode(
+        predefined_input_weights=w_in.T)
     all_params = sequential_search.best_estimator_.get_params()
     all_params["hidden_layer_size"] = params["hidden_layer_size"]
     esn = ESNRegressor(input_to_node=base_input_to_node, **all_params)

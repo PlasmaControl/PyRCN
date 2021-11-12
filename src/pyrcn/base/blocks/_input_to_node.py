@@ -15,8 +15,9 @@ from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import StandardScaler
 
-from ...base import ACTIVATIONS, ACTIVATIONS_INVERSE, ACTIVATIONS_INVERSE_BOUNDS,\
-    _uniform_random_input_weights, _uniform_random_bias
+from ...base import (ACTIVATIONS, ACTIVATIONS_INVERSE,
+                     ACTIVATIONS_INVERSE_BOUNDS, _uniform_random_bias,
+                     _uniform_random_input_weights)
 
 if sys.version_info >= (3, 8):
     from typing import Union, Literal
@@ -32,18 +33,21 @@ class InputToNode(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     hidden_layer_size : int, default=500
-        Sets the number of nodes in hidden layer. Equals number of output features.
+        Sets the number of nodes in hidden layer.
+        Equals number of output features.
     sparsity : float, default = 1.
         Quotient of input weights per node (k_in)
         and number of input features (n_features)
-    input_activation : Literal['tanh', 'identity', 'logistic', 'relu', 'bounded_relu'],
-    default = 'tanh'
+    input_activation : Literal['tanh', 'identity', 'logistic', 'relu',
+    'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear bottleneck,
-            returns f(x) = x
-            - 'logistic', the logistic sigmoid function, returns f(x) = 1/(1+exp(-x)).
+            - 'identity', no-op activation, useful to implement linear
+            bottleneck, returns f(x) = x
+            - 'logistic', the logistic sigmoid function,
+            returns f(x) = 1/(1+exp(-x)).
             - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'relu', the rectified linear unit function,
+            returns f(x) = max(0, x)
             - 'bounded_relu', the bounded rectified linear unit function,
             returns f(x) = min(max(x, 0),1)
     input_scaling :  float, default = 1.
@@ -51,7 +55,8 @@ class InputToNode(BaseEstimator, TransformerMixin):
     bias_scaling : float, default = 1.
         Scales the input bias of the activation.
     k_in : Union[int, np.integer, None], default = None.
-        input weights per node. By default, it is None. If set, it overrides sparsity.
+        input weights per node. By default, it is None. If set, it overrides
+        sparsity.
     random_state : Union[int, np.random.RandomState, None], default = 42
     """
 
@@ -59,12 +64,13 @@ class InputToNode(BaseEstimator, TransformerMixin):
     def __init__(self, *,
                  hidden_layer_size: int = 500,
                  sparsity: float = 1.,
-                 input_activation: Literal['tanh', 'identity', 'logistic', 'relu',
-                                           'bounded_relu'] = 'tanh',
+                 input_activation: Literal['tanh', 'identity', 'logistic',
+                                           'relu', 'bounded_relu'] = 'tanh',
                  input_scaling: float = 1.,
                  bias_scaling: float = 1.,
                  k_in: Union[int, np.integer, None] = None,
-                 random_state: Union[int, np.random.RandomState, None] = 42) -> None:
+                 random_state: Union[int, np.random.RandomState,
+                                     None] = 42) -> None:
         """Construct the InputToNode."""
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
@@ -99,10 +105,12 @@ class InputToNode(BaseEstimator, TransformerMixin):
             self.sparsity = float(self.k_in) / float(X.shape[1])
         fan_in = int(np.rint(self.hidden_layer_size * self.sparsity))
         self._input_weights = _uniform_random_input_weights(
-            n_features_in=self.n_features_in_, hidden_layer_size=self.hidden_layer_size,
-            fan_in=fan_in, random_state=self._random_state)
+            n_features_in=self.n_features_in_,
+            hidden_layer_size=self.hidden_layer_size, fan_in=fan_in,
+            random_state=self._random_state)
         self._bias_weights = _uniform_random_bias(
-            hidden_layer_size=self.hidden_layer_size, random_state=self._random_state)
+            hidden_layer_size=self.hidden_layer_size,
+            random_state=self._random_state)
         return self
 
     def transform(self, X: np.ndarray) -> np.ndarray:
@@ -119,20 +127,21 @@ class InputToNode(BaseEstimator, TransformerMixin):
         """
         if self._input_weights.shape == () or self._bias_weights.shape == ():
             raise NotFittedError(self)
-        self._hidden_layer_state = InputToNode._node_inputs(X, self._input_weights,
-                                                            self.input_scaling,
-                                                            self._bias_weights,
-                                                            self.bias_scaling)
+        self._hidden_layer_state = InputToNode._node_inputs(
+            X, self._input_weights, self.input_scaling, self._bias_weights,
+            self.bias_scaling)
         ACTIVATIONS[self.input_activation](self._hidden_layer_state)
         return self._hidden_layer_state
 
     @staticmethod
     def _node_inputs(X: np.ndarray,
-                     input_weights: Union[np.ndarray, scipy.sparse.csr.csr_matrix],
+                     input_weights: Union[np.ndarray,
+                                          scipy.sparse.csr.csr_matrix],
                      input_scaling: float, bias: np.ndarray,
                      bias_scaling: float) -> np.ndarray:
         """
-        Scale the node inputs input_scaling, Multiply with input_weights and add bias.
+        Scale the node inputs input_scaling, Multiply with input_weights and
+        add bias.
 
         Parameters
         ----------
@@ -167,11 +176,13 @@ class InputToNode(BaseEstimator, TransformerMixin):
             raise ValueError("input_scaling must be > 0, got {0}."
                              .format(self.input_scaling))
         if self.bias_scaling < 0:
-            raise ValueError("bias must be > 0, got {0}.".format(self.bias_scaling))
+            raise ValueError("bias must be > 0, got {0}."
+                             .format(self.bias_scaling))
         if self.k_in is not None and (self.k_in <= 0
                                       or self.k_in >= self.hidden_layer_size):
-            raise ValueError("k_in must be > 0 and < self.hidden_layer_size {0}"
-                             ", got {1}.".format(self.hidden_layer_size, self.k_in))
+            raise ValueError("k_in must be > 0 and < self.hidden_layer_size"
+                             " {0}, got {1}."
+                             .format(self.hidden_layer_size, self.k_in))
 
     def __sizeof__(self) -> int:
         """
@@ -189,7 +200,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
                 sys.getsizeof(self._random_state)
         else:
             return object.__sizeof__(self) + self._bias_weights.nbytes + \
-                self._input_weights.nbytes + self._hidden_layer_state.nbytes + \
+                self._input_weights.nbytes + self._hidden_layer_state.nbytes +\
                 sys.getsizeof(self._random_state)
 
     @property
@@ -222,16 +233,19 @@ class PredefinedWeightsInputToNode(InputToNode):
 
     Parameters
     ----------
-    predefined_input_weights : np.ndarray, shape=(n_features, hidden_layer_size)
+    predefined_input_weights : np.ndarray,shape=(n_features,
+    hidden_layer_size)
         A set of predefined input weights.
-    input_activation : Literal['tanh', 'identity', 'logistic', 'relu', 'bounded_relu'],
-    default = 'tanh'
+    input_activation : Literal['tanh', 'identity', 'logistic', 'relu',
+    'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear bottleneck,
-            returns f(x) = x
-            - 'logistic', the logistic sigmoid function, returns f(x) = 1/(1+exp(-x)).
+            - 'identity', no-op activation, useful to implement linear
+            bottleneck, returns f(x) = x
+            - 'logistic', the logistic sigmoid function,
+            returns f(x) = 1/(1+exp(-x)).
             - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'relu', the rectified linear unit function,
+            returns f(x) = max(0, x)
             - 'bounded_relu', the bounded rectified linear unit function,
             returns f(x) = min(max(x, 0),1)
     input_scaling :  float, default = 1.
@@ -244,15 +258,17 @@ class PredefinedWeightsInputToNode(InputToNode):
     @_deprecate_positional_args
     def __init__(self,
                  predefined_input_weights: np.ndarray, *,
-                 input_activation: Literal['tanh', 'identity', 'logistic', 'relu',
-                                           'bounded_relu'] = 'tanh',
+                 input_activation: Literal['tanh', 'identity', 'logistic',
+                                           'relu', 'bounded_relu'] = 'tanh',
                  input_scaling: float = 1.,
                  bias_scaling: float = 0.,
-                 random_state: Union[int, np.random.RandomState, None] = 42) -> None:
+                 random_state: Union[int, np.random.RandomState,
+                                     None] = 42) -> None:
         """Construct the PredefinedWeightsInputToNode."""
         if predefined_input_weights.ndim != 2:
-            raise ValueError('predefined_input_weights has not the expected ndim {0}'
-                             ', given 2.'.format(predefined_input_weights.shape))
+            raise ValueError('predefined_input_weights has not the expected'
+                             'ndim {0}, given 2.'
+                             .format(predefined_input_weights.shape))
         super().__init__(hidden_layer_size=predefined_input_weights.shape[1],
                          input_activation=input_activation,
                          input_scaling=input_scaling,
@@ -262,7 +278,8 @@ class PredefinedWeightsInputToNode(InputToNode):
 
     def fit(self, X: np.ndarray, y: None = None) -> InputToNode:
         """
-        Fit the PredefinedWeightsInputToNode. Set input weights and initialize bias.
+        Fit the PredefinedWeightsInputToNode.
+        Set input weights and initialize bias.
 
         Parameters
         ----------
@@ -278,13 +295,15 @@ class PredefinedWeightsInputToNode(InputToNode):
         self._check_n_features(X, reset=True)
 
         if self.predefined_input_weights.shape[0] != X.shape[1]:
-            raise ValueError('X has not the expected shape {0}, given {1}.'.format(
-                self.predefined_input_weights.shape[0], X.shape[1]))
+            raise ValueError('X has not the expected shape {0}, given {1}.'
+                             .format(self.predefined_input_weights.shape[0],
+                                     X.shape[1]))
 
         self._input_weights = self.predefined_input_weights
 
         self._bias_weights = _uniform_random_bias(
-            hidden_layer_size=self.hidden_layer_size, random_state=self._random_state)
+            hidden_layer_size=self.hidden_layer_size,
+            random_state=self._random_state)
         return self
 
 
@@ -294,22 +313,26 @@ class BatchIntrinsicPlasticity(InputToNode):
 
     Parameters
     ----------
-    distribution : Literal['exponential', 'uniform', 'normal'], default = 'normal'
+    distribution : Literal['exponential', 'uniform', 'normal'],
+    default = 'normal'
         This element represents the desired target distribution.
     algorithm : Literal['neumann', 'dresden'], default = 'dresden'
         This element represents the transformation algorithm to be used.
-    input_activation : Literal['tanh', 'identity', 'logistic', 'relu', 'bounded_relu'],
-    default = 'tanh'
+    input_activation : Literal['tanh', 'identity', 'logistic', 'relu',
+    'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear bottleneck,
-            returns f(x) = x
-            - 'logistic', the logistic sigmoid function, returns f(x) = 1/(1+exp(-x)).
+            - 'identity', no-op activation, useful to implement linear
+            bottleneck, returns f(x) = x
+            - 'logistic', the logistic sigmoid function,
+            returns f(x) = 1/(1+exp(-x)).
             - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function, returns f(x) = max(0, x)
+            - 'relu', the rectified linear unit function,
+            returns f(x) = max(0, x)
             - 'bounded_relu', the bounded rectified linear unit function,
             returns f(x) = min(max(x, 0),1)
     hidden_layer_size : int, default=500
-        Sets the number of nodes in hidden layer. Equals number of output features.
+        Sets the number of nodes in hidden layer.
+        Equals number of output features.
     sparsity : float, default = 1.
         Quotient of input weights per node (k_in)
         and number of input features (n_features)
@@ -318,10 +341,11 @@ class BatchIntrinsicPlasticity(InputToNode):
 
     @_deprecate_positional_args
     def __init__(self, *,
-                 distribution: Literal['exponential', 'uniform', 'normal'] = 'normal',
+                 distribution: Literal['exponential', 'uniform',
+                                       'normal'] = 'normal',
                  algorithm:  Literal['neumann', 'dresden'] = 'dresden',
-                 input_activation: Literal['tanh', 'identity', 'logistic', 'relu',
-                                           'bounded_relu'] = 'tanh',
+                 input_activation: Literal['tanh', 'identity', 'logistic',
+                                           'relu', 'bounded_relu'] = 'tanh',
                  hidden_layer_size: Union[int, np.integer] = 500,
                  sparsity: float = 1.,
                  random_state: Union[int, np.random.RandomState, None] = 42):
@@ -387,7 +411,8 @@ class BatchIntrinsicPlasticity(InputToNode):
                                                       self.input_scaling,
                                                       self._bias_weights,
                                                       self.bias_scaling)
-            np.add(np.multiply(self._scaler.transform(s), self._m), self._c, out=s)
+            np.add(np.multiply(
+                self._scaler.transform(s), self._m), self._c, out=s)
             ACTIVATIONS[self.input_activation](s)
             return s
 
@@ -405,25 +430,30 @@ class BatchIntrinsicPlasticity(InputToNode):
         """
         super().fit(X, y=y)
 
-        s = np.sort(BatchIntrinsicPlasticity._node_inputs(X, self._input_weights,
-                                                          self.input_scaling,
-                                                          self._bias_weights,
-                                                          self.bias_scaling), axis=0)
+        s = np.sort(BatchIntrinsicPlasticity._node_inputs(
+            X, self._input_weights, self.input_scaling, self._bias_weights,
+            self.bias_scaling), axis=0)
 
-        phi = np.transpose(np.stack((s, np.ones(s.shape)), axis=2), axes=(1, 0, 2))
+        phi = np.transpose(np.stack((s, np.ones(s.shape)), axis=2),
+                           axes=(1, 0, 2))
 
-        if callable(BatchIntrinsicPlasticity.OUT_DISTRIBUTION[self.distribution]):
+        if callable(BatchIntrinsicPlasticity.OUT_DISTRIBUTION[
+                        self.distribution]):
             t = BatchIntrinsicPlasticity.OUT_DISTRIBUTION[self.distribution](
                 size=X.shape[0])
             t_min, t_max = np.min(t), np.max(t)
 
             if (self.distribution in {'uniform'} and self.input_activation
                     in {'tanh', 'logistic'}):
-                bound_low = ACTIVATIONS_INVERSE_BOUNDS[self.input_activation][0] * .5
-                bound_high = ACTIVATIONS_INVERSE_BOUNDS[self.input_activation][1] * .5
+                bound_low = ACTIVATIONS_INVERSE_BOUNDS[
+                                self.input_activation][0] * .5
+                bound_high = ACTIVATIONS_INVERSE_BOUNDS[
+                                 self.input_activation][1] * .5
             else:
-                bound_low = ACTIVATIONS_INVERSE_BOUNDS[self.input_activation][0]
-                bound_high = ACTIVATIONS_INVERSE_BOUNDS[self.input_activation][1]
+                bound_low = ACTIVATIONS_INVERSE_BOUNDS[
+                    self.input_activation][0]
+                bound_high = ACTIVATIONS_INVERSE_BOUNDS[
+                    self.input_activation][1]
 
             if bound_low == np.inf:
                 bound_low = t_min
@@ -431,7 +461,8 @@ class BatchIntrinsicPlasticity(InputToNode):
             if bound_high == np.inf:
                 bound_high = t_max
 
-            t = (t - t_min)*(bound_high - bound_low)/(t_max - t_min) + bound_low
+            t = (t - t_min)*(bound_high - bound_low)\
+                / (t_max - t_min) + bound_low
 
             t.sort()
             ACTIVATIONS_INVERSE[self.input_activation](t)
@@ -458,18 +489,18 @@ class BatchIntrinsicPlasticity(InputToNode):
         self : returns a trained BatchIntrinsicPlasticity.
         """
         if self.input_activation != 'tanh':
-            raise ValueError('This algorithm is working with tanh-activation only,'
-                             'got {0}'.format(self.input_activation))
+            raise ValueError('This algorithm is working with tanh-activation'
+                             'only, got {0}'.format(self.input_activation))
         super().fit(X, y=y)
 
-        s = BatchIntrinsicPlasticity._node_inputs(X, self._input_weights,
-                                                  self.input_scaling,
-                                                  self._bias_weights, self.bias_scaling)
+        s = BatchIntrinsicPlasticity._node_inputs(
+            X, self._input_weights, self.input_scaling, self._bias_weights,
+            self.bias_scaling)
         self._scaler.fit(s)
 
         if self.distribution:
-            self._m, self._c = \
-                BatchIntrinsicPlasticity.IN_DISTRIBUTION_PARAMS[self.distribution]
+            self._m, self._c = BatchIntrinsicPlasticity.IN_DISTRIBUTION_PARAMS[
+                self.distribution]
         return self
 
     def _validate_hyperparameters(self) -> None:

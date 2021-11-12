@@ -13,9 +13,11 @@ import sys
 
 import numpy as np
 
-from sklearn.utils.validation import check_consistent_length, _deprecate_positional_args
+from sklearn.utils.validation import (check_consistent_length,
+                                      _deprecate_positional_args)
 import sklearn.metrics as sklearn_metrics
-from sklearn.metrics._regression import _check_reg_targets as sklearn_check_reg_targets
+from sklearn.metrics._regression\
+    import _check_reg_targets as sklearn_check_reg_targets
 
 if sys.version_info >= (3, 8):
     from typing import Any, Tuple, Union, Optional, Literal
@@ -26,17 +28,15 @@ else:
 
 def _check_reg_targets(y_true: np.ndarray, y_pred: np.ndarray,
                        sample_weight: Optional[np.ndarray] = None,
-                       multioutput: Union[np.ndarray, Literal["raw_values",
-                                                              "uniform_average",
-                                                              "variance_weighted"],
-                                          None] = None,
-                       dtype: str = "numeric") \
-                           -> Tuple[Any,
-                                    np.ndarray, np.ndarray, Optional[np.ndarray],
-                                    Union[np.ndarray, Literal["raw_values",
-                                                              "uniform_average",
-                                                              "variance_weighted"],
-                                          None]]:
+                       multioutput: Union[np.ndarray, Literal[
+                           "raw_values", "uniform_average",
+                           "variance_weighted"], None] = None,
+                       dtype: str = "numeric")\
+        -> Tuple[Any, np.ndarray, np.ndarray, Optional[np.ndarray],
+                 Union[np.ndarray, Literal["raw_values",
+                                           "uniform_average",
+                                           "variance_weighted"],
+                       None]]:
     """
     Check that y_true and y_pred belong to the same regression task.
 
@@ -78,18 +78,18 @@ def _check_reg_targets(y_true: np.ndarray, y_pred: np.ndarray,
         [check_consistent_length(y_t, y_p) for y_t, y_p in zip(y_true, y_pred)]
     y_true = np.concatenate(y_true)
     y_pred = np.concatenate(y_pred)
-    y_type, y_true, y_pred, multioutput = sklearn_check_reg_targets(y_true, y_pred,
-                                                                    multioutput, dtype)
+    y_type, y_true, y_pred, multioutput = sklearn_check_reg_targets(
+        y_true, y_pred, multioutput, dtype)
     return y_type, y_true, y_pred, sample_weight, multioutput
 
 
 @_deprecate_positional_args
 def mean_absolute_error(y_true: np.ndarray, y_pred: np.ndarray, *,
                         sample_weight: Optional[np.ndarray] = None,
-                        multioutput: Union[np.ndarray, Literal["raw_values",
-                                                               "uniform_average",
-                                                               "variance_weighted"],
-                                           None] = "uniform_average") -> float:
+                        multioutput: Union[np.ndarray, Literal[
+                            "raw_values", "uniform_average",
+                            "variance_weighted"], None] = "uniform_average")\
+        -> float:
     """Mean absolute error regression loss.
 
     Read more in the :ref:`User Guide <mean_absolute_error>`.
@@ -126,18 +126,17 @@ def mean_absolute_error(y_true: np.ndarray, y_pred: np.ndarray, *,
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
-    return sklearn_metrics.mean_absolute_error(y_true=y_true, y_pred=y_pred,
-                                               sample_weight=sample_weight,
-                                               multioutput=multioutput)
+    return sklearn_metrics.mean_absolute_error(
+        y_true=y_true, y_pred=y_pred, sample_weight=sample_weight,
+        multioutput=multioutput)
 
 
 def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
                                    sample_weight: Optional[np.ndarray] = None,
-                                   multioutput: Union[np.ndarray,
-                                                      Literal["raw_values",
-                                                              "uniform_average",
-                                                              "variance_weighted"],
-                                                      None] = "uniform_average")\
+                                   multioutput: Union[np.ndarray, Literal[
+                                       "raw_values", "uniform_average",
+                                       "variance_weighted"], None] =
+                                   "uniform_average")\
         -> float:
     """
     Mean absolute percentage error regression loss.
@@ -190,10 +189,9 @@ def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
 @_deprecate_positional_args
 def mean_squared_error(y_true: np.ndarray, y_pred: np.ndarray, *,
                        sample_weight: Optional[np.ndarray] = None,
-                       multioutput: Union[np.ndarray,
-                                          Literal["raw_values", "uniform_average",
-                                                  "variance_weighted"],
-                                          None] = "uniform_average",
+                       multioutput: Union[np.ndarray, Literal[
+                           "raw_values", "uniform_average",
+                           "variance_weighted"], None] = "uniform_average",
                        squared: bool = True) -> float:
     """Mean squared error regression loss.
 
@@ -238,10 +236,10 @@ def mean_squared_error(y_true: np.ndarray, y_pred: np.ndarray, *,
 @_deprecate_positional_args
 def mean_squared_log_error(y_true: np.ndarray, y_pred: np.ndarray, *,
                            sample_weight: Optional[np.ndarray] = None,
-                           multioutput: Union[np.ndarray,
-                                              Literal["raw_values", "uniform_average",
-                                                      "variance_weighted"],
-                                              None] = "uniform_average") -> float:
+                           multioutput: Union[np.ndarray, Literal[
+                               "raw_values", "uniform_average",
+                               "variance_weighted"], None] =
+                           "uniform_average") -> float:
     """Mean squared logarithmic error regression loss.
 
     Read more in the :ref:`User Guide <mean_squared_log_error>`.
@@ -283,10 +281,9 @@ def mean_squared_log_error(y_true: np.ndarray, y_pred: np.ndarray, *,
 
 @_deprecate_positional_args
 def median_absolute_error(y_true: np.ndarray, y_pred: np.ndarray, *,
-                          multioutput: Union[np.ndarray,
-                                             Literal["raw_values", "uniform_average",
-                                                     "variance_weighted"],
-                                             None] = "uniform_average",
+                          multioutput: Union[np.ndarray, Literal[
+                              "raw_values", "uniform_average",
+                              "variance_weighted"], None] = "uniform_average",
                           sample_weight: Optional[np.ndarray] = None) -> float:
     """Median absolute error regression loss.
 
@@ -333,10 +330,10 @@ def median_absolute_error(y_true: np.ndarray, y_pred: np.ndarray, *,
 @_deprecate_positional_args
 def explained_variance_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                              sample_weight: Optional[np.ndarray] = None,
-                             multioutput: Union[np.ndarray,
-                                                Literal["raw_values", "uniform_average",
-                                                        "variance_weighted"],
-                                                None] = "uniform_average") -> float:
+                             multioutput: Union[np.ndarray, Literal[
+                                 "raw_values", "uniform_average",
+                                 "variance_weighted"], None] =
+                             "uniform_average") -> float:
     """Explained variance regression score function.
 
     Best possible score is 1.0, lower values are worse.
@@ -385,8 +382,8 @@ def explained_variance_score(y_true: np.ndarray, y_pred: np.ndarray, *,
 @_deprecate_positional_args
 def r2_score(y_true: np.ndarray, y_pred: np.ndarray, *,
              sample_weight: Optional[np.ndarray] = None,
-             multioutput: Union[np.ndarray, Literal["raw_values", "uniform_average",
-                                                    "variance_weighted"],
+             multioutput: Union[np.ndarray, Literal[
+                 "raw_values", "uniform_average", "variance_weighted"],
                                 None] = "uniform_average") -> float:
     """
     R^2 (coefficient of determination) regression score function.
@@ -549,7 +546,8 @@ def mean_poisson_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
     loss : float
         A non-negative floating point value (the best value is 0.0).
     """
-    return mean_tweedie_deviance(y_true, y_pred, sample_weight=sample_weight, power=1)
+    return mean_tweedie_deviance(
+        y_true, y_pred, sample_weight=sample_weight, power=1)
 
 
 @_deprecate_positional_args
@@ -577,4 +575,5 @@ def mean_gamma_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
     loss : float
         A non-negative floating point value (the best value is 0.0).
     """
-    return mean_tweedie_deviance(y_true, y_pred, sample_weight=sample_weight, power=2)
+    return mean_tweedie_deviance(
+        y_true, y_pred, sample_weight=sample_weight, power=2)
