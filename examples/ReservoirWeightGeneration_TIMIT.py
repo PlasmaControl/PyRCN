@@ -171,7 +171,7 @@ initially_fixed_params = {
     'k_in': 10,
     'input_scaling': 0.4,
     'input_activation': 'identity',
-    'bias_scaling': 0.0,
+    'bias_scaling': 0.2,
     'spectral_radius': 0.0,
     'leakage': 1.0,
     'k_rec': 10,
