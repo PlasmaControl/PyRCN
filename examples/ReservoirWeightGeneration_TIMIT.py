@@ -171,8 +171,8 @@ initially_fixed_params = {
     'input_scaling': 0.4,
     'input_activation': 'identity',
     'bias_scaling': 0.0,
-    'spectral_radius': 1.0,
-    'leakage': 0.1,
+    'spectral_radius': 0.0,
+    'leakage': 1.0,
     'k_rec': 10,
     'reservoir_activation': 'tanh',
     'bidirectional': False,
@@ -212,17 +212,15 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step3', RandomizedSearchCV, step3_esn_params, kwargs_step3),
             ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-base_esn = ESNClassifier(input_to_node=input_to_node,
-                         node_to_node=node_to_node)\
-    .set_params(**initially_fixed_params)
+base_esn = ESNClassifier().set_params(**initially_fixed_params)
 
 try:
     sequential_search = load(
-        "../sequential_search_speech_timit_kmeans_rec.joblib")
+        "../sequential_search_speech_timit_random.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn,
                                            searches=searches).fit(X_train,
                                                                   y_train)
     dump(sequential_search,
-         "../sequential_search_speech_timit_kmeans_rec.joblib")
+         "../sequential_search_speech_timit_random.joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
