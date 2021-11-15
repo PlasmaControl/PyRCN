@@ -61,22 +61,39 @@ def test_input_to_node_invalid_sparsity() -> None:
 def test_predefined_weights_input_to_node() -> None:
     print('\ntest_predefined_weights_input_to_node():')
     X = np.zeros(shape=(10, 3))
-    weights = np.random.rand(5, 5)
+    input_weights = np.random.rand(5, 5)
     with pytest.raises(ValueError):
         i2n = PredefinedWeightsInputToNode(
-            predefined_input_weights=weights, input_activation='tanh',
+            predefined_input_weights=input_weights, input_activation='tanh',
             input_scaling=1., bias_scaling=1., random_state=42)
         i2n.fit(X)
-    weights = np.random.rand(5, )
+    input_weights = np.random.rand(5, )
     with pytest.raises(ValueError):
         i2n = PredefinedWeightsInputToNode(
-            predefined_input_weights=weights, input_activation='tanh',
+            predefined_input_weights=input_weights, input_activation='tanh',
             input_scaling=1., bias_scaling=1., random_state=42)
         i2n.fit(X)
-    weights = np.random.rand(3, 5)
+    input_weights = np.random.rand(3, 5)
+    with pytest.raises(ValueError):
+        i2n = PredefinedWeightsInputToNode(
+            predefined_input_weights=input_weights, input_activation='tanh',
+            input_scaling=1., predefined_bias_weights=input_weights,
+            bias_scaling=1., random_state=42)
+        i2n.fit(X)
+    input_weights = np.random.rand(3, 5)
+    bias_weights = np.random.rand(3, )
+    with pytest.raises(ValueError):
+        i2n = PredefinedWeightsInputToNode(
+            predefined_input_weights=input_weights, input_activation='tanh',
+            input_scaling=1., predefined_bias_weights=bias_weights,
+            bias_scaling=1., random_state=42)
+        i2n.fit(X)
+    input_weights = np.random.rand(3, 5)
+    bias_weights = np.random.rand(5, )
     i2n = PredefinedWeightsInputToNode(
-        predefined_input_weights=weights, input_activation='tanh',
-        input_scaling=1., bias_scaling=1., random_state=42)
+        predefined_input_weights=input_weights, input_activation='tanh',
+        input_scaling=1., predefined_bias_weights=bias_weights,
+        bias_scaling=1., random_state=42)
     i2n.fit(X)
     print(i2n._input_weights)
     assert i2n._input_weights.shape == (3, 5)
@@ -170,3 +187,7 @@ def test_input_to_node_sparse() -> None:
     assert i2n.__sizeof__() != 0
     assert i2n.input_weights is not None
     assert i2n.bias_weights is not None
+
+
+if __name__ == "__main__":
+    test_predefined_weights_input_to_node()
