@@ -186,7 +186,7 @@ step1_esn_params = {
     'spectral_radius': uniform(loc=0, scale=2)
 }
 step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
-step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
+step3_esn_params = {'bias_scaling': uniform(loc=0, scale=3)}
 step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
 scoring = make_scorer(accuracy_score)
 
@@ -198,7 +198,10 @@ kwargs_step2 = {
     'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
     'scoring': scoring
 }
-kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': scoring}
+kwargs_step3 = {
+    'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+    'scoring': scoring
+}
 kwargs_step4 = {
     'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
     'scoring': scoring
@@ -206,20 +209,18 @@ kwargs_step4 = {
 
 searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step2', RandomizedSearchCV, step2_esn_params, kwargs_step2),
-            ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
+            ('step3', RandomizedSearchCV, step3_esn_params, kwargs_step3),
             ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-base_esn = ESNClassifier(input_to_node=input_to_node,
-                         node_to_node=node_to_node).set_params(
-    **initially_fixed_params)
+base_esn = ESNClassifier().set_params(**initially_fixed_params)
 
 try:
     sequential_search = load(
-        "../sequential_search_speech_timit_kmeans_rec.joblib")
+        "../sequential_search_speech_timit_random.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn,
                                            searches=searches).fit(X_train,
                                                                   y_train)
     dump(sequential_search,
-         "../sequential_search_speech_timit_kmeans_rec.joblib")
+         "../sequential_search_speech_timit_random.joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
