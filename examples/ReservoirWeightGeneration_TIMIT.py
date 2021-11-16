@@ -161,8 +161,7 @@ w_in = np.divide(kmeans.cluster_centers_,
                  np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
 w_bias = 2 * (np.unique(kmeans.labels_, return_counts=True)[1]
               / len(kmeans.labels_)) - 1
-input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T,
-                                             predefined_bias_weights=w_bias)
+input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
 w_rec = (2 * transition_matrix(kmeans.labels_) - 1)
 w_rec = w_rec / np.max(np.abs(np.linalg.eigvals(w_rec)))
 node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
@@ -172,7 +171,7 @@ initially_fixed_params = {
     'k_in': 10,
     'input_scaling': 0.4,
     'input_activation': 'identity',
-    'bias_scaling': 0.2,
+    'bias_scaling': 0.0,
     'spectral_radius': 0.0,
     'leakage': 1.0,
     'k_rec': 10,
@@ -220,11 +219,11 @@ base_esn = ESNClassifier(input_to_node=input_to_node,
 
 try:
     sequential_search = load(
-        "../sequential_search_speech_timit_kmeans_bias_rec_eig_-1_1.joblib")
+        "../sequential_search_speech_timit_kmeans_rec_eig_-1_1.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn,
                                            searches=searches).fit(X_train,
                                                                   y_train)
     dump(sequential_search,
-         "../sequential_search_speech_timit_kmeans_bias_rec_eig_-1_1.joblib")
+         "../sequential_search_speech_timit_kmeans_rec_eig_-1_1.joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
