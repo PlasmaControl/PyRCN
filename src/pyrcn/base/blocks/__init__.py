@@ -6,7 +6,7 @@
 from ._input_to_node import (InputToNode, PredefinedWeightsInputToNode,
                              BatchIntrinsicPlasticity)
 from ._node_to_node import (NodeToNode, PredefinedWeightsNodeToNode,
-                            HebbianNodeToNode)
+                            HebbianNodeToNode, AttentionWeightsNodeToNode)
 
 
 __all__ = ('InputToNode',
@@ -14,4 +14,5 @@ __all__ = ('InputToNode',
            'BatchIntrinsicPlasticity',
            'NodeToNode',
            'PredefinedWeightsNodeToNode',
+           'AttentionWeightsNodeToNode',
            'HebbianNodeToNode')

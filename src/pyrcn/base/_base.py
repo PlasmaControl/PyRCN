@@ -122,3 +122,31 @@ def _normal_random_recurrent_weights(hidden_layer_size: int, fan_in: int,
         print("WARNING: No convergence! Returning possibly invalid values!!!")
         we = ArpackNoConvergence.eigenvalues
     return recurrent_weights_init / np.amax(np.absolute(we))
+
+
+def _normal_recurrent_attention_weights(hidden_layer_size: int, fan_in: int,
+                                        random_state: np.random.RandomState,
+                                        attention_weights: np.ndarray) \
+        -> np.ndarray:
+    """
+    Return normally distributed random reservoir weights.
+
+    Parameters
+    ----------
+    hidden_layer_size : Union[int, np.integer]
+    fan_in : Union[int, np.integer]
+        Determines how many features are mapped to one neuron.
+    random_state : numpy.random.RandomState
+
+    Returns
+    -------
+    normal_random_recurrent_weights : Union[np.ndarray,
+    scipy.sparse.csr.csr_matrix] of size (hidden_layer_size, hidden_layer_size)
+    """
+    recurrent_weights_init = _normal_random_recurrent_weights(
+        hidden_layer_size, fan_in, random_state)
+
+    recurrent_weights_init = np.multiply(
+        np.asarray(recurrent_weights_init), attention_weights)
+    we = np.linalg.eigvals(recurrent_weights_init)
+    return recurrent_weights_init / np.amax(np.absolute(we))

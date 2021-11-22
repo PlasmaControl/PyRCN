@@ -19,7 +19,8 @@ from sklearn.utils import check_random_state
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 
-from ...base import ACTIVATIONS, _normal_random_recurrent_weights
+from ...base import (ACTIVATIONS, _normal_random_recurrent_weights,
+                     _normal_recurrent_attention_weights)
 
 if sys.version_info >= (3, 8):
     from typing import Union, Literal
@@ -132,27 +133,24 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
         if self.bidirectional:
             _hidden_layer_state_fw = self._pass_through_recurrent_weights(
-                X, self.hidden_layer_size, self.bidirectional,
-                self._recurrent_weights, self.spectral_radius, self.leakage,
-                self.reservoir_activation)
+                X, self.hidden_layer_size, self._recurrent_weights,
+                self.spectral_radius, self.leakage, self.reservoir_activation)
             _hidden_layer_state_bw = np.flipud(
                 self._pass_through_recurrent_weights(
-                    np.flipud(X), self.hidden_layer_size, self.bidirectional,
+                    np.flipud(X), self.hidden_layer_size,
                     self._recurrent_weights, self.spectral_radius,
                     self.leakage, self.reservoir_activation))
             self._hidden_layer_state = np.concatenate(
                 (_hidden_layer_state_fw, _hidden_layer_state_bw), axis=1)
         else:
             self._hidden_layer_state = self._pass_through_recurrent_weights(
-                X, self.hidden_layer_size, self.bidirectional,
-                self._recurrent_weights, self.spectral_radius, self.leakage,
-                self.reservoir_activation)
+                X, self.hidden_layer_size, self._recurrent_weights,
+                self.spectral_radius, self.leakage, self.reservoir_activation)
         return self._hidden_layer_state
 
     @staticmethod
     def _pass_through_recurrent_weights(X: np.ndarray,
                                         hidden_layer_size: int,
-                                        bidirectional: bool,
                                         recurrent_weights: Union[np.ndarray,
                                                                  csr_matrix],
                                         spectral_radius: float, leakage: float,
@@ -168,8 +166,6 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray of size (n_samples, n_features)
         hidden_layer_size : Union[int, np.integer].
-        bidirectional : bool
-        recurrent_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
         spectral_radius : float
         leakage : float
         reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
@@ -336,6 +332,96 @@ class PredefinedWeightsNodeToNode(NodeToNode):
         return self
 
 
+class AttentionWeightsNodeToNode(NodeToNode):
+    """
+    AttentionWeightsNodeToNode class for reservoir computing modules.
+
+    Parameters
+    ----------
+    recurrent_attention_weights : np.ndarray
+        A set of predefined recurrent attention weights.
+    hidden_layer_size : Union[int, np.integer], default=500
+        Sets the number of nodes in hidden layer. Equals number of output
+        features.
+    reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
+    'bounded_relu'], default = 'tanh'
+        This element represents the activation function in the hidden layer.
+            - 'identity', no-op activation, useful to implement linear
+            bottleneck, returns f(x) = x
+            - 'logistic', the logistic sigmoid function,
+            returns f(x) = 1/(1+exp(-x)).
+            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+            - 'relu', the rectified linear unit function,
+            returns f(x) = max(0, x)
+            - 'bounded_relu', the bounded rectified linear unit function,
+            returns f(x) = min(max(x, 0),1)
+    spectral_radius :  float, default = 1.
+        Scales the recurrent weight matrix.
+    leakage : float, default = 1.
+        parameter to determine the degree of leaky integration.
+    bidirectional : bool, default = False.
+        Whether to work bidirectional.
+    """
+
+    @_deprecate_positional_args
+    def __init__(self,
+                 recurrent_attention_weights: np.ndarray, *,
+                 reservoir_activation: Literal['tanh', 'identity',
+                                               'logistic', 'relu',
+                                               'bounded_relu'] = 'tanh',
+                 spectral_radius: float = 1.,
+                 leakage: float = 1.,
+                 bidirectional: bool = False) -> None:
+        """Construct the PredefinedWeightsNodeToNode."""
+        if recurrent_attention_weights.ndim != 2:
+            raise ValueError('recurrent_attention_weights has not the '
+                             'expected ndim {0}, given 2.'
+                             .format(recurrent_attention_weights.shape))
+        super().__init__(
+            hidden_layer_size=recurrent_attention_weights.shape[0],
+            reservoir_activation=reservoir_activation,
+            spectral_radius=spectral_radius, leakage=leakage,
+            bidirectional=bidirectional)
+        self.recurrent_attention_weights = recurrent_attention_weights
+
+    def fit(self, X: np.ndarray, y: None = None) -> NodeToNode:
+        """
+        Fit the AttentionWeightsNodeToNode. Sets the recurrent weights.
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
+        y : ignored
+
+        Returns
+        -------
+        self : returns a trained AttentionWeightsNodeToNode.
+        """
+        self._validate_hyperparameters()
+        self._validate_data(X, y)
+        self._check_n_features(X, reset=True)
+
+        if self.recurrent_attention_weights.shape[0] != X.shape[1]:
+            raise ValueError(
+                'X has not the expected shape {0}, given {1}.'.format(
+                    self.recurrent_attention_weights.shape[0], X.shape[1]))
+
+        if (self.recurrent_attention_weights.shape[0]
+                != self.recurrent_attention_weights.shape[1]):
+            raise ValueError(
+                'Recurrent weights need to be a squared matrix,'
+                'given {0}.'.format(self.recurrent_attention_weights.shape))
+
+        if self.k_rec is not None:
+            self.sparsity = float(self.k_rec) / float(X.shape[1])
+        self._recurrent_weights = _normal_recurrent_attention_weights(
+            hidden_layer_size=self.hidden_layer_size,
+            fan_in=int(np.rint(self.hidden_layer_size * self.sparsity)),
+            random_state=self._random_state,
+            attention_weights=self.recurrent_attention_weights)
+        return self
+
+
 class HebbianNodeToNode(NodeToNode):
     """
     HebbianNodeToNode for reservoir computing modules (e.g. ESN).
@@ -455,9 +541,8 @@ class HebbianNodeToNode(NodeToNode):
     def _hebbian_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Hebbian learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
-            X, self.hidden_layer_size, self.bidirectional,
-            self._recurrent_weights, self.spectral_radius, self.leakage,
-            self.reservoir_activation)
+            X, self.hidden_layer_size, self._recurrent_weights,
+            self.spectral_radius, self.leakage, self.reservoir_activation)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -=\
                 self.learning_rate * safe_sparse_dot(
@@ -467,9 +552,8 @@ class HebbianNodeToNode(NodeToNode):
     def _anti_hebbian_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Anti-Hebbian learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
-            X, self.hidden_layer_size, self.bidirectional,
-            self._recurrent_weights, self.spectral_radius, self.leakage,
-            self.reservoir_activation)
+            X, self.hidden_layer_size, self._recurrent_weights,
+            self.spectral_radius, self.leakage, self.reservoir_activation)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -= \
                 -self.learning_rate * safe_sparse_dot(
@@ -479,9 +563,8 @@ class HebbianNodeToNode(NodeToNode):
     def _oja_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Oja learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
-            X, self.hidden_layer_size, self.bidirectional,
-            self._recurrent_weights, self.spectral_radius, self.leakage,
-            self.reservoir_activation)
+            X, self.hidden_layer_size, self._recurrent_weights,
+            self.spectral_radius, self.leakage, self.reservoir_activation)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -= \
                 self.learning_rate * (safe_sparse_dot(
@@ -493,9 +576,8 @@ class HebbianNodeToNode(NodeToNode):
     def _anti_oja_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Anti-Oja learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
-            X, self.hidden_layer_size, self.bidirectional,
-            self._recurrent_weights, self.spectral_radius, self.leakage,
-            self.reservoir_activation)
+            X, self.hidden_layer_size, self._recurrent_weights,
+            self.spectral_radius, self.leakage, self.reservoir_activation)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -= \
                 self.learning_rate * (-safe_sparse_dot(
