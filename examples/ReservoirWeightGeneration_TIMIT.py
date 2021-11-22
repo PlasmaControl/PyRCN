@@ -15,8 +15,9 @@ from sklearn.metrics import make_scorer
 from pyrcn.metrics import accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.echo_state_network import ESNClassifier
-from pyrcn.base.blocks import (
-    PredefinedWeightsInputToNode, PredefinedWeightsNodeToNode)
+from pyrcn.base.blocks import (PredefinedWeightsInputToNode,
+                               PredefinedWeightsNodeToNode,
+                               AttentionWeightsNodeToNode)
 from pyrcn.util import FeatureExtractor
 
 
@@ -162,9 +163,8 @@ w_in = np.divide(kmeans.cluster_centers_,
 w_bias = 2 * (np.unique(kmeans.labels_, return_counts=True)[1]
               / len(kmeans.labels_)) - 1
 input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
-w_rec = (2 * transition_matrix(kmeans.labels_) - 1)
-w_rec = w_rec / np.max(np.abs(np.linalg.eigvals(w_rec)))
-node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
+w_rec = transition_matrix(kmeans.labels_)
+node_to_node = AttentionWeightsNodeToNode(recurrent_attention_weights=w_rec)
 
 initially_fixed_params = {
     'hidden_layer_size': 50,
@@ -219,11 +219,11 @@ base_esn = ESNClassifier(input_to_node=input_to_node,
 
 try:
     sequential_search = load(
-        "../sequential_search_speech_timit_kmeans_rec_eig_-1_1.joblib")
+        "../sequential_search_speech_timit_kmeans_attention.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn,
                                            searches=searches).fit(X_train,
                                                                   y_train)
     dump(sequential_search,
-         "../sequential_search_speech_timit_kmeans_rec_eig_-1_1.joblib")
+         "../sequential_search_speech_timit_kmeans_attention.joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
