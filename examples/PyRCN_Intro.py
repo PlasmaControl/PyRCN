@@ -21,6 +21,10 @@ from sklearn.model_selection import cross_validate
 from sklearn.model_selection import ParameterGrid
 from sklearn.metrics import make_scorer
 
+import numpy as np
+from sklearn.decomposition import PCA
+from pyrcn.base.blocks import PredefinedWeightsNodeToNode
+
 from pyrcn.echo_state_network import ESNClassifier
 from pyrcn.metrics import accuracy_score
 from pyrcn.datasets import load_digits
@@ -219,6 +223,44 @@ layered_esn = ESNRegressor(input_to_node=i2n, node_to_node=n2n)
 layered_esn.fit(U, y)
 print(layered_esn.predict(U))
 
+# Yet another example for a deep ESN
+# Multiple small reservoirs with different leakages in parallel
+res1 = FeatureUnion([
+    ("lambda_0.1",
+     Pipeline([('i2n', InputToNode(hidden_layer_size=10)),
+               ('n2n', NodeToNode(hidden_layer_size=10,
+                                  leakage=0.1))])),
+    ("lambda_0.2",
+     Pipeline([('i2n', InputToNode(hidden_layer_size=10)),
+               ('n2n', NodeToNode(hidden_layer_size=10,
+                                  leakage=0.2))])),
+    ("lambda_0.3",
+     Pipeline([('i2n', InputToNode(hidden_layer_size=10)),
+               ('n2n', NodeToNode(hidden_layer_size=10,
+                                  leakage=0.3))])),
+    ("lambda_0.4",
+     Pipeline([('i2n', InputToNode(hidden_layer_size=10)),
+               ('n2n', NodeToNode(hidden_layer_size=10,
+                                  leakage=0.4))])),])
+
+pca = PCA(n_components=10)
+
+res2 = Pipeline([("i2n", InputToNode(hidden_layer_size=100)),
+                 ("n2n", NodeToNode(hidden_layer_size=100))])
+
+i2n = FeatureUnion([("path1",
+                     Pipeline([("res1", res1), ("pca", pca),
+                               ("res2", res2)])),
+                    ("path2", res1)])
+
+n2n = PredefinedWeightsNodeToNode(
+    predefined_recurrent_weights=np.eye(40+100),
+    spectral_radius=0, leakage=1)
+
+deep_esn = ESNRegressor(input_to_node=i2n, node_to_node=n2n)
+deep_esn.fit(U, y)
+print(deep_esn.predict(U))
+
 # Complex example: Optimize the hyper-parameters of RCNs
 # Load the dataset
 X, y = mackey_glass(n_timesteps=5000)
@@ -268,15 +310,15 @@ print("Shape of the first digit: {0}".format(X_te[0].shape))
 
 # These parameters were optimized using SequentialSearchCV
 esn_params = {
-    'input_scaling': 0.1,
-    'spectral_radius': 1.2,
+    'input_scaling': 0.05077514155476392,
+    'spectral_radius': 1.1817858863764836,
     'input_activation': 'identity',
     'k_in': 5,
-    'bias_scaling': 0.5,
+    'bias_scaling': 1.6045393364745582,
     'reservoir_activation': 'tanh',
-    'leakage': 0.1,
+    'leakage': 0.03470266988650412,
     'k_rec': 10,
-    'alpha': 1e-5,
+    'alpha': 3.0786517836196185e-05,
     'decision_strategy': "winner_takes_all"
 }
 

@@ -15,7 +15,10 @@ import numpy as np
 import time
 from sklearn.base import clone
 from sklearn.model_selection import train_test_split
-from sklearn.model_selection import ParameterGrid, GridSearchCV, cross_validate
+from sklearn.model_selection import (
+    ParameterGrid, RandomizedSearchCV, cross_validate)
+from sklearn.utils.fixes import loguniform
+from scipy.stats import uniform
 from sklearn.metrics import make_scorer
 
 from pyrcn.model_selection import SequentialSearchCV
@@ -35,16 +38,22 @@ print("Shape of digits {0}".format(X[0].shape))
 # Afterwards, we split the dataset into training and test sets.
 # We train the ESN using 80% of the digits and test it using the remaining
 # images.
-X_train, X_test, y_train, y_test = \
-    train_test_split(X, y, test_size=0.2,
-                     stratify=np.asarray(
-                         [np.unique(yt) for yt in y]).flatten(),
-                     random_state=42)
+stratify = np.asarray([np.unique(yt) for yt in y]).flatten()
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.2, stratify=stratify, random_state=42)
+X_tr = np.copy(X_train)
+y_tr = np.copy(y_train)
+X_te = np.copy(X_test)
+y_te = np.copy(y_test)
+for k, _ in enumerate(y_tr):
+    y_tr[k] = np.repeat(y_tr[k], 8, 0)
+for k, _ in enumerate(y_te):
+    y_te[k] = np.repeat(y_te[k], 8, 0)
+
 print("Number of digits in training set: {0}".format(len(X_train)))
 print("Shape of digits in training set: {0}".format(X_train[0].shape))
 print("Number of digits in test set: {0}".format(len(X_test)))
 print("Shape of digits in test set: {0}".format(X_test[0].shape))
-
 
 # Set up a ESN
 # To develop an ESN model for digit recognition, we need to tune several
@@ -75,22 +84,32 @@ initially_fixed_params = {'hidden_layer_size': 50,
                           'random_state': 42,
                           'decision_strategy': "winner_takes_all"}
 
-step1_esn_params = {'input_scaling': np.linspace(0.1, 1.0, 10),
-                    'spectral_radius': np.linspace(0.0, 1.5, 16)}
+step1_esn_params = {'input_scaling': uniform(loc=1e-2, scale=1),
+                    'spectral_radius': uniform(loc=0, scale=2)}
 
-step2_esn_params = {'leakage': np.linspace(0.1, 1.0, 10)}
-step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
-step4_esn_params = {'alpha': [1e-5, 5e-5, 1e-4, 5e-4, 1e-3, 5e-3, 1e-2,
-                              5e-2, 1e-1, 5e-1, 1e0]}
+step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
+step3_esn_params = {'bias_scaling': uniform(loc=0, scale=2)}
+step4_esn_params = {'alpha': loguniform(1e-5, 1e0)}
 
-kwargs = {'verbose': 1, 'n_jobs': -1, 'scoring': make_scorer(accuracy_score)}
+kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+                'scoring': make_scorer(accuracy_score)
+                }
+kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+                'scoring': make_scorer(accuracy_score)
+                }
+kwargs_step3 = {'verbose': 1, 'n_jobs': -1,
+                'scoring': make_scorer(accuracy_score)
+                }
+kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+                'scoring': make_scorer(accuracy_score)
+                }
 
 # The searches are defined similarly to the steps of a
 # sklearn.pipeline.Pipeline:
-searches = [('step1', GridSearchCV, step1_esn_params, kwargs),
-            ('step2', GridSearchCV, step2_esn_params, kwargs),
-            ('step3', GridSearchCV, step3_esn_params, kwargs),
-            ('step4', GridSearchCV, step4_esn_params, kwargs)]
+searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
+            ('step2', RandomizedSearchCV, step2_esn_params, kwargs_step2),
+            ('step3', RandomizedSearchCV, step3_esn_params, kwargs_step3),
+            ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
 base_esn = ESNClassifier(**initially_fixed_params)
 
@@ -101,7 +120,7 @@ base_esn = ESNClassifier(**initially_fixed_params)
 # selection tool from
 # scikit-learn.
 sequential_search = SequentialSearchCV(base_esn,
-                                       searches=searches).fit(X_train, y_train)
+                                       searches=searches).fit(X_tr, y_tr)
 
 
 # Use the ESN with final hyper-parameters

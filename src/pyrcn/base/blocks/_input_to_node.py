@@ -229,7 +229,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
 class PredefinedWeightsInputToNode(InputToNode):
     """
-    PredefinedInputToNode class for reservoir computing modules.
+    PredefinedWeightsInputToNode class for reservoir computing modules.
 
     Parameters
     ----------

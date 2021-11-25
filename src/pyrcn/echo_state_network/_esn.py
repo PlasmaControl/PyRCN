@@ -725,7 +725,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         y = self._encoder.transform(y)
         self._input_to_node.fit(X)
         self._node_to_node.fit(self._input_to_node.transform(X))
-        self._regressor = self._regressor.__class__()
+        # self._regressor = self._regressor.__class__()
         if self.requires_sequence:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
         else:
