@@ -163,7 +163,7 @@ w_in = np.divide(kmeans.cluster_centers_,
 w_bias = 2 * (np.unique(kmeans.labels_, return_counts=True)[1]
               / len(kmeans.labels_)) - 1
 input_to_node = PredefinedWeightsInputToNode(
-    predefined_input_weights=w_in.T, predefined_bias_weights==w_bias)
+    predefined_input_weights=w_in.T, predefined_bias_weights=w_bias)
 w_rec = transition_matrix(kmeans.labels_)
 node_to_node = AttentionWeightsNodeToNode(recurrent_attention_weights=w_rec)
 
