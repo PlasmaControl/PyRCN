@@ -167,10 +167,7 @@ input_to_node = PredefinedWeightsInputToNode(
     predefined_bias_weights=w_bias
 )
 w_rec = transition_matrix(kmeans.labels_)
-w_rec = 2 * w_rec - 1
-we = np.linalg.eigvals(w_rec)
-w_rec / np.amax(np.absolute(we))
-node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
+node_to_node = AttentionWeightsNodeToNode(recurrent_attention_weights=w_rec)
 
 initially_fixed_params = {
     'hidden_layer_size': 50,
@@ -225,12 +222,12 @@ base_esn = ESNClassifier(input_to_node=input_to_node,
 
 try:
     sequential_search = load(
-        "../sequential_search_speech_timit_km_esn_attention_-1_1_rec_eig_-1_1"
-        ".joblib")
+        "../sequential_search_speech_timit_km_esn_attention_-1_1_rec"
+        "_attention.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(
         base_esn, searches=searches).fit(X_train, y_train)
     dump(sequential_search,
-         "../sequential_search_speech_timit_km_esn_attention_-1_1_rec_eig_-1_1"
-         ".joblib")
+         "../sequential_search_speech_timit_km_esn_attention_-1_1_rec"
+         "_attention.joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
