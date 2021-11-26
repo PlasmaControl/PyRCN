@@ -166,7 +166,7 @@ input_to_node = PredefinedWeightsInputToNode(
     # predefined_bias_weights=w_bias
 )
 w_rec = 2 * transition_matrix(kmeans.labels_) - 1
-we = np.linalg.eigvals(recurrent_weights_init)
+we = np.linalg.eigvals(w_rec)
 w_rec = w_rec / np.amax(np.absolute(we))
 node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
 
