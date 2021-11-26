@@ -8,6 +8,39 @@ from sklearn.neural_network._base import ACTIVATIONS
 from typing import Dict, Callable
 
 
+def inplace_softplus(X: np.ndarray):
+    """
+    Compute the softplux activation function inplace:
+    .. math::
+        f(x) = \\mathrm{ln}(1 + e^{x})
+
+    Parameters
+    ----------
+    X : numpy.ndarray
+
+    beta : float, default=1
+        Scaling factor
+    """
+    np.log(1 + np.exp(X, out=X), out=X)
+
+
+def inplace_softmax(X: np.ndarray, beta: float = 1):
+    """
+    Compute the softmax activation function inplace:
+    .. math::
+        y_k = \\frac{e^{x_k}}{\\sum_{i=1}^{n} e^{x_i}}
+
+    Parameters
+    ----------
+    X : numpy.ndarray
+
+    beta : float, default=1
+        Scaling factor
+    """
+    denominator = np.sum(np.exp(beta*X))
+    np.divide(np.exp(beta*X, out=X), denominator, out=X)
+
+
 def inplace_bounded_relu(X: np.ndarray) -> None:
     """
     Compute the bounded rectified linear unit function inplace.
@@ -92,6 +125,8 @@ def inplace_bounded_relu_inverse(X: np.ndarray) -> None:
 ACTIVATIONS.update({'bounded_relu': inplace_bounded_relu})
 
 ACTIVATIONS_INVERSE: Dict[str, Callable] = {
+    'softmax': inplace_softmax,
+    'softplus': inplace_softplus,
     'tanh': inplace_tanh_inverse,
     'identity': inplace_identity_inverse,
     'logistic': inplace_logistic_inverse,
