@@ -165,7 +165,7 @@ input_to_node = PredefinedWeightsInputToNode(
     predefined_input_weights=w_in.T,
     predefined_bias_weights=w_bias
 )
-w_rec = 2 * transition_matrix(kmeans.labels_) / 1
+w_rec = 2 * transition_matrix(kmeans.labels_) - 1
 node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
 
 initially_fixed_params = {
