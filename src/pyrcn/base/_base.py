@@ -6,9 +6,6 @@
 import sys
 
 import numpy as np
-import scipy
-from scipy.sparse.linalg.eigen.arpack import eigs as eigens
-from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
 
 if sys.version_info >= (3, 8):
     from typing import Union
@@ -20,8 +17,7 @@ def _uniform_random_input_weights(n_features_in: int,
                                   hidden_layer_size: Union[int, np.integer],
                                   fan_in: int,
                                   random_state: np.random.RandomState) \
-                                      -> Union[np.ndarray,
-                                               scipy.sparse.csr.csr_matrix]:
+                                      -> np.ndarray:
     """
     Return uniform random input weights in range [-1, 1].
 
@@ -35,25 +31,30 @@ def _uniform_random_input_weights(n_features_in: int,
 
     Returns
     -------
-    uniform_random_input_weights : Union[np.ndarray,
-    scipy.sparse.csr.csr_matrix] of size (n_features, hidden_layer_size)
+    uniform_random_input_weights : np.ndarray of size
+    (n_features, hidden_layer_size)
     """
     nr_entries = int(n_features_in * fan_in)
-    weights_array = random_state.uniform(low=-1., high=1., size=nr_entries)
 
     if fan_in < hidden_layer_size:
+        weights_values = random_state.uniform(
+            low=-1., high=1., size=nr_entries)
+        weights_array = np.zeros(shape=(n_features_in, hidden_layer_size),
+                                 dtype=float)
         indices = np.zeros(shape=nr_entries, dtype=int)
         indptr = np.arange(start=0, stop=(n_features_in + 1) * fan_in,
                            step=fan_in)
 
-        for en in range(0, n_features_in * fan_in, fan_in):
+        for k, en in enumerate(range(0, n_features_in * fan_in, fan_in)):
             indices[en: en + fan_in] = random_state.permutation(
                 hidden_layer_size)[:fan_in].astype(int)
-        return scipy.sparse.csr_matrix(
-            (weights_array, indices, indptr),
-            shape=(n_features_in, hidden_layer_size), dtype='float64')
+            weights_array[k, indices[indptr[k]:indptr[k+1]]] += \
+                weights_values[indptr[k]:indptr[k+1]]
     else:
-        return weights_array.reshape((n_features_in, hidden_layer_size))
+        weights_array = random_state.uniform(
+            low=-1., high=1., size=nr_entries).reshape(
+            (n_features_in, hidden_layer_size))
+    return weights_array
 
 
 def _uniform_random_bias(hidden_layer_size: Union[int, np.integer],
@@ -77,8 +78,7 @@ def _uniform_random_bias(hidden_layer_size: Union[int, np.integer],
 
 def _normal_random_recurrent_weights(hidden_layer_size: int, fan_in: int,
                                      random_state: np.random.RandomState) \
-                                         -> Union[np.ndarray,
-                                                  scipy.sparse.csr.csr_matrix]:
+                                         -> np.ndarray:
     """
     Return normally distributed random reservoir weights.
 
@@ -91,36 +91,30 @@ def _normal_random_recurrent_weights(hidden_layer_size: int, fan_in: int,
 
     Returns
     -------
-    normal_random_recurrent_weights : Union[np.ndarray,
-    scipy.sparse.csr.csr_matrix] of size (hidden_layer_size, hidden_layer_size)
+    normal_random_recurrent_weights : np.ndarray
+    of size (hidden_layer_size, hidden_layer_size)
     """
     nr_entries = int(hidden_layer_size * fan_in)
-    weights_array = random_state.normal(loc=0., scale=1., size=nr_entries)
 
     if fan_in < hidden_layer_size:
+        weights_values = random_state.normal(loc=0., scale=1., size=nr_entries)
+        recurrent_weights_init = np.zeros(
+            shape=(hidden_layer_size, hidden_layer_size), dtype=float)
         indices = np.zeros(shape=nr_entries, dtype=int)
         indptr = np.arange(start=0, stop=(hidden_layer_size + 1) * fan_in,
                            step=fan_in)
 
-        for en in range(0, hidden_layer_size * fan_in, fan_in):
+        for k, en in enumerate(range(0, hidden_layer_size * fan_in, fan_in)):
             indices[en: en + fan_in] = random_state.permutation(
                 hidden_layer_size)[:fan_in].astype(int)
-        recurrent_weights_init = scipy.sparse.csr_matrix(
-            (weights_array, indices, indptr),
-            shape=(hidden_layer_size, hidden_layer_size), dtype='float64')
+            recurrent_weights_init[k, indices[indptr[k]:indptr[k + 1]]] += \
+                weights_values[indptr[k]:indptr[k + 1]]
     else:
-        recurrent_weights_init = weights_array.reshape((hidden_layer_size,
-                                                        hidden_layer_size))
-    try:
-        we = eigens(recurrent_weights_init,
-                    k=np.minimum(10, hidden_layer_size - 2),
-                    which='LM',
-                    return_eigenvectors=False,
-                    v0=random_state.normal(loc=0., scale=1.,
-                                           size=hidden_layer_size))
-    except ArpackNoConvergence:
-        print("WARNING: No convergence! Returning possibly invalid values!!!")
-        we = ArpackNoConvergence.eigenvalues
+        weights_array = random_state.normal(loc=0., scale=1., size=nr_entries)
+        recurrent_weights_init = weights_array.reshape(
+            (hidden_layer_size, hidden_layer_size))
+
+    we = np.linalg.eigvals(recurrent_weights_init)
     return recurrent_weights_init / np.amax(np.absolute(we))
 
 

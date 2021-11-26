@@ -7,10 +7,8 @@ from __future__ import annotations
 
 import sys
 
-import scipy
 from scipy.sparse.csr import csr_matrix
-from scipy.sparse.linalg.eigen.arpack import eigs as eigens
-from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
+from scipy.sparse import issparse
 
 import numpy as np
 from sklearn.utils.validation import _deprecate_positional_args
@@ -225,7 +223,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         size : int
         Object memory in bytes.
         """
-        if scipy.sparse.issparse(self._recurrent_weights):
+        if issparse(self._recurrent_weights):
             return object.__sizeof__(self) + \
                 np.asarray(self._recurrent_weights).nbytes + \
                 self._hidden_layer_state.nbytes + sys.getsizeof(
@@ -523,17 +521,7 @@ class HebbianNodeToNode(NodeToNode):
             elif self.training_method == 'anti_oja':
                 self._anti_oja_learning(X=X, y=y)
 
-            try:
-                we = eigens(self._recurrent_weights,
-                            k=np.minimum(10, self.hidden_layer_size - 2),
-                            which='LM', return_eigenvectors=False,
-                            v0=self._random_state.normal(
-                                loc=0., scale=1., size=self.hidden_layer_size)
-                            )
-            except ArpackNoConvergence:
-                print("WARNING: No convergence!"
-                      "Returning possibly invalid values!!!")
-                we = ArpackNoConvergence.eigenvalues
+            we = np.linalg.eigvals(self._recurrent_weights)
             self._recurrent_weights =\
                 self._recurrent_weights / np.amax(np.absolute(we))
         return self

@@ -8,7 +8,7 @@ from sklearn.neural_network._base import ACTIVATIONS
 from typing import Dict, Callable
 
 
-def inplace_softplus(X: np.ndarray):
+def inplace_softplus(X: np.ndarray) -> None:
     """
     Compute the softplux activation function inplace:
     .. math::
@@ -24,7 +24,7 @@ def inplace_softplus(X: np.ndarray):
     np.log(1 + np.exp(X, out=X), out=X)
 
 
-def inplace_softmax(X: np.ndarray, beta: float = 1):
+def inplace_softmax(X: np.ndarray, beta: float = 1) -> None:
     """
     Compute the softmax activation function inplace:
     .. math::
@@ -122,11 +122,11 @@ def inplace_bounded_relu_inverse(X: np.ndarray) -> None:
     ACTIVATIONS['bounded_relu'](X)
 
 
-ACTIVATIONS.update({'bounded_relu': inplace_bounded_relu})
+ACTIVATIONS.update({'bounded_relu': inplace_bounded_relu,
+                    'softmax': inplace_softmax,
+                    'softplus': inplace_softplus})
 
 ACTIVATIONS_INVERSE: Dict[str, Callable] = {
-    'softmax': inplace_softmax,
-    'softplus': inplace_softplus,
     'tanh': inplace_tanh_inverse,
     'identity': inplace_identity_inverse,
     'logistic': inplace_logistic_inverse,

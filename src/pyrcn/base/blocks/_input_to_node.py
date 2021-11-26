@@ -6,7 +6,8 @@
 from __future__ import annotations
 
 import sys
-import scipy
+from scipy.sparse.csr import csr_matrix
+from scipy.sparse import issparse
 import numpy as np
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -135,8 +136,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _node_inputs(X: np.ndarray,
-                     input_weights: Union[np.ndarray,
-                                          scipy.sparse.csr.csr_matrix],
+                     input_weights: Union[np.ndarray, csr_matrix],
                      input_scaling: float, bias: np.ndarray,
                      bias_scaling: float) -> np.ndarray:
         """
@@ -193,7 +193,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         size : int
         Object memory in bytes.
         """
-        if scipy.sparse.issparse(self._input_weights):
+        if issparse(self._input_weights):
             return object.__sizeof__(self) + self._bias_weights.nbytes + \
                 np.asarray(self._input_weights).nbytes + \
                 self._hidden_layer_state.nbytes + \
@@ -204,7 +204,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
                 sys.getsizeof(self._random_state)
 
     @property
-    def input_weights(self) -> Union[np.ndarray, scipy.sparse.csr.csr_matrix]:
+    def input_weights(self) -> Union[np.ndarray, csr_matrix]:
         """
         Return the input weights.
 

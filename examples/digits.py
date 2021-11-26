@@ -91,7 +91,7 @@ step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
 step3_esn_params = {'bias_scaling': uniform(loc=0, scale=2)}
 step4_esn_params = {'alpha': loguniform(1e-5, 1e0)}
 
-kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': 1,
                 'scoring': make_scorer(accuracy_score)
                 }
 kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,

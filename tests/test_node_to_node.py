@@ -134,13 +134,11 @@ def test_node_to_node_sparse() -> None:
         hidden_layer_size=5, sparsity=2/5, reservoir_activation='tanh',
         spectral_radius=1., random_state=42)
     n2n.fit(X)
-    print(n2n._recurrent_weights.toarray())
     assert n2n._recurrent_weights.shape == (5, 5)
     n2n = NodeToNode(
         hidden_layer_size=5, k_rec=2, reservoir_activation='tanh',
         spectral_radius=1., random_state=42)
     n2n.fit(X)
-    print(n2n._recurrent_weights.toarray())
     assert n2n._recurrent_weights.shape == (5, 5)
     assert n2n.__sizeof__() != 0
     assert n2n.recurrent_weights is not None
@@ -159,7 +157,6 @@ def test_node_to_node_bidirectional() -> None:
         spectral_radius=1., bidirectional=True, random_state=42)
     n2n.fit(X)
     n2n.transform(X)
-    print(n2n._recurrent_weights.toarray())
     assert n2n._recurrent_weights.shape == (5, 5)
     assert n2n._hidden_layer_state.shape == (10, 10)
 

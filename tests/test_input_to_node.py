@@ -173,7 +173,6 @@ def test_input_to_node_sparse() -> None:
         input_scaling=1., bias_scaling=1., random_state=42)
     X = np.zeros(shape=(10, 3))
     i2n.fit(X)
-    print(i2n._input_weights.toarray())
     assert i2n._input_weights.shape == (3, 5)
     assert safe_sparse_dot(X, i2n._input_weights).shape == (10, 5)
     i2n = InputToNode(
@@ -181,7 +180,6 @@ def test_input_to_node_sparse() -> None:
         input_scaling=1., bias_scaling=1., random_state=42)
     X = np.zeros(shape=(10, 3))
     i2n.fit(X)
-    print(i2n._input_weights.toarray())
     assert i2n._input_weights.shape == (3, 5)
     assert safe_sparse_dot(X, i2n._input_weights).shape == (10, 5)
     assert i2n.__sizeof__() != 0
