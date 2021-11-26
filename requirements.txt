@@ -1,4 +1,4 @@
-pip>=21.3
+setuptools>=46.4.0
 scikit-learn>=1.0
 ipywidgets
 ipympl
