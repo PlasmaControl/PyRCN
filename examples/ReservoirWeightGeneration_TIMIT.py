@@ -221,18 +221,19 @@ base_esn = ESNClassifier().set_params(**initially_fixed_params)
 
 try:
     sequential_search = load(
-        "../sequential_search_basic_esn.joblib")
+        "../sequential_search_speech_timit_basic_esn.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(
         base_esn, searches=searches).fit(X_train, y_train)
     dump(sequential_search,
-         "../sequential_search_basic_esn.joblib")
+         "../sequential_search_speech_timit_basic_esn.joblib")
 
 param_grid = {
-    'hidden_layer_size': [1600, 2000, 3200, 4000, 8000],  # , 16000
+    'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000,
+                          1600, 2000, 3200, 4000, 8000, 16000],
 }
 gs = GridSearchCV(
     clone(sequential_search.best_estimator_), param_grid, scoring=scoring,
     n_jobs=-1, refit=False, verbose=10).fit(X_train, y_train)
-dump(gs, "../sequential_search_basic_esn_final_2.joblib")
+dump(gs, "../sequential_search_speech_timit_basic_esn_final.joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
