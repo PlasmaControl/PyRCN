@@ -229,8 +229,7 @@ except FileNotFoundError:
          "../sequential_search_basic_esn.joblib")
 
 param_grid = {
-    'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000,
-                          1600, 2000, 3200, 4000, 8000, 16000],
+    'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000],
 }
 gs = GridSearchCV(
     clone(sequential_search.best_estimator_), param_grid, scoring=scoring,
