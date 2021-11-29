@@ -234,6 +234,6 @@ param_grid = {
 }
 gs = GridSearchCV(
     clone(sequential_search.best_estimator_), param_grid, scoring=scoring,
-    n_jobs=-1, refit=False, verbose=10).fit(X_train, y_train)
+    n_jobs=5, refit=False, verbose=10).fit(X_train, y_train)
 dump(gs, "../sequential_search_speech_timit_basic_esn_final.joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
