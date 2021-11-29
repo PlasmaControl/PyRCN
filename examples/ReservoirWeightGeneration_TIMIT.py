@@ -11,7 +11,8 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils import shuffle
 from sklearn.utils.fixes import loguniform
 from sklearn.base import clone
-from sklearn.model_selection import (RandomizedSearchCV, GridSearchCV)
+from sklearn.model_selection import (RandomizedSearchCV, ParameterGrid,
+                                     cross_validate)
 from sklearn.metrics import make_scorer
 from pyrcn.metrics import accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
@@ -228,12 +229,14 @@ except FileNotFoundError:
     dump(sequential_search,
          "../sequential_search_speech_timit_basic_esn.joblib")
 
+print(sequential_search.all_best_params_, sequential_search.all_best_score_)
+
 param_grid = {
     'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000,
-                          1600, 2000, 3200, 4000, 8000, 16000],
+                          1600, 2000, 3200, 4000, 6400, 8000, 16000],
 }
-gs = GridSearchCV(
-    clone(sequential_search.best_estimator_), param_grid, scoring=scoring,
-    n_jobs=5, refit=False, verbose=10).fit(X_train, y_train)
-dump(gs, "../sequential_search_speech_timit_basic_esn_final.joblib")
-print(sequential_search.all_best_params_, sequential_search.all_best_score_)
+for params in ParameterGrid(param_grid):
+    estimator = clone(sequential_search.best_estimator_).set_params(**params)
+    cv = cross_validate(estimator=estimator, X=X_train, y=y_train,
+                        scoring=scoring, n_jobs=5, verbose=10)
+    print(cv)
