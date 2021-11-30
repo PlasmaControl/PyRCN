@@ -166,7 +166,7 @@ w_bias = np.unique(kmeans.labels_, return_counts=True)[1] / len(kmeans.labels_)
 w_bias = 2 * w_bias - 1
 input_to_node = PredefinedWeightsInputToNode(
     predefined_input_weights=w_in.T,
-    # predefined_bias_weights=w_bias
+    predefined_bias_weights=w_bias
 )
 w_rec = transition_matrix(kmeans.labels_)
 node_to_node = AttentionWeightsNodeToNode(recurrent_attention_weights=w_rec)
@@ -218,17 +218,16 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step3', RandomizedSearchCV, step3_esn_params, kwargs_step3),
             ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-base_esn = ESNClassifier(input_to_node=input_to_node)\
-    .set_params(**initially_fixed_params)
+base_esn = ESNClassifier().set_params(**initially_fixed_params)
 
 try:
     sequential_search = load(
-        "../sequential_search_speech_timit_km_esn.joblib")
+        "../sequential_search_speech_timit_basic_esn.joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(
         base_esn, searches=searches).fit(X_train, y_train)
     dump(sequential_search,
-         "../sequential_search_speech_timit_km_esn.joblib")
+         "../sequential_search_speech_timit_basic_esn.joblib")
 
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
 
@@ -238,12 +237,11 @@ param_grid = {
 }
 for params in ParameterGrid(param_grid):
     estimator = clone(sequential_search.best_estimator_).set_params(**params)
-    kmeans = load("../kmeans_" + str(params["hidden_layer_size"])
-                  + ".joblib")
-    w_in = np.divide(kmeans.cluster_centers_,
-                     np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
-    estimator.input_to_node.predefined_input_weights = w_in.T
-    cv = GridSearchCV(estimator=estimator, param_grid={}, scoring=scoring,
-                      n_jobs=5, verbose=10).fit(X=X_train, y=y_train)
-    dump(cv, "../speech_timit_km_esn_" + str(params["hidden_layer_size"])
-         + ".joblib")
+    try:
+        load("../speech_timit_basic_esn_" + str(params["hidden_layer_size"])
+             + ".joblib")
+    except FileNotFoundError:
+        cv = GridSearchCV(estimator=estimator, param_grid={}, scoring=scoring,
+                          n_jobs=5, verbose=10).fit(X=X_train, y=y_train)
+        dump(cv, "../speech_timit_basic_esn_" +
+             str(params["hidden_layer_size"]) + ".joblib")
