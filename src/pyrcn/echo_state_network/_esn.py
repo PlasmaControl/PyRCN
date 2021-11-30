@@ -313,12 +313,14 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
         if self.requires_sequence:
+            self._input_to_node.fit(X[0])
+            self._node_to_node.fit(self._input_to_node.transform(X[0]))
             X, y, sequence_ranges = concatenate_sequences(X, y)
         else:
             self._validate_data(X, y, multi_output=True)
-        self._input_to_node.fit(X)
-        self._node_to_node.fit(self._input_to_node.transform(X))
-        self._regressor = self._regressor.__class__()
+            self._input_to_node.fit(X)
+            self._node_to_node.fit(self._input_to_node.transform(X))
+        # self._regressor = self._regressor.__class__()
         if self.requires_sequence:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
         else:
@@ -716,15 +718,17 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
         if self.requires_sequence:
+            self._input_to_node.fit(X[0])
+            self._node_to_node.fit(self._input_to_node.transform(X[0]))
             self._check_if_sequence_to_value(X, y)
             X, y, sequence_ranges = concatenate_sequences(
                 X, y, sequence_to_value=self._sequence_to_value)
         else:
             self._validate_data(X, y, multi_output=True)
+            self._input_to_node.fit(X)
+            self._node_to_node.fit(self._input_to_node.transform(X))
         self._encoder = LabelBinarizer().fit(y)
         y = self._encoder.transform(y)
-        self._input_to_node.fit(X)
-        self._node_to_node.fit(self._input_to_node.transform(X))
         # self._regressor = self._regressor.__class__()
         if self.requires_sequence:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
