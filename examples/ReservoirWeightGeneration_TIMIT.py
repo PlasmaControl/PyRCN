@@ -235,7 +235,7 @@ param_grid = {
     'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000,
                           1600, 2000, 3200, 4000, 6400, 8000, 16000],
 }
-for params in ParameterGrid(param_grid):
+for params in reversed(ParameterGrid(param_grid)):
     estimator = clone(sequential_search.best_estimator_).set_params(**params)
     try:
         load("../speech_timit_basic_esn_" + str(params["hidden_layer_size"])
