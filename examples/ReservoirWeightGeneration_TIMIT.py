@@ -12,7 +12,7 @@ from sklearn.utils import shuffle
 from sklearn.utils.fixes import loguniform
 from sklearn.base import clone
 from sklearn.model_selection import (RandomizedSearchCV, ParameterGrid,
-                                     cross_validate)
+                                     GridSearchCV)
 from sklearn.metrics import make_scorer
 from pyrcn.metrics import accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
@@ -237,6 +237,7 @@ param_grid = {
 }
 for params in ParameterGrid(param_grid):
     estimator = clone(sequential_search.best_estimator_).set_params(**params)
-    cv = cross_validate(estimator=estimator, X=X_train, y=y_train,
-                        scoring=scoring, n_jobs=5, verbose=10)
-    print(cv)
+    cv = GridSearchCV(estimator=estimator, param_grid={}, scoring=scoring,
+                      n_jobs=5, verbose=10).fit(X=X_train, y=y_train)
+    dump(cv, "../speech_timit_basic_esn_" + str(params["hidden_layer_size"])
+         + ".joblib")
