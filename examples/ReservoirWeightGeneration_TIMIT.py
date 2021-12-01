@@ -252,5 +252,5 @@ for params in ParameterGrid(param_grid):
     except FileNotFoundError:
         cv = GridSearchCV(estimator=estimator, param_grid={}, scoring=scoring,
                           n_jobs=5, verbose=10).fit(X=X_train, y=y_train)
-        dump(cv, "../TIMIT/speech_timit_km_esn_rec_-1_1_" +
+        dump(cv, "../speech_timit_km_esn_rec_-1_1_" +
              str(params["hidden_layer_size"]) + ".joblib")
