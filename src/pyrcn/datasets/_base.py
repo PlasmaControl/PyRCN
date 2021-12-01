@@ -15,13 +15,31 @@ def _mg_eq(xt: float, xtau: float, a: float = 0.2, b: float = 0.1,
            n: int = 10) -> float:
     """
     Mackey-Glass time delay diffential equation, at values x(t) and x(t-tau).
+
+    This code was taken from the ReservoirPy library [#]_.
+
+    References
+    ----------
+    .. [#] Trouvain et al., ‘ ReservoirPy: an Efficient and User-Friendly
+           Library to Design Echo State Networks’,  In International Conference
+           on Artificial Neural Networks (pp. 494-505). Springer, Cham.
     """
     return -b*xt + a*xtau / (1+xtau**n)
 
 
 def _mg_rk4(xt: float, xtau: float, a: float, b: float, n: int,
             h: float = 1.0) -> float:
-    """Runge-Kuta method (RK4) for Mackey-Glass timeseries discretization."""
+    """
+    Runge-Kuta method (RK4) for Mackey-Glass timeseries discretization.
+
+    This code was taken from the ReservoirPy library [#]_.
+
+    References
+    ----------
+    .. [#] Trouvain et al., ‘ ReservoirPy: an Efficient and User-Friendly
+           Library to Design Echo State Networks’,  In International Conference
+           on Artificial Neural Networks (pp. 494-505). Springer, Cham.
+    """
     k1 = h * _mg_eq(xt, xtau, a, b, n)
     k2 = h * _mg_eq(xt + 0.5*k1, xtau, a, b, n)
     k3 = h * _mg_eq(xt + 0.5*k2, xtau, a, b, n)
@@ -88,6 +106,8 @@ def mackey_glass(n_timesteps: int, n_future: Union[int, np.integer] = 1,
         passed as parameter. A default seed is hard-coded to ensure
         reproducibility in any case.
 
+        This code was taken from the ReservoirPy library [#]_.
+
     References
     ----------
         .. [#] M. C. Mackey and L. Glass, ‘Oscillation and chaos in
@@ -96,6 +116,10 @@ def mackey_glass(n_timesteps: int, n_future: Union[int, np.integer] = 1,
         .. [#] `Mackey-Glass equations
                 <https://en.wikipedia.org/wiki/Mackey-Glass_equations>`_
                 on Wikipedia.
+        .. [#] Trouvain et al., ‘ ReservoirPy: an Efficient and User-Friendly
+               Library to Design Echo State Networks’,  In International
+               Conference on Artificial Neural Networks (pp. 494-505).
+               Springer, Cham.
     """
     # a random state is needed as the method used to discretize
     # the timeseries needs to use randomly generated initial steps

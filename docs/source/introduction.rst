@@ -1,10 +1,12 @@
 Definition of Reservoir Computing
 =================================
 
-Reservoir Computing is a paradigm for a fast one-shot training of Recurrent Neural Networks (RNNs). As a closely related architecture, 
+Reservoir Computing is a paradigm for a fast one-shot training of Recurrent Neural Networks (RNNs). As a closely related architecture,
 the Extreme Learning Machine (ELM), which is a feed-forward network, can also belong to Reservoir Computing, because the training paradigm is similar.
 
 The `Scholarpedia article about Echo State Networks <http://www.scholarpedia.org/article/Echo_state_network>`_ give an excellent introduction to the topic.
 
 Many examples can be found in the PyRCN repository.
 Some useful examples can also be found in the `PyRCN repository <https://github.com/TUD-STKS/PyRCN/tree/main/examples>`_ with many Jupyter notebooks.
+
+PyRCN is heavily inspired by the toolbox `ReservoirPy <https://github.com/reservoirpy/reservoirpy>`_
