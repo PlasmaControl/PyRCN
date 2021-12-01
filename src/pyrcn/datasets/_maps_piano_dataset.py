@@ -55,6 +55,12 @@ def _combine_events(events: np.ndarray, delta: float,
     -------
     events : ndarray
         Combined events.
+
+    References
+    ----------
+    .. [#] Böck et al., ‘madmom: a new Python Audio and Music Signal Processing
+           Library’,  In: Proceedings of the 24th ACM International Conference
+           on Multimedia (pp. 1174--1178). 2016. Amsterdam, The Netherlands.
     """
     # add a small value to delta, otherwise we end up in floating point hell
     delta += 1e-12
@@ -128,7 +134,13 @@ def _quantize_notes(notes: np.ndarray, fps: float,
     Returns
     -------
     np.ndarray
-        Quantized notes.
+        Quantized notes
+
+    References
+    ----------
+    .. [#] Böck et al., ‘madmom: a new Python Audio and Music Signal Processing
+           Library’,  In: Proceedings of the 24th ACM International Conference
+           on Multimedia (pp. 1174--1178). 2016. Amsterdam, The Netherlands.
     """
     # convert to numpy array or create a copy if needed
     notes = np.array(np.array(notes).T, dtype=float).T
