@@ -3,8 +3,9 @@ import numpy as np
 import pytest
 from sklearn.utils.extmath import safe_sparse_dot
 
-from pyrcn.base.blocks import InputToNode, NodeToNode, PredefinedWeightsNodeToNode,\
-    HebbianNodeToNode
+from pyrcn.base.blocks import (InputToNode, NodeToNode,
+                               AttentionWeightsNodeToNode,
+                               PredefinedWeightsNodeToNode, HebbianNodeToNode)
 
 
 def test_input_to_node_invalid_spectral_radius() -> None:
@@ -47,6 +48,38 @@ def test_node_to_node_invalid_sparsity() -> None:
     with pytest.raises(ValueError):
         n2n = NodeToNode(k_rec=500)
         n2n.fit(X)
+
+
+def test_attention_weights_node_to_node() -> None:
+    print('\ntest_attention_weights_node_to_node():')
+    X = np.zeros(shape=(10, 3))
+    weights = np.random.rand(3, 5)
+    with pytest.raises(ValueError):
+        n2n = AttentionWeightsNodeToNode(
+            recurrent_attention_weights=weights, reservoir_activation='tanh',
+            spectral_radius=1.)
+        n2n.fit(X)
+    weights = np.random.rand(5, 3)
+    with pytest.raises(ValueError):
+        n2n = AttentionWeightsNodeToNode(
+            recurrent_attention_weights=weights, reservoir_activation='tanh',
+            spectral_radius=1.)
+        n2n.fit(X)
+    weights = np.random.rand(5, )
+    with pytest.raises(ValueError):
+        n2n = AttentionWeightsNodeToNode(
+            recurrent_attention_weights=weights, reservoir_activation='tanh',
+            spectral_radius=1.)
+        n2n.fit(X)
+    weights = np.random.rand(3, 3)
+    n2n = AttentionWeightsNodeToNode(
+        recurrent_attention_weights=weights, reservoir_activation='tanh',
+        spectral_radius=1.)
+    n2n.fit(X)
+    print(n2n._recurrent_weights)
+    assert n2n._recurrent_weights.shape == (3, 3)
+    assert n2n.__sizeof__() != 0
+    assert n2n.recurrent_weights is not None
 
 
 def test_predefined_weights_node_to_node() -> None:
@@ -101,13 +134,11 @@ def test_node_to_node_sparse() -> None:
         hidden_layer_size=5, sparsity=2/5, reservoir_activation='tanh',
         spectral_radius=1., random_state=42)
     n2n.fit(X)
-    print(n2n._recurrent_weights.toarray())
     assert n2n._recurrent_weights.shape == (5, 5)
     n2n = NodeToNode(
-        hidden_layer_size=5, k_rec=2, reservoir_activation='tanh', spectral_radius=1.,
-        random_state=42)
+        hidden_layer_size=5, k_rec=2, reservoir_activation='tanh',
+        spectral_radius=1., random_state=42)
     n2n.fit(X)
-    print(n2n._recurrent_weights.toarray())
     assert n2n._recurrent_weights.shape == (5, 5)
     assert n2n.__sizeof__() != 0
     assert n2n.recurrent_weights is not None
@@ -126,7 +157,6 @@ def test_node_to_node_bidirectional() -> None:
         spectral_radius=1., bidirectional=True, random_state=42)
     n2n.fit(X)
     n2n.transform(X)
-    print(n2n._recurrent_weights.toarray())
     assert n2n._recurrent_weights.shape == (5, 5)
     assert n2n._hidden_layer_state.shape == (10, 10)
 
@@ -148,8 +178,9 @@ def test_node_to_node_invalid_leakage() -> None:
 
 def test_node_to_node_hebbian() -> None:
     print('\ntest_node_to_node_hebbian():')
-    i2n = InputToNode(hidden_layer_size=5, sparsity=2/5, input_activation='tanh',
-                      input_scaling=1., bias_scaling=1., random_state=42)
+    i2n = InputToNode(hidden_layer_size=5, sparsity=2/5,
+                      input_activation='tanh', input_scaling=1.,
+                      bias_scaling=1., random_state=42)
     X = np.zeros(shape=(10, 3))
     i2n.fit(X)
     n2n = HebbianNodeToNode(hidden_layer_size=5, sparsity=2/5,
@@ -175,4 +206,5 @@ def test_node_to_node_hebbian() -> None:
     print(n2n.transform(i2n_hidden))
     print(n2n._recurrent_weights)
     assert n2n._recurrent_weights.shape == (5, 5)
-    assert safe_sparse_dot(i2n.transform(X), n2n._recurrent_weights).shape == (10, 5)
+    assert safe_sparse_dot(
+        i2n.transform(X), n2n._recurrent_weights).shape == (10, 5)

@@ -1,10 +1,8 @@
 from pathlib import Path
 import numpy as np
+from scipy.stats import uniform
 import librosa
 from tqdm import tqdm
-
-import pandas as pd
-import seaborn as sns
 
 from joblib import dump, load
 
@@ -12,21 +10,17 @@ from sklearn.preprocessing import StandardScaler, FunctionTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.utils import shuffle
 from sklearn.utils.fixes import loguniform
-from scipy.stats import uniform
-
-from sklearn.model_selection import GridSearchCV, RandomizedSearchCV
-from sklearn.cluster import MiniBatchKMeans
+from sklearn.base import clone
+from sklearn.model_selection import (RandomizedSearchCV, ParameterGrid,
+                                     GridSearchCV)
 from sklearn.metrics import make_scorer
-from pyrcn.metrics import mean_squared_error, accuracy_score
+from pyrcn.metrics import accuracy_score
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.echo_state_network import ESNClassifier
-from pyrcn.base.blocks import PredefinedWeightsInputToNode, PredefinedWeightsNodeToNode
+from pyrcn.base.blocks import (PredefinedWeightsInputToNode,
+                               PredefinedWeightsNodeToNode,
+                               AttentionWeightsNodeToNode)
 from pyrcn.util import FeatureExtractor
-
-from matplotlib import ticker
-import matplotlib.pyplot as plt
-
-sns.set_theme()
 
 
 training_sentences = list(
@@ -40,17 +34,21 @@ def add_constant(x, constant=1e-5):
 
 
 def create_feature_extraction_pipeline():
-    step1 = FeatureExtractor(func=librosa.load, kw_args={'sr': 16000, 'mono': True})
+    step1 = FeatureExtractor(func=librosa.load,
+                             kw_args={'sr': 16000, 'mono': True})
     step2 = FeatureExtractor(func=librosa.util.normalize)
     step3 = FeatureExtractor(func=librosa.effects.preemphasis)
     step4 = FeatureExtractor(librosa.feature.melspectrogram,
-                             kw_args={'sr': 16000, 'n_fft': 400, 'hop_length': 160,
-                                      'n_mels': 40, 'center': False,
-                                      'window': "hamming"})
+                             kw_args={
+                                 'sr': 16000, 'n_fft': 400, 'hop_length': 160,
+                                 'n_mels': 40, 'center': False,
+                                 'window': "hamming"
+                             })
     step5 = FunctionTransformer(add_constant, kw_args={'constant': 1e-5})
     step6 = FunctionTransformer(np.log)
     mel_spectrogram = Pipeline([("load_audio", step1), ("normalize", step2),
-                                ("preemphasis", step3), ("mel_spectrogram", step4),
+                                ("preemphasis", step3),
+                                ("mel_spectrogram", step4),
                                 ("add", step5), ("log", step6)])
     delta_spectrogram = Pipeline(
         [("mel_spectrogram", mel_spectrogram),
@@ -65,14 +63,14 @@ def create_feature_extraction_pipeline():
 
 def transition_matrix(transitions):
     n = 1 + max(transitions)  # number of states
-    M = np.zeros(shape=(n,n))
-    for (i, j) in zip(transitions,transitions[1:]):
+    M = np.zeros(shape=(n, n))
+    for (i, j) in zip(transitions, transitions[1:]):
         M[i][j] += 1
     # now convert to probabilities:
     for row in M:
         s = sum(row)
         if s > 0:
-            row[:] = [f/s for f in row]
+            row[:] = [f / s for f in row]
     return M
 
 
@@ -98,14 +96,21 @@ def phn_label(phn, frame, hop_length, num_of_frame):
 
 def set_label_number(label):
     phone_39set = {
-        "iy": 0, "ih": 1, "ix": 1, "eh": 2, "ae": 3, "ah": 4, "ax": 4, "ax-h": 4,
-        "uw": 5, "ux": 5, "uh": 6, "aa": 7, "ao": 7, "ey": 8, "ay": 9, "oy": 10,
-        "aw": 11, "ow": 12, "er": 13, "axr": 13, "l": 14, "el": 14, "r": 15, "w": 16,
-        "y": 17, "m": 18, "em": 18, "n": 19, "en": 19, "nx": 19, "ng": 20, "eng": 20,
-        "dx": 21, "jh": 22, "ch": 23, "z": 24, "s": 25, "sh": 26, "zh": 26, "hh": 27,
-        "hv": 27, "v": 28, "f": 29, "dh": 30, "th": 31, "b": 32, "p": 33, "d": 34,
+        "iy": 0, "ih": 1, "ix": 1, "eh": 2, "ae": 3, "ah": 4, "ax": 4,
+        "ax-h": 4,
+        "uw": 5, "ux": 5, "uh": 6, "aa": 7, "ao": 7, "ey": 8, "ay": 9,
+        "oy": 10,
+        "aw": 11, "ow": 12, "er": 13, "axr": 13, "l": 14, "el": 14, "r": 15,
+        "w": 16,
+        "y": 17, "m": 18, "em": 18, "n": 19, "en": 19, "nx": 19, "ng": 20,
+        "eng": 20,
+        "dx": 21, "jh": 22, "ch": 23, "z": 24, "s": 25, "sh": 26, "zh": 26,
+        "hh": 27,
+        "hv": 27, "v": 28, "f": 29, "dh": 30, "th": 31, "b": 32, "p": 33,
+        "d": 34,
         "t": 35, "g": 36, "k": 37, "bcl": 38, "pcl": 38, "dcl": 38, "tcl": 38,
-        "gcl": 38, "kcl": 38, "epi": 38, "pau": 38, "h": 38, "q": 38}
+        "gcl": 38, "kcl": 38, "epi": 38, "pau": 38, "h": 38, "q": 38
+    }
     label_idx = np.zeros(len(label))
     for i in range(len(label)):
         label_idx[i] = phone_39set[label[i]]
@@ -113,13 +118,13 @@ def set_label_number(label):
     return label_idx
 
 
-mel_spectrogram, delta_spectrogram, delta_delta_spectrogram\
+mel_spectrogram, delta_spectrogram, delta_delta_spectrogram \
     = create_feature_extraction_pipeline()
 scaler = StandardScaler()
 X_train = []
 y_train = []
 for k, f in tqdm(enumerate(shuffle(training_sentences, random_state=42))):
-    if not "sa" in str(f):
+    if "sa" not in str(f):
         mel = mel_spectrogram.transform(X=str(f))
         mel_delta = delta_spectrogram.transform(X=str(f))
         mel_delta_delta = delta_delta_spectrogram.transform(X=str(f))
@@ -134,7 +139,7 @@ for k, f in tqdm(enumerate(shuffle(training_sentences, random_state=42))):
 X_test = []
 y_test = []
 for k, f in tqdm(enumerate(shuffle(test_sentences, random_state=42))):
-    if not "sa" in str(f):
+    if "sa" not in str(f):
         mel = mel_spectrogram.transform(X=str(f))
         mel_delta = delta_spectrogram.transform(X=str(f))
         mel_delta_delta = delta_delta_spectrogram.transform(X=str(f))
@@ -154,60 +159,104 @@ for k, X in enumerate(X_train):
 for k, X in enumerate(X_test):
     X_test[k] = scaler.transform(X)
 
-for k in [50, 100, 200, 400, 500, 800, 1000, 1600, 2000, 3200, 4000, 6400, 8000, 16000]:
-    try:
-        kmeans = load("../kmeans_" + str(k) + ".joblib")
-    except FileNotFoundError:
-        kmeans = MiniBatchKMeans(n_clusters=k, n_init=200, reassignment_ratio=0,
-                                 max_no_improvement=50, init='k-means++', verbose=2,
-                                 random_state=42)
-        kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
-        dump(kmeans, "../kmeans_" + str(k) + ".joblib")
+kmeans = load("../kmeans_50.joblib")
+w_in = np.divide(kmeans.cluster_centers_,
+                 np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
+w_bias = np.unique(kmeans.labels_, return_counts=True)[1] / len(kmeans.labels_)
+w_bias = w_bias
+input_to_node = PredefinedWeightsInputToNode(
+    predefined_input_weights=w_in.T,
+    predefined_bias_weights=w_bias
+)
+w_rec = transition_matrix(kmeans.labels_)
+node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
 
-initially_fixed_params = {'hidden_layer_size': 50,
-                          'k_in': 10,
-                          'input_scaling': 0.4,
-                          'input_activation': 'identity',
-                          'bias_scaling': 0.0,
-                          'spectral_radius': 1.0,
-                          'leakage': 0.1,
-                          'k_rec': 10,
-                          'reservoir_activation': 'tanh',
-                          'bidirectional': False,
-                          'alpha': 1e-5,
-                          'random_state': 42,
-                          'requires_sequence': True}
+initially_fixed_params = {
+    'hidden_layer_size': 50,
+    'k_in': 10,
+    'input_scaling': 0.4,
+    'input_activation': 'identity',
+    'bias_scaling': 0.2,
+    'spectral_radius': 0.0,
+    'leakage': 1.0,
+    'k_rec': 10,
+    'reservoir_activation': 'tanh',
+    'bidirectional': False,
+    'alpha': 1e-5,
+    'random_state': 42,
+    'requires_sequence': True
+}
 
-step1_esn_params = {'input_scaling': uniform(loc=1e-2, scale=1),
-                    'spectral_radius': uniform(loc=0, scale=2)}
+step1_esn_params = {
+    'input_scaling': uniform(loc=1e-2, scale=1),
+    'spectral_radius': uniform(loc=0, scale=2)
+}
 step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
-step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
+step3_esn_params = {'bias_scaling': uniform(loc=0, scale=3)}
 step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
-scoring = {"MSE": make_scorer(mean_squared_error, greater_is_better=False,
-                              needs_proba=True),
-           "Acc": make_scorer(accuracy_score)}
+scoring = make_scorer(accuracy_score)
 
-kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': scoring, 'refit': 'MSE'}
-kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': scoring, 'refit': 'MSE'}
-kwargs_step3 = {'verbose': 1, 'n_jobs': -1, 'scoring': scoring,
-                'refit': 'MSE'}
-kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': scoring, 'refit': 'MSE'}
+kwargs_step1 = {
+    'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+    'scoring': scoring
+}
+kwargs_step2 = {
+    'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+    'scoring': scoring
+}
+kwargs_step3 = {
+    'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+    'scoring': scoring
+}
+kwargs_step4 = {
+    'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
+    'scoring': scoring
+}
 
-# The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step2', RandomizedSearchCV, step2_esn_params, kwargs_step2),
-            ('step3', GridSearchCV, step3_esn_params, kwargs_step3),
+            ('step3', RandomizedSearchCV, step3_esn_params, kwargs_step3),
             ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-base_esn = ESNClassifier().set_params(**initially_fixed_params)
+base_esn = ESNClassifier(input_to_node=input_to_node,
+                         node_to_node=node_to_node).set_params(
+    **initially_fixed_params)
 
 try:
-    sequential_search = load("../sequential_search_speech_timit_kmeans_rec.joblib")
+    sequential_search = load(
+        "../sequential_search_speech_timit_km_esn_attention_0_1_rec_0_1"
+        ".joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn,
-                                           searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "../sequential_search_speech_timit_kmeans_rec.joblib")
+                                           searches=searches).fit(X_train,
+                                                                  y_train)
+    dump(sequential_search,
+         "../sequential_search_speech_timit_km_esn_attention_0_1_rec_0_1"
+         ".joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
+
+param_grid = {
+    'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000,
+                          1600, 2000, 3200, 4000, 6400, 8000, 16000],
+}
+for params in ParameterGrid(param_grid):
+    estimator = clone(sequential_search.best_estimator_).set_params(**params)
+    kmeans = load("../kmeans_" + str(params["hidden_layer_size"])
+                  + ".joblib")
+    w_in = np.divide(kmeans.cluster_centers_,
+                     np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
+    w_bias = np.unique(kmeans.labels_,
+                       return_counts=True)[1] / len(kmeans.labels_)
+    w_rec = transition_matrix(kmeans.labels_)
+    estimator.input_to_node.predefined_input_weights = w_in.T
+    estimator.input_to_node.predefined_bias_weights = w_bias
+    estimator.node_to_node.predefined_recurrent_weights = w_rec
+    try:
+        cv = load("../speech_timit_km_esn_attention_0_1_rec_0_1_"
+                  + str(params["hidden_layer_size"]) + ".joblib")
+    except FileNotFoundError:
+        cv = GridSearchCV(estimator=estimator, param_grid={}, scoring=scoring,
+                          n_jobs=1, verbose=10).fit(X=X_train, y=y_train)
+        dump(cv, "../speech_timit_km_esn_attention_0_1_rec_0_1_" +
+             str(params["hidden_layer_size"]) + ".joblib")
+    print(cv.cv_results_)

@@ -78,8 +78,8 @@ def test_linear() -> None:
 
 
 def test_compare_ridge() -> None:
-    X_train, X_test, y_train, y_test = train_test_split(X_diabetes, y_diabetes,
-                                                        test_size=10, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X_diabetes, y_diabetes, test_size=10, random_state=42)
 
     i_reg = IncrementalRegression(alpha=.01).fit(X_train, y_train)
     ridge = Ridge(alpha=.01, solver='svd').fit(X_train, y_train)

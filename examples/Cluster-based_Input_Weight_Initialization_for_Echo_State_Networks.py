@@ -12,7 +12,7 @@ from pyrcn.echo_state_network import ESNClassifier
 import matplotlib.pyplot as plt
 
 
-#Options
+# Options
 plt.rc('image', cmap='RdBu')
 plt.rc('font', family='serif', serif='Times')
 plt.rc('text', usetex=True)
@@ -60,19 +60,23 @@ step3_esn_params = {'bias_scaling': np.linspace(0.0, 1.0, 11)}
 step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
 
 kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': make_scorer(mean_squared_error, greater_is_better=False,
+                'scoring': make_scorer(mean_squared_error,
+                                       greater_is_better=False,
                                        needs_proba=True)
                 }
 kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': make_scorer(mean_squared_error, greater_is_better=False,
+                'scoring': make_scorer(mean_squared_error,
+                                       greater_is_better=False,
                                        needs_proba=True)
                 }
 kwargs_step3 = {'verbose': 1, 'n_jobs': -1,
-                'scoring': make_scorer(mean_squared_error, greater_is_better=False,
+                'scoring': make_scorer(mean_squared_error,
+                                       greater_is_better=False,
                                        needs_proba=True)
                 }
 kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': make_scorer(mean_squared_error, greater_is_better=False,
+                'scoring': make_scorer(mean_squared_error,
+                                       greater_is_better=False,
                                        needs_proba=True)
                 }
 
@@ -86,6 +90,6 @@ base_esn.fit(X_train, y_train)
 try:
     sequential_search = load("../sequential_search_arab.joblib")
 except FileNotFoundError:
-    sequential_search = SequentialSearchCV(base_esn,
-                                           searches=searches).fit(X_train, y_train)
+    sequential_search = SequentialSearchCV(
+        base_esn, searches=searches).fit(X_train, y_train)
     dump(sequential_search, "../sequential_search_arab.joblib")

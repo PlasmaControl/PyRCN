@@ -27,15 +27,20 @@ def test_esn_regressor_jobs() -> None:
     X_train, X_test, y_train, y_test = train_test_split(X, y, shuffle=False)
     param_grid = {
         "input_to_node": [
-            InputToNode(bias_scaling=.1, hidden_layer_size=10,
-                        input_activation='identity', random_state=42),
-            InputToNode(bias_scaling=.1, hidden_layer_size=50,
-                        input_activation='identity', random_state=42)],
+            InputToNode(
+                bias_scaling=.1, hidden_layer_size=10,
+                input_activation='identity', random_state=42),
+            InputToNode(
+                bias_scaling=.1, hidden_layer_size=50,
+                input_activation='identity', random_state=42)],
         "node_to_node": [
-            NodeToNode(spectral_radius=0., hidden_layer_size=10, random_state=42),
-            NodeToNode(spectral_radius=1, hidden_layer_size=50, random_state=42)],
+            NodeToNode(
+                spectral_radius=0., hidden_layer_size=10, random_state=42),
+            NodeToNode(
+                spectral_radius=1, hidden_layer_size=50, random_state=42)],
         "regressor": [
-            IncrementalRegression(alpha=.0001), IncrementalRegression(alpha=.01)],
+            IncrementalRegression(alpha=.0001),
+            IncrementalRegression(alpha=.01)],
         'random_state': [42]}
     esn = GridSearchCV(estimator=ESNRegressor(), param_grid=param_grid)
     esn.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
@@ -87,8 +92,9 @@ def test_esn_regressor_requires_sequence() -> None:
                   'reservoir_activation': ['tanh'],
                   'alpha': [1e-2, 1e-5],
                   }
-    esn = GridSearchCV(ESNRegressor(), param_grid,
-                       scoring=make_scorer(mean_squared_error, greater_is_better=False))
+    esn = GridSearchCV(
+        ESNRegressor(), param_grid,
+        scoring=make_scorer(mean_squared_error, greater_is_better=False))
     esn.fit(X_train, y_train, n_jobs=2)
     np.testing.assert_equal(esn.best_estimator_.requires_sequence, True)
 
@@ -111,7 +117,8 @@ def test_esn_regressor_wrong_sequence_format() -> None:
                   'reservoir_activation': 'tanh',
                   'alpha': 1e-5}
     with pytest.raises(ValueError):
-        ESNRegressor(verbose=True, **param_grid).fit(X_train, y_train, n_jobs=2)
+        ESNRegressor(verbose=True, **param_grid)\
+            .fit(X_train, y_train, n_jobs=2)
 
 
 def test_esn_output_unchanged() -> None:

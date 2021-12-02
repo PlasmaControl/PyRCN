@@ -2,15 +2,15 @@
 # coding: utf-8
 
 # # Multipitch tracking using Echo State Networks
-# 
+#
 # ## Introduction
-# 
-# In this notebook, we demonstrate how the ESN can deal with multipitch tracking,
-# a challenging multilabel classification problem in music analysis.
-# 
+#
+# In this notebook, we demonstrate how the ESN can deal with multipitch
+# tracking, a challenging multilabel classification problem in music analysis.
+#
 # As this is a computationally expensive task, we have pre-trained models
 # to serve as an entry point.
-# 
+#
 # At first, we import all packages required for this task.
 # You can find the import statements below.
 import numpy as np
@@ -24,9 +24,10 @@ from madmom.processors import SequentialProcessor, ParallelProcessor
 from madmom.audio import SignalProcessor, FramedSignalProcessor
 from madmom.audio.stft import ShortTimeFourierTransformProcessor
 from madmom.audio.filters import LogarithmicFilterbank
-from madmom.audio.spectrogram import (FilteredSpectrogramProcessor,
-                                      LogarithmicSpectrogramProcessor,
-                                      SpectrogramDifferenceProcessor)
+from madmom.audio.spectrogram import (
+    FilteredSpectrogramProcessor,
+    LogarithmicSpectrogramProcessor,
+    SpectrogramDifferenceProcessor)
 
 from pyrcn.util import FeatureExtractor
 from pyrcn.echo_state_network import ESNClassifier
@@ -36,8 +37,6 @@ from pyrcn.model_selection import SequentialSearchCV
 
 from matplotlib import pyplot as plt
 from matplotlib import ticker
-plt.rcParams["font.family"] = "Times New Roman"
-plt.rcParams["font.size"] = 10
 
 import pandas as pd
 import seaborn as sns
@@ -48,12 +47,11 @@ sns.set_theme()
 
 
 # Feature extraction
-def create_feature_extraction_pipeline(sr=44100, frame_sizes=[1024, 2048, 4096],
-                                       fps_hz=100.):
-    audio_loading = Pipeline([("load_audio", FeatureExtractor(librosa.load, sr=sr,
-                                                              mono=True)),
-                              ("normalize", FeatureExtractor(librosa.util.normalize,
-                                                             norm=np.inf))])
+def create_feature_extraction_pipeline(
+        sr=44100, frame_sizes=[1024, 2048, 4096], fps_hz=100.):
+    audio_loading = Pipeline(
+        [("load_audio", FeatureExtractor(librosa.load, sr=sr, mono=True)),
+         ("normalize", FeatureExtractor(librosa.util.normalize, norm=np.inf))])
 
     sig = SignalProcessor(num_channels=1, sample_rate=sr)
     multi = ParallelProcessor([])
@@ -62,16 +60,20 @@ def create_feature_extraction_pipeline(sr=44100, frame_sizes=[1024, 2048, 4096],
         stft = ShortTimeFourierTransformProcessor()  # caching FFT window
         filt = FilteredSpectrogramProcessor(filterbank=LogarithmicFilterbank,
                                             num_bands=12, fmin=30, fmax=17000,
-                                            norm_filters=True, unique_filters=True)
+                                            norm_filters=True,
+                                            unique_filters=True)
         spec = LogarithmicSpectrogramProcessor(log=np.log10, mul=5, add=1)
-        diff = SpectrogramDifferenceProcessor(diff_ratio=0.5, positive_diffs=True,
+        diff = SpectrogramDifferenceProcessor(diff_ratio=0.5,
+                                              positive_diffs=True,
                                               stack_diffs=np.hstack)
         # process each frame size with spec and diff sequentially
         multi.append(SequentialProcessor([frames, stft, filt, spec, diff]))
-    feature_extractor = FeatureExtractor(SequentialProcessor([sig, multi, np.hstack]))
+    feature_extractor = FeatureExtractor(
+        SequentialProcessor([sig, multi, np.hstack]))
 
     feature_extraction_pipeline = Pipeline([("audio_loading", audio_loading),
-                                            ("feature_extractor", feature_extractor)])
+                                            ("feature_extractor",
+                                             feature_extractor)])
     return feature_extraction_pipeline
 
 
@@ -104,41 +106,48 @@ tsplot(ax, np.concatenate(np.hstack((X_train, X_test))))
 ax.set_xlabel('Feature Index')
 ax.set_ylabel('Magnitude')
 
-
 # Set up a ESN
 # To develop an ESN model for multipitch tracking,
 # we need to tune several hyper-parameters,
 # e.g., input_scaling, spectral_radius, bias_scaling and leaky integration.
-# 
+#
 # We follow the way proposed in the paper for multipitch tracking
-# and for acoustic modeling of piano music to optimize hyper-parameters sequentially.
-# 
+# and for acoustic modeling of piano music to optimize hyper-parameters
+# sequentially.
+#
 # We define the search spaces for each step together with the type of search
 # (a grid search in this context).
-initially_fixed_params = {'hidden_layer_size': 500,
-                          'input_activation': 'identity',
-                          'k_in': 10,
-                          'bias_scaling': 0.0,
-                          'reservoir_activation': 'tanh',
-                          'leakage': 1.0,
-                          'bidirectional': False,
-                          'k_rec': 10,
-                          'alpha': 1e-5,
-                          'random_state': 42,
-                          'requires_sequence': True}
+initially_fixed_params = {
+    'hidden_layer_size': 500,
+    'input_activation': 'identity',
+    'k_in': 10,
+    'bias_scaling': 0.0,
+    'reservoir_activation': 'tanh',
+    'leakage': 1.0,
+    'bidirectional': False,
+    'k_rec': 10,
+    'alpha': 1e-5,
+    'random_state': 42,
+    'requires_sequence': True
+}
 
 step1_esn_params = {'leakage': np.linspace(0.1, 1.0, 10)}
-kwargs_1 = {'random_state': 42, 'verbose': 2, 'n_jobs': 70, 'pre_dispatch': 70,
-            'n_iter': 14, 'scoring': make_scorer(accuracy_score)}
-step2_esn_params = {'input_scaling': np.linspace(0.1, 1.0, 10),
-                    'spectral_radius': np.linspace(0.0, 1.5, 16)}
+kwargs_1 = {
+    'random_state': 42, 'verbose': 2, 'n_jobs': 70, 'pre_dispatch': 70,
+    'n_iter': 14, 'scoring': make_scorer(accuracy_score)
+}
+step2_esn_params = {
+    'input_scaling': np.linspace(0.1, 1.0, 10),
+    'spectral_radius': np.linspace(0.0, 1.5, 16)
+}
 
 step3_esn_params = {'bias_scaling': np.linspace(0.0, 2.0, 21)}
 
-kwargs_2_3 = {'verbose': 2, 'pre_dispatch': 70, 'n_jobs': 70,
-              'scoring': make_scorer(accuracy_score)}
+kwargs_2_3 = {
+    'verbose': 2, 'pre_dispatch': 70, 'n_jobs': 70,
+    'scoring': make_scorer(accuracy_score)
+}
 
-# The searches are defined similarly to the steps of a sklearn.pipeline.Pipeline:
 searches = [('step1', GridSearchCV, step1_esn_params, kwargs_1),
             ('step2', GridSearchCV, step2_esn_params, kwargs_2_3),
             ('step3', GridSearchCV, step3_esn_params, kwargs_2_3)]
@@ -146,17 +155,17 @@ searches = [('step1', GridSearchCV, step1_esn_params, kwargs_1),
 base_esn = ESNClassifier(**initially_fixed_params)
 
 # Optimization
-# We provide a SequentialSearchCV that basically iterates through the list of searches
-# that we have defined before.
+# We provide a SequentialSearchCV that basically iterates through the list of
+# searches that we have defined before.
 # It can be combined with any model selection tool from scikit-learn.
 try:
     sequential_search = load("sequential_search_ll.joblib")
 except FileNotFoundError:
     print(FileNotFoundError)
     sequential_search = SequentialSearchCV(base_esn,
-                                           searches=searches).fit(X_train, y_train)
+                                           searches=searches).fit(X_train,
+                                                                  y_train)
     dump(sequential_search, "sequential_search_ll.joblib")
-
 
 # ## Visualize hyper-parameter optimization
 
@@ -172,7 +181,6 @@ tick_locator = ticker.MaxNLocator(5)
 axs.xaxis.set_major_locator(tick_locator)
 axs.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.4f'))
 
-
 # In[ ]:
 
 
@@ -181,11 +189,12 @@ pvt = pd.pivot_table(df, values='mean_test_score', index='param_input_scaling',
                      columns='param_spectral_radius')
 
 pvt.columns = pvt.columns.astype(float)
-pvt2 =  pd.DataFrame(pvt.loc[pd.IndexSlice[0:1], pd.IndexSlice[0.0:1.0]])
+pvt2 = pd.DataFrame(pvt.loc[pd.IndexSlice[0:1], pd.IndexSlice[0.0:1.0]])
 
 fig, axs = plt.subplots()
 sns.heatmap(pvt2, xticklabels=pvt2.columns.values.round(2),
-            yticklabels=pvt2.index.values.round(2), cbar_kws={'label': 'Score'}, ax=axs)
+            yticklabels=pvt2.index.values.round(2),
+            cbar_kws={'label': 'Score'}, ax=axs)
 axs.invert_yaxis()
 axs.set_xlabel("Spectral Radius")
 axs.set_ylabel("Input Scaling")
@@ -207,12 +216,13 @@ axs.yaxis.set_major_formatter(ticker.FormatStrFormatter('%.5f'))
 # Test the ESN
 # Finally, we test the ESN on unseen data.
 def _midi_to_frequency(p):
-    return 440. * (2 ** ((p-69)/12))
+    return 440. * (2 ** ((p - 69) / 12))
 
 
 def get_mir_eval_rows(y, fps=100.):
     time_t = np.arange(len(y)) / fps
-    freq_hz = [_midi_to_frequency(np.asarray(np.nonzero(row))).ravel() for row in y]
+    freq_hz = [_midi_to_frequency(np.asarray(np.nonzero(row))).ravel() for row
+               in y]
     return time_t, freq_hz
 
 
@@ -222,16 +232,20 @@ scores = np.zeros(shape=(10, 14))
 for k, thr in enumerate(np.linspace(0.1, 0.9, 9)):
     res = []
     for y_true, y_pred in zip(y_test, y_test_pred):
-        times_res, freqs_hz_res = get_mir_eval_rows(y_pred[:, 1:] > thr, fps=100.)
-        times_ref, freqs_hz_ref = get_mir_eval_rows(y_true[:, 1:] > thr, fps=100.)
-        res.append(multipitch.metrics(ref_time=times_ref, ref_freqs=freqs_hz_ref,
-                                      est_time=times_res, est_freqs=freqs_hz_res))
+        times_res, freqs_hz_res = get_mir_eval_rows(
+            y_pred[:, 1:] > thr, fps=100.)
+        times_ref, freqs_hz_ref = get_mir_eval_rows(
+            y_true[:, 1:] > thr, fps=100.)
+        res.append(
+            multipitch.metrics(ref_time=times_ref, ref_freqs=freqs_hz_ref,
+                               est_time=times_res, est_freqs=freqs_hz_res))
     scores[k, :] = np.mean(res, axis=0)
 
 fig, axs = plt.subplots()
 sns.lineplot(x=np.linspace(0.1, 1, 10), y=scores[:, :3], ax=axs)
 sns.lineplot(x=np.linspace(0.1, 1, 10),
-             y=2*scores[:, 0]*scores[:, 1] / (scores[:, 0] + scores[:, 1]), ax=axs)
+             y=2 * scores[:, 0] * scores[:, 1] / (scores[:, 0] + scores[:, 1]),
+             ax=axs)
 axs.set_xlabel("Threshold")
 axs.set_ylabel("Scores")
 axs.set_xlim((0.1, 0.9))

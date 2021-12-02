@@ -10,6 +10,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+from pyrcn import __version__
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
@@ -18,11 +19,12 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'PyRCN'
-copyright = '2021, Peter Steiner, Azarakhsh Jalalvand, Simon Stone, Peter Birkholz'
+copyright = '2021, Peter Steiner, Azarakhsh Jalalvand, Simon Stone,' \
+            'Peter Birkholz'
 author = 'Peter Steiner, Azarakhsh Jalalvand, Simon Stone, Peter Birkholz'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.14'
+release = __version__
 
 
 # -- General configuration ---------------------------------------------------

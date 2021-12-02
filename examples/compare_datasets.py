@@ -32,7 +32,8 @@ def dataset_imbalance(directory, *args, **kwargs):
                            'id': 61}]
 
     for dict_dataset in list_dict_datasets:
-        filepath = os.path.join(directory, '{0}.npz'.format(dict_dataset['name']))
+        filepath = os.path.join(directory, '{0}.npz'
+                                .format(dict_dataset['name']))
         if os.path.isfile(filepath):
             logger.info('Loading {0}'.format(filepath))
             npzfile = np.load(filepath, allow_pickle=True)
@@ -53,8 +54,8 @@ def dataset_imbalance(directory, *args, **kwargs):
                                             return_counts=True)
         ir = np.min(label_frequency) / np.max(label_frequency)
         entropy = scipy.stats.entropy(label_frequency, base=2)
-        max_possible_entropy = scipy.stats.entropy(np.ones(label_frequency.shape),
-                                                   base=2)
+        max_possible_entropy = scipy.stats.entropy(
+            np.ones(label_frequency.shape), base=2)
 
         dict_dataset.update({
             'filepath': filepath,

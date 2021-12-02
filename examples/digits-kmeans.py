@@ -5,7 +5,6 @@ import numpy as np
 import time
 
 import matplotlib
-matplotlib.rc('image', cmap='binary')
 
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
@@ -15,9 +14,10 @@ import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 
-from pyrcn.util import get_mnist, tud_colors
+from src.pyrcn.util import get_mnist, tud_colors
 
 
+matplotlib.rc('image', cmap='binary')
 sns.set_theme()
 
 
@@ -75,22 +75,24 @@ def main():
 
     # display digits
     fig = plt.figure(figsize=(6, 3))
-    gs_cyphers = gridspec.GridSpec(2, 5, figure=fig, wspace=.4, hspace=.3, top=.97,
-                                   bottom=.1, left=.07, right=.95)
+    gs_cyphers = gridspec.GridSpec(2, 5, figure=fig, wspace=.4, hspace=.3,
+                                   top=.97, bottom=.1, left=.07, right=.95)
 
     for i in range(10):
-        gs_cypher = gridspec.GridSpecFromSubplotSpec(2, 1, subplot_spec=gs_cyphers[i],
-                                                     height_ratios=[1., .6], hspace=.05)
+        gs_cypher = gridspec.GridSpecFromSubplotSpec(
+            2, 1, subplot_spec=gs_cyphers[i], height_ratios=[1., .6],
+            hspace=.05)
 
-        ax_centroid = fig.add_subplot(gs_cypher[0, 0])  # axs[(i // 5) * 2, i % 5]
-        ax_barchart = fig.add_subplot(gs_cypher[1, 0])  # axs[(i // 5) * 2 + 1, i % 5]
+        ax_centroid = fig.add_subplot(gs_cypher[0, 0])
+        ax_barchart = fig.add_subplot(gs_cypher[1, 0])
 
-        ax_centroid.imshow(cluster_centers[i, :].reshape(28, 28), interpolation='none')
+        ax_centroid.imshow(
+            cluster_centers[i, :].reshape(28, 28), interpolation='none')
         ax_centroid.tick_params(left=False, bottom=False, labelleft=False,
                                 labelbottom=False)
 
-        ax_barchart.bar(list(map(int, values)), cos_similarity[:, i], tick_label=values,
-                        color=tud_colors['lightblue'])
+        ax_barchart.bar(list(map(int, values)), cos_similarity[:, i],
+                        tick_label=values, color=tud_colors['lightblue'])
         # ax_barchart.set_xlim([0, 9])
         ax_barchart.grid(which='both', axis='y')
         ax_barchart.set_yticks([-1., 0., 1.], minor=False)
@@ -98,7 +100,7 @@ def main():
         ax_barchart.set_ylim([-1., 1.])
 
     # plt.tight_layout()
-    plt.savefig('mnist-kmeans-centroids-cos-similarity-pca50.pdf')  # plt.show()
+    plt.savefig('mnist-kmeans-centroids-cos-similarity-pca50.pdf')
     # plt.savefig(os.path.join(os.environ['PGFPATH'],
     # 'mnist-pca50-kmeans-centroids-cos-similarity.pgf'), format='pgf')
     runtime.append(time.time())

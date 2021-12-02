@@ -53,14 +53,14 @@ def test_elm_regressor_jobs() -> None:
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=10, random_state=42)
     param_grid = {
-        'input_to_node': [InputToNode(
-            bias_scaling=10., hidden_layer_size=20, random_state=42),
-                          InputToNode(
-                              bias_scaling=10., hidden_layer_size=50, random_state=42)],
+        'input_to_node': [
+            InputToNode(
+                bias_scaling=10., hidden_layer_size=20, random_state=42),
+            InputToNode(
+                bias_scaling=10., hidden_layer_size=50, random_state=42)],
         'regressor': [IncrementalRegression(alpha=.0001),
                       IncrementalRegression(alpha=.01)],
-        'random_state': [42]
-    }
+        'random_state': [42]}
     elm = GridSearchCV(ELMRegressor(), param_grid)
     elm.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
     y_elm = elm.predict(X_test.reshape(-1, 1))
@@ -130,7 +130,8 @@ def test_iris_ensemble_iterative_regression() -> None:
     y_predicted = cls.predict(X_test)
 
     for record in range(len(y_test)):
-        print('predicted: {0} \ttrue: {1}'.format(y_predicted[record], y_test[record]))
+        print('predicted: {0} \ttrue: {1}'
+              .format(y_predicted[record], y_test[record]))
 
     print('score: {0}'.format(cls.score(X_test, y_test)))
     print('proba: {0}'.format(cls.predict_proba(X_test)))
