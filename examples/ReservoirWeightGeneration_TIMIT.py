@@ -163,12 +163,13 @@ kmeans = load("../kmeans_50.joblib")
 w_in = np.divide(kmeans.cluster_centers_,
                  np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
 w_bias = np.unique(kmeans.labels_, return_counts=True)[1] / len(kmeans.labels_)
-w_bias = w_bias
 input_to_node = PredefinedWeightsInputToNode(
     predefined_input_weights=w_in.T,
     predefined_bias_weights=w_bias
 )
-w_rec = transition_matrix(kmeans.labels_)
+w_rec = 2 * transition_matrix(kmeans.labels_) - 1
+we = np.linalg.eigvals(w_rec)
+w_rec = w_rec / np.amax(np.absolute(w_rec))
 node_to_node = AttentionWeightsNodeToNode(recurrent_attention_weights=w_rec)
 
 initially_fixed_params = {
