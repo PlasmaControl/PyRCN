@@ -170,7 +170,7 @@ input_to_node = PredefinedWeightsInputToNode(
 w_rec = 2 * transition_matrix(kmeans.labels_) - 1
 we = np.linalg.eigvals(w_rec)
 w_rec = w_rec / np.amax(np.absolute(w_rec))
-node_to_node = AttentionWeightsNodeToNode(recurrent_attention_weights=w_rec)
+node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
 
 initially_fixed_params = {
     'hidden_layer_size': 50,
