@@ -248,10 +248,12 @@ for params in ParameterGrid(param_grid):
     w_bias = np.unique(kmeans.labels_,
                        return_counts=True)[1] / len(kmeans.labels_)
     w_bias = 2 * w_bias - 1
-    w_rec = transition_matrix(kmeans.labels_)
+    w_rec = 2 * transition_matrix(kmeans.labels_) - 1
+    we = np.linalg.eigvals(w_rec)
+    w_rec = w_rec / np.amax(np.absolute(w_rec))
     estimator.input_to_node.predefined_input_weights = w_in.T
     estimator.input_to_node.predefined_bias_weights = w_bias
-    estimator.node_to_node.recurrent_attention_weights = w_rec
+    estimator.node_to_node.predefined_recurrent_weights = w_rec
     try:
         cv = load("../speech_timit_km_esn_attention_0_1_rec_eig_-1_1_"
                   + str(params["hidden_layer_size"]) + ".joblib")
