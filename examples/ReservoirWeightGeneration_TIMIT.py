@@ -168,7 +168,7 @@ input_to_node = PredefinedWeightsInputToNode(
     predefined_input_weights=w_in.T,
     # predefined_bias_weights=w_bias
 )
-w_rec = 2 * transition_matrix(kmeans.labels_) - 1
+w_rec = transition_matrix(kmeans.labels_)
 node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
 
 initially_fixed_params = {
@@ -244,15 +244,15 @@ for params in ParameterGrid(param_grid):
     kmeans = load("../kmeans_" + str(params["hidden_layer_size"]) + ".joblib")
     w_in = np.divide(kmeans.cluster_centers_,
                      np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
-    w_rec = 2 * transition_matrix(kmeans.labels_) - 1
+    w_rec = transition_matrix(kmeans.labels_)
     estimator.input_to_node.predefined_input_weights = w_in.T
     estimator.node_to_node.predefined_recurrent_weights = w_rec
     try:
-        cv = load("../speech_timit_km_esn_rec_-1_1_"
+        cv = load("../speech_timit_km_esn_rec_0_1_"
                   + str(params["hidden_layer_size"]) + ".joblib")
     except FileNotFoundError:
         cv = GridSearchCV(estimator=estimator, param_grid={}, scoring=scoring,
                           n_jobs=5, verbose=10).fit(X=X_train, y=y_train)
-        dump(cv, "../speech_timit_km_esn_rec_-1_1_" +
+        dump(cv, "../speech_timit_km_esn_rec_0_1_" +
              str(params["hidden_layer_size"]) + ".joblib")
     print(cv.cv_results_)
