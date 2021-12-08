@@ -236,7 +236,7 @@ param_grid = {
 }
 for params in ParameterGrid(param_grid):
     estimator = clone(sequential_search.best_estimator_).set_params(**params)
-    kmeans = load("../TIMIT/kmeans_" + str(params["hidden_layer_size"])
+    kmeans = load("../kmeans_" + str(params["hidden_layer_size"])
                   + ".joblib")
     w_in = np.divide(kmeans.cluster_centers_,
                      np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
