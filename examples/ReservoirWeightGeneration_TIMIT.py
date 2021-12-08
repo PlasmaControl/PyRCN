@@ -242,6 +242,7 @@ for params in ParameterGrid(param_grid):
                   + ".joblib")
     w_in = np.divide(kmeans.cluster_centers_,
                      np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
+    w_rec = transition_matrix(kmeans.labels_)
     estimator.input_to_node.predefined_input_weights = w_in.T
     try:
         cv = load("../speech_timit_km_esn_rec_0_1_"
