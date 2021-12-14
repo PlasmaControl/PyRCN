@@ -159,18 +159,6 @@ for k, X in enumerate(X_train):
 for k, X in enumerate(X_test):
     X_test[k] = scaler.transform(X)
 
-kmeans = load("../kmeans_50.joblib")
-w_in = np.divide(kmeans.cluster_centers_,
-                 np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
-w_bias = np.unique(kmeans.labels_, return_counts=True)[1] / len(kmeans.labels_)
-w_bias = 2 * w_bias - 1
-w_rec = transition_matrix(kmeans.labels_)
-input_to_node = PredefinedWeightsInputToNode(
-    predefined_input_weights=w_in.T,
-    predefined_bias_weights=w_bias
-)
-node_to_node = AttentionWeightsNodeToNode(recurrent_attention_weights=w_rec)
-
 initially_fixed_params = {
     'hidden_layer_size': 50,
     'k_in': 10,
@@ -218,21 +206,21 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step3', RandomizedSearchCV, step3_esn_params, kwargs_step3),
             ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-base_esn = ESNClassifier(input_to_node=input_to_node,
-                         node_to_node=node_to_node
+base_esn = ESNClassifier(# input_to_node=input_to_node,
+                         # node_to_node=node_to_node
                          ).set_params(**initially_fixed_params)
 
 try:
     sequential_search = load(
-        "../sequential_search_speech_timit_km_esn_attention_-1_1_rec_attention"
+        "../sequential_search_speech_timit_basic_esn"
         ".joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn,
                                            searches=searches).fit(X_train,
                                                                   y_train)
     dump(sequential_search,
-         "../sequential_search_speech_timit_km_esn_attention_"
-         "-1_1_rec_attention.joblib")
+         "../sequential_search_speech_timit_basic_esn"
+         ".joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
 
 param_grid = {
@@ -241,23 +229,12 @@ param_grid = {
 }
 for params in ParameterGrid(param_grid):
     estimator = clone(sequential_search.best_estimator_).set_params(**params)
-    kmeans = load("../kmeans_" + str(params["hidden_layer_size"])
-                  + ".joblib")
-    w_in = np.divide(kmeans.cluster_centers_,
-                     np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
-    w_bias = np.unique(kmeans.labels_, return_counts=True)[1] \
-             / len(kmeans.labels_)
-    w_bias = 2 * w_bias - 1
-    w_rec = transition_matrix(kmeans.labels_)
-    estimator.input_to_node.predefined_input_weights = w_in.T
-    estimator.input_to_node.predefined_bias_weights = w_bias
-    estimator.node_to_node.recurrent_attention_weights = w_rec
     try:
-        cv = load("../speech_timit_km_esn_attention_-1_1_rec_attention_"
+        cv = load("../speech_basic_esn_"
                   + str(params["hidden_layer_size"]) + ".joblib")
     except FileNotFoundError:
         cv = GridSearchCV(estimator=estimator, param_grid={}, scoring=scoring,
                           n_jobs=5, verbose=10).fit(X=X_train, y=y_train)
-        dump(cv, "../speech_timit_km_esn_attention_-1_1_rec_attention_" +
+        dump(cv, "../speech_timit_basic_esn_" +
              str(params["hidden_layer_size"]) + ".joblib")
     print(cv.cv_results_)
