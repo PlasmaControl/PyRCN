@@ -159,7 +159,7 @@ for k, X in enumerate(X_train):
 for k, X in enumerate(X_test):
     X_test[k] = scaler.transform(X)
 
-kmeans = load("../TIMIT/kmeans_50.joblib")
+kmeans = load("../kmeans_50.joblib")
 w_in = np.divide(kmeans.cluster_centers_,
                  np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
 input_to_node = PredefinedWeightsInputToNode(predefined_input_weights=w_in.T)
