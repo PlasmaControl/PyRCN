@@ -164,6 +164,8 @@ w_in = np.divide(kmeans.cluster_centers_,
                  np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
 w_bias = np.unique(kmeans.labels_, return_counts=True)[1] / len(kmeans.labels_)
 w_rec = 2 * transition_matrix(kmeans.labels_) - 1
+we = np.linalg.eigvals(w_rec)
+w_rec = w_rec / np.amax(np.absolute(w_rec))
 input_to_node = PredefinedWeightsInputToNode(
     predefined_input_weights=w_in.T,
     predefined_bias_weights=w_bias
@@ -223,14 +225,14 @@ base_esn = ESNClassifier(input_to_node=input_to_node,
 
 try:
     sequential_search = load(
-        "../sequential_search_speech_timit_km_esn_attention_0_1_rec_-1_1"
+        "../sequential_search_speech_timit_km_esn_attention_0_1_rec_eig_-1_1"
         ".joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn,
                                            searches=searches).fit(X_train,
                                                                   y_train)
     dump(sequential_search,
-         "../sequential_search_speech_timit_km_esn_attention_0_1_rec_-1_1"
+         "../sequential_search_speech_timit_km_esn_attention_0_1_rec_eig_-1_1"
          ".joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
 
@@ -247,15 +249,17 @@ for params in ParameterGrid(param_grid):
     w_bias = np.unique(kmeans.labels_,
                        return_counts=True)[1] / len(kmeans.labels_)
     w_rec = 2 * transition_matrix(kmeans.labels_) - 1
+    we = np.linalg.eigvals(w_rec)
+    w_rec = w_rec / np.amax(np.absolute(w_rec))
     estimator.input_to_node.predefined_input_weights = w_in.T
     estimator.input_to_node.predefined_bias_weights = w_bias
     estimator.node_to_node.predefined_recurrent_weights = w_rec
     try:
-        cv = load("../speech_timit_km_esn_attention_0_1_rec_-1_1_"
+        cv = load("../speech_timit_km_esn_attention_0_1_rec_eig_-1_1_"
                   + str(params["hidden_layer_size"]) + ".joblib")
     except FileNotFoundError:
         cv = GridSearchCV(estimator=estimator, param_grid={}, scoring=scoring,
                           n_jobs=5, verbose=10).fit(X=X_train, y=y_train)
-        dump(cv, "../speech_timit_km_esn_attention_0_1_rec_-1_1_" +
+        dump(cv, "../speech_timit_km_esn_attention_0_1_rec_eig_-1_1_" +
              str(params["hidden_layer_size"]) + ".joblib")
     print(cv.cv_results_)
