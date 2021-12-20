@@ -165,7 +165,9 @@ w_in = np.divide(kmeans.cluster_centers_,
 """
 w_bias = np.unique(kmeans.labels_, return_counts=True)[1] / len(kmeans.labels_)
 w_bias = 2 * w_bias - 1
-w_rec = 2 * transition_matrix(kmeans.labels_) - 1
+"""
+w_rec = transition_matrix(kmeans.labels_)
+"""
 we = np.linalg.eigvals(w_rec)
 w_rec = w_rec / np.amax(np.absolute(w_rec))
 """
@@ -173,9 +175,8 @@ input_to_node = PredefinedWeightsInputToNode(
     predefined_input_weights=w_in.T,
     # predefined_bias_weights=w_bias
 )
-"""
 node_to_node = PredefinedWeightsNodeToNode(predefined_recurrent_weights=w_rec)
-"""
+
 initially_fixed_params = {
     'hidden_layer_size': 50,
     'k_in': 10,
@@ -224,19 +225,19 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
 base_esn = ESNClassifier(input_to_node=input_to_node,
-                         # node_to_node=node_to_node
+                         node_to_node=node_to_node
                          ).set_params(**initially_fixed_params)
 
 try:
     sequential_search = load(
-        "../sequential_search_speech_timit_km_esn"
+        "../sequential_search_speech_timit_km_esn_rec_0_1"
         ".joblib")
 except FileNotFoundError:
     sequential_search = SequentialSearchCV(base_esn,
                                            searches=searches).fit(X_train,
                                                                   y_train)
     dump(sequential_search,
-         "../sequential_search_speech_timit_km_esn"
+         "../sequential_search_speech_timit_km_esn_rec_0_1"
          ".joblib")
 print(sequential_search.all_best_params_, sequential_search.all_best_score_)
 
@@ -254,19 +255,21 @@ for params in ParameterGrid(param_grid):
     w_bias = np.unique(kmeans.labels_,
                        return_counts=True)[1] / len(kmeans.labels_)
     w_bias = 2 * w_bias - 1
-    w_rec = 2 * transition_matrix(kmeans.labels_) - 1
+    """
+    w_rec = transition_matrix(kmeans.labels_)
+    """
     we = np.linalg.eigvals(w_rec)
     w_rec = w_rec / np.amax(np.absolute(w_rec))
     """
     estimator.input_to_node.predefined_input_weights = w_in.T
     # estimator.input_to_node.predefined_bias_weights = w_bias
-    # estimator.node_to_node.predefined_recurrent_weights = w_rec
+    estimator.node_to_node.predefined_recurrent_weights = w_rec
     try:
-        cv = load("../speech_timit_km_esn_"
+        cv = load("../speech_timit_km_esn_rec_0_1_"
                   + str(params["hidden_layer_size"]) + ".joblib")
     except FileNotFoundError:
         cv = GridSearchCV(estimator=estimator, param_grid={}, scoring=scoring,
                           n_jobs=5, verbose=10).fit(X=X_train, y=y_train)
-        dump(cv, "../speech_timit_km_esn_" +
+        dump(cv, "../speech_timit_km_esn_rec_0_1_" +
              str(params["hidden_layer_size"]) + ".joblib")
     print(cv.cv_results_)
