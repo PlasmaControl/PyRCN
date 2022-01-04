@@ -51,9 +51,10 @@ def create_feature_extraction_pipeline(sr=16000):
 feature_extraction_pipeline = create_feature_extraction_pipeline()
 
 X_train, X_test, y_train, y_test = fetch_ptdb_tug_dataset(
-    data_origin="Z:/Projekt-Pitch-Datenbank/SPEECH_DATA",
-    data_home=None, preprocessor=feature_extraction_pipeline,
-    force_preprocessing=False, augment=0)
+    data_origin="/projects/p_transcriber/SPEECH_DATA",
+    data_home="/scratch/ws/1/s2575425-pyrcn/f0_estimation/dataset/0",
+    preprocessor=feature_extraction_pipeline, force_preprocessing=False,
+    augment=0)
 X_train, y_train = shuffle(X_train, y_train, random_state=0)
 
 scaler = StandardScaler().fit(np.concatenate(X_train))
