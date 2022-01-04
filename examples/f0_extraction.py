@@ -194,12 +194,14 @@ base_esn = ESNRegressor(input_to_node=base_input_to_node
                         ).set_params(**initially_fixed_params)
 
 try:
-    sequential_search = load("../f0/sequential_search_f0_mel_km_50.joblib")
+    sequential_search = load(
+        "../f0_estimation/sequential_search_f0_mel_km_50.joblib")
 except FileNotFoundError:
     print(FileNotFoundError)
     sequential_search = SequentialSearchCV(
         base_esn, searches=searches).fit(X_train, y_train)
-    dump(sequential_search, "../f0/sequential_search_f0_mel_km_50.joblib")
+    dump(sequential_search,
+         "../f0_estimation/sequential_search_f0_mel_km_50.joblib")
 
 print(sequential_search)
 
