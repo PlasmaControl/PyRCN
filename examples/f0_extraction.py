@@ -7,6 +7,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils import shuffle
 from sklearn.utils.fixes import loguniform
 from scipy.stats import uniform
+from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import (ParameterGrid, RandomizedSearchCV)
 from sklearn.metrics import make_scorer, zero_one_loss
@@ -208,7 +209,7 @@ except FileNotFoundError:
 
 print(sequential_search)
 
-"""
+
 def gpe_scorer(y_true, y_pred):
     gross_pitch_error = np.zeros(shape=(len(y_true),))
     for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
@@ -241,23 +242,27 @@ def ffe_scorer(y_true, y_pred):
     return np.mean(frame_fault_error)
 
 
-param_grid = {'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000, 1600],
+print("Parameters\tFit time KM\tFit time ESN\tInference time\tGPE\tFPE\tVDE")
+param_grid = {'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000,
+                                    1600, 2000, 3200],
               'random_state': [1, 2, 3, 4, 5]}
 for params in ParameterGrid(param_grid):
     kmeans = MiniBatchKMeans(n_clusters=params["hidden_layer_size"],
-                             random_state=params["random_state"],
                              n_init=200, reassignment_ratio=0,
                              max_no_improvement=50, init='k-means++',
-                             verbose=2)
+                             verbose=0, random_state=params["random_state"])
+    t1 = time.time()
+    kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
+    t2 = time.time()
     w_in = np.divide(kmeans.cluster_centers_,
                      np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
-    print(w_in.shape)
-    base_input_to_node = PredefinedWeightsInputToNode(
-        predefined_input_weights=w_in.T)
-    all_params = sequential_search.best_estimator_.get_params()
-    all_params["hidden_layer_size"] = params["hidden_layer_size"]
-    esn = ESNRegressor(input_to_node=base_input_to_node, **all_params)
-    esn.fit(X_train, y_train)
-    dump(esn, "f0/km_esn_" + str(params["hidden_layer_size"]) + "_" +
-         str(params["random_state"]) + ".joblib")
-"""
+    esn = clone(sequential_search.best_estimator_).set_params(**params)
+    esn.input_to_node.predefined_input_weights = w_in.T
+    t3 = time.time()
+    esn.fit(X_train, y_train, n_jobs=8)
+    t4 = time.time()
+    y_pred = esn.predict(X_test)
+    t5 = time.time()
+    print("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}"
+          .format(params, t2-t1, t4-t3, t5-t4, gpe_scorer(y_test, y_pred),
+                  fpe_scorer(y_test, y_pred), vde_scorer(y_test, y_pred)))
