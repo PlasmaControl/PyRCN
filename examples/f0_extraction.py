@@ -75,8 +75,11 @@ def gpe(y_true, y_pred):
     threshold (20 percent).
     """
     idx = np.nonzero(y_true*y_pred)[0]
-    return np.sum(np.abs(y_true[idx] - y_pred[idx]) > 0.2 * y_true[idx]) \
-        / len(np.nonzero(y_true)[0])
+    if idx.size == 0:
+        return np.inf
+    else:
+        return np.sum(np.abs(y_true[idx] - y_pred[idx]) > 0.2 * y_true[idx])\
+               / len(np.nonzero(y_true)[0])
 
 
 def vde(y_true, y_pred):
