@@ -169,7 +169,7 @@ initially_fixed_params = {'hidden_layer_size': 50,
 step1_esn_params = {'input_scaling': uniform(loc=1e-2, scale=1),
                     'spectral_radius': uniform(loc=0, scale=2)}
 
-step2_esn_params = {'leakage': loguniform(1e-5, 1e0)}
+step2_esn_params = {'leakage': uniform(1e-5, 1e0)}
 step3_esn_params = {'bias_scaling': uniform(loc=0, scale=3)}
 step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
 
