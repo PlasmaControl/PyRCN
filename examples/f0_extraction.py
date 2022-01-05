@@ -154,7 +154,7 @@ print("done in {0}!".format(time.time() - t1))
 # At last, we initialize an ESNRegressor with the desired output strategy and
 # with the initially fixed parameters.
 
-initially_fixed_params = {'hidden_layer_size': 50,
+initially_fixed_params = {'hidden_layer_size': 500,
                           'k_in': 10,
                           'input_scaling': 0.4,
                           'input_activation': 'identity',
@@ -199,70 +199,12 @@ base_esn = ESNRegressor(input_to_node=base_input_to_node
 
 try:
     sequential_search = load(
-        "../f0_estimation/sequential_search_f0_mel_km_50.joblib")
+        "../f0_estimation/sequential_search_f0_mel_km_500.joblib")
 except FileNotFoundError:
     print(FileNotFoundError)
     sequential_search = SequentialSearchCV(
         base_esn, searches=searches).fit(X_train, y_train)
     dump(sequential_search,
-         "../f0_estimation/sequential_search_f0_mel_km_50.joblib")
+         "../f0_estimation/sequential_search_f0_mel_km_500.joblib")
 
 print(sequential_search)
-
-
-def gpe_scorer(y_true, y_pred):
-    gross_pitch_error = np.zeros(shape=(len(y_true),))
-    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
-        gross_pitch_error[k] = gpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5),
-                                   y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
-    return np.mean(gross_pitch_error)
-
-
-def fpe_scorer(y_true, y_pred):
-    fine_pitch_error = np.zeros(shape=(len(y_true),))
-    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
-        fine_pitch_error[k] = fpe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5),
-                                  y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
-    return np.mean(fine_pitch_error)
-
-
-def vde_scorer(y_true, y_pred):
-    voicing_decision_error = np.zeros(shape=(len(y_true),))
-    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
-        voicing_decision_error[k] = vde(y_true=(y_t[:, 1] > 0.5),
-                                        y_pred=y_p[:, 1] >= .5)
-    return np.mean(voicing_decision_error)
-
-
-def ffe_scorer(y_true, y_pred):
-    frame_fault_error = np.zeros(shape=(len(y_true),))
-    for k, (y_t, y_p) in enumerate(zip(y_true, y_pred)):
-        frame_fault_error[k] = ffe(y_true=y_t[:, 0]*(y_t[:, 1] > 0.5),
-                                   y_pred=y_p[:, 0]*(y_p[:, 1] >= .5))
-    return np.mean(frame_fault_error)
-
-
-print("Parameters\tFit time KM\tFit time ESN\tInference time\tGPE\tFPE\tVDE")
-param_grid = {'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000,
-                                    1600, 2000, 3200],
-              'random_state': [1, 2, 3, 4, 5]}
-for params in ParameterGrid(param_grid):
-    kmeans = MiniBatchKMeans(n_clusters=params["hidden_layer_size"],
-                             n_init=200, reassignment_ratio=0,
-                             max_no_improvement=50, init='k-means++',
-                             verbose=0, random_state=params["random_state"])
-    t1 = time.time()
-    kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
-    t2 = time.time()
-    w_in = np.divide(kmeans.cluster_centers_,
-                     np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
-    esn = clone(sequential_search.best_estimator_).set_params(**params)
-    esn.input_to_node.predefined_input_weights = w_in.T
-    t3 = time.time()
-    esn.fit(X_train, y_train, n_jobs=8)
-    t4 = time.time()
-    y_pred = esn.predict(X_test)
-    t5 = time.time()
-    print("{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}"
-          .format(params, t2-t1, t4-t3, t5-t4, gpe_scorer(y_test, y_pred),
-                  fpe_scorer(y_test, y_pred), vde_scorer(y_test, y_pred)))
