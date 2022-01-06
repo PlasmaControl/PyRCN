@@ -137,7 +137,7 @@ def custom_scorer(y_true, y_pred):
 gpe_scorer = make_scorer(custom_scorer, greater_is_better=False)
 
 t1 = time.time()
-kmeans = MiniBatchKMeans(n_clusters=50, n_init=200, reassignment_ratio=0,
+kmeans = MiniBatchKMeans(n_clusters=500, n_init=200, reassignment_ratio=0,
                          max_no_improvement=50, init='k-means++', verbose=2,
                          random_state=0)
 kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
