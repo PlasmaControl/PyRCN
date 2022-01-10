@@ -54,7 +54,7 @@ X_train, X_test, y_train, y_test = fetch_ptdb_tug_dataset(
     data_origin="/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/SPEECH_DATA",
     data_home="/scratch/ws/1/s2575425-pyrcn/f0_estimation/dataset/2",
     preprocessor=feature_extraction_pipeline, force_preprocessing=False,
-    augment=1)
+    augment=2)
 X_train, y_train = shuffle(X_train, y_train, random_state=0)
 
 scaler = StandardScaler().fit(np.concatenate(X_train))
