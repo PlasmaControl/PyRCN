@@ -9,15 +9,13 @@ from sklearn.utils.fixes import loguniform
 from scipy.stats import uniform
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline
-from sklearn.model_selection import (ParameterGrid, RandomizedSearchCV)
+from sklearn.model_selection import (ParameterGrid, RandomizedSearchCV,
+                                     GridSearchCV)
 from sklearn.metrics import make_scorer, zero_one_loss
-from sklearn.cluster import MiniBatchKMeans
 from pyrcn.model_selection import SequentialSearchCV
 from pyrcn.util import FeatureExtractor
 from pyrcn.datasets import fetch_ptdb_tug_dataset
 from pyrcn.echo_state_network import ESNRegressor
-from pyrcn.base.blocks import PredefinedWeightsInputToNode
-import time
 
 
 def create_feature_extraction_pipeline(sr=16000):
@@ -136,13 +134,6 @@ def custom_scorer(y_true, y_pred):
 
 gpe_scorer = make_scorer(custom_scorer, greater_is_better=False)
 
-t1 = time.time()
-kmeans = MiniBatchKMeans(n_clusters=500, n_init=200, reassignment_ratio=0,
-                         max_no_improvement=50, init='k-means++', verbose=2,
-                         random_state=0)
-kmeans.fit(X=np.concatenate(np.concatenate((X_train, X_test))))
-print("done in {0}!".format(time.time() - t1))
-
 # Set up a ESN
 # To develop an ESN model for f0 estimation, we need to tune several hyper-
 # parameters, e.g., input_scaling, spectral_radius, bias_scaling and leaky
@@ -188,23 +179,33 @@ searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),
             ('step3', RandomizedSearchCV, step3_esn_params, kwargs_step3),
             ('step4', RandomizedSearchCV, step4_esn_params, kwargs_step4)]
 
-w_in = np.divide(kmeans.cluster_centers_,
-                 np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
-
-base_input_to_node = PredefinedWeightsInputToNode(
-    predefined_input_weights=w_in.T, input_scaling=0.4)
-
-base_esn = ESNRegressor(input_to_node=base_input_to_node
-                        ).set_params(**initially_fixed_params)
+base_esn = ESNRegressor().set_params(**initially_fixed_params)
 
 try:
     sequential_search = load(
-        "../f0_estimation/sequential_search_f0_mel_km_500.joblib")
+        "../f0/sequential_search_f0_mel_500.joblib")
 except FileNotFoundError:
     print(FileNotFoundError)
     sequential_search = SequentialSearchCV(
         base_esn, searches=searches).fit(X_train, y_train)
     dump(sequential_search,
-         "../f0_estimation/sequential_search_f0_mel_km_500.joblib")
+         "../f0/sequential_search_f0_mel_500.joblib")
 
 print(sequential_search)
+
+param_grid = {
+    'hidden_layer_size': [50, 100, 200, 400, 500, 800, 1000,
+                          1600, 2000, 3200, 4000, 6400, 8000, 16000],
+}
+for params in ParameterGrid(param_grid):
+    estimator = clone(sequential_search.best_estimator_).set_params(**params)
+    try:
+        cv = load("../f0/speech_ptdb_tug_basic_esn_"
+                  + str(params["hidden_layer_size"]) + "_0.joblib")
+    except FileNotFoundError:
+        cv = GridSearchCV(estimator=estimator, param_grid={},
+                          scoring=gpe_scorer, n_jobs=5, verbose=10).fit(
+            X=X_train, y=y_train)
+        dump(cv, "../f0/speech_ptdb_tug_basic_esn_"
+             + str(params["hidden_layer_size"]) + "_0.joblib")
+    print(cv.cv_results_)
