@@ -135,7 +135,7 @@ def custom_scorer(y_true, y_pred):
 
 gpe_scorer = make_scorer(custom_scorer, greater_is_better=False)
 
-kmeans = load("../f0/kmeans_500_0.joblib")
+kmeans = load("../f0/kmeans_500.joblib")
 w_in = np.divide(kmeans.cluster_centers_,
                  np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
 
@@ -210,7 +210,7 @@ param_grid = {
 for params in ParameterGrid(param_grid):
     estimator = clone(sequential_search.best_estimator_).set_params(**params)
     kmeans = load("../f0/kmeans_" + str(params["hidden_layer_size"])
-                  + "_0.joblib")
+                  + ".joblib")
     w_in = np.divide(kmeans.cluster_centers_,
                      np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
     estimator.input_to_node.predefined_input_weights = w_in.T
