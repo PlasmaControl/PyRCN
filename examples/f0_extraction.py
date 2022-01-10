@@ -135,7 +135,7 @@ def custom_scorer(y_true, y_pred):
 
 gpe_scorer = make_scorer(custom_scorer, greater_is_better=False)
 
-kmeans = load("f0/kmeans_50.joblib")
+kmeans = load("../f0/kmeans_50.joblib")
 w_in = np.divide(kmeans.cluster_centers_,
                  np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
 
