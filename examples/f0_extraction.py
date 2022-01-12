@@ -210,18 +210,18 @@ param_grid = {
 for params in ParameterGrid(param_grid):
     estimator = clone(sequential_search.best_estimator_).set_params(**params)
     kmeans = load("../f0/kmeans_" + str(params["hidden_layer_size"])
-                  + "_3.joblib")
+                  + "_4.joblib")
     w_in = np.divide(kmeans.cluster_centers_,
                      np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
     estimator.input_to_node.predefined_input_weights = w_in.T
 
     try:
         cv = load("../f0/speech_ptdb_tug_kmeans_esn_"
-                  + str(params["hidden_layer_size"]) + "_3_0.joblib")
+                  + str(params["hidden_layer_size"]) + "_4_0.joblib")
     except FileNotFoundError:
         cv = GridSearchCV(estimator=estimator, param_grid={},
                           scoring=gpe_scorer, n_jobs=5, verbose=10).fit(
             X=X_train, y=y_train)
         dump(cv, "../f0/speech_ptdb_tug_kmeans_esn_"
-             + str(params["hidden_layer_size"]) + "_3_0.joblib")
+             + str(params["hidden_layer_size"]) + "_4_0.joblib")
     print(cv.cv_results_)
