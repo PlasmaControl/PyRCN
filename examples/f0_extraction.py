@@ -216,11 +216,11 @@ for params in ParameterGrid(param_grid):
     estimator.input_to_node.predefined_input_weights = w_in.T
     try:
         cv = load("../f0/speech_ptdb_tug_kmeans_esn_"
-                  + str(params["hidden_layer_size"]) + "_5_%.joblib")
+                  + str(params["hidden_layer_size"]) + "_5_5.joblib")
     except FileNotFoundError:
         cv = GridSearchCV(estimator=estimator, param_grid={},
                           scoring=gpe_scorer, n_jobs=5, verbose=10).fit(
             X=X_train, y=y_train)
         dump(cv, "../f0/speech_ptdb_tug_kmeans_esn_"
-             + str(params["hidden_layer_size"]) + "_5_%.joblib")
+             + str(params["hidden_layer_size"]) + "_5_5.joblib")
     print(cv.cv_results_)
