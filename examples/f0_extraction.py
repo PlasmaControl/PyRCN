@@ -210,7 +210,7 @@ param_grid = {
 for params in ParameterGrid(param_grid):
     estimator = clone(sequential_search.best_estimator_).set_params(**params)
     kmeans = load("../f0/kmeans_" + str(params["hidden_layer_size"])
-                  + "_1.joblib")
+                  + "_2.joblib")
     w_in = np.divide(kmeans.cluster_centers_,
                      np.linalg.norm(kmeans.cluster_centers_, axis=1)[:, None])
     estimator.input_to_node.predefined_input_weights = w_in.T
