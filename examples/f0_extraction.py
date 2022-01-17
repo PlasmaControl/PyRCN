@@ -52,9 +52,9 @@ feature_extraction_pipeline = create_feature_extraction_pipeline()
 
 X_train, X_test, y_train, y_test = fetch_ptdb_tug_dataset(
     data_origin="/scratch/ws/1/s2575425-CSTR_VCTK_Corpus/SPEECH_DATA",
-    data_home="/scratch/ws/1/s2575425-pyrcn/f0_estimation/dataset/1",
+    data_home="/scratch/ws/1/s2575425-pyrcn/f0_estimation/dataset/2",
     preprocessor=feature_extraction_pipeline, force_preprocessing=False,
-    augment=1)
+    augment=2)
 X_train, y_train = shuffle(X_train, y_train, random_state=0)
 
 scaler = StandardScaler().fit(np.concatenate(X_train))
@@ -216,11 +216,11 @@ for params in ParameterGrid(param_grid):
     estimator.input_to_node.predefined_input_weights = w_in.T
     try:
         cv = load("../f0/speech_ptdb_tug_kmeans_esn_"
-                  + str(params["hidden_layer_size"]) + "_0_1.joblib")
+                  + str(params["hidden_layer_size"]) + "_0_2.joblib")
     except FileNotFoundError:
         cv = GridSearchCV(estimator=estimator, param_grid={},
                           scoring=gpe_scorer, n_jobs=5, verbose=10).fit(
             X=X_train, y=y_train)
         dump(cv, "../f0/speech_ptdb_tug_kmeans_esn_"
-             + str(params["hidden_layer_size"]) + "_0_1.joblib")
+             + str(params["hidden_layer_size"]) + "_0_2.joblib")
     print(cv.cv_results_)
