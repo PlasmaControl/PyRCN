@@ -41,12 +41,14 @@ def _uniform_random_input_weights(n_features_in: int,
             low=-1., high=1., size=nr_entries)
         weights_array = np.zeros(shape=(n_features_in, hidden_layer_size),
                                  dtype=float)
-        indices = np.zeros(shape=nr_entries, dtype=int)
+        # indices = np.zeros(shape=nr_entries, dtype=int)
         indptr = np.arange(start=0, stop=(n_features_in + 1) * fan_in,
                            step=fan_in)
 
         for k, en in enumerate(range(0, n_features_in * fan_in, fan_in)):
-            indices[en: en + fan_in] = random_state.permutation(
+            # indices[en: en + fan_in] = random_state.permutation(
+            #     hidden_layer_size)[:fan_in].astype(int)
+            indices = random_state.permutation(
                 hidden_layer_size)[:fan_in].astype(int)
             weights_array[k, indices[indptr[k]:indptr[k+1]]] += \
                 weights_values[indptr[k]:indptr[k+1]]
@@ -100,12 +102,14 @@ def _normal_random_recurrent_weights(hidden_layer_size: int, fan_in: int,
         weights_values = random_state.normal(loc=0., scale=1., size=nr_entries)
         recurrent_weights_init = np.zeros(
             shape=(hidden_layer_size, hidden_layer_size), dtype=float)
-        indices = np.zeros(shape=nr_entries, dtype=int)
+        # indices = np.zeros(shape=nr_entries, dtype=int)
         indptr = np.arange(start=0, stop=(hidden_layer_size + 1) * fan_in,
                            step=fan_in)
 
         for k, en in enumerate(range(0, hidden_layer_size * fan_in, fan_in)):
-            indices[en: en + fan_in] = random_state.permutation(
+            # indices[en: en + fan_in] = random_state.permutation(
+            #     hidden_layer_size)[:fan_in].astype(int)
+            indices = random_state.permutation(
                 hidden_layer_size)[:fan_in].astype(int)
             recurrent_weights_init[k, indices[indptr[k]:indptr[k + 1]]] += \
                 weights_values[indptr[k]:indptr[k + 1]]

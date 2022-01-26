@@ -109,7 +109,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         if self.k_rec is not None:
             self.sparsity = float(self.k_rec) / float(X.shape[1])
         self._recurrent_weights = _normal_random_recurrent_weights(
-            hidden_layer_size=self.hidden_layer_size,
+            hidden_layer_size=int(self.hidden_layer_size),
             fan_in=int(np.rint(self.hidden_layer_size * self.sparsity)),
             random_state=self._random_state)
         return self
@@ -131,18 +131,18 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
         if self.bidirectional:
             _hidden_layer_state_fw = self._pass_through_recurrent_weights(
-                X, self.hidden_layer_size, self._recurrent_weights,
+                X, int(self.hidden_layer_size), self._recurrent_weights,
                 self.spectral_radius, self.leakage, self.reservoir_activation)
             _hidden_layer_state_bw = np.flipud(
                 self._pass_through_recurrent_weights(
-                    np.flipud(X), self.hidden_layer_size,
+                    np.flipud(X), int(self.hidden_layer_size),
                     self._recurrent_weights, self.spectral_radius,
                     self.leakage, self.reservoir_activation))
             self._hidden_layer_state = np.concatenate(
                 (_hidden_layer_state_fw, _hidden_layer_state_bw), axis=1)
         else:
             self._hidden_layer_state = self._pass_through_recurrent_weights(
-                X, self.hidden_layer_size, self._recurrent_weights,
+                X, int(self.hidden_layer_size), self._recurrent_weights,
                 self.spectral_radius, self.leakage, self.reservoir_activation)
         return self._hidden_layer_state
 
@@ -163,7 +163,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray of size (n_samples, n_features)
-        hidden_layer_size : Union[int, np.integer].
+        hidden_layer_size : int.
         spectral_radius : float
         leakage : float
         reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
@@ -413,7 +413,7 @@ class AttentionWeightsNodeToNode(NodeToNode):
         if self.k_rec is not None:
             self.sparsity = float(self.k_rec) / float(X.shape[1])
         self._recurrent_weights = _normal_recurrent_attention_weights(
-            hidden_layer_size=self.hidden_layer_size,
+            hidden_layer_size=int(self.hidden_layer_size),
             fan_in=int(np.rint(self.hidden_layer_size * self.sparsity)),
             random_state=self._random_state,
             attention_weights=self.recurrent_attention_weights)
@@ -529,7 +529,7 @@ class HebbianNodeToNode(NodeToNode):
     def _hebbian_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Hebbian learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
-            X, self.hidden_layer_size, self._recurrent_weights,
+            X, int(self.hidden_layer_size), self._recurrent_weights,
             self.spectral_radius, self.leakage, self.reservoir_activation)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -=\
@@ -540,7 +540,7 @@ class HebbianNodeToNode(NodeToNode):
     def _anti_hebbian_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Anti-Hebbian learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
-            X, self.hidden_layer_size, self._recurrent_weights,
+            X, int(self.hidden_layer_size), self._recurrent_weights,
             self.spectral_radius, self.leakage, self.reservoir_activation)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -= \
@@ -551,7 +551,7 @@ class HebbianNodeToNode(NodeToNode):
     def _oja_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Oja learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
-            X, self.hidden_layer_size, self._recurrent_weights,
+            X, int(self.hidden_layer_size), self._recurrent_weights,
             self.spectral_radius, self.leakage, self.reservoir_activation)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -= \
@@ -564,7 +564,7 @@ class HebbianNodeToNode(NodeToNode):
     def _anti_oja_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Anti-Oja learning rule."""
         hidden_layer_state = self._pass_through_recurrent_weights(
-            X, self.hidden_layer_size, self._recurrent_weights,
+            X, int(self.hidden_layer_size), self._recurrent_weights,
             self.spectral_radius, self.leakage, self.reservoir_activation)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -= \
