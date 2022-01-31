@@ -52,7 +52,7 @@ PyRCN is developed using Python 3.7 or newer. It depends on the following packag
 
 The easiest and recommended way to install ``PyRCN`` is to use ``pip`` from [PyPI](https://pypi.org) :
 
-```python
+```
 pip install pyrcn
 ```
 
@@ -113,7 +113,6 @@ y_pred_proba = clf.predict_proba(X=X_test)  #  output are the class probabilitie
 Basic example for the ESNRegressor:
 
 ```python
-from sklearn.model_selection import TimeSeriesSplit
 from pyrcn.datasets import mackey_glass
 from pyrcn.echo_state_network import ESNRegressor
 

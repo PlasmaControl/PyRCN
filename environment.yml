@@ -1,0 +1,10 @@
+name: pyrcn
+
+channels:
+  - conda-forge
+
+dependencies:
+  - python
+  - pip
+  - pip:
+    - .
