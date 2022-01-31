@@ -6,18 +6,17 @@
 
 from __future__ import annotations
 
-import sys
-
-from sklearn.base import BaseEstimator
+from sklearn.base import BaseEstimator, is_classifier, clone
 from sklearn.model_selection._search import BaseSearchCV
+from sklearn.utils.validation import indexable, _check_fit_params
+from sklearn.model_selection._split import check_cv
+
 import numpy as np
+import time
+from scipy import optimize
 from collections.abc import Iterable
 
-if sys.version_info >= (3, 8):
-    from typing import Union, Optional, Callable, Dict, Any, Literal
-else:
-    from typing import Union, Optional, Callable, Dict, Any
-    from typing_extensions import Literal
+from typing import Union, Optional, Callable, Dict, Any, List, Tuple
 
 
 class SequentialSearchCV(BaseSearchCV):
@@ -103,7 +102,7 @@ class SequentialSearchCV(BaseSearchCV):
         on-demand spawning of the jobs
         - An int, giving the exact number of total jobs that are spawned
         - A str, giving an expression as a function of n_jobs, as in ‘2*n_jobs’
-    error_score: Union[Literal['raise'], int, float, np.integer, np.float],
+    error_score: Union[int, float, np.integer, np.float],
     default=np.nan
         Value to assign to the score if an error occurs in estimator fitting.
         If set to 'raise', the error is raised.  If a numeric value is given,
@@ -119,8 +118,7 @@ class SequentialSearchCV(BaseSearchCV):
                  cv: Union[int, np.integer, Iterable, None] = None,
                  verbose: Union[int, np.integer] = 0,
                  pre_dispatch: Union[int, np.integer, str] = '2*n_jobs',
-                 error_score: Union[Literal['raise'], int,
-                                    float, np.integer] = np.nan) -> None:
+                 error_score: Union[int, float] = np.nan) -> None:
         """Construct the SequentialSearchCV."""
         self.estimator: Optional[BaseEstimator] = None
         super().__init__(
@@ -363,3 +361,195 @@ class SequentialSearchCV(BaseSearchCV):
         bool
         """
         return self.all_multimetric_[self.searches[-1][0]]
+
+
+class SHGOSearchCV(BaseSearchCV):
+    """
+    Simplicial homology global optimization (SHGO) for hyper-parameters.
+
+    SHGOSearchCV implements a "fit" and a "score" method.
+    It also implements "score_samples", "predict", "predict_proba",
+    "decision_function", "transform" and "inverse_transform" if they are
+    implemented in the estimator used.
+
+    The parameters of the estimator used to apply these methods are
+    optimized by a guided cross-validated minimum search over the parameter
+    settings.
+
+    Parameters
+    ----------
+    estimator : estimator object
+        A object of that type is instantiated for each grid point.
+        This is assumed to implement the scikit-learn estimator interface.
+        Either estimator needs to provide a ``score`` function,
+        or ``scoring`` must be passed.
+    func : Callable
+        The objective function to be minimized. Must be in the form
+        ``f(x, *args)``, where ``x`` is the argument in the form of a 1-D array
+        and ``args`` is a tuple of any additional fixed parameters needed to
+        completely specify the function.
+    params : Dict
+        Dictionary with parameters names (`str`) as keys and tuples ``(min,
+        max)``, defining the lower and upper bounds for the optimizing
+        argument of ``func``.
+    args : Tuple, default=()
+        Any additional fixed parameters needed to completely specify the
+        objective function.
+    constraints : Dict, List[Dict], None, default=None
+        Constraints definitions, where each definition is a dictionary with
+        fields:
+            type : str
+                Constraint type: ‘eq’ for equality, ‘ineq’ for inequality.
+            fun : Callable
+                The function defining the constraint.
+            jac : Optional[Callable]
+                The Jacobian of ``fun`` (only for SLSQP).
+            args : List, Tuple
+                Extra arguments to be passed to the function and Jacobian.
+    refit : bool, default=True
+        Refit an estimator using the best found parameters on the whole
+        dataset.
+        The refitted estimator is made available at the ``best_estimator_``
+        attribute and permits using ``predict`` directly on this
+        ``SHGOSearchCV`` instance.
+        evaluation.
+    cv : int, cross-validation generator or an iterable, default=None
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+        - None, to use the default 5-fold cross validation,
+        - integer, to specify the number of folds in a `(Stratified)KFold`,
+        - :term:`CV splitter`,
+        - An iterable yielding (train, test) splits as arrays of indices.
+        For integer/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, :class:`StratifiedKFold` is used. In all
+        other cases, :class:`KFold` is used. These splitters are instantiated
+        with `shuffle=False` so the splits will be the same across calls.
+        Refer :ref:`User Guide <cross_validation>` for the various
+        cross-validation strategies that can be used here.
+    return_train_score : bool, default=False
+        If ``False``, the ``cv_results_`` attribute will not include training
+        scores.
+        Computing training scores is used to get insights on how different
+        parameter settings impact the overfitting/underfitting trade-off.
+        However computing the scores on the training set can be computationally
+        expensive and is not strictly required to select the parameters that
+        yield the best generalization performance.
+
+    Attributes
+    ----------
+    best_estimator_ : estimator
+        Estimator that was chosen by the search, i.e. estimator
+        which gave highest score (or smallest loss if specified)
+        on the left out data. Not available if ``refit=False``.
+        For multi-metric evaluation, this attribute is present only if
+        ``refit`` is specified.
+        See ``refit`` parameter for more information on allowed values.
+    best_params_ : dict
+        Parameter setting that gave the best results on the hold out data.
+        For multi-metric evaluation, this is not available if ``refit`` is
+        ``False``. See ``refit`` parameter for more information.
+    n_splits_ : int
+        The number of cross-validation splits (folds/iterations).
+    refit_time_ : float
+        Seconds used for refitting the best model on the whole dataset.
+        This is present only if ``refit`` is not False.
+    classes_ : ndarray of shape (n_classes,)
+        The classes labels. This is present only if ``refit`` is specified and
+        the underlying estimator is a classifier.
+    feature_names_in_ : ndarray of shape (`n_features_in_`,)
+        Names of features seen during :term:`fit`. Only defined if
+        `best_estimator_` is defined (see the documentation for the `refit`
+        parameter for more details) and that `best_estimator_` exposes
+        `feature_names_in_` when fit.
+
+    See Also
+    --------
+    GridSearchCV : Does exhaustive search over a grid of parameters.
+    """
+
+    def __init__(self, estimator: BaseEstimator, func: Callable, params: Dict,
+                 *, args: Tuple = (),
+                 constraints: Union[Dict, List, None] = None,
+                 refit: bool = True, cv: Optional[int] = None,
+                 return_train_score: bool = False) -> None:
+        super().__init__(estimator=estimator, refit=refit, cv=cv,
+                         return_train_score=return_train_score)
+        self.func = func
+        self.params = params
+        self.args = args
+        self.constraints = constraints
+
+    def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None, *,
+            groups: Optional[np.ndarray] = None,
+            **fit_params: dict) -> SHGOSearchCV:
+        """
+        Run the optimization based on the parameters defined before.
+
+        Parameters
+        ----------
+        X : np.ndarray of shape (n_samples, n_features)
+             Training vector, where `n_samples` is the number of samples and
+            `n_features` is the number of features.
+        y : np.ndarray of shape(n_samples, n_output) or (n_samples, ),
+        default = None
+            Target relative to X for classification or regression; None for
+            unsupervised learning.
+        groups : np.ndarray of shape(n_samples, ), default = None
+            Group labels for the samples used while splitting the dataset into
+            train/test set. Only used in conjunction with a "Group" :term:`cv`
+            instance (e.g., :class:`~sklearn.model_selection.GroupKFold`).
+        **fit_params : dict of str -> object
+            Parameters passed to the ``fit`` method of the estimator.
+
+        Returns
+        -------
+        self : object
+            Instance of fitted estimator.
+        """
+        estimator = self.estimator
+        func = self.func
+
+        X, y, groups = indexable(X, y, groups)
+        fit_params = _check_fit_params(X, fit_params)
+
+        cv_orig = check_cv(self.cv, y, classifier=is_classifier(estimator))
+        n_splits = cv_orig.get_n_splits(X, y, groups)
+
+        base_estimator = clone(self.estimator)
+        param_names = sorted(self.params)
+        bounds = [self.params[name] for name in param_names]
+        constraints = self.constraints
+        train = [None] * n_splits
+        test = [None] * n_splits
+        for k, (tr, te) in enumerate(self.cv.split(X, y, groups)):
+            train[k] = tr
+            test[k] = te
+
+        res = optimize.shgo(func=func, bounds=bounds, constraints=constraints,
+                            args=(param_names, clone(base_estimator),
+                                  X, y, train, test))
+
+        result = {}
+        for param_name, param_value in zip(param_names, res.x):
+            result[param_name] = param_value
+        self.best_params_ = result
+
+        if self.refit:
+            # we clone again after setting params in case some
+            # of the params are estimators as well.
+            self.best_estimator_ = clone(
+                clone(base_estimator).set_params(**self.best_params_)
+            )
+            refit_start_time = time.time()
+            if y is not None:
+                self.best_estimator_.fit(X, y, **fit_params)
+            else:
+                self.best_estimator_.fit(X, **fit_params)
+            refit_end_time = time.time()
+            self.refit_time_ = refit_end_time - refit_start_time
+
+            if hasattr(self.best_estimator_, "feature_names_in_"):
+                self.feature_names_in_ = self.best_estimator_.feature_names_in_
+        self.n_splits_ = n_splits
+
+        return self

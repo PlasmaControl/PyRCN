@@ -35,7 +35,8 @@ def test_each_inverse_boundary_tuple() -> None:
 
 def test_bounded_relu() -> None:
     print('\ttest_bounded_relu():')
-    X = np.concatenate(([-np.inf], np.arange(-5, 5), [np.inf])).reshape(1, -1)
+    X = np.concatenate((np.full((1, ), -np.inf), np.arange(-5, 5),
+                        np.full((1, ), np.inf))).reshape(1, -1)
     X_true = np.minimum(np.maximum(X, 0), 1)
     ACTIVATIONS["bounded_relu"](X)
     np.testing.assert_array_equal(X, X_true)
@@ -46,7 +47,8 @@ def test_bounded_relu() -> None:
 
 def test_identity() -> None:
     print('\ttest_identity():')
-    X = np.concatenate(([-np.inf], np.arange(-5, 5), [np.inf])).reshape(1, -1)
+    X = np.concatenate((np.full((1, ), -np.inf), np.arange(-5, 5),
+                        np.full((1, ), np.inf))).reshape(1, -1)
     X_true = X
     ACTIVATIONS["identity"](X)
     np.testing.assert_array_equal(X, X_true)
@@ -56,7 +58,8 @@ def test_identity() -> None:
 
 def test_logistic() -> None:
     print('\ttest_logistic():')
-    X = np.concatenate(([-np.inf], np.arange(-5, 5), [np.inf])).reshape(1, -1)
+    X = np.concatenate((np.full((1, ), -np.inf), np.arange(-5, 5),
+                        np.full((1, ), np.inf))).reshape(1, -1)
     X_true = logistic_sigmoid(X)
     ACTIVATIONS["logistic"](X)
     np.testing.assert_array_equal(X, X_true)
@@ -75,7 +78,8 @@ def test_softplus() -> None:
 
 def test_relu() -> None:
     print('\ttest_relu():')
-    X = np.concatenate(([-np.inf], np.arange(-5, 5), [np.inf])).reshape(1, -1)
+    X = np.concatenate((np.full((1, ), -np.inf), np.arange(-5, 5),
+                        np.full((1, ), np.inf))).reshape(1, -1)
     X_true = np.maximum(X, 0)
     ACTIVATIONS["relu"](X)
     np.testing.assert_array_equal(X, X_true)
@@ -96,7 +100,8 @@ def test_softmax() -> None:
 
 def test_tanh() -> None:
     print('\ttest_l():')
-    X = np.concatenate(([-np.inf], np.arange(-5, 5), [np.inf])).reshape(1, -1)
+    X = np.concatenate((np.full((1, ), -np.inf), np.arange(-5, 5),
+                        np.full((1, ), np.inf))).reshape(1, -1)
     X_true = np.tanh(X)
     ACTIVATIONS["tanh"](X)
     np.testing.assert_array_equal(X, X_true)

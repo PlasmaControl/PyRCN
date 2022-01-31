@@ -3,8 +3,9 @@
 from sklearn import datasets
 from sklearn.model_selection import KFold, GridSearchCV, RandomizedSearchCV
 from sklearn.svm import SVC
+from collections.abc import Iterable
 
-from pyrcn.model_selection import SequentialSearchCV
+from pyrcn.model_selection import SequentialSearchCV, SHGOSearchCV
 
 
 def test_sequentialSearchCV_equivalence() -> None:
@@ -38,5 +39,43 @@ def test_sequentialSearchCV_equivalence() -> None:
     assert(isinstance(ss.multimetric, bool))
 
 
+def test_SHGOSearchCV() -> None:
+    """Test the SHGO search."""
+    from sklearn.metrics import accuracy_score
+    from sklearn.base import clone, BaseEstimator
+    import numpy as np
+    from sklearn.model_selection import StratifiedKFold
+    iris = datasets.load_iris()
+    X = iris.data[:, [0, 2]]
+    y = iris.target
+    cv = StratifiedKFold(n_splits=5)
+    svm = SVC(random_state=42)
+
+    def func(params: Iterable, param_names: Iterable,
+             base_estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
+             train: np.ndarray, test: np.ndarray) -> float:
+        estimator = base_estimator
+        for name, param in zip(param_names, params):
+            estimator.set_params(**{name: param})
+        mse = []
+        for tr, te in zip(train, test):
+            est = clone(estimator).fit(X[tr], y[tr])
+            y_pred = est.predict(X[te])
+            mse.append(-accuracy_score(y[te], y_pred))
+        return np.mean(mse)
+
+    params = {'max_iter': (1, 1000)}
+
+    def fun(x: tuple) -> float:
+        return max([x[0] - int(x[0])])
+    constraints = {'type': 'eq', 'fun': fun}
+    search = SHGOSearchCV(
+        estimator=svm, func=func, params=params, cv=cv,
+        constraints=constraints).fit(X, y)
+    y_pred = search.predict(X)
+    print(accuracy_score(y_true=y, y_pred=svm.fit(X, y).predict(X)))
+    print(accuracy_score(y_true=y, y_pred=y_pred))
+
+
 if __name__ == '__main__':
-    test_sequentialSearchCV_equivalence()
+    test_SHGOSearchCV()

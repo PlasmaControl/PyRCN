@@ -241,7 +241,7 @@ res1 = FeatureUnion([
     ("lambda_0.4",
      Pipeline([('i2n', InputToNode(hidden_layer_size=10)),
                ('n2n', NodeToNode(hidden_layer_size=10,
-                                  leakage=0.4))])),])
+                                  leakage=0.4))])), ])
 
 pca = PCA(n_components=10)
 

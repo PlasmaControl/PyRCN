@@ -22,9 +22,11 @@ from ...base import (ACTIVATIONS, ACTIVATIONS_INVERSE,
 
 if sys.version_info >= (3, 8):
     from typing import Union, Literal
+    # from math import comb
 else:
     from typing_extensions import Literal
     from typing import Union
+    # from scipy.special import comb
 
 
 class InputToNode(BaseEstimator, TransformerMixin):
@@ -107,10 +109,10 @@ class InputToNode(BaseEstimator, TransformerMixin):
         fan_in = int(np.rint(self.hidden_layer_size * self.sparsity))
         self._input_weights = _uniform_random_input_weights(
             n_features_in=self.n_features_in_,
-            hidden_layer_size=self.hidden_layer_size, fan_in=fan_in,
+            hidden_layer_size=int(self.hidden_layer_size), fan_in=fan_in,
             random_state=self._random_state)
         self._bias_weights = _uniform_random_bias(
-            hidden_layer_size=self.hidden_layer_size,
+            hidden_layer_size=int(self.hidden_layer_size),
             random_state=self._random_state)
         return self
 
@@ -323,6 +325,35 @@ class PredefinedWeightsInputToNode(InputToNode):
         return self
 
 
+"""
+class NonlinearVectorAutoregression(InputToNode):
+    #
+    # Non-linear vector autoregression (NVAR) class
+
+    #
+
+    @_deprecate_positional_args
+    def __init__(self, *,
+                 delay: int = 2, order: int = 2, stride: int = 1) -> None:
+        super().__init__()
+        self.delay = delay
+        self.order = order
+        self.stride = stride
+        self._linear_dimension = 0
+        self._non_linear_dimension = 0
+
+    def fit(self, X: np.ndarray, y: None = None) -> InputToNode:
+        self._validate_hyperparameters()
+        self._validate_data(X, y)
+        n_samples, n_features = X.shape
+        self._linear_dimension = self.delay * n_features
+        self._non_linear_dimension = comb(
+            self._linear_dimension + self.order - 1, self.order)
+        self.hidden_layer_size = self._linear_dimension + \
+                                 self._non_linear_dimension
+"""
+
+
 class BatchIntrinsicPlasticity(InputToNode):
     """
     BatchIntrinsicPlasticity class for reservoir computing modules.
@@ -362,8 +393,7 @@ class BatchIntrinsicPlasticity(InputToNode):
                  algorithm:  Literal['neumann', 'dresden'] = 'dresden',
                  input_activation: Literal['tanh', 'identity', 'logistic',
                                            'relu', 'bounded_relu'] = 'tanh',
-                 hidden_layer_size: Union[int, np.integer] = 500,
-                 sparsity: float = 1.,
+                 hidden_layer_size: int = 500, sparsity: float = 1.,
                  random_state: Union[int, np.random.RandomState, None] = 42):
         """Construct the BatchIntrinsicPlasticity InputToNode."""
         super().__init__(input_activation=input_activation,
