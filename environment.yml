@@ -8,3 +8,9 @@ dependencies:
   - pip
   - pip:
     - .
+    - scikit-learn
+    - ipywidgets
+    - ipympl
+    - pandas
+    - seaborn
+    - tqdm>=4.33.0
