@@ -3,7 +3,7 @@
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
-from typing import Union, Tuple, Callable, Any, List
+from typing import Union, Tuple, Callable, Any, List, Dict
 import numpy as np
 from scipy.integrate import solve_ivp
 import collections
@@ -141,7 +141,7 @@ def mackey_glass(n_timesteps: int, n_future: int = 1, tau: int = 17,
 def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
            rho: float = 28., beta: float = 8./3.,
            x_0: Union[List, np.ndarray] = [1.0, 1.0, 1.0], h: float = 0.03,
-           **kwargs) -> Tuple[np.ndarray, np.ndarray]:
+           **kwargs: Dict) -> Tuple[np.ndarray, np.ndarray]:
     r"""
     Lorenz time-series.
 
@@ -193,7 +193,9 @@ def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
     """
     timesteps = np.arange(0., (n_timesteps + n_future) * h, h)
 
-    def lorenz_differential_equation(t, state):
+    def lorenz_differential_equation(t: int,
+                                     state: Tuple[float, float, float]) \
+            -> Tuple[float, float, float]:
         x, y, z = state
         dx_dt = sigma * (y - x)
         dy_dt = x * (rho - z)
@@ -277,13 +279,3 @@ def load_digits(*, n_class: Union[int, np.integer] = 10,
     else:
         return sklearn_load_digits(
             n_class=n_class, return_X_y=return_X_y, as_frame=as_frame)
-
-
-if __name__ == "__main__":
-    X, y = lorenz(n_timesteps=10000)
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-    fig, axs = plt.subplots()
-    sns.lineplot(x=range(10000), y=X, ax=axs)
-    plt.show()
-    exit(0)

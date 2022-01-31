@@ -6,8 +6,6 @@
 
 from __future__ import annotations
 
-import sys
-
 from sklearn.base import BaseEstimator, is_classifier, clone
 from sklearn.model_selection._search import BaseSearchCV
 from sklearn.utils.validation import indexable, _check_fit_params
@@ -18,12 +16,7 @@ import time
 from scipy import optimize
 from collections.abc import Iterable
 
-if sys.version_info >= (3, 8):
-    from typing import (Union, Optional, Callable, Dict, Any, Literal, List,
-                        Tuple)
-else:
-    from typing import Union, Optional, Callable, Dict, Any, List, Tuple
-    from typing_extensions import Literal
+from typing import Union, Optional, Callable, Dict, Any, List, Tuple
 
 
 class SequentialSearchCV(BaseSearchCV):
@@ -487,7 +480,8 @@ class SHGOSearchCV(BaseSearchCV):
         self.constraints = constraints
 
     def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None, *,
-            groups: Optional[np.ndarray] = None, **fit_params: dict):
+            groups: Optional[np.ndarray] = None,
+            **fit_params: dict) -> SHGOSearchCV:
         """
         Run the optimization based on the parameters defined before.
 

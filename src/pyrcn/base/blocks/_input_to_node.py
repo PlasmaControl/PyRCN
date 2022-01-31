@@ -22,11 +22,11 @@ from ...base import (ACTIVATIONS, ACTIVATIONS_INVERSE,
 
 if sys.version_info >= (3, 8):
     from typing import Union, Literal
-    from math import comb
+    # from math import comb
 else:
     from typing_extensions import Literal
     from typing import Union
-    from scipy.special import comb
+    # from scipy.special import comb
 
 
 class InputToNode(BaseEstimator, TransformerMixin):
@@ -325,11 +325,12 @@ class PredefinedWeightsInputToNode(InputToNode):
         return self
 
 
+"""
 class NonlinearVectorAutoregression(InputToNode):
-    """
-    Non-linear vector autoregression (NVAR) class
+    #
+    # Non-linear vector autoregression (NVAR) class
 
-    """
+    #
 
     @_deprecate_positional_args
     def __init__(self, *,
@@ -350,7 +351,7 @@ class NonlinearVectorAutoregression(InputToNode):
             self._linear_dimension + self.order - 1, self.order)
         self.hidden_layer_size = self._linear_dimension + \
                                  self._non_linear_dimension
-
+"""
 
 
 class BatchIntrinsicPlasticity(InputToNode):
