@@ -191,8 +191,10 @@ If you use PyRCN, please cite the following publication:
 }
 ```
 
-[Glottal Closure Instant Detection using Echo State Networks](http://www.essv.de/pdf/2021_161_168.pdf)
-
+Glottal Closure Instant Detection using Echo State Networks
+- [Paper](http://www.essv.de/pdf/2021_161_168.pdf)
+- [Repository](https://github.com/TUD-STKS/gci_estimation)
+- Reference
 ```latex
 @InProceedings{src:Steiner-21c,
 	title = {Glottal Closure Instant Detection using Echo State Networks},
@@ -204,7 +206,7 @@ If you use PyRCN, please cite the following publication:
 	editor = {Stefan Hillmann and Benjamin Weiss and Thilo Michael and Sebastian Möller},
 	publisher = {TUDpress, Dresden},
 	isbn = {978-3-95908-227-3}
-} 
+}
 ```
 
 Cluster-based Input Weight Initialization for Echo State Networks
