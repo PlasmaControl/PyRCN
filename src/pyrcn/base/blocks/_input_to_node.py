@@ -467,10 +467,9 @@ class BatchIntrinsicPlasticity(InputToNode):
             return super().transform(X)
 
         if self.algorithm == 'dresden':
-            s = BatchIntrinsicPlasticity._node_inputs(X, self._input_weights,
-                                                      self.input_scaling,
-                                                      self._bias_weights,
-                                                      self.bias_scaling)
+            s = BatchIntrinsicPlasticity._node_inputs(
+                X, self._input_weights, self.input_scaling, self.input_shift,
+                self._bias_weights, self.bias_scaling, self.bias_shift)
             np.add(np.multiply(
                 self._scaler.transform(s), self._m), self._c, out=s)
             ACTIVATIONS[self.input_activation](s)
@@ -491,8 +490,8 @@ class BatchIntrinsicPlasticity(InputToNode):
         super().fit(X, y=y)
 
         s = np.sort(BatchIntrinsicPlasticity._node_inputs(
-            X, self._input_weights, self.input_scaling, self._bias_weights,
-            self.bias_scaling), axis=0)
+            X, self._input_weights, self.input_scaling, self.input_shift,
+            self._bias_weights, self.bias_scaling, self.bias_shift), axis=0)
 
         phi = np.transpose(np.stack((s, np.ones(s.shape)), axis=2),
                            axes=(1, 0, 2))
@@ -554,8 +553,8 @@ class BatchIntrinsicPlasticity(InputToNode):
         super().fit(X, y=y)
 
         s = BatchIntrinsicPlasticity._node_inputs(
-            X, self._input_weights, self.input_scaling, self._bias_weights,
-            self.bias_scaling)
+            X, self._input_weights, self.input_scaling, self.input_shift,
+            self._bias_weights, self.bias_scaling, self.bias_shift)
         self._scaler.fit(s)
 
         if self.distribution:
