@@ -55,8 +55,12 @@ class InputToNode(BaseEstimator, TransformerMixin):
             returns f(x) = min(max(x, 0),1)
     input_scaling :  float, default = 1.
         Scales the input weight matrix.
+    input_shift :  float, default = 0.
+        Shifts the input weight matrix.
     bias_scaling : float, default = 1.
         Scales the input bias of the activation.
+    bias_shift : float, default = 0.
+        Shifts the input bias of the activation.
     k_in : Union[int, np.integer, None], default = None.
         input weights per node. By default, it is None. If set, it overrides
         sparsity.
@@ -69,9 +73,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
                  sparsity: float = 1.,
                  input_activation: Literal['tanh', 'identity', 'logistic',
                                            'relu', 'bounded_relu'] = 'tanh',
-                 input_scaling: float = 1.,
-                 bias_scaling: float = 1.,
-                 k_in: Union[int, np.integer, None] = None,
+                 input_scaling: float = 1., input_shift: float = 0.,
+                 bias_scaling: float = 1., bias_shift: float = 0.,
+                 k_in: Union[int, None] = None,
                  random_state: Union[int, np.random.RandomState,
                                      None] = 42) -> None:
         """Construct the InputToNode."""
@@ -79,7 +83,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self.sparsity = sparsity
         self.input_activation = input_activation
         self.input_scaling = input_scaling
+        self.input_shift = input_shift
         self.bias_scaling = bias_scaling
+        self.bias_shift = bias_shift
         self.random_state = random_state
         self.k_in = k_in
 
@@ -131,16 +137,17 @@ class InputToNode(BaseEstimator, TransformerMixin):
         if self._input_weights.shape == () or self._bias_weights.shape == ():
             raise NotFittedError(self)
         self._hidden_layer_state = InputToNode._node_inputs(
-            X, self._input_weights, self.input_scaling, self._bias_weights,
-            self.bias_scaling)
+            X, self._input_weights, self.input_scaling, self.input_shift,
+            self._bias_weights, self.bias_scaling, self.bias_shift)
         ACTIVATIONS[self.input_activation](self._hidden_layer_state)
         return self._hidden_layer_state
 
     @staticmethod
     def _node_inputs(X: np.ndarray,
                      input_weights: Union[np.ndarray, csr_matrix],
-                     input_scaling: float, bias: np.ndarray,
-                     bias_scaling: float) -> np.ndarray:
+                     input_scaling: float, input_shift: float,
+                     bias: np.ndarray, bias_scaling: float, bias_shift: float)\
+            -> np.ndarray:
         """
         Scale the node inputs input_scaling, Multiply with input_weights and
         add bias.
@@ -150,15 +157,18 @@ class InputToNode(BaseEstimator, TransformerMixin):
         X : ndarray of size (n_samples, n_features)
         input_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
         input_scaling : float
+        input_shift : float
         bias : ndarray of size (hidden_layer_size)
         bias_scaling : float
+        bias_shift : float
 
         Returns
         -------
         node_inputs : ndarray of size (n_samples, hidden_layer_size)
         """
-        return safe_sparse_dot(X, input_weights) * input_scaling + \
-            np.ones(shape=(X.shape[0], 1)) * bias * bias_scaling
+        return (safe_sparse_dot(X, input_weights) * input_scaling +
+                input_shift + np.ones(shape=(X.shape[0], 1)) * bias *
+                bias_scaling + bias_shift)
 
     def _validate_hyperparameters(self) -> None:
         """Validate the hyperparameters."""
@@ -252,8 +262,12 @@ class PredefinedWeightsInputToNode(InputToNode):
             returns f(x) = min(max(x, 0),1)
     input_scaling :  float, default = 1.
         Scales the input weight matrix.
+    input_shift :  float, default = 0.
+        Shifts the input weight matrix.
     bias_scaling : float, default = 1.
         Scales the input bias of the activation.
+    bias_shift : float, default = 0.
+        Shifts the input bias of the activation.
     random_state : Union[int, np.random.RandomState, None], default = 42
     """
 
@@ -262,9 +276,9 @@ class PredefinedWeightsInputToNode(InputToNode):
                  predefined_input_weights: np.ndarray, *,
                  input_activation: Literal['tanh', 'identity', 'logistic',
                                            'relu', 'bounded_relu'] = 'tanh',
-                 input_scaling: float = 1.,
+                 input_scaling: float = 1., input_shift: float = 0.,
                  predefined_bias_weights: np.ndarray = np.ndarray([]),
-                 bias_scaling: float = 0.,
+                 bias_scaling: float = 0., bias_shift: float = 0.,
                  random_state: Union[int, np.random.RandomState,
                                      None] = 42) -> None:
         """Construct the PredefinedWeightsInputToNode."""
@@ -274,8 +288,8 @@ class PredefinedWeightsInputToNode(InputToNode):
                              .format(predefined_input_weights.shape))
         super().__init__(hidden_layer_size=predefined_input_weights.shape[1],
                          input_activation=input_activation,
-                         input_scaling=input_scaling,
-                         bias_scaling=bias_scaling,
+                         input_scaling=input_scaling, input_shift=input_shift,
+                         bias_scaling=bias_scaling, bias_shift=bias_shift,
                          random_state=random_state)
         self.predefined_input_weights = predefined_input_weights
         if (predefined_bias_weights.ndim == 1

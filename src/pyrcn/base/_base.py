@@ -7,8 +7,8 @@ import sys
 
 import numpy as np
 import scipy
-from scipy.sparse.linalg.eigen.arpack import eigs as eigens
-from scipy.sparse.linalg.eigen.arpack import ArpackNoConvergence
+from scipy.sparse.linalg.eigen import eigs as eigens
+from scipy.sparse.linalg.eigen import ArpackNoConvergence
 
 if sys.version_info >= (3, 8):
     from typing import Union
