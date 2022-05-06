@@ -148,15 +148,12 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         return _hidden_layer_state
 
     @staticmethod
-    def _pass_through_recurrent_weights(X: np.ndarray,
-                                        hidden_layer_size: int,
-                                        recurrent_weights: Union[np.ndarray,
-                                                                 csr_matrix],
-                                        spectral_radius: float, leakage: float,
-                                        reservoir_activation:
-                                            Literal['tanh', 'identity',
-                                                    'logistic', 'relu',
-                                                    'bounded_relu'])\
+    def _pass_through_recurrent_weights(
+            X: np.ndarray, hidden_layer_size: int,
+            recurrent_weights: Union[np.ndarray, csr_matrix],
+            spectral_radius: float, leakage: float,
+            reservoir_activation: Literal['tanh', 'identity', 'logistic',
+                                          'relu', 'bounded_relu'])\
             -> np.ndarray:
         """
         Return the reservoir state matrix.
@@ -345,23 +342,19 @@ class EulerNodeToNode(NodeToNode):
         if self._recurrent_weights.shape == ():
             raise NotFittedError(self)
 
-        _hidden_layer_state = self._pass_through_recurrent_weights(
+        _hidden_layer_state = self._pass_through_recurrent_euler_weights(
             X, int(self.hidden_layer_size), self._recurrent_weights,
             self.recurrent_scaling, self.gamma, self.epsilon,
             self.reservoir_activation)
         return _hidden_layer_state
 
     @staticmethod
-    def _pass_through_recurrent_weights(X: np.ndarray,
-                                        hidden_layer_size: int,
-                                        recurrent_weights: Union[np.ndarray,
-                                                                 csr_matrix],
-                                        recurrent_scaling: float,
-                                        gamma: float, epsilon: float,
-                                        reservoir_activation:
-                                            Literal['tanh', 'identity',
-                                                    'logistic', 'relu',
-                                                    'bounded_relu'])\
+    def _pass_through_recurrent_euler_weights(
+            X: np.ndarray, hidden_layer_size: int,
+            recurrent_weights: Union[np.ndarray, csr_matrix],
+            recurrent_scaling: float, gamma: float, epsilon: float,
+            reservoir_activation: Literal['tanh', 'identity', 'logistic',
+                                          'relu', 'bounded_relu'])\
             -> np.ndarray:
         """
         Return the reservoir state matrix.
