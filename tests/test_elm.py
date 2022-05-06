@@ -39,7 +39,7 @@ def test_elm_classifier_partial_fit() -> None:
     for k in range(10):
         elm.partial_fit(X[k:k+1, :], y[k:k+1], classes=np.arange(10))
     print(elm.__sizeof__())
-    print(elm.hidden_layer_state)
+    print(elm.hidden_layer_state(X))
     elm = ELMClassifier(hidden_layer_size=50, regressor=Ridge())
     with pytest.raises(BaseException):
         for k in range(10):

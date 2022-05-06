@@ -168,7 +168,7 @@ def test_esn_classifier_partial_fit() -> None:
         esn.partial_fit(X[k], np.repeat(y[k], 8), classes=np.arange(10),
                         postpone_inverse=True)
     print(esn.__sizeof__())
-    print(esn.hidden_layer_state)
+    print(esn.hidden_layer_state(X=X))
     esn = ESNClassifier(hidden_layer_size=50, regressor=Ridge())
     with pytest.raises(BaseException):
         for k in range(10):

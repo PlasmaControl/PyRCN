@@ -15,7 +15,7 @@ from ..util import concatenate_sequences
 from ..linear_model import IncrementalRegression
 from ..projection import MatrixToValueProjection
 from sklearn.utils.validation import _deprecate_positional_args
-from sklearn.preprocessing import LabelBinarizer
+from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer
 from sklearn.exceptions import NotFittedError
 
 from joblib import Parallel, delayed
@@ -512,16 +512,35 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         """
         self._node_to_node = node_to_node
 
-    @property
-    def hidden_layer_state(self) -> np.ndarray:
+    def hidden_layer_state(self, X: np.ndarray) -> np.ndarray:
         """
-        Return the hidden_layer_state, e.g. the resevoir state over time.
+        Return the hidden_layer_state, e.g. the reservoir state over time.
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
 
         Returns
         -------
-        hidden_layer_state : np.ndarray
+        hidden_layer_state : ndarray of (n_samples,)
+            The hidden_layer_state, e.g. the reservoir state over time.
         """
-        return self._node_to_node._hidden_layer_state
+        if self._input_to_node is None:
+            raise NotFittedError(self)
+
+        if self.requires_sequence is False:
+            # input_to_node
+            hidden_layer_state = self._input_to_node.transform(X)
+            hidden_layer_state = self._node_to_node.transform(
+                hidden_layer_state)
+        else:
+            hidden_layer_state = np.empty(shape=X.shape, dtype=object)
+            for k, seq in enumerate(X):
+                # input_to_node
+                hls = self._input_to_node.transform(seq)
+                hls = self._node_to_node.transform(hls)
+                hidden_layer_state[k] = hls
+        return hidden_layer_state
 
     @property
     def sequence_to_value(self) -> bool:
@@ -651,7 +670,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
                          requires_sequence=requires_sequence, verbose=verbose,
                          **kwargs)
         self._decision_strategy = decision_strategy
-        self._encoder = LabelBinarizer()
+        self._encoder = MultiLabelBinarizer()
         self._sequence_to_value = False
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,

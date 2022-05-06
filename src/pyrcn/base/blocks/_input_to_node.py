@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import sys
-from scipy.sparse.csr import csr_matrix
+from scipy.sparse import csr_matrix
 from scipy.sparse import issparse
 import numpy as np
 from sklearn.utils.validation import _deprecate_positional_args
@@ -136,11 +136,11 @@ class InputToNode(BaseEstimator, TransformerMixin):
         """
         if self._input_weights.shape == () or self._bias_weights.shape == ():
             raise NotFittedError(self)
-        self._hidden_layer_state = InputToNode._node_inputs(
+        _hidden_layer_state = InputToNode._node_inputs(
             X, self._input_weights, self.input_scaling, self.input_shift,
             self._bias_weights, self.bias_scaling, self.bias_shift)
-        ACTIVATIONS[self.input_activation](self._hidden_layer_state)
-        return self._hidden_layer_state
+        ACTIVATIONS[self.input_activation](_hidden_layer_state)
+        return _hidden_layer_state
 
     @staticmethod
     def _node_inputs(X: np.ndarray,
@@ -155,7 +155,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray of size (n_samples, n_features)
-        input_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
+        input_weights : Union[np.ndarray, scipy.sparse.csr_matrix]
         input_scaling : float
         input_shift : float
         bias : ndarray of size (hidden_layer_size)
@@ -208,12 +208,10 @@ class InputToNode(BaseEstimator, TransformerMixin):
         if issparse(self._input_weights):
             return object.__sizeof__(self) + self._bias_weights.nbytes + \
                 np.asarray(self._input_weights).nbytes + \
-                self._hidden_layer_state.nbytes + \
                 sys.getsizeof(self._random_state)
         else:
             return object.__sizeof__(self) + self._bias_weights.nbytes + \
-                self._input_weights.nbytes + self._hidden_layer_state.nbytes +\
-                sys.getsizeof(self._random_state)
+                self._input_weights.nbytes + sys.getsizeof(self._random_state)
 
     @property
     def input_weights(self) -> Union[np.ndarray, csr_matrix]:
@@ -222,7 +220,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        input_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
+        input_weights : Union[np.ndarray, scipy.sparse.csr_matrix]
             of size (n_features, hidden_layer_size)
         """
         return self._input_weights
