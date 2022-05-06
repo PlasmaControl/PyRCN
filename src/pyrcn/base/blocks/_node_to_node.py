@@ -224,7 +224,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         if issparse(self._recurrent_weights):
             return object.__sizeof__(self) + \
                 np.asarray(self._recurrent_weights).nbytes + \
-                   sys.getsizeof(self.random_state)
+                sys.getsizeof(self.random_state)
         else:
             return object.__sizeof__(self) + self._recurrent_weights.nbytes + \
                 sys.getsizeof(self.random_state)
