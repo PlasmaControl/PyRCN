@@ -15,7 +15,7 @@ from ..util import concatenate_sequences
 from ..linear_model import IncrementalRegression
 from ..projection import MatrixToValueProjection
 from sklearn.utils.validation import _deprecate_positional_args
-from sklearn.preprocessing import LabelBinarizer, MultiLabelBinarizer
+from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
 
 from joblib import Parallel, delayed
@@ -670,7 +670,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
                          requires_sequence=requires_sequence, verbose=verbose,
                          **kwargs)
         self._decision_strategy = decision_strategy
-        self._encoder = MultiLabelBinarizer()
+        self._encoder = LabelBinarizer()
         self._sequence_to_value = False
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,

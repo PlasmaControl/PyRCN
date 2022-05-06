@@ -64,12 +64,13 @@ class MatrixToValueProjection(BaseEstimator, TransformerMixin):
         -------
         y : np.ndarray
         """
-        if self._output_strategy == "winner_takes_all":
-            X = cast(np.ndarray, np.sum(X, axis=0))
-        elif self._output_strategy == "median":
-            X = cast(np.ndarray, np.median(X, axis=0))
-        elif self._output_strategy == "last_value":
-            X = X[-1, :]
+        if X.shape[1] > 1:
+            if self._output_strategy == "winner_takes_all":
+                X = cast(np.ndarray, np.sum(X, axis=0))
+            elif self._output_strategy == "median":
+                X = cast(np.ndarray, np.median(X, axis=0))
+            elif self._output_strategy == "last_value":
+                X = X[-1, :]
         if self._needs_proba:
             return X
         else:

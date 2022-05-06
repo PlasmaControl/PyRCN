@@ -158,7 +158,6 @@ def test_node_to_node_bidirectional() -> None:
     n2n.fit(X)
     n2n.transform(X)
     assert n2n._recurrent_weights.shape == (5, 5)
-    assert n2n._hidden_layer_state.shape == (10, 10)
 
 
 def test_node_to_node_invalid_leakage() -> None:
