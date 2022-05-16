@@ -19,9 +19,3 @@ def test_argument_parser() -> None:
 def test_get_mnist() -> None:
     X, y = get_mnist(os.getcwd())
     assert X.shape[0] == 70000
-
-
-if __name__ == "__main__":
-    test_new_logger()
-    test_argument_parser()
-    test_get_mnist()
