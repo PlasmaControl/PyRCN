@@ -212,21 +212,23 @@ Glottal Closure Instant Detection using Echo State Networks
 Cluster-based Input Weight Initialization for Echo State Networks
 
 ```latex
-@misc{src:Steiner-KM_ESN,
-    title={Cluster-based Input Weight Initialization for Echo State Networks},
-    author={Peter Steiner and Azarakhsh Jalalvand and Peter Birkholz},
-    year={2021},
-    eprint={2103.04710},
-    archivePrefix={arXiv},
-    primaryClass={cs.LG}
+@ARTICLE{Steiner2022cluster,
+      author={Steiner, Peter and Jalalvand, Azarakhsh and Birkholz, Peter},
+      journal={IEEE Transactions on Neural Networks and Learning Systems},
+      title={Cluster-Based Input Weight Initialization for Echo State Networks},
+      year={2022},
+      volume={},
+      number={},
+      pages={1--12},
+      doi={10.1109/TNNLS.2022.3145565}
 }
 ```
 
-PyRCN: Exploration and Application of ESNs
+PyRCN: A Toolbox for Exploration and Application of Reservoir Computing Networks
 
 ```latex
-@misc{src:Steiner-PyRCN,
-      title={PyRCN: Exploration and Application of ESNs}, 
+@misc{steiner2021pyrcn,
+      title={PyRCN: A Toolbox for Exploration and Application of Reservoir Computing Networks}, 
       author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone and Peter Birkholz},
       year={2021},
       eprint={2103.04807},
