@@ -22,10 +22,10 @@ from ...base import (
     _uniform_random_recurrent_weights, _normal_recurrent_attention_weights)
 
 if sys.version_info >= (3, 8):
-    from typing import Union, Literal
+    from typing import Union, Literal, Optional
 else:
     from typing_extensions import Literal
-    from typing import Union
+    from typing import Union, Optional
 
 
 class NodeToNode(BaseEstimator, TransformerMixin):
@@ -62,21 +62,24 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         recurrent weights per node. By default, it is None.
         If set, it overrides sparsity.
     random_state : Union[int, np.random.RandomState, None], default = 42
+        Determines random number generation for centroid initialization.
+        Use an int to make the randomness deterministic.
+    predefined_recurrent_weights : Optional[np.ndarray], default = None
+        A set of predefined recurrent weights.
     """
 
     @_deprecate_positional_args
     def __init__(self, *,
-                 hidden_layer_size: int = 500,
-                 sparsity: float = 1.,
+                 hidden_layer_size: int = 500, sparsity: float = 1.,
                  reservoir_activation: Literal['tanh', 'identity',
                                                'logistic', 'relu',
                                                'bounded_relu'] = 'tanh',
-                 spectral_radius: float = 1.,
-                 leakage: float = 1.,
+                 spectral_radius: float = 1., leakage: float = 1.,
                  bidirectional: bool = False,
                  k_rec: Union[int, np.integer, None] = None,
-                 random_state: Union[int, np.random.RandomState,
-                                     None] = 42) -> None:
+                 random_state: Union[int, np.random.RandomState, None] = 42,
+                 predefined_recurrent_weights: Optional[np.ndarray] = None
+                 ) -> None:
         """Construct the NodeToNode."""
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
@@ -89,6 +92,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
         self._recurrent_weights: np.ndarray = np.ndarray([])
         self._hidden_layer_state: np.ndarray = np.ndarray([])
+        self.predefined_recurrent_weights = predefined_recurrent_weights
 
     def fit(self, X: np.ndarray, y: None = None) -> NodeToNode:
         """
@@ -97,7 +101,9 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray of shape (n_samples, n_features)
-        y : ignored
+            The input data.
+        y : None
+            Not used, present here for API consistency by convention.
 
         Returns
         -------
@@ -109,10 +115,15 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
         if self.k_rec is not None:
             self.sparsity = float(self.k_rec) / float(X.shape[1])
-        self._recurrent_weights = _normal_random_recurrent_weights(
-            hidden_layer_size=int(self.hidden_layer_size),
-            fan_in=int(np.rint(self.hidden_layer_size * self.sparsity)),
-            random_state=self._random_state)
+        fan_in = int(np.rint(self.hidden_layer_size * self.sparsity))
+        if self.predefined_recurrent_weights is not None:
+            assert self.predefined_recurrent_weights.shape == (
+                self.hidden_layer_size, self.hidden_layer_size)
+            self._recurrent_weights = self.predefined_recurrent_weights
+        else:
+            self._recurrent_weights = _normal_random_recurrent_weights(
+                hidden_layer_size=int(self.hidden_layer_size),
+                fan_in=fan_in, random_state=self._random_state)
         return self
 
     def transform(self, X: np.ndarray, y: None = None) -> np.ndarray:
@@ -121,7 +132,10 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray of size (n_samples, n_features)
+        X : ndarray of shape (n_samples, n_features)
+            The input data.
+        y : None
+            Not used, present here for API consistency by convention.
 
         Returns
         -------
@@ -131,58 +145,42 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             raise NotFittedError(self)
 
         if self.bidirectional:
-            _hidden_layer_state_fw = self._pass_through_recurrent_weights(
-                X, int(self.hidden_layer_size), self._recurrent_weights,
-                self.spectral_radius, self.leakage, self.reservoir_activation)
-            _hidden_layer_state_bw = np.flipud(
-                self._pass_through_recurrent_weights(
-                    np.flipud(X), int(self.hidden_layer_size),
-                    self._recurrent_weights, self.spectral_radius,
-                    self.leakage, self.reservoir_activation))
-            _hidden_layer_state = np.concatenate(
-                (_hidden_layer_state_fw, _hidden_layer_state_bw), axis=1)
+            from joblib import Parallel, delayed
+            _hidden_layer_state_fw, _hidden_layer_state_bw = \
+                Parallel(n_jobs=2)(
+                    delayed(self._pass_through_recurrent_weights)(x)
+                    for x in [X, np.flipud(X)])
+            _hidden_layer_state_bw = np.flipud(_hidden_layer_state_bw)
+            _hidden_layer_state = np.hstack(
+                (_hidden_layer_state_fw, _hidden_layer_state_bw))
         else:
-            _hidden_layer_state = self._pass_through_recurrent_weights(
-                X, int(self.hidden_layer_size), self._recurrent_weights,
-                self.spectral_radius, self.leakage, self.reservoir_activation)
+            _hidden_layer_state = self._pass_through_recurrent_weights(X)
         return _hidden_layer_state
 
-    @staticmethod
-    def _pass_through_recurrent_weights(
-            X: np.ndarray, hidden_layer_size: int,
-            recurrent_weights: Union[np.ndarray, csr_matrix],
-            spectral_radius: float, leakage: float,
-            reservoir_activation: Literal['tanh', 'identity', 'logistic',
-                                          'relu', 'bounded_relu'])\
-            -> np.ndarray:
+    def _pass_through_recurrent_weights(self, X: np.ndarray) -> np.ndarray:
         """
         Return the reservoir state matrix.
 
         Parameters
         ----------
         X : ndarray of size (n_samples, n_features)
-        hidden_layer_size : int.
-        spectral_radius : float
-        leakage : float
-        reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
-        'bounded_relu']
 
         Returns
         -------
         hidden_layer_state : ndarray of size (n_samples, hidden_layer_size)
         """
-        hidden_layer_state = np.zeros(shape=[X.shape[0]+1, hidden_layer_size])
+        hidden_layer_state = np.zeros(
+            shape=[X.shape[0]+1, self.hidden_layer_size])
         for sample in range(X.shape[0]):
             a = X[sample, :]
-            b = safe_sparse_dot(
-                hidden_layer_state[sample, :], recurrent_weights) * \
-                spectral_radius
+            b = safe_sparse_dot(hidden_layer_state[sample, :],
+                                self._recurrent_weights) * self.spectral_radius
             pre_activation = a + b
-            ACTIVATIONS[reservoir_activation](pre_activation)
+            ACTIVATIONS[self.reservoir_activation](pre_activation)
             hidden_layer_state[sample+1, :] = pre_activation
             hidden_layer_state[sample + 1, :] = \
-                (1 - leakage) * hidden_layer_state[sample, :] + \
-                leakage * hidden_layer_state[sample + 1, :]
+                (1 - self.leakage) * hidden_layer_state[sample, :] + \
+                self.leakage * hidden_layer_state[sample + 1, :]
         return hidden_layer_state[1:, :]
 
     def _validate_hyperparameters(self) -> None:
@@ -208,8 +206,8 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         if self.bidirectional not in [False, True]:
             raise ValueError("bidirectional must be either False or True,"
                              "got {0}.".format(self.bidirectional))
-        if self.k_rec is not None\
-                and (self.k_rec <= 0 or self.k_rec >= self.hidden_layer_size):
+        if self.k_rec is not None and (
+                self.k_rec <= 0 or self.k_rec >= self.hidden_layer_size):
             raise ValueError("k_rec must be > 0, got {0}.".format(self.k_rec))
 
     def __sizeof__(self) -> int:
@@ -342,19 +340,10 @@ class EulerNodeToNode(NodeToNode):
         if self._recurrent_weights.shape == ():
             raise NotFittedError(self)
 
-        _hidden_layer_state = self._pass_through_recurrent_euler_weights(
-            X, int(self.hidden_layer_size), self._recurrent_weights,
-            self.recurrent_scaling, self.gamma, self.epsilon,
-            self.reservoir_activation)
+        _hidden_layer_state = self._pass_through_recurrent_euler_weights(X)
         return _hidden_layer_state
 
-    @staticmethod
-    def _pass_through_recurrent_euler_weights(
-            X: np.ndarray, hidden_layer_size: int,
-            recurrent_weights: Union[np.ndarray, csr_matrix],
-            recurrent_scaling: float, gamma: float, epsilon: float,
-            reservoir_activation: Literal['tanh', 'identity', 'logistic',
-                                          'relu', 'bounded_relu'])\
+    def _pass_through_recurrent_euler_weights(self, X: np.ndarray)\
             -> np.ndarray:
         """
         Return the reservoir state matrix.
@@ -362,30 +351,25 @@ class EulerNodeToNode(NodeToNode):
         Parameters
         ----------
         X : ndarray of size (n_samples, n_features)
-        hidden_layer_size : int.
-        recurrent_scaling : float
-        gamma : float
-        epsilon : float
-        reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
-        'bounded_relu']
 
         Returns
         -------
         hidden_layer_state : ndarray of size (n_samples, hidden_layer_size)
         """
-        hidden_layer_state = np.zeros(shape=[X.shape[0]+1, hidden_layer_size])
+        hidden_layer_state = np.zeros(
+            shape=[X.shape[0]+1, self.hidden_layer_size])
         for sample in range(X.shape[0]):
             a = X[sample, :]
             b = safe_sparse_dot(
                 hidden_layer_state[sample, :],
-                recurrent_scaling * recurrent_weights + gamma * np.eye(
-                    hidden_layer_size))
+                self.recurrent_scaling * self._recurrent_weights + self.gamma *
+                np.eye(self.hidden_layer_size))
             pre_activation = a + b
-            ACTIVATIONS[reservoir_activation](pre_activation)
+            ACTIVATIONS[self.reservoir_activation](pre_activation)
             hidden_layer_state[sample+1, :] = pre_activation
             hidden_layer_state[sample + 1, :] = \
                 hidden_layer_state[sample, :] + \
-                epsilon * hidden_layer_state[sample + 1, :]
+                self.epsilon * hidden_layer_state[sample + 1, :]
         return hidden_layer_state[1:, :]
 
 
@@ -397,7 +381,6 @@ class PredefinedWeightsNodeToNode(NodeToNode):
     ----------
     predefined_recurrent_weights : np.ndarray
         A set of predefined recurrent weights.
-    hidden_layer_size : Union[int, np.integer], default=500
         Sets the number of nodes in hidden layer. Equals number of output
         features.
     reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
@@ -481,9 +464,6 @@ class AttentionWeightsNodeToNode(NodeToNode):
     ----------
     recurrent_attention_weights : np.ndarray
         A set of predefined recurrent attention weights.
-    hidden_layer_size : Union[int, np.integer], default=500
-        Sets the number of nodes in hidden layer. Equals number of output
-        features.
     reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
     'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
@@ -671,9 +651,7 @@ class HebbianNodeToNode(NodeToNode):
 
     def _hebbian_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Hebbian learning rule."""
-        hidden_layer_state = self._pass_through_recurrent_weights(
-            X, int(self.hidden_layer_size), self._recurrent_weights,
-            self.spectral_radius, self.leakage, self.reservoir_activation)
+        hidden_layer_state = self._pass_through_recurrent_weights(X)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -=\
                 self.learning_rate * safe_sparse_dot(
@@ -682,9 +660,7 @@ class HebbianNodeToNode(NodeToNode):
 
     def _anti_hebbian_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Anti-Hebbian learning rule."""
-        hidden_layer_state = self._pass_through_recurrent_weights(
-            X, int(self.hidden_layer_size), self._recurrent_weights,
-            self.spectral_radius, self.leakage, self.reservoir_activation)
+        hidden_layer_state = self._pass_through_recurrent_weights(X)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -= \
                 -self.learning_rate * safe_sparse_dot(
@@ -693,9 +669,7 @@ class HebbianNodeToNode(NodeToNode):
 
     def _oja_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Oja learning rule."""
-        hidden_layer_state = self._pass_through_recurrent_weights(
-            X, int(self.hidden_layer_size), self._recurrent_weights,
-            self.spectral_radius, self.leakage, self.reservoir_activation)
+        hidden_layer_state = self._pass_through_recurrent_weights(X)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -= \
                 self.learning_rate * (safe_sparse_dot(
@@ -706,9 +680,7 @@ class HebbianNodeToNode(NodeToNode):
 
     def _anti_oja_learning(self, X: np.ndarray, y: None = None) -> None:
         """Use the Anti-Oja learning rule."""
-        hidden_layer_state = self._pass_through_recurrent_weights(
-            X, int(self.hidden_layer_size), self._recurrent_weights,
-            self.spectral_radius, self.leakage, self.reservoir_activation)
+        hidden_layer_state = self._pass_through_recurrent_weights(X)
         for k in range(hidden_layer_state.shape[0] - 1):
             self._recurrent_weights -= \
                 self.learning_rate * (-safe_sparse_dot(

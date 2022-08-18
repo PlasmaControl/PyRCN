@@ -21,11 +21,11 @@ from ...base import (ACTIVATIONS, ACTIVATIONS_INVERSE,
                      _uniform_random_input_weights)
 
 if sys.version_info >= (3, 8):
-    from typing import Union, Literal
+    from typing import Union, Literal, Optional
     # from math import comb
 else:
     from typing_extensions import Literal
-    from typing import Union
+    from typing import Union, Optional
     # from scipy.special import comb
 
 
@@ -65,6 +65,12 @@ class InputToNode(BaseEstimator, TransformerMixin):
         input weights per node. By default, it is None. If set, it overrides
         sparsity.
     random_state : Union[int, np.random.RandomState, None], default = 42
+        Determines random number generation for centroid initialization.
+        Use an int to make the randomness deterministic.
+    predefined_input_weights : Optional[np.ndarray], default = None
+        A set of predefined input weights.
+    predefined_bias_weights : Optional[np.ndarray], default = None
+        A set of predefined bias weights.
     """
 
     @_deprecate_positional_args
@@ -76,8 +82,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
                  input_scaling: float = 1., input_shift: float = 0.,
                  bias_scaling: float = 1., bias_shift: float = 0.,
                  k_in: Union[int, None] = None,
-                 random_state: Union[int, np.random.RandomState,
-                                     None] = 42) -> None:
+                 random_state: Union[int, np.random.RandomState, None] = 42,
+                 predefined_input_weights: Optional[np.ndarray] = None,
+                 predefined_bias_weights: Optional[np.ndarray] = None) -> None:
         """Construct the InputToNode."""
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
@@ -92,6 +99,8 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self._input_weights: np.ndarray = np.ndarray([])
         self._bias_weights: np.ndarray = np.ndarray([])
         self._hidden_layer_state: np.ndarray = np.ndarray([])
+        self.predefined_input_weights = predefined_input_weights
+        self.predefined_bias_weights = predefined_bias_weights
 
     def fit(self, X: np.ndarray, y: None = None) -> InputToNode:
         """
@@ -100,12 +109,13 @@ class InputToNode(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray of shape (n_samples, n_features)
+            The input data.
         y : None
-            ignored
+            Not used, present here for API consistency by convention.
 
         Returns
         -------
-        self : returns a trained InputToNode.
+        self : returns a fitted InputToNode.
         """
         self._validate_hyperparameters()
         self._validate_data(X, y)
@@ -113,26 +123,40 @@ class InputToNode(BaseEstimator, TransformerMixin):
         if self.k_in is not None:
             self.sparsity = float(self.k_in) / float(X.shape[1])
         fan_in = int(np.rint(self.hidden_layer_size * self.sparsity))
-        self._input_weights = _uniform_random_input_weights(
-            n_features_in=self.n_features_in_,
-            hidden_layer_size=int(self.hidden_layer_size), fan_in=fan_in,
-            random_state=self._random_state)
-        self._bias_weights = _uniform_random_bias(
-            hidden_layer_size=int(self.hidden_layer_size),
-            random_state=self._random_state)
+        if self.predefined_input_weights is not None:
+            assert self.predefined_input_weights.shape == (
+                self.n_features_in_, self.hidden_layer_size)
+            self._input_weights = self.predefined_input_weights
+        else:
+            self._input_weights = _uniform_random_input_weights(
+                n_features_in=self.n_features_in_,
+                hidden_layer_size=int(self.hidden_layer_size), fan_in=fan_in,
+                random_state=self._random_state)
+        if self.predefined_bias_weights is not None:
+            assert self.predefined_bias_weights.shape == (
+                self.hidden_layer_size, 1)
+            self._bias_weights = self.predefined_bias_weights
+        else:
+            self._bias_weights = _uniform_random_bias(
+                hidden_layer_size=int(self.hidden_layer_size),
+                random_state=self._random_state)
         return self
 
-    def transform(self, X: np.ndarray) -> np.ndarray:
+    def transform(self, X: np.ndarray, y: None = None) -> np.ndarray:
         """
         Transform the input matrix X.
 
         Parameters
         ----------
-        X : ndarray of size (n_samples, n_features)
+        X : ndarray of shape (n_samples, n_features)
+            The input data.
+        y : None
+            Not used, present here for API consistency by convention.
 
         Returns
         -------
-        y: ndarray of size (n_samples, hidden_layer_size)
+        X_new : ndarray of size (n_samples, hidden_layer_size)
+            X transformed in the new space.
         """
         if self._input_weights.shape == () or self._bias_weights.shape == ():
             raise NotFittedError(self)
@@ -149,25 +173,34 @@ class InputToNode(BaseEstimator, TransformerMixin):
                      bias: np.ndarray, bias_scaling: float, bias_shift: float)\
             -> np.ndarray:
         """
-        Scale the node inputs input_scaling, Multiply with input_weights and
-        add bias.
+        Scale the node inputs with input_scaling, shift them with input_shift,
+        multiply the scaled and shifted node inputs with theinput_weights and
+        add a bias.
 
         Parameters
         ----------
-        X : ndarray of size (n_samples, n_features)
+        X : ndarray of shape (n_samples, n_features)
+            The input data.
         input_weights : Union[np.ndarray, scipy.sparse.csr_matrix]
+            The input weights.
         input_scaling : float
+            The scaling factor for the node inputs.
         input_shift : float
+            The shifting factor for the node inputs
         bias : ndarray of size (hidden_layer_size)
+            The bias weight for each node.
         bias_scaling : float
+            The scaling factor for the bias weights.
         bias_shift : float
+            The shifting factor for the bias weights.
 
         Returns
         -------
-        node_inputs : ndarray of size (n_samples, hidden_layer_size)
+        X_new : ndarray of size (n_samples, hidden_layer_size)
+            The shifted and scaled inputs.
         """
         return (safe_sparse_dot(X, input_weights) * input_scaling +
-                input_shift + np.ones(shape=(X.shape[0], 1)) * bias *
+                input_shift + np.ones(shape=(X.shape[0], 1)) * bias.T *
                 bias_scaling + bias_shift)
 
     def _validate_hyperparameters(self) -> None:

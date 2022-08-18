@@ -226,36 +226,28 @@ print(layered_esn.predict(U))
 # Yet another example for a deep ESN
 # Multiple small reservoirs with different leakages in parallel
 res1 = FeatureUnion([
-    ("lambda_0.1",
-     Pipeline([('i2n', InputToNode(hidden_layer_size=10)),
-               ('n2n', NodeToNode(hidden_layer_size=10,
-                                  leakage=0.1))])),
-    ("lambda_0.2",
-     Pipeline([('i2n', InputToNode(hidden_layer_size=10)),
-               ('n2n', NodeToNode(hidden_layer_size=10,
-                                  leakage=0.2))])),
-    ("lambda_0.3",
-     Pipeline([('i2n', InputToNode(hidden_layer_size=10)),
-               ('n2n', NodeToNode(hidden_layer_size=10,
-                                  leakage=0.3))])),
-    ("lambda_0.4",
-     Pipeline([('i2n', InputToNode(hidden_layer_size=10)),
-               ('n2n', NodeToNode(hidden_layer_size=10,
-                                  leakage=0.4))])), ])
-
-pca = PCA(n_components=10)
+    ("lambda_0.1", Pipeline([
+        ('i2n', InputToNode(hidden_layer_size=10)),
+        ('n2n', NodeToNode(hidden_layer_size=10, leakage=0.1))])),
+    ("lambda_0.2", Pipeline([
+        ('i2n', InputToNode(hidden_layer_size=10)),
+        ('n2n', NodeToNode(hidden_layer_size=10, leakage=0.2))])),
+    ("lambda_0.3", Pipeline([
+        ('i2n', InputToNode(hidden_layer_size=10)),
+        ('n2n', NodeToNode(hidden_layer_size=10, leakage=0.3))])),
+    ("lambda_0.4", Pipeline([
+        ('i2n', InputToNode(hidden_layer_size=10)),
+        ('n2n', NodeToNode(hidden_layer_size=10, leakage=0.4))])), ])
 
 res2 = Pipeline([("i2n", InputToNode(hidden_layer_size=100)),
                  ("n2n", NodeToNode(hidden_layer_size=100))])
 
-i2n = FeatureUnion([("path1",
-                     Pipeline([("res1", res1), ("pca", pca),
-                               ("res2", res2)])),
-                    ("path2", res1)])
+i2n = FeatureUnion([
+    ("path1", Pipeline([("res1", res1), ("pca", PCA(n_components=10)),
+                        ("res2", res2)])), ("path2", res1)])
 
-n2n = PredefinedWeightsNodeToNode(
-    predefined_recurrent_weights=np.eye(40+100),
-    spectral_radius=0, leakage=1)
+n2n = PredefinedWeightsNodeToNode(predefined_recurrent_weights=np.eye(40+100),
+                                  spectral_radius=0, leakage=1)
 
 deep_esn = ESNRegressor(input_to_node=i2n, node_to_node=n2n)
 deep_esn.fit(U, y)
@@ -291,8 +283,8 @@ searches = [('step1', RandomizedSearchCV, step_1_params, kwargs_1),
             ('step2', GridSearchCV, step_2_params, kwargs_2)]
 
 # Perform the search
-esn_opti = SequentialSearchCV(esn, searches).fit(X_train.reshape(-1, 1),
-                                                 y_train)
+esn_opti = SequentialSearchCV(esn, searches).fit(
+    X_train.reshape(-1, 1), y_train)
 print(esn_opti)
 
 # Programming pattern for sequence processing
@@ -301,8 +293,7 @@ X, y = load_digits(return_X_y=True, as_sequence=True)
 print("Number of digits: {0}".format(len(X)))
 print("Shape of digits {0}".format(X[0].shape))
 # Divide the dataset into training and test subsets
-X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2,
-                                          random_state=42)
+X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, random_state=42)
 print("Number of digits in training set: {0}".format(len(X_tr)))
 print("Shape of the first digit: {0}".format(X_tr[0].shape))
 print("Number of digits in test set: {0}".format(len(X_te)))
