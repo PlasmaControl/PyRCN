@@ -14,7 +14,7 @@ import numpy as np
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state
-from sklearn.utils.extmath import safe_sparse_dot
+from ...util.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 
 from ...base import (
@@ -145,11 +145,10 @@ class NodeToNode(BaseEstimator, TransformerMixin):
             raise NotFittedError(self)
 
         if self.bidirectional:
-            from joblib import Parallel, delayed
-            _hidden_layer_state_fw, _hidden_layer_state_bw = \
-                Parallel(n_jobs=2)(
-                    delayed(self._pass_through_recurrent_weights)(x)
-                    for x in [X, np.flipud(X)])
+
+            _hidden_layer_state_fw = self._pass_through_recurrent_weights(X)
+            _hidden_layer_state_bw = self._pass_through_recurrent_weights(
+                np.flipud(X))
             _hidden_layer_state_bw = np.flipud(_hidden_layer_state_bw)
             _hidden_layer_state = np.hstack(
                 (_hidden_layer_state_fw, _hidden_layer_state_bw))
