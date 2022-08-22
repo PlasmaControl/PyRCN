@@ -308,7 +308,7 @@ class PredefinedWeightsInputToNode(InputToNode):
                  input_activation: Literal['tanh', 'identity', 'logistic',
                                            'relu', 'bounded_relu'] = 'tanh',
                  input_scaling: float = 1., input_shift: float = 0.,
-                 predefined_bias_weights: Optional[np.ndarray],
+                 predefined_bias_weights: Optional[np.ndarray] = None,
                  bias_scaling: float = 0., bias_shift: float = 0.,
                  random_state: Union[int, np.random.RandomState, None] = 42)\
             -> None:
@@ -455,13 +455,16 @@ class BatchIntrinsicPlasticity(InputToNode):
             self._fit_dresden(X, y=None)
         return self
 
-    def transform(self, X: np.ndarray) -> np.ndarray:
+    def transform(self, X: np.ndarray, y: None = None) -> np.ndarray:
         """
         Transform the input matrix X.
 
         Parameters
         ----------
-        X : ndarray of size (n_samples, n_features)
+        X : ndarray of shape (n_samples, n_features)
+            The input data.
+        y : None
+            Not used, present here for API consistency by convention.
 
         Returns
         -------

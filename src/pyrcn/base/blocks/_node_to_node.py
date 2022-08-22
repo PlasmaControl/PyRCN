@@ -420,7 +420,8 @@ class PredefinedWeightsNodeToNode(NodeToNode):
             hidden_layer_size=predefined_recurrent_weights.shape[0],
             reservoir_activation=reservoir_activation,
             spectral_radius=spectral_radius, leakage=leakage,
-            bidirectional=bidirectional)
+            bidirectional=bidirectional,
+            predefined_recurrent_weights=predefined_recurrent_weights)
         self.predefined_recurrent_weights = predefined_recurrent_weights
 
     def fit(self, X: np.ndarray, y: None = None) -> NodeToNode:
@@ -436,22 +437,7 @@ class PredefinedWeightsNodeToNode(NodeToNode):
         -------
         self : returns a trained PredefinedWeightsNodeToNode.
         """
-        self._validate_hyperparameters()
-        self._validate_data(X, y)
-        self._check_n_features(X, reset=True)
-
-        if self.predefined_recurrent_weights.shape[0] != X.shape[1]:
-            raise ValueError(
-                'X has not the expected shape {0}, given {1}.'.format(
-                    self.predefined_recurrent_weights.shape[0], X.shape[1]))
-
-        if (self.predefined_recurrent_weights.shape[0]
-                != self.predefined_recurrent_weights.shape[1]):
-            raise ValueError(
-                'Recurrent weights need to be a squared matrix,'
-                'given {0}.'.format(self.predefined_recurrent_weights.shape))
-
-        self._recurrent_weights = self.predefined_recurrent_weights
+        super().fit(X, y)
         return self
 
 
