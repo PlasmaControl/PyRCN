@@ -11,7 +11,7 @@ from scipy.sparse import issparse
 import numpy as np
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils import check_random_state
+from sklearn.utils import check_random_state, deprecated
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import StandardScaler
@@ -270,6 +270,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         return self._bias_weights
 
 
+@deprecated("Predefined weights can now directly be passed to InputToNode.")
 class PredefinedWeightsInputToNode(InputToNode):
     """
     PredefinedWeightsInputToNode class for reservoir computing modules.

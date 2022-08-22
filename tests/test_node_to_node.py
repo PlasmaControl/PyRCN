@@ -207,7 +207,3 @@ def test_node_to_node_hebbian() -> None:
     assert n2n._recurrent_weights.shape == (5, 5)
     assert safe_sparse_dot(
         i2n.transform(X), n2n._recurrent_weights).shape == (10, 5)
-
-
-if __name__ == "__main__":
-    test_predefined_weights_node_to_node()

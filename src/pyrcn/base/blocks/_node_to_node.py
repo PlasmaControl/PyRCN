@@ -13,7 +13,7 @@ from scipy.sparse import issparse
 import numpy as np
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils import check_random_state
+from sklearn.utils import check_random_state, deprecated
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 
@@ -372,6 +372,7 @@ class EulerNodeToNode(NodeToNode):
         return hidden_layer_state[1:, :]
 
 
+@deprecated("Predefined weights can now directly be passed to NodeToNode.")
 class PredefinedWeightsNodeToNode(NodeToNode):
     """
     PredefinedWeightsNodeToNode class for reservoir computing modules.
