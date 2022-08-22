@@ -308,7 +308,7 @@ class PredefinedWeightsInputToNode(InputToNode):
                  input_activation: Literal['tanh', 'identity', 'logistic',
                                            'relu', 'bounded_relu'] = 'tanh',
                  input_scaling: float = 1., input_shift: float = 0.,
-                 predefined_bias_weights: np.ndarray = np.ndarray([]),
+                 predefined_bias_weights: Optional[np.ndarray],
                  bias_scaling: float = 0., bias_shift: float = 0.,
                  random_state: Union[int, np.random.RandomState, None] = 42)\
             -> None:
@@ -322,19 +322,8 @@ class PredefinedWeightsInputToNode(InputToNode):
                          input_scaling=input_scaling, input_shift=input_shift,
                          bias_scaling=bias_scaling, bias_shift=bias_shift,
                          random_state=random_state,
-                         predefined_input_weights=predefined_input_weights)
-        self.predefined_input_weights = predefined_input_weights
-        if (predefined_bias_weights.ndim == 1
-                and len(predefined_bias_weights)
-                != predefined_input_weights.shape[1]):
-            raise ValueError(
-                'predefined_bias_weights has not the expected len {0}, '
-                'given {1}.'.format(predefined_input_weights.shape[1],
-                                    len(predefined_bias_weights)))
-        elif predefined_bias_weights.ndim > 1:
-            raise ValueError('predefined_bias_weights has not the expected dim'
-                             ' 1, given {0}.'
-                             .format(predefined_bias_weights.shape))
+                         predefined_input_weights=predefined_input_weights,
+                         predefined_bias_weights=predefined_bias_weights)
 
     def fit(self, X: np.ndarray, y: None = None) -> InputToNode:
         """
@@ -350,22 +339,7 @@ class PredefinedWeightsInputToNode(InputToNode):
         -------
         self : returns a trained PredefinedWeightsInputToNode.
         """
-        self._validate_hyperparameters()
-        self._validate_data(X, y)
-        self._check_n_features(X, reset=True)
-
-        if self.predefined_input_weights.shape[0] != X.shape[1]:
-            raise ValueError('X has not the expected shape {0}, given {1}.'
-                             .format(self.predefined_input_weights.shape[0],
-                                     X.shape[1]))
-        self._input_weights = self.predefined_input_weights
-
-        if self.predefined_bias_weights.ndim == 1:
-            self._bias_weights = self.predefined_bias_weights
-        else:
-            self._bias_weights = _uniform_random_bias(
-                hidden_layer_size=self.hidden_layer_size,
-                random_state=self._random_state)
+        super().fit(X, y)
         return self
 
 
