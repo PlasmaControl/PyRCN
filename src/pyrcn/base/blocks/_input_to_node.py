@@ -199,14 +199,9 @@ class InputToNode(BaseEstimator, TransformerMixin):
         X_new : ndarray of size (n_samples, hidden_layer_size)
             The shifted and scaled inputs.
         """
-        if issparse(input_weights):
-            return (safe_sparse_dot(X, input_weights.toarray()) * input_scaling
-                    + input_shift + np.ones(shape=(X.shape[0], 1)) * bias.T
-                    * bias_scaling + bias_shift)
-        else:
-            return (safe_sparse_dot(X, input_weights) * input_scaling
-                    + input_shift + np.ones(shape=(X.shape[0], 1)) * bias.T
-                    * bias_scaling + bias_shift)
+        return (safe_sparse_dot(X, input_weights) * input_scaling + input_shift
+                + np.ones(shape=(X.shape[0], 1)) * bias.T * bias_scaling
+                + bias_shift)
 
     def _validate_hyperparameters(self) -> None:
         """Validate the hyperparameters."""
@@ -315,8 +310,8 @@ class PredefinedWeightsInputToNode(InputToNode):
                  input_scaling: float = 1., input_shift: float = 0.,
                  predefined_bias_weights: np.ndarray = np.ndarray([]),
                  bias_scaling: float = 0., bias_shift: float = 0.,
-                 random_state: Union[int, np.random.RandomState,
-                                     None] = 42) -> None:
+                 random_state: Union[int, np.random.RandomState, None] = 42)\
+            -> None:
         """Construct the PredefinedWeightsInputToNode."""
         if predefined_input_weights.ndim != 2:
             raise ValueError('predefined_input_weights has not the expected'
@@ -326,7 +321,8 @@ class PredefinedWeightsInputToNode(InputToNode):
                          input_activation=input_activation,
                          input_scaling=input_scaling, input_shift=input_shift,
                          bias_scaling=bias_scaling, bias_shift=bias_shift,
-                         random_state=random_state)
+                         random_state=random_state,
+                         predefined_input_weights=predefined_input_weights)
         self.predefined_input_weights = predefined_input_weights
         if (predefined_bias_weights.ndim == 1
                 and len(predefined_bias_weights)
@@ -335,8 +331,6 @@ class PredefinedWeightsInputToNode(InputToNode):
                 'predefined_bias_weights has not the expected len {0}, '
                 'given {1}.'.format(predefined_input_weights.shape[1],
                                     len(predefined_bias_weights)))
-        elif predefined_bias_weights.ndim <= 1:
-            self.predefined_bias_weights = predefined_bias_weights
         elif predefined_bias_weights.ndim > 1:
             raise ValueError('predefined_bias_weights has not the expected dim'
                              ' 1, given {0}.'
