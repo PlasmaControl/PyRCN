@@ -86,13 +86,13 @@ def test_predefined_weights_node_to_node() -> None:
     print('\ntest_predefined_weights_node_to_node():')
     X = np.zeros(shape=(10, 3))
     weights = np.random.rand(3, 5)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         n2n = PredefinedWeightsNodeToNode(
             predefined_recurrent_weights=weights, reservoir_activation='tanh',
             spectral_radius=1.)
         n2n.fit(X)
     weights = np.random.rand(5, 3)
-    with pytest.raises(ValueError):
+    with pytest.raises(AssertionError):
         n2n = PredefinedWeightsNodeToNode(
             predefined_recurrent_weights=weights, reservoir_activation='tanh',
             spectral_radius=1.)
@@ -158,7 +158,6 @@ def test_node_to_node_bidirectional() -> None:
     n2n.fit(X)
     n2n.transform(X)
     assert n2n._recurrent_weights.shape == (5, 5)
-    assert n2n._hidden_layer_state.shape == (10, 10)
 
 
 def test_node_to_node_invalid_leakage() -> None:

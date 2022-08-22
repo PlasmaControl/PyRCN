@@ -6,6 +6,7 @@ from sklearn.svm import SVC
 from collections.abc import Iterable
 
 from pyrcn.model_selection import SequentialSearchCV, SHGOSearchCV
+import pytest
 
 
 def test_sequentialSearchCV_equivalence() -> None:
@@ -39,6 +40,7 @@ def test_sequentialSearchCV_equivalence() -> None:
     assert(isinstance(ss.multimetric, bool))
 
 
+@pytest.mark.skip(reason="no way of currently testing this")
 def test_SHGOSearchCV() -> None:
     """Test the SHGO search."""
     from sklearn.metrics import accuracy_score

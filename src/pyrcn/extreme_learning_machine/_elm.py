@@ -352,16 +352,25 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         """
         self._input_to_node = input_to_node
 
-    @property
-    def hidden_layer_state(self) -> np.ndarray:
+    def hidden_layer_state(self, X: np.ndarray) -> np.ndarray:
         """
-        Return the hidden_layer_state, e.g. the resevoir state over time.
+        Return the hidden_layer_state, e.g. the reservoir state over time.
+
+        Parameters
+        ----------
+        X : ndarray of shape (n_samples, n_features)
 
         Returns
         -------
-        hidden_layer_state : np.ndarray
+        hidden_layer_state : ndarray of (n_samples,)
+            The hidden_layer_state, e.g. the reservoir state over time.
         """
-        return self._input_to_node._hidden_layer_state
+        if self._input_to_node is None:
+            raise NotFittedError(self)
+
+        # input_to_node
+        hidden_layer_state = self._input_to_node.transform(X)
+        return hidden_layer_state
 
     @property
     def chunk_size(self) -> Union[None, int, np.integer]:

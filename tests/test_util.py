@@ -1,5 +1,6 @@
 """Testing for pyrcn.utils module"""
 import os
+import pytest
 from pyrcn.util import new_logger, argument_parser, get_mnist
 
 
@@ -16,12 +17,7 @@ def test_argument_parser() -> None:
     assert 'param1' in args.params
 
 
+@pytest.mark.skip(reason="no way of currently testing this")
 def test_get_mnist() -> None:
     X, y = get_mnist(os.getcwd())
     assert X.shape[0] == 70000
-
-
-if __name__ == "__main__":
-    test_new_logger()
-    test_argument_parser()
-    test_get_mnist()

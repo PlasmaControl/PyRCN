@@ -191,8 +191,10 @@ If you use PyRCN, please cite the following publication:
 }
 ```
 
-[Glottal Closure Instant Detection using Echo State Networks](http://www.essv.de/pdf/2021_161_168.pdf)
-
+Glottal Closure Instant Detection using Echo State Networks
+- [Paper](http://www.essv.de/pdf/2021_161_168.pdf)
+- [Repository](https://github.com/TUD-STKS/gci_estimation)
+- Reference
 ```latex
 @InProceedings{src:Steiner-21c,
 	title = {Glottal Closure Instant Detection using Echo State Networks},
@@ -204,32 +206,40 @@ If you use PyRCN, please cite the following publication:
 	editor = {Stefan Hillmann and Benjamin Weiss and Thilo Michael and Sebastian Möller},
 	publisher = {TUDpress, Dresden},
 	isbn = {978-3-95908-227-3}
-} 
+}
 ```
 
 Cluster-based Input Weight Initialization for Echo State Networks
 
 ```latex
-@misc{src:Steiner-KM_ESN,
-    title={Cluster-based Input Weight Initialization for Echo State Networks},
-    author={Peter Steiner and Azarakhsh Jalalvand and Peter Birkholz},
-    year={2021},
-    eprint={2103.04710},
-    archivePrefix={arXiv},
-    primaryClass={cs.LG}
+@article{Steiner2022cluster,
+	author = {Steiner, Peter and Jalalvand, Azarakhsh and Birkholz, Peter},
+	doi = {10.1109/TNNLS.2022.3145565},
+	issn = {2162-2388},
+	journal = {IEEE Transactions on Neural Networks and Learning Systems},
+	keywords = {},
+	month = {},
+	number = {},
+	pages = {1--12},
+	title = {Cluster-based Input Weight Initialization for Echo State Networks},
+	volume = {},
+	year = {2022},
 }
 ```
 
-PyRCN: Exploration and Application of ESNs
+PyRCN: A Toolbox for Exploration and Application of Reservoir Computing Networks
 
 ```latex
-@misc{src:Steiner-PyRCN,
-      title={PyRCN: Exploration and Application of ESNs}, 
-      author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone and Peter Birkholz},
-      year={2021},
-      eprint={2103.04807},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+@article{Steiner2022pyrcn,
+	title = {PyRCN: A Toolbox for Exploration and Application of Reservoir Computing Networks},
+	journal = {Engineering Applications of Artificial Intelligence},
+	volume = {113},
+	pages = {104964},
+	year = {2022},
+	issn = {0952-1976},
+	doi = {10.1016/j.engappai.2022.104964},
+	url = {https://www.sciencedirect.com/science/article/pii/S0952197622001713},
+	author = {Peter Steiner and Azarakhsh Jalalvand and Simon Stone and Peter Birkholz},
 }
 ```
 

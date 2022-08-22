@@ -5,14 +5,16 @@
 
 from ._input_to_node import (InputToNode, PredefinedWeightsInputToNode,
                              BatchIntrinsicPlasticity)
-from ._node_to_node import (NodeToNode, PredefinedWeightsNodeToNode,
-                            HebbianNodeToNode, AttentionWeightsNodeToNode)
+from ._node_to_node import (NodeToNode, EulerNodeToNode,
+                            PredefinedWeightsNodeToNode, HebbianNodeToNode,
+                            AttentionWeightsNodeToNode)
 
 
 __all__ = ('InputToNode',
            'PredefinedWeightsInputToNode',
            'BatchIntrinsicPlasticity',
            'NodeToNode',
+           'EulerNodeToNode',
            'PredefinedWeightsNodeToNode',
            'AttentionWeightsNodeToNode',
            'HebbianNodeToNode')
