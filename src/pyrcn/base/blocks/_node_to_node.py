@@ -14,7 +14,7 @@ import numpy as np
 from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state
-from ...util.extmath import safe_sparse_dot
+from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 
 from ...base import (

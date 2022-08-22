@@ -199,9 +199,14 @@ class InputToNode(BaseEstimator, TransformerMixin):
         X_new : ndarray of size (n_samples, hidden_layer_size)
             The shifted and scaled inputs.
         """
-        return (safe_sparse_dot(X, input_weights) * input_scaling +
-                input_shift + np.ones(shape=(X.shape[0], 1)) * bias.T *
-                bias_scaling + bias_shift)
+        if issparse(input_weights):
+            return (safe_sparse_dot(X, input_weights.toarray()) * input_scaling
+                    + input_shift + np.ones(shape=(X.shape[0], 1)) * bias.T
+                    * bias_scaling + bias_shift)
+        else:
+            return (safe_sparse_dot(X, input_weights) * input_scaling
+                    + input_shift + np.ones(shape=(X.shape[0], 1)) * bias.T
+                    * bias_scaling + bias_shift)
 
     def _validate_hyperparameters(self) -> None:
         """Validate the hyperparameters."""

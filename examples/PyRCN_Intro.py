@@ -23,7 +23,6 @@ from sklearn.metrics import make_scorer
 
 import numpy as np
 from sklearn.decomposition import PCA
-from pyrcn.base.blocks import PredefinedWeightsNodeToNode
 
 from pyrcn.echo_state_network import ESNClassifier
 from pyrcn.metrics import accuracy_score
@@ -246,8 +245,8 @@ i2n = FeatureUnion([
     ("path1", Pipeline([("res1", res1), ("pca", PCA(n_components=10)),
                         ("res2", res2)])), ("path2", res1)])
 
-n2n = PredefinedWeightsNodeToNode(predefined_recurrent_weights=np.eye(40+100),
-                                  spectral_radius=0, leakage=1)
+n2n = NodeToNode(spectral_radius=0., leakage=1., hidden_layer_size=100+40,
+                 predefined_recurrent_weights=np.eye(40+100))
 
 deep_esn = ESNRegressor(input_to_node=i2n, node_to_node=n2n)
 deep_esn.fit(U, y)
@@ -275,8 +274,7 @@ kwargs_1 = {
 }
 step_2_params = {'leakage': [0.2, 0.4, 0.7, 0.9, 1.0]}
 kwargs_2 = {
-    'verbose': 5, 'scoring': scorer, 'n_jobs': -1,
-    'cv': TimeSeriesSplit()
+    'verbose': 5, 'scoring': scorer, 'n_jobs': -1, 'cv': TimeSeriesSplit()
 }
 
 searches = [('step1', RandomizedSearchCV, step_1_params, kwargs_1),
