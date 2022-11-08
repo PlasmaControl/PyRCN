@@ -737,11 +737,11 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
         if self.requires_sequence:
+            self._check_if_sequence_to_value(X, y)
             X, y, sequence_ranges = concatenate_sequences(
                 X, y, sequence_to_value=self._sequence_to_value)
             self._input_to_node.fit(X)
             self._node_to_node.fit(self._input_to_node.transform(X))
-            self._check_if_sequence_to_value(X, y)
         else:
             self._validate_data(X, y, multi_output=True)
             self._input_to_node.fit(X)
