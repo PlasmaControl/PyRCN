@@ -3,9 +3,8 @@ import numpy as np
 import pytest
 from sklearn.utils.extmath import safe_sparse_dot
 
-from pyrcn.base.blocks import (InputToNode, NodeToNode,
-                               AttentionWeightsNodeToNode,
-                               PredefinedWeightsNodeToNode, HebbianNodeToNode)
+from pyrcn.base.blocks import (
+    InputToNode, NodeToNode,PredefinedWeightsNodeToNode, HebbianNodeToNode)
 
 
 def test_input_to_node_invalid_spectral_radius() -> None:
@@ -48,38 +47,6 @@ def test_node_to_node_invalid_sparsity() -> None:
     with pytest.raises(ValueError):
         n2n = NodeToNode(k_rec=500)
         n2n.fit(X)
-
-
-def test_attention_weights_node_to_node() -> None:
-    print('\ntest_attention_weights_node_to_node():')
-    X = np.zeros(shape=(10, 3))
-    weights = np.random.rand(3, 5)
-    with pytest.raises(ValueError):
-        n2n = AttentionWeightsNodeToNode(
-            recurrent_attention_weights=weights, reservoir_activation='tanh',
-            spectral_radius=1.)
-        n2n.fit(X)
-    weights = np.random.rand(5, 3)
-    with pytest.raises(ValueError):
-        n2n = AttentionWeightsNodeToNode(
-            recurrent_attention_weights=weights, reservoir_activation='tanh',
-            spectral_radius=1.)
-        n2n.fit(X)
-    weights = np.random.rand(5, )
-    with pytest.raises(ValueError):
-        n2n = AttentionWeightsNodeToNode(
-            recurrent_attention_weights=weights, reservoir_activation='tanh',
-            spectral_radius=1.)
-        n2n.fit(X)
-    weights = np.random.rand(3, 3)
-    n2n = AttentionWeightsNodeToNode(
-        recurrent_attention_weights=weights, reservoir_activation='tanh',
-        spectral_radius=1.)
-    n2n.fit(X)
-    print(n2n._recurrent_weights)
-    assert n2n._recurrent_weights.shape == (3, 3)
-    assert n2n.__sizeof__() != 0
-    assert n2n.recurrent_weights is not None
 
 
 def test_predefined_weights_node_to_node() -> None:

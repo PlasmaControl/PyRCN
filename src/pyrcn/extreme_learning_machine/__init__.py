@@ -19,6 +19,4 @@ References
 
 from ._elm import ELMClassifier, ELMRegressor
 
-__all__ = ('ELMClassifier',
-           'ELMRegressor'
-           )
+__all__ = ('ELMClassifier', 'ELMRegressor')

@@ -20,11 +20,7 @@ from sklearn.exceptions import NotFittedError
 
 from joblib import Parallel, delayed
 
-if sys.version_info >= (3, 8):
-    from typing import Union, Dict, Any, Optional, Literal
-else:
-    from typing_extensions import Literal
-    from typing import Union, Dict, Any, Optional
+from typing import Union, Dict, Any, Optional, Literal
 
 
 class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):

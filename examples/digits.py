@@ -17,8 +17,7 @@ from sklearn.base import clone
 from sklearn.model_selection import train_test_split
 from sklearn.model_selection import (
     ParameterGrid, RandomizedSearchCV, cross_validate)
-from sklearn.utils.fixes import loguniform
-from scipy.stats import uniform
+from scipy.stats import uniform, loguniform
 from sklearn.metrics import make_scorer
 
 from pyrcn.model_selection import SequentialSearchCV
@@ -70,19 +69,11 @@ print("Shape of digits in test set: {0}".format(X_test[0].shape))
 # and with the initially fixed parameters.
 
 
-initially_fixed_params = {'hidden_layer_size': 50,
-                          'input_activation': 'identity',
-                          'k_in': 5,
-                          'bias_scaling': 0.0,
-                          'reservoir_activation': 'tanh',
-                          'leakage': 1.0,
-                          'bidirectional': False,
-                          'k_rec': 10,
-                          'wash_out': 0,
-                          'continuation': False,
-                          'alpha': 1e-5,
-                          'random_state': 42,
-                          'decision_strategy': "winner_takes_all"}
+initially_fixed_params = {
+    'hidden_layer_size': 50, 'input_activation': 'identity', 'k_in': 5,
+    'bias_scaling': 0.0, 'reservoir_activation': 'tanh', 'leakage': 1.0,
+    'bidirectional': False, 'k_rec': 10, 'continuation': False, 'alpha': 1e-5,
+    'random_state': 42, 'decision_strategy': "winner_takes_all"}
 
 step1_esn_params = {'input_scaling': uniform(loc=1e-2, scale=1),
                     'spectral_radius': uniform(loc=0, scale=2)}
@@ -92,17 +83,13 @@ step3_esn_params = {'bias_scaling': uniform(loc=0, scale=2)}
 step4_esn_params = {'alpha': loguniform(1e-5, 1e0)}
 
 kwargs_step1 = {'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': 1,
-                'scoring': make_scorer(accuracy_score)
-                }
+                'scoring': make_scorer(accuracy_score)}
 kwargs_step2 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': make_scorer(accuracy_score)
-                }
+                'scoring': make_scorer(accuracy_score)}
 kwargs_step3 = {'verbose': 1, 'n_jobs': -1,
-                'scoring': make_scorer(accuracy_score)
-                }
+                'scoring': make_scorer(accuracy_score)}
 kwargs_step4 = {'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
-                'scoring': make_scorer(accuracy_score)
-                }
+                'scoring': make_scorer(accuracy_score)}
 
 # The searches are defined similarly to the steps of a
 # sklearn.pipeline.Pipeline:
@@ -119,8 +106,8 @@ base_esn = ESNClassifier(**initially_fixed_params)
 # searches that we have defined before. It can be combined with any model
 # selection tool from
 # scikit-learn.
-sequential_search = SequentialSearchCV(base_esn,
-                                       searches=searches).fit(X_tr, y_tr)
+sequential_search = SequentialSearchCV(base_esn,searches=searches).fit(
+    X_tr, y_tr)
 
 
 # Use the ESN with final hyper-parameters
@@ -153,5 +140,4 @@ for params in ParameterGrid(param_grid):
     t1 = time.time()
     acc_score = accuracy_score(y_test, esn.predict(X_test))
     t_inference = time.time() - t1
-    print("{0}\t{1}\t{2}\t{3}\t{4}".format(esn_cv, t_fit, t_inference,
-                                           acc_score, mem_size))
+    print(f"{esn_cv}\t{t_fit}\t{t_inference}\t{acc_score}\t{mem_size}")

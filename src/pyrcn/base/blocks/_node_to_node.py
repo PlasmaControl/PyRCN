@@ -17,15 +17,10 @@ from sklearn.utils import check_random_state, deprecated
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 
-from ...base import (
-    ACTIVATIONS, _normal_random_recurrent_weights,
-    _uniform_random_recurrent_weights, _normal_recurrent_attention_weights)
+from ...base import (ACTIVATIONS, _normal_random_recurrent_weights,
+                     _uniform_random_recurrent_weights)
 
-if sys.version_info >= (3, 8):
-    from typing import Union, Literal, Optional
-else:
-    from typing_extensions import Literal
-    from typing import Union, Optional
+from typing import Union, Literal, Optional
 
 
 class NodeToNode(BaseEstimator, TransformerMixin):
@@ -439,93 +434,6 @@ class PredefinedWeightsNodeToNode(NodeToNode):
         self : returns a trained PredefinedWeightsNodeToNode.
         """
         super().fit(X, y)
-        return self
-
-
-class AttentionWeightsNodeToNode(NodeToNode):
-    """
-    AttentionWeightsNodeToNode class for reservoir computing modules.
-
-    Parameters
-    ----------
-    recurrent_attention_weights : np.ndarray
-        A set of predefined recurrent attention weights.
-    reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
-    'bounded_relu'], default = 'tanh'
-        This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear
-            bottleneck, returns f(x) = x
-            - 'logistic', the logistic sigmoid function,
-            returns f(x) = 1/(1+exp(-x)).
-            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function,
-            returns f(x) = max(0, x)
-            - 'bounded_relu', the bounded rectified linear unit function,
-            returns f(x) = min(max(x, 0),1)
-    spectral_radius :  float, default = 1.
-        Scales the recurrent weight matrix.
-    leakage : float, default = 1.
-        parameter to determine the degree of leaky integration.
-    bidirectional : bool, default = False.
-        Whether to work bidirectional.
-    """
-
-    @_deprecate_positional_args
-    def __init__(self,
-                 recurrent_attention_weights: np.ndarray, *,
-                 reservoir_activation: Literal['tanh', 'identity',
-                                               'logistic', 'relu',
-                                               'bounded_relu'] = 'tanh',
-                 spectral_radius: float = 1.,
-                 leakage: float = 1.,
-                 bidirectional: bool = False) -> None:
-        """Construct the PredefinedWeightsNodeToNode."""
-        if recurrent_attention_weights.ndim != 2:
-            raise ValueError('recurrent_attention_weights has not the '
-                             'expected ndim {0}, given 2.'
-                             .format(recurrent_attention_weights.shape))
-        super().__init__(
-            hidden_layer_size=recurrent_attention_weights.shape[0],
-            reservoir_activation=reservoir_activation,
-            spectral_radius=spectral_radius, leakage=leakage,
-            bidirectional=bidirectional)
-        self.recurrent_attention_weights = recurrent_attention_weights
-
-    def fit(self, X: np.ndarray, y: None = None) -> NodeToNode:
-        """
-        Fit the AttentionWeightsNodeToNode. Sets the recurrent weights.
-
-        Parameters
-        ----------
-        X : ndarray of shape (n_samples, n_features)
-        y : ignored
-
-        Returns
-        -------
-        self : returns a trained AttentionWeightsNodeToNode.
-        """
-        self._validate_hyperparameters()
-        self._validate_data(X, y)
-        self._check_n_features(X, reset=True)
-
-        if self.recurrent_attention_weights.shape[0] != X.shape[1]:
-            raise ValueError(
-                'X has not the expected shape {0}, given {1}.'.format(
-                    self.recurrent_attention_weights.shape[0], X.shape[1]))
-
-        if (self.recurrent_attention_weights.shape[0]
-                != self.recurrent_attention_weights.shape[1]):
-            raise ValueError(
-                'Recurrent weights need to be a squared matrix,'
-                'given {0}.'.format(self.recurrent_attention_weights.shape))
-
-        if self.k_rec is not None:
-            self.sparsity = float(self.k_rec) / float(X.shape[1])
-        self._recurrent_weights = _normal_recurrent_attention_weights(
-            hidden_layer_size=int(self.hidden_layer_size),
-            fan_in=int(np.rint(self.hidden_layer_size * self.sparsity)),
-            random_state=self._random_state,
-            attention_weights=self.recurrent_attention_weights)
         return self
 
 

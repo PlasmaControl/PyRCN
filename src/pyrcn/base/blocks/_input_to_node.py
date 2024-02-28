@@ -20,13 +20,7 @@ from ...base import (ACTIVATIONS, ACTIVATIONS_INVERSE,
                      ACTIVATIONS_INVERSE_BOUNDS, _uniform_random_bias,
                      _uniform_random_input_weights)
 
-if sys.version_info >= (3, 8):
-    from typing import Union, Literal, Optional
-    # from math import comb
-else:
-    from typing_extensions import Literal
-    from typing import Union, Optional
-    # from scipy.special import comb
+from typing import Union, Literal, Optional
 
 
 class InputToNode(BaseEstimator, TransformerMixin):

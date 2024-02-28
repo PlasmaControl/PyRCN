@@ -176,7 +176,6 @@ dmypy.json
 /sequential_search_fsdd_kmeans.joblib
 /docs/source/_build
 /junit
-/MNIST.npz
 /pyrcn/junit
 /tests/junit
 *.npz

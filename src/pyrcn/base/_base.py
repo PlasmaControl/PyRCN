@@ -265,31 +265,3 @@ def _normal_random_recurrent_weights(
         random_state=random_state)
     return _unitary_spectral_radius(
         weights=recurrent_weights, random_state=random_state)
-
-
-def _normal_recurrent_attention_weights(
-        hidden_layer_size: int, fan_in: int,
-        random_state: np.random.RandomState, attention_weights: np.ndarray) \
-        -> Union[np.ndarray, scipy.sparse.csr_matrix]:
-    """
-    Return normally distributed random reservoir weights.
-
-    Parameters
-    ----------
-    hidden_layer_size : int
-    fan_in : int
-        Determines how many features are mapped to one neuron.
-    random_state : numpy.random.RandomState
-
-    Returns
-    -------
-    normal_random_recurrent_weights : Union[np.ndarray,
-    scipy.sparse.csr_matrix] of size (hidden_layer_size, hidden_layer_size)
-    """
-    recurrent_weights = _normal_random_weights(
-        n_inputs=hidden_layer_size, n_outputs=hidden_layer_size, k_in=fan_in,
-        random_state=random_state)
-    recurrent_weights = np.multiply(
-        np.asarray(recurrent_weights), attention_weights)
-    return _unitary_spectral_radius(
-        recurrent_weights, random_state=random_state)
