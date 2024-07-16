@@ -19,7 +19,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pytest flake8 pytest-flake8 mypy pytest-mypy pytest-cov \
-          pytest-pep257 types-setuptools
+          types-setuptools
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
         run: |
