@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from sklearn.base import BaseEstimator, is_classifier, clone
 from sklearn.model_selection._search import BaseSearchCV
-from sklearn.utils.validation import indexable, _check_fit_params
+from sklearn.utils.validation import indexable, _check_method_params
 from sklearn.model_selection._split import check_cv
 
 import numpy as np
@@ -510,7 +510,7 @@ class SHGOSearchCV(BaseSearchCV):
         func = self.func
 
         X, y, groups = indexable(X, y, groups)
-        fit_params = _check_fit_params(X, fit_params)
+        fit_params = _check_method_params(X, fit_params)
 
         cv_orig = check_cv(self.cv, y, classifier=is_classifier(estimator))
         n_splits = cv_orig.get_n_splits(X, y, groups)

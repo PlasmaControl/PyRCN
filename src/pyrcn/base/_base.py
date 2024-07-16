@@ -92,16 +92,14 @@ def _make_sparse(k_in: int, dense_weights: np.ndarray,
     """
     n_inputs, n_outputs = dense_weights.shape
     nr_entries = int(n_inputs * k_in)
-    indices = np.zeros(shape=nr_entries, dtype=int)
-    indptr = np.arange(start=0, stop=(n_inputs + 1) * k_in, step=k_in)
-    dense_weights = dense_weights.flatten()[:nr_entries]
 
-    for en in range(0, n_inputs * k_in, k_in):
-        indices[en: en + k_in] = \
-            random_state.permutation(n_outputs)[:k_in].astype(int)
-    return scipy.sparse.csr_matrix(
-        (dense_weights, indices, indptr), shape=(n_inputs, n_outputs),
-        dtype='float64')
+    for neuron in range(n_outputs):
+        all_indices = np.arange(n_inputs)
+        keep_indices = np.random.choice(n_inputs, k_in, replace=False)
+        zero_indices = np.setdiff1d(all_indices, keep_indices)
+        dense_weights[zero_indices, neuron] = 0
+
+    return scipy.sparse.csr_matrix(dense_weights, dtype='float64')
 
 
 def _normal_random_weights(
