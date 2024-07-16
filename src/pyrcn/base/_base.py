@@ -91,7 +91,6 @@ def _make_sparse(k_in: int, dense_weights: np.ndarray,
         The sparse layer weights
     """
     n_inputs, n_outputs = dense_weights.shape
-    nr_entries = int(n_inputs * k_in)
 
     for neuron in range(n_outputs):
         all_indices = np.arange(n_inputs)

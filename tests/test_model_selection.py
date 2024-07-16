@@ -31,13 +31,13 @@ def test_sequentialSearchCV_equivalence() -> None:
             ('gs3', GridSearchCV, param_grid1)]).fit(X, y)
     assert gs1.best_params_ == ss.all_best_params_['gs1']
     assert gs2.best_params_ == ss.all_best_params_['gs2']
-    assert(isinstance(ss.cv_results_, dict))
-    assert(ss.best_estimator_ is not None)
-    assert(isinstance(ss.best_score_, float))
+    assert (isinstance(ss.cv_results_, dict))
+    assert (ss.best_estimator_ is not None)
+    assert (isinstance(ss.best_score_, float))
     print(ss.best_index_)
-    assert(isinstance(ss.n_splits_, int))
-    assert(isinstance(ss.refit_time_, float))
-    assert(isinstance(ss.multimetric, bool))
+    assert (isinstance(ss.n_splits_, int))
+    assert (isinstance(ss.refit_time_, float))
+    assert (isinstance(ss.multimetric, bool))
 
 
 @pytest.mark.skip(reason="no way of currently testing this")
