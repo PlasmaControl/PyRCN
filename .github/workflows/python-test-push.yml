@@ -18,7 +18,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest flake8 pytest-flake8 mypy pytest-mypy pytest-cov \
+          pip install pytest flake8 pytest-flake8-v2 mypy pytest-mypy pytest-cov \
           types-setuptools
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Lint with flake8
