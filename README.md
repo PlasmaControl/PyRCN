@@ -39,10 +39,10 @@ Please see the [References section](#references) for more information. For code 
 
 ### Prerequisites
 
-PyRCN is developed using Python 3.7 or newer. It depends on the following packages:
+PyRCN is developed using Python 3.9 or newer. It depends on the following packages:
 
 - [numpy>=1.18.1](https://numpy.org/)
-- [scikit-learn>=1.0](https://scikit-learn.org/stable/)
+- [scikit-learn>=1.4](https://scikit-learn.org/stable/)
 - [joblib>=0.13.2](https://joblib.readthedocs.io)
 - [pandas>=1.0.0](https://pandas.pydata.org/)
 - [matplotlib](https://matplotlib.org/)
