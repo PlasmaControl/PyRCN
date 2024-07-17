@@ -127,38 +127,38 @@ def test_esn_output_unchanged() -> None:
     esn = ESNClassifier(hidden_layer_size=50).fit(X, y)
     print(esn)
     shape2 = y[0].shape
-    assert(shape1 == shape2)
+    assert (shape1 == shape2)
 
 
 def test_esn_classifier_sequence_to_value() -> None:
     X, y = load_digits(return_X_y=True, as_sequence=True)
     esn = ESNClassifier(hidden_layer_size=50).fit(X, y)
     y_pred = esn.predict(X)
-    assert(len(y) == len(y_pred))
-    assert(len(y_pred[0]) == 1)
-    assert(esn.sequence_to_value is True)
-    assert(esn.decision_strategy == "winner_takes_all")
+    assert (len(y) == len(y_pred))
+    assert (len(y_pred[0]) == 1)
+    assert (esn.sequence_to_value is True)
+    assert (esn.decision_strategy == "winner_takes_all")
     y_pred = esn.predict_proba(X)
-    assert(y_pred[0].ndim == 1)
+    assert (y_pred[0].ndim == 1)
     y_pred = esn.predict_log_proba(X)
-    assert(y_pred[0].ndim == 1)
+    assert (y_pred[0].ndim == 1)
     esn.sequence_to_value = False
     y_pred = esn.predict(X)
-    assert(len(y_pred[0]) == 8)
+    assert (len(y_pred[0]) == 8)
     y_pred = esn.predict_proba(X)
-    assert(y_pred[0].ndim == 2)
+    assert (y_pred[0].ndim == 2)
     y_pred = esn.predict_log_proba(X)
-    assert(y_pred[0].ndim == 2)
+    assert (y_pred[0].ndim == 2)
 
 
 def test_esn_classifier_instance_fit() -> None:
     X, y = load_digits(return_X_y=True, as_sequence=True)
     esn = ESNClassifier(hidden_layer_size=50).fit(X[0], np.repeat(y[0], 8))
-    assert(esn.sequence_to_value is False)
+    assert (esn.sequence_to_value is False)
     y_pred = esn.predict_proba(X[0])
-    assert(y_pred.ndim == 2)
+    assert (y_pred.ndim == 2)
     y_pred = esn.predict_log_proba(X[0])
-    assert(y_pred.ndim == 2)
+    assert (y_pred.ndim == 2)
 
 
 def test_esn_classifier_partial_fit() -> None:
