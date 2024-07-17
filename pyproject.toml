@@ -1,6 +1,44 @@
 [build-system]
 requires = [
-    "setuptools>=42",
-    "wheel"
-]
+    "setuptools>=61.0",
+    "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "PyRCN"
+version = "0.0.18"
+authors = [
+    { name="Peter Steiner", email="peter.steiner@pyrcn.net" },
+]
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "torch",
+    "torchvision",
+    "torchaudio",
+    "scikit-learn",
+    "pandas",
+]
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.urls]
+Homepage = "https://pyrcn.net/"
+Documentation = "https://pyrcn.readthedocs.io/"
+Source = "https://github.com/TUD-STKS/PyRCN/"
+Issues = "https://github.com/TUD-STKS/PyRCN/issues"

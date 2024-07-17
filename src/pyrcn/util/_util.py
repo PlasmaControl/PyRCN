@@ -5,12 +5,15 @@
 # License: BSD 3 clause
 
 import sys
-from typing import Union, Tuple
+from typing import Union, Tuple, Iterable
 
+import random
 import os
+import torch
 import logging
 import argparse
 import numpy as np
+from itertools import islice
 
 from sklearn.utils import check_X_y, check_consistent_length
 from sklearn.datasets import fetch_openml
@@ -23,23 +26,84 @@ argument_parser.add_argument('-o', '--out', metavar='outdir', nargs='?',
 argument_parser.add_argument(dest='params', metavar='params', nargs='*',
                              help='optional parameter for scripts')
 
-tud_colors = {
-    'darkblue': (0 / 255., 48 / 255., 94 / 255., 1.0),
-    'gray': (114 / 255., 120 / 255., 121 / 255., 1.0),
-    'lightblue': (0 / 255., 106 / 255., 179 / 255., 1.0),
-    'darkgreen': (0 / 255., 125 / 255., 64 / 255., 1.0),
-    'lightgreen': (106 / 255., 176 / 255., 35 / 255., 1.0),
-    'darkpurple': (84 / 255., 55 / 255., 138 / 255., 1.0),
-    'lightpurple': (147 / 255., 16 / 255., 126 / 255., 1.0),
-    'orange': (238 / 255., 127 / 255., 0 / 255., 1.0),
-    'red': (181 / 255., 28 / 255., 28 / 255., 1.0)
-}
-
 # noinspection PyArgumentList
 logging.basicConfig(
     level=logging.INFO,
     handlers=[logging.StreamHandler(sys.stdout)]
 )
+
+
+def batched(iterable: Iterable, n: int) -> Tuple:
+    """
+    Iterate over batches of size n.
+
+    Parameters
+    ----------
+    iterable : Iterable
+        The object over which to be iterated.
+    n : int
+        The batch size
+
+    Returns
+    -------
+    batch : Tuple
+        A batch from the iterable.
+
+    Notes
+    -----
+    Starting from Python 3.12, this is included in `itertools`_.
+
+    .. _itertools:
+    https://docs.python.org/3/library/itertools.html#itertools.batched
+    """
+    # batched('ABCDEFG', 3) --> ABC DEF G
+    if n < 1:
+        raise ValueError('n must be at least one')
+    it = iter(iterable)
+    while batch := tuple(islice(it, n)):
+        yield batch
+
+
+def value_to_tuple(value: Union[float, int],
+                   size: Union[float, int, Tuple[Union[float, int], ...]]) \
+        -> Tuple[Union[float, int], ...]:
+    """
+    Convert a value to a tuple of values.
+
+    Parameters
+    ----------
+    value : Union[float, int, Tuple[Union[float, int], ...]]
+        The value to be inserted in the tuple.
+    size : int
+        The length of the tuple.
+
+    Returns
+    -------
+    value : Tuple[Union[float, int], ...]
+        Tuple of values.
+    """
+    if isinstance(value, float) or isinstance(value, int):
+        return (value, ) * size
+    elif isinstance(value, Tuple):
+        return value
+
+
+def seed_everything(seed: int = 42) -> None:
+    """
+    Fix all random number generators to reproduce results.
+
+    Parameters
+    ----------
+    seed : int, default = 42
+        The default seed for the random number generators.
+    """
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
 
 
 def new_logger(name: str, directory: str = os.getcwd()) -> logging.Logger:

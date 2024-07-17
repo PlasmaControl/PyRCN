@@ -3,18 +3,14 @@
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
-from ._input_to_node import (InputToNode, PredefinedWeightsInputToNode,
-                             BatchIntrinsicPlasticity)
-from ._node_to_node import (NodeToNode, EulerNodeToNode,
-                            PredefinedWeightsNodeToNode, HebbianNodeToNode,
-                            AttentionWeightsNodeToNode)
+from ._input_to_node import (
+    InputToNode, PredefinedWeightsInputToNode, BatchIntrinsicPlasticity)
+from ._node_to_node import (
+    NodeToNode, EulerNodeToNode, PredefinedWeightsNodeToNode,
+    HebbianNodeToNode)
 
 
-__all__ = ('InputToNode',
-           'PredefinedWeightsInputToNode',
-           'BatchIntrinsicPlasticity',
-           'NodeToNode',
-           'EulerNodeToNode',
-           'PredefinedWeightsNodeToNode',
-           'AttentionWeightsNodeToNode',
-           'HebbianNodeToNode')
+__all__ = (
+    'InputToNode', 'PredefinedWeightsInputToNode', 'BatchIntrinsicPlasticity',
+    'NodeToNode', 'EulerNodeToNode', 'PredefinedWeightsNodeToNode',
+    'HebbianNodeToNode')

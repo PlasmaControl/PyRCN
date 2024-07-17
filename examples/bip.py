@@ -1,26 +1,13 @@
-"""
-Example for BatchIntrinsicPlasticity
-"""
+"""Example for BatchIntrinsicPlasticity."""
 import os
 import numpy as np
 from pyrcn.base.blocks import BatchIntrinsicPlasticity
 
 import matplotlib.pyplot as plt
 import seaborn as sns
+
+
 sns.set_theme()
-
-
-tud_colors = {
-    'darkblue': (0 / 255., 48 / 255., 94 / 255.),
-    'gray': (114 / 255., 120 / 255., 121 / 255.),
-    'lightblue': (0 / 255., 106 / 255., 179 / 255.),
-    'darkgreen': (0 / 255., 125 / 255., 64 / 255.),
-    'lightgreen': (106 / 255., 176 / 255., 35 / 255.),
-    'darkpurple': (84 / 255., 55 / 255., 138 / 255.),
-    'lightpurple': (147 / 255., 16 / 255., 126 / 255.),
-    'orange': (238 / 255., 127 / 255., 0 / 255.),
-    'red': (181 / 255., 28 / 255., 28 / 255.)
-}
 
 
 directory = os.path.join(os.getcwd(), 'bip')
@@ -35,21 +22,15 @@ def main():
     algorithm = 'dresden'
     sample_size = (1000, 1)
 
-    i2n_uniform = BatchIntrinsicPlasticity(hidden_layer_size=1,
-                                           input_activation='tanh',
-                                           random_state=rs,
-                                           distribution='uniform',
-                                           algorithm=algorithm)
-    i2n_exponential = BatchIntrinsicPlasticity(hidden_layer_size=1,
-                                               input_activation='tanh',
-                                               random_state=rs,
-                                               distribution='exponential',
-                                               algorithm=algorithm)
-    i2n_normal = BatchIntrinsicPlasticity(hidden_layer_size=1,
-                                          input_activation='tanh',
-                                          random_state=rs,
-                                          distribution='normal',
-                                          algorithm=algorithm)
+    i2n_uniform = BatchIntrinsicPlasticity(
+        hidden_layer_size=1, input_activation='tanh', random_state=rs,
+        distribution='uniform', algorithm=algorithm)
+    i2n_exponential = BatchIntrinsicPlasticity(
+        hidden_layer_size=1, input_activation='tanh', random_state=rs,
+        distribution='exponential', algorithm=algorithm)
+    i2n_normal = BatchIntrinsicPlasticity(
+        hidden_layer_size=1, input_activation='tanh', random_state=rs,
+        distribution='normal', algorithm=algorithm)
 
     X_uniform = rs.uniform(size=sample_size)
     X_exponential = rs.exponential(size=sample_size)
@@ -85,61 +66,49 @@ def main():
     # fig.suptitle('BIP transformations')
     bins = 20
     sns.histplot(data=i2n_exponential.fit_transform(X_exponential), bins=bins,
-                 stat="density", color=tud_colors['lightblue'], ax=axs[0, 0],
-                 legend=False)
+                 stat="density", ax=axs[0, 0], legend=False)
     axs[0, 0].set_xlim((-1., 1.))
     axs[0, 0].set_ylim((0., 3.))
     sns.histplot(data=i2n_normal.fit_transform(X_exponential), bins=bins,
-                 stat="density", color=tud_colors['lightgreen'], ax=axs[0, 1],
-                 legend=False)
+                 stat="density", ax=axs[0, 1], legend=False)
     axs[0, 1].set_xlim((-1., 1.))
     axs[0, 1].set_ylim((0., 3.))
     sns.histplot(data=i2n_uniform.fit_transform(X_exponential), bins=bins,
-                 stat="density", color=tud_colors['lightpurple'], ax=axs[0, 2],
-                 legend=False)
+                 stat="density", ax=axs[0, 2], legend=False)
     axs[0, 2].set_xlim((-1., 1.))
     axs[0, 2].set_ylim((0., 3.))
 
     sns.histplot(data=i2n_exponential.fit_transform(X_normal), bins=bins,
-                 stat="density", color=tud_colors['lightblue'], ax=axs[1, 0],
-                 legend=False)
+                 stat="density", ax=axs[1, 0], legend=False)
     axs[1, 0].set_xlim((-1., 1.))
     axs[1, 0].set_ylim((0., 1.5))
     sns.histplot(data=i2n_normal.fit_transform(X_normal), bins=bins,
-                 stat="density", color=tud_colors['lightgreen'],
-                 ax=axs[1, 1], legend=False)
+                 stat="density", ax=axs[1, 1], legend=False)
     axs[1, 1].set_xlim((-1., 1.))
     axs[1, 1].set_ylim((0., 1.5))
     sns.histplot(data=i2n_uniform.fit_transform(X_normal), bins=bins,
-                 stat="density", color=tud_colors['lightpurple'],
-                 ax=axs[1, 2], legend=False)
+                 stat="density", ax=axs[1, 2], legend=False)
     axs[1, 2].set_xlim((-1., 1.))
     axs[1, 2].set_ylim((0., 1.5))
 
     sns.histplot(data=i2n_exponential.fit_transform(X_uniform), bins=bins,
-                 stat="density", color=tud_colors['lightblue'], ax=axs[2, 0],
-                 legend=False)
+                 stat="density", ax=axs[2, 0], legend=False)
     axs[2, 0].set_xlim((-1., 1.))
     axs[2, 0].set_ylim((0., 2.5))
     sns.histplot(data=i2n_normal.fit_transform(X_uniform), bins=bins,
-                 stat="density", color=tud_colors['lightgreen'],
-                 ax=axs[2, 1], legend=False)
+                 stat="density", ax=axs[2, 1], legend=False)
     axs[2, 1].set_xlim((-1., 1.))
     axs[2, 1].set_ylim((0., 2.5))
     sns.histplot(data=i2n_uniform.fit_transform(X_uniform), bins=bins,
-                 stat="density", color=tud_colors['lightpurple'],
-                 ax=axs[2, 2], legend=False)
+                 stat="density", ax=axs[2, 2], legend=False)
     axs[2, 2].set_xlim((-1., 1.))
     axs[2, 2].set_ylim((0., 2.5))
 
-    sns.histplot(data=X_exponential, bins=bins, color=tud_colors['gray'],
-                 ax=axs[0, 3], legend=False)
+    sns.histplot(data=X_exponential, bins=bins, ax=axs[0, 3], legend=False)
     axs[0, 3].set_title('exponential')
-    sns.histplot(data=X_normal, bins=bins, color=tud_colors['gray'],
-                 ax=axs[1, 3], legend=False)
+    sns.histplot(data=X_normal, bins=bins, ax=axs[1, 3], legend=False)
     axs[1, 3].set_title('normal')
-    sns.histplot(data=X_uniform, bins=bins, color=tud_colors['gray'],
-                 ax=axs[2, 3], legend=False)
+    sns.histplot(data=X_uniform, bins=bins, ax=axs[2, 3], legend=False)
     axs[2, 3].set_title('uniform')
 
     plt.tight_layout()

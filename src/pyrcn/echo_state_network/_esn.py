@@ -20,11 +20,7 @@ from sklearn.exceptions import NotFittedError
 
 from joblib import Parallel, delayed
 
-if sys.version_info >= (3, 8):
-    from typing import Union, Dict, Any, Optional, Literal
-else:
-    from typing_extensions import Literal
-    from typing import Union, Dict, Any, Optional
+from typing import Union, Dict, Any, Optional, Literal
 
 
 class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
@@ -313,9 +309,9 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
         if self.requires_sequence:
-            self._input_to_node.fit(X[0])
-            self._node_to_node.fit(self._input_to_node.transform(X[0]))
             X, y, sequence_ranges = concatenate_sequences(X, y)
+            self._input_to_node.fit(X)
+            self._node_to_node.fit(self._input_to_node.transform(X))
         else:
             self._validate_data(X, y, multi_output=True)
             self._input_to_node.fit(X)
@@ -737,11 +733,11 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
         if self.requires_sequence:
-            self._input_to_node.fit(X[0])
-            self._node_to_node.fit(self._input_to_node.transform(X[0]))
             self._check_if_sequence_to_value(X, y)
             X, y, sequence_ranges = concatenate_sequences(
                 X, y, sequence_to_value=self._sequence_to_value)
+            self._input_to_node.fit(X)
+            self._node_to_node.fit(self._input_to_node.transform(X))
         else:
             self._validate_data(X, y, multi_output=True)
             self._input_to_node.fit(X)

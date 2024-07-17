@@ -21,6 +21,4 @@ References
 
 from ._esn import ESNClassifier, ESNRegressor
 
-__all__ = ('ESNClassifier',
-           'ESNRegressor',
-           )
+__all__ = ('ESNClassifier', 'ESNRegressor', )
