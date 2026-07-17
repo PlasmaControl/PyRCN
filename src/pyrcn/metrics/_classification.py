@@ -9,22 +9,16 @@ the lower the better.
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
-import sys
 
 import numpy as np
 
-from sklearn.utils.validation import (check_consistent_length,
-                                      _deprecate_positional_args)
+from sklearn.utils.validation import check_consistent_length
 import sklearn.metrics as sklearn_metrics
 from scipy.sparse import csr_matrix
 from sklearn.metrics._classification import\
     _check_targets as sklearn_check_targets
 
-if sys.version_info >= (3, 8):
-    from typing import Tuple, Union, Optional, Dict, Literal
-else:
-    from typing_extensions import Literal
-    from typing import Tuple, Union, Optional, Dict
+from typing import Tuple, Union, Optional, Dict, Literal
 
 
 def _check_targets(y_true: np.ndarray, y_pred: np.ndarray,
@@ -71,7 +65,6 @@ def _check_targets(y_true: np.ndarray, y_pred: np.ndarray,
     return y_type, y_true, y_pred, sample_weight
 
 
-@_deprecate_positional_args
 def accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                    normalize: bool = True,
                    sample_weight: Optional[np.ndarray] = None) -> float:
@@ -124,7 +117,6 @@ def accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                                           sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
                      labels: Optional[np.ndarray] = None,
                      sample_weight: Optional[np.ndarray] = None,
@@ -189,7 +181,6 @@ def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
         sample_weight=sample_weight, normalize=normalize)
 
 
-@_deprecate_positional_args
 def multilabel_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
                                 sample_weight: Optional[np.ndarray] = None,
                                 labels: Optional[np.ndarray] = None,
@@ -258,7 +249,6 @@ def multilabel_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
         labels=labels, samplewise=samplewise)
 
 
-@_deprecate_positional_args
 def cohen_kappa_score(y1: np.ndarray, y2: np.ndarray, *,
                       labels: Optional[np.ndarray] = None,
                       weights: Optional[Literal["linear", "quadratic"]] = None,
@@ -322,7 +312,6 @@ def cohen_kappa_score(y1: np.ndarray, y2: np.ndarray, *,
                                              sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def jaccard_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                   labels: Optional[np.ndarray] = None,
                   pos_label: Union[str, int] = 1,
@@ -419,7 +408,6 @@ def jaccard_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         zero_division=zero_division)
 
 
-@_deprecate_positional_args
 def matthews_corrcoef(y_true: np.ndarray, y_pred: np.ndarray, *,
                       sample_weight: Optional[np.ndarray] = None,) -> float:
     """
@@ -479,7 +467,6 @@ def matthews_corrcoef(y_true: np.ndarray, y_pred: np.ndarray, *,
                                              sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def zero_one_loss(y_true: np.ndarray, y_pred: np.ndarray, *,
                   normalize: bool = True,
                   sample_weight: Optional[np.ndarray] = None) -> float:
@@ -529,7 +516,6 @@ def zero_one_loss(y_true: np.ndarray, y_pred: np.ndarray, *,
                                          sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def f1_score(y_true: np.ndarray, y_pred: np.ndarray, *,
              labels: Optional[np.ndarray] = None,
              pos_label: Union[str, int] = 1,
@@ -632,7 +618,6 @@ def f1_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         zero_division=zero_division)
 
 
-@_deprecate_positional_args
 def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, beta: float, *,
                 labels: Optional[np.ndarray] = None,
                 pos_label: Union[str, int] = 1,
@@ -735,7 +720,6 @@ def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, beta: float, *,
     return f
 
 
-@_deprecate_positional_args
 def precision_recall_fscore_support(y_true: np.ndarray, y_pred: np.ndarray, *,
                                     beta: float = 1.0,
                                     labels: Optional[np.ndarray] = None,
@@ -868,7 +852,6 @@ def precision_recall_fscore_support(y_true: np.ndarray, y_pred: np.ndarray, *,
         sample_weight=sample_weight, zero_division=zero_division)
 
 
-@_deprecate_positional_args
 def precision_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                     labels: Optional[np.ndarray] = None,
                     pos_label: Union[str, int] = 1,
@@ -962,7 +945,6 @@ def precision_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     return p
 
 
-@_deprecate_positional_args
 def recall_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                  labels: Optional[np.ndarray] = None,
                  pos_label: Union[str, int] = 1,
@@ -1054,7 +1036,6 @@ def recall_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     return r
 
 
-@_deprecate_positional_args
 def balanced_accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                             sample_weight: Optional[np.ndarray] = None,
                             adjusted: bool = False) -> float:
@@ -1118,7 +1099,6 @@ def balanced_accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         adjusted=adjusted)
 
 
-@_deprecate_positional_args
 def classification_report(y_true: np.ndarray, y_pred: np.ndarray, *,
                           labels: Optional[np.ndarray] = None,
                           target_names: Optional[np.ndarray] = None,
@@ -1197,7 +1177,6 @@ def classification_report(y_true: np.ndarray, y_pred: np.ndarray, *,
         zero_division=zero_division)
 
 
-@_deprecate_positional_args
 def hamming_loss(y_true: np.ndarray, y_pred: np.ndarray, *,
                  sample_weight: Optional[np.ndarray] = None) -> float:
     """
@@ -1259,7 +1238,6 @@ def hamming_loss(y_true: np.ndarray, y_pred: np.ndarray, *,
         y_true, y_pred, sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def log_loss(y_true: np.ndarray, y_pred: np.ndarray, *, eps: float = 1e-15,
              normalize: bool = True,
              sample_weight: Optional[np.ndarray] = None,
@@ -1329,7 +1307,6 @@ def log_loss(y_true: np.ndarray, y_pred: np.ndarray, *, eps: float = 1e-15,
         sample_weight=sample_weight, labels=labels)
 
 
-@_deprecate_positional_args
 def hinge_loss(y_true: np.ndarray, pred_decision: np.ndarray, *,
                labels: Optional[np.ndarray] = None,
                sample_weight: Optional[np.ndarray] = None) -> float:
@@ -1388,7 +1365,6 @@ def hinge_loss(y_true: np.ndarray, pred_decision: np.ndarray, *,
         sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def brier_score_loss(y_true: np.ndarray, y_prob: np.ndarray, *,
                      sample_weight: Optional[np.ndarray] = None,
                      pos_label: Optional[int] = None) -> float:

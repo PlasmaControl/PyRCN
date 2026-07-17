@@ -7,11 +7,10 @@ from __future__ import annotations
 
 import sys
 
-from scipy.sparse.csr import csr_matrix
+from scipy.sparse import csr_matrix
 from scipy.sparse import issparse
 
 import numpy as np
-from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state, deprecated
 from sklearn.utils.extmath import safe_sparse_dot
@@ -63,7 +62,6 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         A set of predefined recurrent weights.
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500, sparsity: float = 1.,
                  reservoir_activation: Literal['tanh', 'identity',
@@ -228,7 +226,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        recurrent_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
+        recurrent_weights : Union[np.ndarray, scipy.sparse.csr_matrix]
         of size (hidden_layer_size, hidden_layer_size)
         """
         return self._recurrent_weights
@@ -271,7 +269,6 @@ class EulerNodeToNode(NodeToNode):
     random_state : Union[int, np.random.RandomState, None], default = 42
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500,
                  sparsity: float = 1.,
@@ -398,7 +395,6 @@ class PredefinedWeightsNodeToNode(NodeToNode):
         Whether to work bidirectional.
     """
 
-    @_deprecate_positional_args
     def __init__(self,
                  predefined_recurrent_weights: np.ndarray, *,
                  reservoir_activation: Literal['tanh', 'identity',
@@ -483,7 +479,6 @@ class HebbianNodeToNode(NodeToNode):
         Method used to fit the recurrent weights.
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500,
                  sparsity: float = 1.,

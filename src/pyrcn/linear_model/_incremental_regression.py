@@ -10,7 +10,6 @@ from typing import Union, cast
 
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
@@ -50,7 +49,6 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         ``fit_intercept = False``.
     """
 
-    @_deprecate_positional_args
     def __init__(self, *, alpha: float = 1e-5,
                  fit_intercept: bool = True,
                  normalize: bool = False):

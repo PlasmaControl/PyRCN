@@ -5,7 +5,6 @@
 
 from __future__ import annotations
 
-import sys
 import numpy as np
 
 from sklearn.base import BaseEstimator, TransformerMixin, ClusterMixin
@@ -16,11 +15,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from sklearn.feature_extraction.image import PatchExtractor
 
-if sys.version_info >= (3, 8):
-    from typing import Union, Callable, Dict, Tuple, Literal
-else:
-    from typing_extensions import Literal
-    from typing import Union, Callable, Dict, Tuple
+from typing import Union, Callable, Dict, Tuple, Literal
 
 
 def inplace_pool_max(X: np.ndarray, axis: Union[None, int, np.integer] = None)\

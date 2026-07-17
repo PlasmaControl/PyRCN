@@ -9,7 +9,6 @@ import sys
 from scipy.sparse import csr_matrix
 from scipy.sparse import issparse
 import numpy as np
-from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state, deprecated
 from sklearn.utils.extmath import safe_sparse_dot
@@ -67,7 +66,6 @@ class InputToNode(BaseEstimator, TransformerMixin):
         A set of predefined bias weights.
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500,
                  sparsity: float = 1.,
@@ -297,7 +295,6 @@ class PredefinedWeightsInputToNode(InputToNode):
     random_state : Union[int, np.random.RandomState, None], default = 42
     """
 
-    @_deprecate_positional_args
     def __init__(self,
                  predefined_input_weights: np.ndarray, *,
                  input_activation: Literal['tanh', 'identity', 'logistic',
@@ -345,7 +342,6 @@ class NonlinearVectorAutoregression(InputToNode):
 
     #
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  delay: int = 2, order: int = 2, stride: int = 1) -> None:
         super().__init__()
@@ -399,7 +395,6 @@ class BatchIntrinsicPlasticity(InputToNode):
     random_state : Union[int, np.random.RandomState, None], default = 42
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  distribution: Literal['exponential', 'uniform',
                                        'normal'] = 'normal',

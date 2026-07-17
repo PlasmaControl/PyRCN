@@ -7,7 +7,6 @@ from typing import Union, Tuple, Callable, Any, List, Dict
 import numpy as np
 from scipy.integrate import solve_ivp
 import collections
-from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.datasets import load_digits as sklearn_load_digits
 from sklearn.utils import Bunch
 
@@ -51,7 +50,6 @@ def _runge_kutta(equation: Callable, x_t: float, h: float = 1.,
     return x_t + h*(k_1 + 2*k_2 + 2*k_3 + k_4) / 6
 
 
-@_deprecate_positional_args
 def mackey_glass(n_timesteps: int, n_future: int = 1, tau: int = 17,
                  beta: float = 0.2, gamma: float = 0.1, n: int = 10,
                  x_0: float = 1.2, h: float = 1.0,
@@ -137,7 +135,6 @@ def mackey_glass(n_timesteps: int, n_future: int = 1, tau: int = 17,
     return x[:-n_future], x[n_future:]
 
 
-@_deprecate_positional_args
 def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
            rho: float = 28., beta: float = 8./3.,
            x_0: Union[List, np.ndarray] = [1.0, 1.0, 1.0], h: float = 0.03,
@@ -209,7 +206,6 @@ def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
         lorenz_solution.y.T[:-n_future, :], lorenz_solution.y.T[n_future:, :])
 
 
-@_deprecate_positional_args
 def load_digits(*, n_class: Union[int, np.integer] = 10,
                 return_X_y: bool = False, as_frame: bool = False,
                 as_sequence: bool = False) -> Union[Bunch, tuple]:

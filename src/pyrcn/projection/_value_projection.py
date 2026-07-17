@@ -4,16 +4,11 @@
 # License: BSD 3 clause
 
 from __future__ import annotations
-import sys
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-if sys.version_info >= (3, 8):
-    from typing import Literal, cast
-else:
-    from typing_extensions import Literal
-    from typing import cast
+from typing import Literal, cast
 
 
 class MatrixToValueProjection(BaseEstimator, TransformerMixin):

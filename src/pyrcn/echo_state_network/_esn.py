@@ -8,13 +8,11 @@ import sys
 import numpy as np
 from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
                           MultiOutputMixin, is_regressor, clone)
-from sklearn.linear_model._base import LinearModel
 
 from ..base.blocks import InputToNode, NodeToNode
 from ..util import concatenate_sequences
 from ..linear_model import IncrementalRegression
 from ..projection import MatrixToValueProjection
-from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
 
@@ -41,7 +39,8 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         ```input_to_node```.
         If ```None```, a ```pyrcn.base.blocks.NodeToNode```
         object is instantiated.
-    regressor : Union[IncrementalRegression, LinearModel, None], default=None
+    regressor : Union[IncrementalRegression, RegressorMixin, None],
+    default=None
         Regressor object such as derived from ``BaseEstimator``. This
         regressor will automatically be cloned each time prior to fitting.
         If ```None```, a ```pyrcn.linear_model.IncrementalRegression```
@@ -61,12 +60,11 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         default=None
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  input_to_node: Optional[InputToNode] = None,
                  node_to_node: Optional[NodeToNode] = None,
                  regressor: Union[IncrementalRegression,
-                                  LinearModel, None] = None,
+                                  RegressorMixin, None] = None,
                  requires_sequence: Union[Literal["auto"], bool] = "auto",
                  decision_strategy: Literal["winner_takes_all", "median",
                                             "last_value"] = "winner_takes_all",
@@ -442,25 +440,25 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             sys.getsizeof(self._node_to_node) + sys.getsizeof(self._regressor)
 
     @property
-    def regressor(self) -> Union[LinearModel, IncrementalRegression]:
+    def regressor(self) -> Union[RegressorMixin, IncrementalRegression]:
         """
         Return the regressor.
 
         Returns
         -------
-        regressor : LinearModel
+        regressor : RegressorMixin
         """
         return self._regressor
 
     @regressor.setter
-    def regressor(self, regressor: Union[LinearModel,
+    def regressor(self, regressor: Union[RegressorMixin,
                                          IncrementalRegression]) -> None:
         """
         Set the regressor.
 
         Parameters
         ----------
-        regressor : LinearModel
+        regressor : RegressorMixin
         """
         self._regressor = regressor
 
@@ -630,8 +628,9 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         ```input_to_node```.
         If ```None```, a ```pyrcn.base.blocks.NodeToNode()```
         object is instantiated.
-    regressor : Union[IncrementalRegression, LinearModel, None], default=None
-        Regressor object such as derived from ``LinearModel``. This
+    regressor : Union[IncrementalRegression, RegressorMixin, None],
+    default=None
+        Regressor object such as derived from ``RegressorMixin``. This
         regressor will automatically be cloned each time prior to fitting.
         If ```None```, a ```pyrcn.linear_model.IncrementalRegression()```
         object is instantiated.
@@ -649,12 +648,11 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         keyword arguments passed to the subestimators if this is desired.
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  input_to_node: Optional[InputToNode] = None,
                  node_to_node: Optional[NodeToNode] = None,
                  regressor: Union[IncrementalRegression,
-                                  LinearModel, None] = None,
+                                  RegressorMixin, None] = None,
                  requires_sequence: Union[Literal["auto"], bool] = "auto",
                  decision_strategy: Literal["winner_takes_all", "median",
                                             "last_value"] = "winner_takes_all",

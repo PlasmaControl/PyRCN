@@ -11,11 +11,9 @@ from typing import Union, Any, Optional
 import numpy as np
 from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
                           MultiOutputMixin, is_regressor, clone)
-from sklearn.linear_model._base import LinearModel
 
 from ..base.blocks import InputToNode
 from ..linear_model import IncrementalRegression
-from sklearn.utils.validation import _deprecate_positional_args
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.exceptions import NotFittedError
 
@@ -35,8 +33,9 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         Any ```InputToNode``` object that transforms the inputs.
         If ```None```, a ```pyrcn.base.blocks.InputToNode```
         object is instantiated.
-    regressor : Union[IncrementalRegression, LinearModel, None], default=None
-        Regressor object such as derived from ``LinearModel``. This
+    regressor : Union[IncrementalRegression, RegressorMixin, None],
+    default=None
+        Regressor object such as derived from ``RegressorMixin``. This
         regressor will automatically be cloned each time prior to fitting.
         If ```None```, a ```pyrcn.linear_model.IncrementalRegression```
         object is instantiated.
@@ -50,11 +49,10 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         default=None
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  input_to_node: Optional[InputToNode] = None,
                  regressor: Union[IncrementalRegression,
-                                  LinearModel, None] = None,
+                                  RegressorMixin, None] = None,
                  chunk_size: Optional[int] = None,
                  verbose: bool = False,
                  **kwargs: Any) -> None:
@@ -308,18 +306,18 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             sys.getsizeof(self._regressor)
 
     @property
-    def regressor(self) -> Union[LinearModel, IncrementalRegression]:
+    def regressor(self) -> Union[RegressorMixin, IncrementalRegression]:
         """
         Return the regressor.
 
         Returns
         -------
-        regressor : LinearModel
+        regressor : RegressorMixin
         """
         return self._regressor
 
     @regressor.setter
-    def regressor(self, regressor: Union[LinearModel,
+    def regressor(self, regressor: Union[RegressorMixin,
                                          IncrementalRegression]) -> None:
         """
         Set the regressor.
@@ -408,8 +406,9 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         Any ```InputToNode``` object that transforms the inputs.
         If ```None```, a ```pyrcn.base.blocks.InputToNode```
         object is instantiated.
-    regressor : Union[IncrementalRegression, LinearModel, None], default=None
-        Regressor object such as derived from ``LinearModel``. This
+    regressor : Union[IncrementalRegression, RegressorMixin, None],
+    default=None
+        Regressor object such as derived from ``RegressorMixin``. This
         regressor will automatically be cloned each time prior to fitting.
         If ```None```, a ```pyrcn.linear_model.IncrementalRegression``` object
         is instantiated.
@@ -423,11 +422,10 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         default=None
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  input_to_node: Optional[InputToNode] = None,
                  regressor: Union[IncrementalRegression,
-                                  LinearModel, None] = None,
+                                  RegressorMixin, None] = None,
                  chunk_size: Optional[int] = None, verbose: bool = False,
                  **kwargs: Any) -> None:
         """Construct the ELMClassifier."""

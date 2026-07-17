@@ -3,17 +3,12 @@
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
-import sys
-
 import numpy as np
 import scipy
 from scipy.sparse.linalg import eigs as eigens
 from scipy.sparse.linalg import ArpackNoConvergence
 
-if sys.version_info >= (3, 8):
-    from typing import Union
-else:
-    from typing import Union
+from typing import Union
 
 
 def _antisymmetric_weights(
