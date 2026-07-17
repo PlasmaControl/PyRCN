@@ -20,9 +20,6 @@ classifiers = [
     "Operating System :: OS Independent",
 ]
 dependencies = [
-    "torch",
-    "torchvision",
-    "torchaudio",
     "scikit-learn",
     "pandas",
 ]
