@@ -13,7 +13,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class NormalDistribution(BaseEstimator, TransformerMixin):
+class NormalDistribution(TransformerMixin, BaseEstimator):
     """
     Transform an input distribution to a normal distribution.
 

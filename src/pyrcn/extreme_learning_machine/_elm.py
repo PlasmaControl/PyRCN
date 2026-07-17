@@ -11,6 +11,7 @@ from typing import Union, Any, Optional
 import numpy as np
 from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
                           MultiOutputMixin, is_regressor, clone)
+from sklearn.utils.validation import validate_data
 
 from ..base.blocks import InputToNode
 from ..linear_model import IncrementalRegression
@@ -20,7 +21,7 @@ from sklearn.exceptions import NotFittedError
 from joblib import Parallel, delayed
 
 
-class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
+class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
     """
     Extreme Learning Machine regressor.
 
@@ -173,7 +174,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             raise BaseException('regressor has no attribute partial_fit, got'
                                 '{0}'.format(self._regressor))
         self._validate_hyperparameters()
-        self._validate_data(X, y, multi_output=True)
+        validate_data(self, X, y, multi_output=True)
 
         # input_to_node
         try:
@@ -214,7 +215,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self : Returns a trained ELMRegressor model.
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y, multi_output=True)
+        validate_data(self, X, y, multi_output=True)
 
         self._input_to_node.fit(X)
 
@@ -393,7 +394,7 @@ class ELMRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._chunk_size = chunk_size
 
 
-class ELMClassifier(ELMRegressor, ClassifierMixin):
+class ELMClassifier(ClassifierMixin, ELMRegressor):
     """
     Extreme Learning Machine classifier.
 
@@ -464,7 +465,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         -------
         self : returns a trained ELMClassifier model
         """
-        self._validate_data(X, y, multi_output=True)
+        validate_data(self, X, y, multi_output=True)
 
         self._encoder.fit(classes)
 
@@ -495,7 +496,7 @@ class ELMClassifier(ELMRegressor, ClassifierMixin):
         -------
         self : Returns a trained ELMClassifier model.
         """
-        self._validate_data(X, y, multi_output=True)
+        validate_data(self, X, y, multi_output=True)
         self._encoder = LabelBinarizer().fit(y)
         super().fit(X, self._encoder.transform(y), n_jobs=n_jobs,
                     transformer_weights=None)

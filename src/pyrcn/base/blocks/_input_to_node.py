@@ -11,6 +11,7 @@ from scipy.sparse import issparse
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state, deprecated
+from sklearn.utils.validation import validate_data
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import StandardScaler
@@ -22,7 +23,7 @@ from ...base import (ACTIVATIONS, ACTIVATIONS_INVERSE,
 from typing import Union, Literal, Optional
 
 
-class InputToNode(BaseEstimator, TransformerMixin):
+class InputToNode(TransformerMixin, BaseEstimator):
     """
     InputToNode class for reservoir computing modules.
 
@@ -110,8 +111,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self : returns a fitted InputToNode.
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y)
-        self._check_n_features(X, reset=True)
+        validate_data(self, X)
         if self.k_in is not None:
             self.sparsity = float(self.k_in) / float(X.shape[1])
         fan_in = int(np.rint(self.hidden_layer_size * self.sparsity))

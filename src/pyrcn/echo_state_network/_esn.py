@@ -8,6 +8,7 @@ import sys
 import numpy as np
 from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
                           MultiOutputMixin, is_regressor, clone)
+from sklearn.utils.validation import validate_data
 
 from ..base.blocks import InputToNode, NodeToNode
 from ..util import concatenate_sequences
@@ -21,7 +22,7 @@ from joblib import Parallel, delayed
 from typing import Union, Dict, Any, Optional, Literal
 
 
-class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
+class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
     """
     Echo State Network regressor.
 
@@ -246,7 +247,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self : Returns a trained ```ESNRegressor``` model.
         """
         self._validate_hyperparameters()
-        self._validate_data(X=X, y=y, multi_output=True)
+        validate_data(self, X=X, y=y, multi_output=True)
 
         # input_to_node
         try:
@@ -311,7 +312,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
             self._input_to_node.fit(X)
             self._node_to_node.fit(self._input_to_node.transform(X))
         else:
-            self._validate_data(X, y, multi_output=True)
+            validate_data(self, X, y, multi_output=True)
             self._input_to_node.fit(X)
             self._node_to_node.fit(self._input_to_node.transform(X))
         # self._regressor = self._regressor.__class__()
@@ -610,7 +611,7 @@ class ESNRegressor(BaseEstimator, MultiOutputMixin, RegressorMixin):
         self._requires_sequence = requires_sequence
 
 
-class ESNClassifier(ESNRegressor, ClassifierMixin):
+class ESNClassifier(ClassifierMixin, ESNRegressor):
     """
     Echo State Network classifier.
 
@@ -697,7 +698,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
         -------
         self : returns a trained ESNClassifier model
         """
-        self._validate_data(X, y, multi_output=True)
+        validate_data(self, X, y, multi_output=True)
         self._encoder.fit(classes)
         super().partial_fit(X, self._encoder.transform(y),
                             transformer_weights=None,
@@ -737,7 +738,7 @@ class ESNClassifier(ESNRegressor, ClassifierMixin):
             self._input_to_node.fit(X)
             self._node_to_node.fit(self._input_to_node.transform(X))
         else:
-            self._validate_data(X, y, multi_output=True)
+            validate_data(self, X, y, multi_output=True)
             self._input_to_node.fit(X)
             self._node_to_node.fit(self._input_to_node.transform(X))
         self._encoder = LabelBinarizer().fit(y)

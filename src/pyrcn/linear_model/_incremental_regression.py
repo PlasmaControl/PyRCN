@@ -10,12 +10,13 @@ from typing import Union, cast
 
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.utils.validation import validate_data
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
 
 
-class IncrementalRegression(BaseEstimator, RegressorMixin):
+class IncrementalRegression(RegressorMixin, BaseEstimator):
     """
     Linear regression.
 
@@ -89,7 +90,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self : returns a partially fitted IncrementalRegression model
         """
         if validate:
-            self._validate_data(X, y, multi_output=True)
+            validate_data(self, X, y, multi_output=True)
 
         X_preprocessed = self._preprocessing(
             X, partial_normalize=partial_normalize)

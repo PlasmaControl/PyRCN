@@ -13,6 +13,7 @@ from scipy.sparse import issparse
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils import check_random_state, deprecated
+from sklearn.utils.validation import validate_data
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 
@@ -22,7 +23,7 @@ from ...base import (ACTIVATIONS, _normal_random_recurrent_weights,
 from typing import Union, Literal, Optional
 
 
-class NodeToNode(BaseEstimator, TransformerMixin):
+class NodeToNode(TransformerMixin, BaseEstimator):
     """
     NodeToNode class for reservoir computing modules.
 
@@ -103,8 +104,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self : returns a trained NodeToNode.
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y)
-        self._check_n_features(X, reset=True)
+        validate_data(self, X)
 
         if self.k_rec is not None:
             self.sparsity = float(self.k_rec) / float(X.shape[1])
@@ -305,8 +305,7 @@ class EulerNodeToNode(NodeToNode):
         self : returns a trained EulerNodeToNode.
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y)
-        self._check_n_features(X, reset=True)
+        validate_data(self, X)
 
         if self.k_rec is not None:
             self.sparsity = float(self.k_rec) / float(X.shape[1])

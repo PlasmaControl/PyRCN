@@ -11,7 +11,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from typing import Literal, cast
 
 
-class MatrixToValueProjection(BaseEstimator, TransformerMixin):
+class MatrixToValueProjection(TransformerMixin, BaseEstimator):
     """
     Projection of a matrix to any kind of indices, e.g. of the maximum value.
 

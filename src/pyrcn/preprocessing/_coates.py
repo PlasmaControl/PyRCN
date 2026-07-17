@@ -7,7 +7,8 @@ from __future__ import annotations
 
 import numpy as np
 
-from sklearn.base import BaseEstimator, TransformerMixin, ClusterMixin
+from sklearn.base import (BaseEstimator, TransformerMixin, ClusterMixin,
+                          is_clusterer)
 from sklearn.utils import check_random_state
 from sklearn.exceptions import NotFittedError
 from sklearn.cluster import KMeans
@@ -112,7 +113,7 @@ POOLINGS: Dict[str, Callable] = {'max': inplace_pool_max,
                                  'mean': inplace_pool_mean}
 
 
-class Coates(BaseEstimator, TransformerMixin):
+class Coates(TransformerMixin, BaseEstimator):
     """
     Coates Preprocessing.
 
@@ -264,7 +265,7 @@ class Coates(BaseEstimator, TransformerMixin):
                              'size, got patch_size = {0}, pooling_size = {1}'
                              .format(self.patch_size, self.pooling_size))
 
-        if getattr(self.clusterer, "_estimator_type", None) != "clusterer":
+        if not is_clusterer(self.clusterer):
             raise TypeError('clusterer must be of type clusterer, got {0}'
                             .format(self.clusterer))
 
