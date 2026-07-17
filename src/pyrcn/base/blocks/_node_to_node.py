@@ -177,8 +177,9 @@ class NodeToNode(TransformerMixin, BaseEstimator):
         self._random_state = check_random_state(self.random_state)
 
         if self.hidden_layer_size <= 0:
-            raise ValueError("hidden_layer_size must be > 0, got {}%s."
-                             .format(self.hidden_layer_size))
+            raise ValueError(
+                "hidden_layer_size must be > 0, "
+                f"got {self.hidden_layer_size}")
         if self.sparsity <= 0. or self.sparsity > 1.:
             raise ValueError("sparsity must be between 0. and 1., got {}."
                              .format(self.sparsity))

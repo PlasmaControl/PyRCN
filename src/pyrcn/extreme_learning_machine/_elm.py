@@ -172,8 +172,9 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self : Returns a trained ```ELMRegressor``` model.
         """
         if not hasattr(self._regressor, 'partial_fit'):
-            raise BaseException('regressor has no attribute partial_fit, got'
-                                '{}'.format(self._regressor))
+            raise TypeError(
+                "regressor has no attribute partial_fit, "
+                f"got {self._regressor}")
         self._validate_hyperparameters()
         validate_data(self, X, y, multi_output=True)
 

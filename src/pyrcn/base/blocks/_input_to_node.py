@@ -334,34 +334,6 @@ class PredefinedWeightsInputToNode(InputToNode):
         return self
 
 
-"""
-class NonlinearVectorAutoregression(InputToNode):
-    #
-    # Non-linear vector autoregression (NVAR) class
-
-    #
-
-    def __init__(self, *,
-                 delay: int = 2, order: int = 2, stride: int = 1) -> None:
-        super().__init__()
-        self.delay = delay
-        self.order = order
-        self.stride = stride
-        self._linear_dimension = 0
-        self._non_linear_dimension = 0
-
-    def fit(self, X: np.ndarray, y: None = None) -> InputToNode:
-        self._validate_hyperparameters()
-        self._validate_data(X, y)
-        n_samples, n_features = X.shape
-        self._linear_dimension = self.delay * n_features
-        self._non_linear_dimension = comb(
-            self._linear_dimension + self.order - 1, self.order)
-        self.hidden_layer_size = self._linear_dimension + \
-                                 self._non_linear_dimension
-"""
-
-
 class BatchIntrinsicPlasticity(InputToNode):
     """
     BatchIntrinsicPlasticity class for reservoir computing modules.

@@ -269,8 +269,9 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
 
         # regression
         if not hasattr(self._regressor, 'partial_fit') and postpone_inverse:
-            raise BaseException('Regressor has no attribute partial_fit, got'
-                                '{}'.format(self._regressor))
+            raise TypeError(
+                "Regressor has no attribute partial_fit, "
+                f"got {self._regressor}")
         elif not hasattr(self._regressor, 'partial_fit') \
                 and not postpone_inverse:
             self._regressor.fit(hidden_layer_state, y)
