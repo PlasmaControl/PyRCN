@@ -29,5 +29,5 @@ Whenever you find something not explained well, please inform Peter Steiner
 `peter.steiner@pyrcn.net <mailto:peter.steiner@pyrcn.net>`_.
 
 
-.. _GitHub: https://github.com/TUD-STKS/PyRCN
-.. _issue tracker on GitHub: https://github.com/TUD-STKS/PyRCN/issues
+.. _GitHub: https://github.com/PlasmaControl/PyRCN
+.. _issue tracker on GitHub: https://github.com/PlasmaControl/PyRCN/issues

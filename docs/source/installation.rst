@@ -14,7 +14,7 @@ command in a PowerShell or CommandLine in Windows, or in a shell in Linux/MacOS:
     python --version
 
 As any package, **PyRCN** has several dependencies as listed in the `requirements.txt
- <https://github.com/TUD-STKS/PyRCN/blob/main/requirements.txt>`_. To avoid any
+ <https://github.com/PlasmaControl/PyRCN/blob/main/requirements.txt>`_. To avoid any
 unexpected interaction with the basic system as installed on your computer, we highly
 recommend  using a virtual environment
 
@@ -55,7 +55,7 @@ Installation from source
 
 We only recommend you the installation of PyRCN from source if you would like to
 contribute to PyRCN. Therefore, please find the source code of **PyRCN** on `GitHub
-<https://github.com/TUD-STKS/PyRCN>`_.
+<https://github.com/PlasmaControl/PyRCN>`_.
 
 You can download the latest stable version from the ``main`` branch. To work with older
 or unstable versions of **PyRCN**,. you can checkout the ``dev`` branch or any other
@@ -68,4 +68,4 @@ The installation then work similar as before using `pip` in your command line:
 
     pip install -e /path/to/pyrcn
 
-.. _issue tracker on GitHub: https://github.com/TUD-STKS/PyRCN/issues
+.. _issue tracker on GitHub: https://github.com/PlasmaControl/PyRCN/issues

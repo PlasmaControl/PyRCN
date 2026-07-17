@@ -14,7 +14,7 @@ similar, and PyRCN aims to unify the development of ESNs and ELMs.
 
 
 Many examples can be found in the PyRCN repository. Some useful examples can also be
-found in the `PyRCN repository <https://github.com/TUD-STKS/PyRCN/tree/main/examples>`_
+found in the `PyRCN repository <https://github.com/PlasmaControl/PyRCN/tree/main/examples>`_
 with many Jupyter notebooks.
 
 PyRCN is inspired by `ReservoirPy <https://github.com/reservoirpy>`_, another RC toolbox
