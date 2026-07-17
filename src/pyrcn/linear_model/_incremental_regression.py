@@ -6,14 +6,14 @@
 from __future__ import annotations
 
 import sys
-from typing import Union, cast
+from typing import cast
 
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.utils.validation import validate_data
-from sklearn.utils.extmath import safe_sparse_dot
-from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils.extmath import safe_sparse_dot
+from sklearn.utils.validation import validate_data
 
 
 class IncrementalRegression(RegressorMixin, BaseEstimator):
@@ -216,7 +216,7 @@ class IncrementalRegression(RegressorMixin, BaseEstimator):
             self._output_weights.nbytes + sys.getsizeof(self.scaler)
 
     @property
-    def coef_(self) -> Union[np.ndarray, None]:
+    def coef_(self) -> np.ndarray | None:
         """
         Return the output weights without intercept.
 

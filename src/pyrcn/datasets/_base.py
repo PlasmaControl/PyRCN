@@ -3,10 +3,14 @@
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
-from typing import Union, Tuple, Callable, Any, List, Dict
+from __future__ import annotations
+
+import collections
+from collections.abc import Callable
+from typing import Any
+
 import numpy as np
 from scipy.integrate import solve_ivp
-import collections
 from sklearn.datasets import load_digits as sklearn_load_digits
 from sklearn.utils import Bunch
 
@@ -53,8 +57,8 @@ def _runge_kutta(equation: Callable, x_t: float, h: float = 1.,
 def mackey_glass(n_timesteps: int, n_future: int = 1, tau: int = 17,
                  beta: float = 0.2, gamma: float = 0.1, n: int = 10,
                  x_0: float = 1.2, h: float = 1.0,
-                 random_state: Union[int, np.random.RandomState, None] = 42) \
-        -> Tuple[np.ndarray, np.ndarray]:
+                 random_state: int | np.random.RandomState | None = 42) \
+        -> tuple[np.ndarray, np.ndarray]:
     r"""
     Mackey-Glass time-series.
 
@@ -137,8 +141,8 @@ def mackey_glass(n_timesteps: int, n_future: int = 1, tau: int = 17,
 
 def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
            rho: float = 28., beta: float = 8./3.,
-           x_0: Union[List, np.ndarray] = [1.0, 1.0, 1.0], h: float = 0.03,
-           **kwargs: Dict) -> Tuple[np.ndarray, np.ndarray]:
+           x_0: list | np.ndarray = [1.0, 1.0, 1.0], h: float = 0.03,
+           **kwargs: dict) -> tuple[np.ndarray, np.ndarray]:
     r"""
     Lorenz time-series.
 
@@ -191,8 +195,8 @@ def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
     timesteps = np.arange(0., (n_timesteps + n_future) * h, h)
 
     def lorenz_differential_equation(t: int,
-                                     state: Tuple[float, float, float]) \
-            -> Tuple[float, float, float]:
+                                     state: tuple[float, float, float]) \
+            -> tuple[float, float, float]:
         x, y, z = state
         dx_dt = sigma * (y - x)
         dy_dt = x * (rho - z)
@@ -206,9 +210,9 @@ def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
         lorenz_solution.y.T[:-n_future, :], lorenz_solution.y.T[n_future:, :])
 
 
-def load_digits(*, n_class: Union[int, np.integer] = 10,
+def load_digits(*, n_class: int | np.integer = 10,
                 return_X_y: bool = False, as_frame: bool = False,
-                as_sequence: bool = False) -> Union[Bunch, tuple]:
+                as_sequence: bool = False) -> Bunch | tuple:
     """
     Load and return the digits dataset (classification).
 

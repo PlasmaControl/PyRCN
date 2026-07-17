@@ -3,9 +3,12 @@
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
+from __future__ import annotations
+
+from collections.abc import Callable
+
 import numpy as np
 from scipy.special import expit as logistic_sigmoid
-from typing import Dict, Callable
 
 
 def inplace_identity(X: np.ndarray) -> None:
@@ -172,7 +175,7 @@ def inplace_bounded_relu_inverse(X: np.ndarray) -> None:
     inplace_bounded_relu(X)
 
 
-ACTIVATIONS: Dict[str, Callable] = {
+ACTIVATIONS: dict[str, Callable] = {
     'identity': inplace_identity,
     'tanh': inplace_tanh,
     'logistic': inplace_logistic,
@@ -182,7 +185,7 @@ ACTIVATIONS: Dict[str, Callable] = {
     'softplus': inplace_softplus,
 }
 
-ACTIVATIONS_INVERSE: Dict[str, Callable] = {
+ACTIVATIONS_INVERSE: dict[str, Callable] = {
     'tanh': inplace_tanh_inverse,
     'identity': inplace_identity_inverse,
     'logistic': inplace_logistic_inverse,
@@ -190,7 +193,7 @@ ACTIVATIONS_INVERSE: Dict[str, Callable] = {
     'bounded_relu': inplace_bounded_relu_inverse
 }
 
-ACTIVATIONS_INVERSE_BOUNDS: Dict[str, tuple] = {
+ACTIVATIONS_INVERSE_BOUNDS: dict[str, tuple] = {
     'tanh': (-.99, .99),
     'identity': (-np.inf, np.inf),
     'logistic': (0.01, .99),

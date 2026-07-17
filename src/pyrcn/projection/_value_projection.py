@@ -5,10 +5,10 @@
 
 from __future__ import annotations
 
+from typing import Literal, cast
+
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
-
-from typing import Literal, cast
 
 
 class MatrixToValueProjection(TransformerMixin, BaseEstimator):

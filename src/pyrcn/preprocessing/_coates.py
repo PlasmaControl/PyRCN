@@ -5,22 +5,22 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from typing import Literal
+
 import numpy as np
-
-from sklearn.base import (BaseEstimator, TransformerMixin, ClusterMixin,
+from sklearn.base import (BaseEstimator, ClusterMixin, TransformerMixin,
                           is_clusterer)
-from sklearn.utils import check_random_state
-from sklearn.exceptions import NotFittedError
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from sklearn.exceptions import NotFittedError
 from sklearn.feature_extraction.image import PatchExtractor
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import check_random_state
 
-from typing import Union, Callable, Dict, Tuple, Literal
 
-
-def inplace_pool_max(X: np.ndarray, axis: Union[None, int, np.integer] = None)\
-        -> Union[float, np.ndarray]:
+def inplace_pool_max(X: np.ndarray, axis: None | int | np.integer = None)\
+        -> float | np.ndarray:
     """
     Apply max-Pooling on an array.
 
@@ -41,8 +41,8 @@ def inplace_pool_max(X: np.ndarray, axis: Union[None, int, np.integer] = None)\
     return np.max(X, axis=axis)
 
 
-def inplace_pool_min(X: np.ndarray, axis: Union[None, int, np.integer] = None)\
-        -> Union[float, np.ndarray]:
+def inplace_pool_min(X: np.ndarray, axis: None | int | np.integer = None)\
+        -> float | np.ndarray:
     """
     Apply min-Pooling on an array.
 
@@ -64,8 +64,8 @@ def inplace_pool_min(X: np.ndarray, axis: Union[None, int, np.integer] = None)\
 
 
 def inplace_pool_average(X: np.ndarray,
-                         axis: Union[None, int, np.integer] = None)\
-        -> Union[float, np.ndarray]:
+                         axis: None | int | np.integer = None)\
+        -> float | np.ndarray:
     """
     Apply average-Pooling on an array.
 
@@ -107,7 +107,7 @@ def inplace_pool_mean(X: np.ndarray, axis: None = None) -> np.number:
     return np.mean(X, axis=axis)
 
 
-POOLINGS: Dict[str, Callable] = {'max': inplace_pool_max,
+POOLINGS: dict[str, Callable] = {'max': inplace_pool_max,
                                  'min': inplace_pool_min,
                                  'average': inplace_pool_average,
                                  'mean': inplace_pool_mean}
@@ -131,15 +131,15 @@ class Coates(TransformerMixin, BaseEstimator):
     random_state : Union[None, int, np.random.RandomState], default=None
     """
 
-    def __init__(self, image_size: Tuple = (), patch_size: Tuple = (),
-                 stride_size: Tuple = (),
-                 n_patches: Union[int, np.integer] = 200,
+    def __init__(self, image_size: tuple = (), patch_size: tuple = (),
+                 stride_size: tuple = (),
+                 n_patches: int | np.integer = 200,
                  normalize: bool = True, whiten: bool = True,
                  clusterer: ClusterMixin = KMeans(),
                  pooling_func: Literal['max', 'min',
                                        'average', 'mean'] = 'max',
-                 pooling_size: Tuple = (),
-                 random_state: Union[None, int, np.random.RandomState] = None):
+                 pooling_size: tuple = (),
+                 random_state: None | int | np.random.RandomState = None):
         """Construct the Coates."""
         self.image_size = image_size
         self.patch_size = patch_size
@@ -238,23 +238,23 @@ class Coates(TransformerMixin, BaseEstimator):
 
         """
         if len(self.patch_size) not in {2, 3}:
-            raise ValueError('patch_size has invalid format, got {0}'
+            raise ValueError('patch_size has invalid format, got {}'
                              .format(self.patch_size))
 
         if len(self.stride_size) != len(self.patch_size):
-            print('stride_size has invalid format, got {0}. '
+            print('stride_size has invalid format, got {}. '
                   'Set stride_size = patch_size '.format(self.stride_size))
             self.stride_size = self.patch_size
 
         if any(stride < patch for stride, patch in zip(self.stride_size,
                                                        self.patch_size)):
             raise ValueError('stride_size must be greater or equal than '
-                             'patch_size, got stride_size = {0}, patch_size '
-                             '= {1}'.format(self.stride_size, self.patch_size))
+                             'patch_size, got stride_size = {}, patch_size '
+                             '= {}'.format(self.stride_size, self.patch_size))
 
         if self.pooling_func not in POOLINGS:
-            raise ValueError("The pooling_func '{0}' is not supported. "
-                             "Supported activations are {1}."
+            raise ValueError("The pooling_func '{}' is not supported. "
+                             "Supported activations are {}."
                              .format(self.pooling_func, POOLINGS))
 
         if any(patches < pool for patches, pool in
@@ -262,16 +262,16 @@ class Coates(TransformerMixin, BaseEstimator):
                                              self.stride_size),
                    self.pooling_size)):
             raise ValueError('#patches must be greater or equal than pooling_'
-                             'size, got patch_size = {0}, pooling_size = {1}'
+                             'size, got patch_size = {}, pooling_size = {}'
                              .format(self.patch_size, self.pooling_size))
 
         if not is_clusterer(self.clusterer):
-            raise TypeError('clusterer must be of type clusterer, got {0}'
+            raise TypeError('clusterer must be of type clusterer, got {}'
                             .format(self.clusterer))
 
     @staticmethod
     def _reshape_arrays_to_images(X: np.ndarray,
-                                  image_size: Tuple) -> np.ndarray:
+                                  image_size: tuple) -> np.ndarray:
         """
         Reshape an array to image.
 
@@ -291,7 +291,7 @@ class Coates(TransformerMixin, BaseEstimator):
 
     @staticmethod
     def _reshape_images_to_arrays(X: np.ndarray,
-                                  image_size: Tuple) -> np.ndarray:
+                                  image_size: tuple) -> np.ndarray:
         """
         Reshape an image to array.
 
@@ -310,7 +310,7 @@ class Coates(TransformerMixin, BaseEstimator):
         return X.reshape(index_dimensions + (int(np.prod(image_size)), ))
 
     @staticmethod
-    def _patches_per_image(image_size: Tuple, stride_size: Tuple) -> Tuple:
+    def _patches_per_image(image_size: tuple, stride_size: tuple) -> tuple:
         """
         Compute tuple strides fitting in image.
 
@@ -328,11 +328,10 @@ class Coates(TransformerMixin, BaseEstimator):
         return image_size[0] // stride_size[0], image_size[1] // stride_size[1]
 
     @staticmethod
-    def _extract_random_patches(X: np.ndarray, image_size: Tuple,
-                                patch_size: Tuple,
-                                n_patches: Union[int, np.integer],
-                                random_state: Union[
-                                    None, int, np.random.RandomState] = None)\
+    def _extract_random_patches(
+            X: np.ndarray, image_size: tuple, patch_size: tuple,
+            n_patches: int | np.integer,
+            random_state: None | int | np.random.RandomState = None)\
             -> np.ndarray:
         """
         Extract random patches from image array.
@@ -364,9 +363,9 @@ class Coates(TransformerMixin, BaseEstimator):
         return Coates._reshape_images_to_arrays(random_patches, patch_size)
 
     @staticmethod
-    def _extract_equidistant_patches(X: np.ndarray, image_size: Tuple,
-                                     patch_size: Tuple,
-                                     stride_size: Tuple) -> np.ndarray:
+    def _extract_equidistant_patches(X: np.ndarray, image_size: tuple,
+                                     patch_size: tuple,
+                                     stride_size: tuple) -> np.ndarray:
         """
         Extract equidistant patches from image array.
 

@@ -3,6 +3,8 @@
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
+from __future__ import annotations
+
 from ._incremental_regression import IncrementalRegression
 
 __all__ = ('IncrementalRegression',)

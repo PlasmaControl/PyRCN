@@ -4,22 +4,22 @@
 # License: BSD 3 clause
 
 from __future__ import annotations
+
 import sys
+from typing import Any, Literal
+
+from joblib import Parallel, delayed
 import numpy as np
-from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
-                          MultiOutputMixin, is_regressor, clone)
+from sklearn.base import (BaseEstimator, ClassifierMixin, MultiOutputMixin,
+                          RegressorMixin, clone, is_regressor)
+from sklearn.exceptions import NotFittedError
+from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import validate_data
 
 from ..base.blocks import InputToNode, NodeToNode
-from ..util import concatenate_sequences
 from ..linear_model import IncrementalRegression
 from ..projection import MatrixToValueProjection
-from sklearn.preprocessing import LabelBinarizer
-from sklearn.exceptions import NotFittedError
-
-from joblib import Parallel, delayed
-
-from typing import Union, Dict, Any, Optional, Literal
+from ..util import concatenate_sequences
 
 
 class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
@@ -62,11 +62,11 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
     """
 
     def __init__(self, *,
-                 input_to_node: Optional[InputToNode] = None,
-                 node_to_node: Optional[NodeToNode] = None,
-                 regressor: Union[IncrementalRegression,
-                                  RegressorMixin, None] = None,
-                 requires_sequence: Union[Literal["auto"], bool] = "auto",
+                 input_to_node: InputToNode | None = None,
+                 node_to_node: NodeToNode | None = None,
+                 regressor: (IncrementalRegression |
+                             RegressorMixin | None) = None,
+                 requires_sequence: Literal["auto"] | bool = "auto",
                  decision_strategy: Literal["winner_takes_all", "median",
                                             "last_value"] = "winner_takes_all",
                  verbose: bool = True,
@@ -146,7 +146,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         else:
             return self.__add__(other)
 
-    def get_params(self, deep: bool = True) -> Dict:
+    def get_params(self, deep: bool = True) -> dict:
         """Get all parameters of the ESNRegressor."""
         if deep:
             return {**self.input_to_node.get_params(),
@@ -199,7 +199,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         """
         if X.ndim > 2 or y.ndim > 2:
             raise ValueError("Could not determine a valid structure,"
-                             "because X has {0} and y has {1} dimensions."
+                             "because X has {} and y has {} dimensions."
                              "Only 1 or 2 dimensions allowed."
                              .format(X.ndim, y.ndim))
         self.requires_sequence = X.ndim == 1
@@ -225,7 +225,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._sequence_to_value = not np.any(len_X == len_y)
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
-                    transformer_weights: Union[None, np.ndarray] = None,
+                    transformer_weights: None | np.ndarray = None,
                     postpone_inverse: bool = False) -> ESNRegressor:
         """
         Fit the regressor partially.
@@ -254,9 +254,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             hidden_layer_state = self._input_to_node.transform(X)
         except NotFittedError as e:
             if self.verbose:
-                print('input_to_node has not been fitted yet: {0}'.format(e))
+                print(f'input_to_node has not been fitted yet: {e}')
             hidden_layer_state = self._input_to_node.fit_transform(X)
-            pass
 
         # node_to_node
         try:
@@ -264,15 +263,14 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                 hidden_layer_state)
         except NotFittedError as e:
             if self.verbose:
-                print('node_to_node has not been fitted yet: {0}'.format(e))
+                print(f'node_to_node has not been fitted yet: {e}')
             hidden_layer_state = self._node_to_node.fit_transform(
                 hidden_layer_state)
-            pass
 
         # regression
         if not hasattr(self._regressor, 'partial_fit') and postpone_inverse:
             raise BaseException('Regressor has no attribute partial_fit, got'
-                                '{0}'.format(self._regressor))
+                                '{}'.format(self._regressor))
         elif not hasattr(self._regressor, 'partial_fit') \
                 and not postpone_inverse:
             self._regressor.fit(hidden_layer_state, y)
@@ -282,8 +280,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         return self
 
     def fit(self, X: np.ndarray, y: np.ndarray,
-            n_jobs: Union[int, np.integer, None] = None,
-            transformer_weights: Optional[np.ndarray] = None) -> ESNRegressor:
+            n_jobs: int | np.integer | None = None,
+            transformer_weights: np.ndarray | None = None) -> ESNRegressor:
         """
         Fit the regressor.
 
@@ -323,8 +321,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
 
     def _sequence_fit(self, X: np.ndarray, y: np.ndarray,
                       sequence_ranges: np.ndarray,
-                      n_jobs: Union[int, np.integer,
-                                    None] = None) -> ESNRegressor:
+                      n_jobs: (int | np.integer |
+                               None) = None) -> ESNRegressor:
         """
         Call partial_fit for each sequence. Runs parallel if more than one job.
 
@@ -405,7 +403,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                 and hasattr(self.input_to_node, "fit_transform")
                 and hasattr(self.input_to_node, "transform")):
             raise TypeError("All input_to_node should be transformers and"
-                            "implement fit and transform '{0}' (type {1}) "
+                            "implement fit and transform '{}' (type {}) "
                             "doesn't".format(self.input_to_node,
                                              type(self.input_to_node)))
 
@@ -413,18 +411,18 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                 and hasattr(self.node_to_node, "fit_transform")
                 and hasattr(self.node_to_node, "transform")):
             raise TypeError("All node_to_node should be transformers and"
-                            "implement fit and transform '{0}' (type {1}) "
+                            "implement fit and transform '{}' (type {}) "
                             "doesn't".format(self.node_to_node,
                                              type(self.node_to_node)))
 
         if (self._requires_sequence != "auto"
                 and not isinstance(self._requires_sequence, bool)):
-            raise ValueError('Invalid value for requires_sequence, got {0}'
+            raise ValueError('Invalid value for requires_sequence, got {}'
                              .format(self._requires_sequence))
 
         if not is_regressor(self._regressor):
             raise TypeError("The last step should be a regressor and "
-                            "implement fit and predict '{0}' (type {1})"
+                            "implement fit and predict '{}' (type {})"
                             "doesn't".format(self._regressor,
                                              type(self._regressor)))
 
@@ -441,7 +439,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             sys.getsizeof(self._node_to_node) + sys.getsizeof(self._regressor)
 
     @property
-    def regressor(self) -> Union[RegressorMixin, IncrementalRegression]:
+    def regressor(self) -> RegressorMixin | IncrementalRegression:
         """
         Return the regressor.
 
@@ -452,8 +450,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         return self._regressor
 
     @regressor.setter
-    def regressor(self, regressor: Union[RegressorMixin,
-                                         IncrementalRegression]) -> None:
+    def regressor(self, regressor: (RegressorMixin |
+                                    IncrementalRegression)) -> None:
         """
         Set the regressor.
 
@@ -586,7 +584,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._decision_strategy = decision_strategy
 
     @property
-    def requires_sequence(self) -> Union[Literal["auto"], bool]:
+    def requires_sequence(self) -> Literal["auto"] | bool:
         """
         Return the requires_sequence parameter.
 
@@ -598,7 +596,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
 
     @requires_sequence.setter
     def requires_sequence(self,
-                          requires_sequence: Union[Literal["auto"], bool])\
+                          requires_sequence: Literal["auto"] | bool)\
             -> None:
         """
         Set the requires_sequence parameter.
@@ -650,11 +648,11 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
     """
 
     def __init__(self, *,
-                 input_to_node: Optional[InputToNode] = None,
-                 node_to_node: Optional[NodeToNode] = None,
-                 regressor: Union[IncrementalRegression,
-                                  RegressorMixin, None] = None,
-                 requires_sequence: Union[Literal["auto"], bool] = "auto",
+                 input_to_node: InputToNode | None = None,
+                 node_to_node: NodeToNode | None = None,
+                 regressor: (IncrementalRegression |
+                             RegressorMixin | None) = None,
+                 requires_sequence: Literal["auto"] | bool = "auto",
                  decision_strategy: Literal["winner_takes_all", "median",
                                             "last_value"] = "winner_takes_all",
                  verbose: bool = False,
@@ -669,9 +667,9 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         self._sequence_to_value = False
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
-                    transformer_weights: Optional[np.ndarray] = None,
+                    transformer_weights: np.ndarray | None = None,
                     postpone_inverse: bool = False,
-                    classes: Optional[np.ndarray] = None) -> ESNClassifier:
+                    classes: np.ndarray | None = None) -> ESNClassifier:
         """
         Fit the regressor partially.
 
@@ -706,9 +704,9 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         return self
 
     def fit(self, X: np.ndarray, y: np.ndarray,
-            n_jobs: Union[int, np.integer, None] = None,
-            transformer_weights: Union[None,
-                                       np.ndarray] = None) -> ESNClassifier:
+            n_jobs: int | np.integer | None = None,
+            transformer_weights: (None |
+                                  np.ndarray) = None) -> ESNClassifier:
         """
         Fit the classifier.
 

@@ -13,10 +13,11 @@ References
            applications’, p. 489-501, 2006, doi: 10.1016/j.neucom.2005.12.126.
 """
 
+from __future__ import annotations
+
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>,
 # Michael Schindler <michael.schindler@maschindler.de>
 # License: BSD 3 clause
-
 from ._elm import ELMClassifier, ELMRegressor
 
 __all__ = ('ELMClassifier', 'ELMRegressor')

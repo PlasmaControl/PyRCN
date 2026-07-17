@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Union, Callable, Dict, Optional
+from collections.abc import Callable
 
 import numpy as np
 from sklearn.preprocessing import FunctionTransformer
@@ -39,14 +39,14 @@ class FeatureExtractor(FunctionTransformer):
 
     """
 
-    def __init__(self, func: Union[Callable, None],
-                 kw_args: Union[Dict, None] = None):
+    def __init__(self, func: Callable | None,
+                 kw_args: dict | None = None):
         """Construct the FeatureExtractor."""
         super().__init__(func=func, inverse_func=None, validate=False,
                          accept_sparse=False, check_inverse=False,
                          kw_args=kw_args, inv_kw_args=None)
 
-    def fit(self, X: Union[str, np.ndarray], y: Optional[np.ndarray] = None)\
+    def fit(self, X: str | np.ndarray, y: np.ndarray | None = None)\
             -> FeatureExtractor:
         """
         Fit transformer by checking X.
@@ -61,7 +61,7 @@ class FeatureExtractor(FunctionTransformer):
         super().fit(X=X, y=y)
         return self
 
-    def transform(self, X: Union[str, np.ndarray]) -> np.ndarray:
+    def transform(self, X: str | np.ndarray) -> np.ndarray:
         """
         Transform X using the forward function.
 

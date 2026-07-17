@@ -4,6 +4,8 @@
 # Simon Stone <simon.stone@tu-dresden.de>
 # License: BSD 3 clause
 
+from __future__ import annotations
+
 from ._search import SequentialSearchCV, SHGOSearchCV
 
 __all__ = ('SequentialSearchCV', 'SHGOSearchCV')

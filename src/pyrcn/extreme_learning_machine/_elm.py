@@ -1,24 +1,25 @@
 """The :mod:`extreme_learning_machine` contains the ELMRegressor and
 ELMClassifier."""
 
+from __future__ import annotations
+
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
-
 from __future__ import annotations
-import sys
-from typing import Union, Any, Optional
 
+import sys
+from typing import Any
+
+from joblib import Parallel, delayed
 import numpy as np
-from sklearn.base import (BaseEstimator, ClassifierMixin, RegressorMixin,
-                          MultiOutputMixin, is_regressor, clone)
+from sklearn.base import (BaseEstimator, ClassifierMixin, MultiOutputMixin,
+                          RegressorMixin, clone, is_regressor)
+from sklearn.exceptions import NotFittedError
+from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import validate_data
 
 from ..base.blocks import InputToNode
 from ..linear_model import IncrementalRegression
-from sklearn.preprocessing import LabelBinarizer
-from sklearn.exceptions import NotFittedError
-
-from joblib import Parallel, delayed
 
 
 class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
@@ -51,10 +52,10 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
     """
 
     def __init__(self, *,
-                 input_to_node: Optional[InputToNode] = None,
-                 regressor: Union[IncrementalRegression,
-                                  RegressorMixin, None] = None,
-                 chunk_size: Optional[int] = None,
+                 input_to_node: InputToNode | None = None,
+                 regressor: (IncrementalRegression |
+                             RegressorMixin | None) = None,
+                 chunk_size: int | None = None,
                  verbose: bool = False,
                  **kwargs: Any) -> None:
         """Construct the ELMRegressor."""
@@ -148,7 +149,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         return self
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
-                    transformer_weights: Union[np.ndarray, None] = None,
+                    transformer_weights: np.ndarray | None = None,
                     postpone_inverse: bool = False) -> ELMRegressor:
         """
         Fit the regressor partially.
@@ -172,7 +173,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         """
         if not hasattr(self._regressor, 'partial_fit'):
             raise BaseException('regressor has no attribute partial_fit, got'
-                                '{0}'.format(self._regressor))
+                                '{}'.format(self._regressor))
         self._validate_hyperparameters()
         validate_data(self, X, y, multi_output=True)
 
@@ -181,9 +182,8 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             hidden_layer_state = self._input_to_node.transform(X)
         except NotFittedError as e:
             if self.verbose:
-                print('input_to_node has not been fitted yet: {0}'.format(e))
+                print(f'input_to_node has not been fitted yet: {e}')
             hidden_layer_state = self._input_to_node.fit_transform(X)
-            pass
 
         # regression
         if self._regressor:
@@ -192,9 +192,9 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         return self
 
     def fit(self, X: np.ndarray, y: np.ndarray,
-            n_jobs: Union[int, np.integer, None] = None,
-            transformer_weights: Union[np.ndarray,
-                                       None] = None) -> ELMRegressor:
+            n_jobs: int | np.integer | None = None,
+            transformer_weights: (np.ndarray |
+                                  None) = None) -> ELMRegressor:
         """
         Fit the regressor.
 
@@ -252,7 +252,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                                      transformer_weights=transformer_weights,
                                      postpone_inverse=False)
         else:
-            raise ValueError('chunk_size invalid {0}'.format(self._chunk_size))
+            raise ValueError(f'chunk_size invalid {self._chunk_size}')
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -278,19 +278,19 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                 and hasattr(self.input_to_node, "fit_transform")
                 and hasattr(self.input_to_node, "transform")):
             raise TypeError("All input_to_node should be transformers and"
-                            "implement fit and transform '{0}' (type {1})"
+                            "implement fit and transform '{}' (type {})"
                             "doesn't".format(self.input_to_node,
                                              type(self.input_to_node)))
 
         if (self._chunk_size is not None
                 and (not isinstance(self._chunk_size, int)
                      or self._chunk_size < 0)):
-            raise ValueError('Invalid value for chunk_size, got {0}'
+            raise ValueError('Invalid value for chunk_size, got {}'
                              .format(self._chunk_size))
 
         if not is_regressor(self._regressor):
             raise TypeError("The last step should be a regressor and"
-                            "implement fit and predict '{0}' (type {1}) "
+                            "implement fit and predict '{}' (type {}) "
                             "doesn't".format(self._regressor,
                                              type(self._regressor)))
 
@@ -307,7 +307,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             sys.getsizeof(self._regressor)
 
     @property
-    def regressor(self) -> Union[RegressorMixin, IncrementalRegression]:
+    def regressor(self) -> RegressorMixin | IncrementalRegression:
         """
         Return the regressor.
 
@@ -318,8 +318,8 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         return self._regressor
 
     @regressor.setter
-    def regressor(self, regressor: Union[RegressorMixin,
-                                         IncrementalRegression]) -> None:
+    def regressor(self, regressor: (RegressorMixin |
+                                    IncrementalRegression)) -> None:
         """
         Set the regressor.
 
@@ -372,7 +372,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         return hidden_layer_state
 
     @property
-    def chunk_size(self) -> Union[None, int, np.integer]:
+    def chunk_size(self) -> None | int | np.integer:
         """
         Return the chunk_size, in which X will be chopped.
 
@@ -383,7 +383,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         return self._chunk_size
 
     @chunk_size.setter
-    def chunk_size(self, chunk_size: Union[int, None]) -> None:
+    def chunk_size(self, chunk_size: int | None) -> None:
         """
         Set the chunk_size, in which X will be chopped.
 
@@ -424,10 +424,10 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
     """
 
     def __init__(self, *,
-                 input_to_node: Optional[InputToNode] = None,
-                 regressor: Union[IncrementalRegression,
-                                  RegressorMixin, None] = None,
-                 chunk_size: Optional[int] = None, verbose: bool = False,
+                 input_to_node: InputToNode | None = None,
+                 regressor: (IncrementalRegression |
+                             RegressorMixin | None) = None,
+                 chunk_size: int | None = None, verbose: bool = False,
                  **kwargs: Any) -> None:
         """Construct the ELMClassifier."""
         super().__init__(input_to_node=input_to_node, regressor=regressor,
@@ -435,9 +435,9 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
         self._encoder = LabelBinarizer()
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
-                    transformer_weights: Optional[np.ndarray] = None,
+                    transformer_weights: np.ndarray | None = None,
                     postpone_inverse: bool = False,
-                    classes: Optional[np.ndarray] = None) -> ELMClassifier:
+                    classes: np.ndarray | None = None) -> ELMClassifier:
         """
         Fit the classifier partially.
 
@@ -475,8 +475,8 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
         return self
 
     def fit(self, X: np.ndarray, y: np.ndarray,
-            n_jobs: Union[int, np.integer, None] = None,
-            transformer_weights: Optional[np.ndarray] = None) -> ELMClassifier:
+            n_jobs: int | np.integer | None = None,
+            transformer_weights: np.ndarray | None = None) -> ELMClassifier:
         """
         Fit the classifier.
 

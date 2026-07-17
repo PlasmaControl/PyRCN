@@ -16,9 +16,10 @@ References
            State Networks’, Jan. 2012, doi: 10.1007/978-3-642-35289-8_36.
 """
 
+from __future__ import annotations
+
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
-
 from ._esn import ESNClassifier, ESNRegressor
 
 __all__ = ('ESNClassifier', 'ESNRegressor', )
