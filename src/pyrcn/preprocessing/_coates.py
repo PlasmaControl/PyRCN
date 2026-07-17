@@ -135,7 +135,7 @@ class Coates(TransformerMixin, BaseEstimator):
                  stride_size: tuple = (),
                  n_patches: int | np.integer = 200,
                  normalize: bool = True, whiten: bool = True,
-                 clusterer: ClusterMixin = KMeans(),
+                 clusterer: ClusterMixin | None = None,
                  pooling_func: Literal['max', 'min',
                                        'average', 'mean'] = 'max',
                  pooling_size: tuple = (),
@@ -150,7 +150,7 @@ class Coates(TransformerMixin, BaseEstimator):
         self.clusterer = clusterer
         self.pooling_func = pooling_func
         self.pooling_size = pooling_size
-        self.random_state = check_random_state(random_state)
+        self.random_state = random_state
         self._normalizer = StandardScaler()
         self._whitener = PCA(whiten=True)
 
@@ -168,6 +168,8 @@ class Coates(TransformerMixin, BaseEstimator):
         -------
         self : returns a trained Coates.
         """
+        if self.clusterer is None:
+            self.clusterer = KMeans()
         self._validate_hyperparameters()
         self.clusterer.fit(self._preprocessing(Coates._extract_random_patches(
             X, image_size=self.image_size, patch_size=self.patch_size,

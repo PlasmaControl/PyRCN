@@ -141,7 +141,7 @@ def mackey_glass(n_timesteps: int, n_future: int = 1, tau: int = 17,
 
 def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
            rho: float = 28., beta: float = 8./3.,
-           x_0: list | np.ndarray = [1.0, 1.0, 1.0], h: float = 0.03,
+           x_0: list | np.ndarray | None = None, h: float = 0.03,
            **kwargs: dict) -> tuple[np.ndarray, np.ndarray]:
     r"""
     Lorenz time-series.
@@ -192,6 +192,9 @@ def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
                Conference on Artificial Neural Networks (pp. 494-505).
                Springer, Cham.
     """
+    if x_0 is None:
+        x_0 = [1.0, 1.0, 1.0]
+
     timesteps = np.arange(0., (n_timesteps + n_future) * h, h)
 
     def lorenz_differential_equation(t: int,
