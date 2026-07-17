@@ -14,8 +14,7 @@ import numpy as np
 
 from sklearn.utils.validation import check_consistent_length
 import sklearn.metrics as sklearn_metrics
-from sklearn.metrics._regression\
-    import _check_reg_targets as sklearn_check_reg_targets
+from sklearn.utils.multiclass import type_of_target
 
 from typing import Any, Tuple, Union, Optional, Literal
 
@@ -72,8 +71,7 @@ def _check_reg_targets(y_true: np.ndarray, y_pred: np.ndarray,
         [check_consistent_length(y_t, y_p) for y_t, y_p in zip(y_true, y_pred)]
     y_true = np.concatenate(y_true)
     y_pred = np.concatenate(y_pred)
-    y_type, y_true, y_pred, multioutput = sklearn_check_reg_targets(
-        y_true, y_pred, multioutput, dtype)
+    y_type = type_of_target(y_true)
     return y_type, y_true, y_pred, sample_weight, multioutput
 
 
@@ -220,9 +218,13 @@ def mean_squared_error(y_true: np.ndarray, y_pred: np.ndarray, *,
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)
-    return sklearn_metrics.mean_squared_error(
+    if squared:
+        return sklearn_metrics.mean_squared_error(
+            y_true=y_true, y_pred=y_pred, sample_weight=sample_weight,
+            multioutput=multioutput)
+    return sklearn_metrics.root_mean_squared_error(
         y_true=y_true, y_pred=y_pred, sample_weight=sample_weight,
-        multioutput=multioutput, squared=squared)
+        multioutput=multioutput)
 
 
 def mean_squared_log_error(y_true: np.ndarray, y_pred: np.ndarray, *,

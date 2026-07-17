@@ -15,8 +15,7 @@ import numpy as np
 from sklearn.utils.validation import check_consistent_length
 import sklearn.metrics as sklearn_metrics
 from scipy.sparse import csr_matrix
-from sklearn.metrics._classification import\
-    _check_targets as sklearn_check_targets
+from sklearn.utils.multiclass import type_of_target
 
 from typing import Tuple, Union, Optional, Dict, Literal
 
@@ -61,7 +60,7 @@ def _check_targets(y_true: np.ndarray, y_pred: np.ndarray,
         [check_consistent_length(y_t, y_p) for y_t, y_p in zip(y_true, y_pred)]
     y_true = np.concatenate(y_true)
     y_pred = np.concatenate(y_pred)
-    y_type, y_true, y_pred = sklearn_check_targets(y_true, y_pred)
+    y_type = type_of_target(y_true)
     return y_type, y_true, y_pred, sample_weight
 
 
