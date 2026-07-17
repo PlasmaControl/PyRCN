@@ -4,7 +4,7 @@ import pytest
 from sklearn.utils.extmath import safe_sparse_dot
 
 from pyrcn.base.blocks import (
-    InputToNode, NodeToNode,PredefinedWeightsNodeToNode, HebbianNodeToNode)
+    InputToNode, NodeToNode, PredefinedWeightsNodeToNode, HebbianNodeToNode)
 
 
 def test_input_to_node_invalid_spectral_radius() -> None:
