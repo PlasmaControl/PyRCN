@@ -89,7 +89,7 @@ def _make_sparse(k_in: int, dense_weights: np.ndarray,
 
     for neuron in range(n_outputs):
         all_indices = np.arange(n_inputs)
-        keep_indices = np.random.choice(n_inputs, k_in, replace=False)
+        keep_indices = random_state.choice(n_inputs, k_in, replace=False)
         zero_indices = np.setdiff1d(all_indices, keep_indices)
         dense_weights[zero_indices, neuron] = 0
 
