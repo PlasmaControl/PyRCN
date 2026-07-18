@@ -1,11 +1,11 @@
 """Testing for coates preprocessing module (pyrcn.preprocessing.coates)."""
-import numpy as np
+from __future__ import annotations
 
-from sklearn.datasets import load_digits
+import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.datasets import load_digits
 
 from pyrcn.preprocessing import Coates
-
 
 X_digits, y_digits = load_digits(return_X_y=True)
 

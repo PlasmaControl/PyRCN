@@ -1,12 +1,15 @@
 """Testing for model selection module."""
 
-from sklearn import datasets
-from sklearn.model_selection import KFold, GridSearchCV, RandomizedSearchCV
-from sklearn.svm import SVC
+from __future__ import annotations
+
 from collections.abc import Iterable
 
-from pyrcn.model_selection import SequentialSearchCV, SHGOSearchCV
 import pytest
+from sklearn import datasets
+from sklearn.model_selection import GridSearchCV, KFold, RandomizedSearchCV
+from sklearn.svm import SVC
+
+from pyrcn.model_selection import SequentialSearchCV, SHGOSearchCV
 
 
 def test_sequentialSearchCV_equivalence() -> None:
@@ -43,9 +46,9 @@ def test_sequentialSearchCV_equivalence() -> None:
 @pytest.mark.skip(reason="no way of currently testing this")
 def test_SHGOSearchCV() -> None:
     """Test the SHGO search."""
-    from sklearn.metrics import accuracy_score
-    from sklearn.base import clone, BaseEstimator
     import numpy as np
+    from sklearn.base import BaseEstimator, clone
+    from sklearn.metrics import accuracy_score
     from sklearn.model_selection import StratifiedKFold
     iris = datasets.load_iris()
     X = iris.data[:, [0, 2]]

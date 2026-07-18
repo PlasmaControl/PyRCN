@@ -1,16 +1,18 @@
 """Testing for Echo State Network module."""
+from __future__ import annotations
+
 import numpy as np
 import pytest
-from pyrcn.datasets import mackey_glass, load_digits
-from sklearn.metrics import make_scorer
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV, TimeSeriesSplit
-from sklearn.linear_model import Ridge
 from sklearn.exceptions import NotFittedError
+from sklearn.linear_model import Ridge
+from sklearn.metrics import make_scorer
+from sklearn.model_selection import (GridSearchCV, TimeSeriesSplit,
+                                     train_test_split)
 
 from pyrcn.base.blocks import InputToNode, NodeToNode
+from pyrcn.datasets import load_digits, mackey_glass
+from pyrcn.echo_state_network import ESNClassifier, ESNRegressor
 from pyrcn.linear_model import IncrementalRegression
-from pyrcn.echo_state_network import ESNRegressor, ESNClassifier
 from pyrcn.metrics import mean_squared_error
 
 
@@ -45,9 +47,9 @@ def test_esn_regressor_jobs() -> None:
     esn = GridSearchCV(estimator=ESNRegressor(), param_grid=param_grid)
     esn.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
     y_esn = esn.predict(X_test.reshape(-1, 1))
-    print("tests - esn:\n sin | cos \n {0}".format(y_test-y_esn))
-    print("best_params_: {0}".format(esn.best_params_))
-    print("best_score: {0}".format(esn.best_score_))
+    print(f"tests - esn:\n sin | cos \n {y_test-y_esn}")
+    print(f"best_params_: {esn.best_params_}")
+    print(f"best_score: {esn.best_score_}")
     np.testing.assert_allclose(1, esn.best_score_, atol=1e-1)
 
 
