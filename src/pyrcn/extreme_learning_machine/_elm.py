@@ -12,12 +12,17 @@ from typing import Any
 
 from joblib import Parallel, delayed
 import numpy as np
+import torch
 from sklearn.base import (BaseEstimator, ClassifierMixin, MultiOutputMixin,
                           RegressorMixin, clone, is_regressor)
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import validate_data
 
+from ..backend._bridge import (build_input_map, build_readout,
+                               input_is_backable, regressor_is_backable)
+from ..backend._input import InputFeatureMap
+from ..backend._readout import IncrementalRidge
 from ..base.blocks import InputToNode
 from ..linear_model import IncrementalRegression
 
@@ -82,6 +87,9 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._regressor = self.regressor
         self._chunk_size = chunk_size
         self.verbose = verbose
+        self._use_torch: bool = False
+        self._torch_input_map: InputFeatureMap
+        self._torch_readout: IncrementalRidge
 
     def __add__(self, other: ELMRegressor) -> ELMRegressor:
         """
@@ -177,6 +185,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                 f"got {self._regressor}")
         self._validate_hyperparameters()
         validate_data(self, X, y, multi_output=True)
+        self._use_torch = False
 
         # input_to_node
         try:
@@ -219,6 +228,19 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         validate_data(self, X, y, multi_output=True)
 
         self._input_to_node.fit(X)
+        self._use_torch = False
+
+        if (input_is_backable(self._input_to_node)
+                and regressor_is_backable(self._regressor)):
+            dtype = torch.float64
+            fm = build_input_map(self._input_to_node, dtype=dtype)
+            Z = fm(torch.as_tensor(np.asarray(X), dtype=dtype))
+            readout = build_readout(self._regressor, dtype=dtype)
+            readout.fit(Z, torch.as_tensor(np.asarray(y), dtype=dtype))
+            self._torch_input_map = fm
+            self._torch_readout = readout
+            self._use_torch = True
+            return self
 
         if self._chunk_size is None or self._chunk_size >= X.shape[0]:
             # input_to_node
@@ -269,6 +291,11 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         y : ndarray of (n_samples,) or (n_samples, n_targets)
             The predicted targets
         """
+        if getattr(self, "_use_torch", False):
+            Z = self._torch_input_map(
+                torch.as_tensor(np.asarray(X), dtype=torch.float64))
+            return self._torch_readout.predict(Z).numpy()
+
         hidden_layer_state = self._input_to_node.transform(X)
 
         return self._regressor.predict(hidden_layer_state)
