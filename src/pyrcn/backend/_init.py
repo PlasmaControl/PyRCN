@@ -1,0 +1,79 @@
+"""Torch-native initialization of reservoir (recurrent) weight matrices.
+
+Random/sparse designs are normalized to unit spectral radius (as PyRCN does);
+the reservoir's ``spectral_radius`` scales them at runtime. The
+minimum-complexity topologies (Rodan, 2010) are deterministic structured
+matrices whose scale is the ``forward_weight`` (and ``feedback_weight``).
+
+Used for real (non-parity) initialization; equivalence to the legacy path is
+verified separately by injecting identical weights.
+"""
+
+# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
+# License: BSD 3 clause
+
+from __future__ import annotations
+
+import torch
+
+
+def spectral_normalize(weights: torch.Tensor,
+                       radius: float = 1.0) -> torch.Tensor:
+    """Scale a square matrix to the given maximum absolute eigenvalue."""
+    eigenvalues = torch.linalg.eigvals(weights)
+    return weights * (radius / eigenvalues.abs().max())
+
+
+def normal_recurrent_weights(
+        hidden_size: int, *, fan_in: int | None = None,
+        generator: torch.Generator | None = None,
+        dtype: torch.dtype | None = None,
+        device: torch.device | str | int | None = None) -> torch.Tensor:
+    """Normally distributed recurrent weights, unit spectral radius.
+
+    If ``fan_in`` is given and smaller than ``hidden_size``, exactly ``fan_in``
+    entries are kept per column (the rest zeroed) before normalization.
+    """
+    weights = torch.randn(hidden_size, hidden_size, generator=generator,
+                          dtype=dtype, device=device)
+    if fan_in is not None and fan_in < hidden_size:
+        for column in range(hidden_size):
+            order = torch.randperm(
+                hidden_size, generator=generator, device=device)
+            weights[order[fan_in:], column] = 0.0
+    return spectral_normalize(weights)
+
+
+def simple_cycle_weights(
+        hidden_size: int, forward_weight: float = 0.9, *,
+        dtype: torch.dtype | None = None,
+        device: torch.device | str | int | None = None) -> torch.Tensor:
+    """Simple Cycle Reservoir: one cycle with weight ``forward_weight``."""
+    weights = torch.zeros(hidden_size, hidden_size, dtype=dtype, device=device)
+    for i in range(hidden_size):
+        weights[i, i - 1] = forward_weight               # subdiagonal + corner
+    return weights
+
+
+def delay_line_weights(
+        hidden_size: int, forward_weight: float = 0.9, *,
+        dtype: torch.dtype | None = None,
+        device: torch.device | str | int | None = None) -> torch.Tensor:
+    """Delay Line Reservoir: subdiagonal only (nilpotent)."""
+    weights = torch.zeros(hidden_size, hidden_size, dtype=dtype, device=device)
+    for i in range(1, hidden_size):
+        weights[i, i - 1] = forward_weight
+    return weights
+
+
+def delay_line_feedback_weights(
+        hidden_size: int, forward_weight: float = 0.9,
+        feedback_weight: float = 0.1, *,
+        dtype: torch.dtype | None = None,
+        device: torch.device | str | int | None = None) -> torch.Tensor:
+    """Delay Line Reservoir with feedback: subdiagonal + superdiagonal."""
+    weights = torch.zeros(hidden_size, hidden_size, dtype=dtype, device=device)
+    for i in range(1, hidden_size):
+        weights[i, i - 1] = forward_weight               # forward
+        weights[i - 1, i] = feedback_weight              # feedback
+    return weights
