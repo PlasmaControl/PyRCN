@@ -19,7 +19,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.utils import check_random_state
 
 
-def inplace_pool_max(X: np.ndarray, axis: None | int | np.integer = None)\
+def inplace_pool_max(X: np.ndarray, axis: int | None = None)\
         -> float | np.ndarray:
     """
     Apply max-Pooling on an array.
@@ -41,7 +41,7 @@ def inplace_pool_max(X: np.ndarray, axis: None | int | np.integer = None)\
     return np.max(X, axis=axis)
 
 
-def inplace_pool_min(X: np.ndarray, axis: None | int | np.integer = None)\
+def inplace_pool_min(X: np.ndarray, axis: int | None = None)\
         -> float | np.ndarray:
     """
     Apply min-Pooling on an array.
@@ -64,7 +64,7 @@ def inplace_pool_min(X: np.ndarray, axis: None | int | np.integer = None)\
 
 
 def inplace_pool_average(X: np.ndarray,
-                         axis: None | int | np.integer = None)\
+                         axis: int | None = None)\
         -> float | np.ndarray:
     """
     Apply average-Pooling on an array.
@@ -190,6 +190,7 @@ class Coates(TransformerMixin, BaseEstimator):
         -------
         features : returns the transformed features.
         """
+        assert self.clusterer is not None
         # patches[#samples][#patches][#features]
         patches = Coates._extract_equidistant_patches(
             X, image_size=self.image_size, patch_size=self.patch_size,
@@ -221,6 +222,7 @@ class Coates(TransformerMixin, BaseEstimator):
         -------
         patches : returns the original features.
         """
+        assert self.clusterer is not None
         patch_array = Coates._reshape_arrays_to_images(X, image_size=(
             int(X.shape[-1] / self.clusterer.cluster_centers_.shape[0]),
             self.clusterer.cluster_centers_.shape[0]))
@@ -462,6 +464,7 @@ class Coates(TransformerMixin, BaseEstimator):
         nm_patches = Coates._patches_per_image(image_size=self.image_size,
                                                stride_size=self.stride_size)
 
+        assert self.clusterer is not None
         # feature_pools[#samples][#features][#pools][#pool_features]
         feature_pools = Coates._extract_equidistant_patches(
             np.transpose(X, axes=(0, 2, 1)),

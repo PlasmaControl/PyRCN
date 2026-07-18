@@ -381,8 +381,8 @@ class BatchIntrinsicPlasticity(InputToNode):
         self.distribution = distribution
         self.algorithm = algorithm
         self._scaler = StandardScaler()
-        self._m = 1
-        self._c = 0
+        self._m = 1.
+        self._c = 0.
 
     IN_DISTRIBUTION_PARAMS = {'exponential': (-.5, -.5),
                               'uniform': (.7, .0),

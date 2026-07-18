@@ -7,7 +7,7 @@
 from __future__ import annotations
 
 import argparse
-from collections.abc import Iterable
+from collections.abc import Iterable, Iterator
 from itertools import islice
 import logging
 import os
@@ -32,7 +32,7 @@ logging.basicConfig(
 )
 
 
-def batched(iterable: Iterable, n: int) -> tuple:
+def batched(iterable: Iterable, n: int) -> Iterator[tuple]:
     """
     Iterate over batches of size n.
 
@@ -63,9 +63,8 @@ def batched(iterable: Iterable, n: int) -> tuple:
         yield batch
 
 
-def value_to_tuple(value: float | int,
-                   size: float | int | tuple[float | int, ...]) \
-        -> tuple[float | int, ...]:
+def value_to_tuple(value: float | int | tuple[float | int, ...],
+                   size: int) -> tuple[float | int, ...]:
     """
     Convert a value to a tuple of values.
 
@@ -81,10 +80,9 @@ def value_to_tuple(value: float | int,
     value : Tuple[Union[float, int], ...]
         Tuple of values.
     """
-    if isinstance(value, float) or isinstance(value, int):
+    if isinstance(value, (float, int)):
         return (value, ) * size
-    elif isinstance(value, tuple):
-        return value
+    return value
 
 
 def seed_everything(seed: int = 42) -> None:

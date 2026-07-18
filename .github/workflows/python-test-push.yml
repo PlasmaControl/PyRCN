@@ -23,7 +23,6 @@ jobs:
         run: flake8 src/pyrcn tests
       - name: Type-check with mypy
         run: mypy src/pyrcn
-        continue-on-error: true
       - name: Test with pytest
         run: pytest --cov=src/pyrcn --cov-branch --cov-report=xml --cov-report=term-missing
       - name: Test installed PyRCN
