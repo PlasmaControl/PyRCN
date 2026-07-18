@@ -304,6 +304,9 @@ Phase-A parity is proven, then retired.
   once A5 parity holds. Clean, minimal surface over the Phase-A backend
   `nn.Module`s (reservoir, feature map, readout); stable interfaces, docs,
   examples for pure-PyTorch use. Built fresh — NOT the removed draft (`3e41df2`).
+  - **TODO on going public:** remove the "private / not-public-yet /
+    implementation-detail" disclaimers from the backend docstrings (e.g.
+    `pyrcn/backend/__init__.py`).
 
 ### Phase B — gradient-based training (D9)
 - **B1 · Gradient readout solver.** Train the readout `nn.Linear` via an
