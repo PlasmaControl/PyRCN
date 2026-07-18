@@ -13,11 +13,12 @@ from ._init import (antisymmetric_recurrent_weights, bernoulli_input_weights,
                     spectral_normalize, uniform_bias_weights,
                     uniform_input_weights)
 from ._input import InputFeatureMap
+from ._readout import IncrementalRidge
 from ._reservoir import (EulerESNCell, EulerReservoir, LeakyESNCell,
                          Reservoir)
 
 __all__ = ["LeakyESNCell", "Reservoir", "EulerESNCell", "EulerReservoir",
-           "InputFeatureMap", "normal_recurrent_weights",
+           "InputFeatureMap", "IncrementalRidge", "normal_recurrent_weights",
            "antisymmetric_recurrent_weights", "simple_cycle_weights",
            "delay_line_weights", "delay_line_feedback_weights",
            "spectral_normalize", "uniform_input_weights",
