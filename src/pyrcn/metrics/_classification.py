@@ -6,34 +6,27 @@ Function named as ``*_error`` or ``*_loss`` return a scalar value to minimize:
 the lower the better.
 """
 
+from __future__ import annotations
+
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
-import sys
+from typing import Literal
 
 import numpy as np
-
-from sklearn.utils.validation import (check_consistent_length,
-                                      _deprecate_positional_args)
-import sklearn.metrics as sklearn_metrics
 from scipy.sparse import csr_matrix
-from sklearn.metrics._classification import\
-    _check_targets as sklearn_check_targets
-
-if sys.version_info >= (3, 8):
-    from typing import Tuple, Union, Optional, Dict, Literal
-else:
-    from typing_extensions import Literal
-    from typing import Tuple, Union, Optional, Dict
+import sklearn.metrics as sklearn_metrics
+from sklearn.utils.multiclass import type_of_target
+from sklearn.utils.validation import check_consistent_length
 
 
 def _check_targets(y_true: np.ndarray, y_pred: np.ndarray,
-                   sample_weight: Optional[np.ndarray] = None) \
-                       -> Tuple[Literal["multilabel-indicator",
+                   sample_weight: np.ndarray | None = None) \
+                       -> tuple[Literal["multilabel-indicator",
                                         "multiclass", "binary"],
-                                Union[np.ndarray, csr_matrix],
-                                Union[np.ndarray, csr_matrix],
-                                Union[np.ndarray, csr_matrix, None]]:
+                                np.ndarray | csr_matrix,
+                                np.ndarray | csr_matrix,
+                                np.ndarray | csr_matrix | None]:
     """
     Check that y_true and y_pred belong to the same classification task.
 
@@ -67,14 +60,13 @@ def _check_targets(y_true: np.ndarray, y_pred: np.ndarray,
         [check_consistent_length(y_t, y_p) for y_t, y_p in zip(y_true, y_pred)]
     y_true = np.concatenate(y_true)
     y_pred = np.concatenate(y_pred)
-    y_type, y_true, y_pred = sklearn_check_targets(y_true, y_pred)
+    y_type = type_of_target(y_true)
     return y_type, y_true, y_pred, sample_weight
 
 
-@_deprecate_positional_args
 def accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                    normalize: bool = True,
-                   sample_weight: Optional[np.ndarray] = None) -> float:
+                   sample_weight: np.ndarray | None = None) -> float:
     """
     Accuracy classification score.
 
@@ -124,11 +116,10 @@ def accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
                                           sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
-                     labels: Optional[np.ndarray] = None,
-                     sample_weight: Optional[np.ndarray] = None,
-                     normalize: Optional[Literal["true", "predicted"]] = None)\
+                     labels: np.ndarray | None = None,
+                     sample_weight: np.ndarray | None = None,
+                     normalize: Literal["true", "predicted"] | None = None)\
                          -> np.ndarray:
     """
     Compute confusion matrix to evaluate the accuracy of a classification.
@@ -189,10 +180,9 @@ def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
         sample_weight=sample_weight, normalize=normalize)
 
 
-@_deprecate_positional_args
 def multilabel_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
-                                sample_weight: Optional[np.ndarray] = None,
-                                labels: Optional[np.ndarray] = None,
+                                sample_weight: np.ndarray | None = None,
+                                labels: np.ndarray | None = None,
                                 samplewise: bool = False) -> np.ndarray:
     """
     Compute a confusion matrix for each class or sample.
@@ -258,11 +248,10 @@ def multilabel_confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, *,
         labels=labels, samplewise=samplewise)
 
 
-@_deprecate_positional_args
 def cohen_kappa_score(y1: np.ndarray, y2: np.ndarray, *,
-                      labels: Optional[np.ndarray] = None,
-                      weights: Optional[Literal["linear", "quadratic"]] = None,
-                      sample_weight: Optional[np.ndarray] = None) -> float:
+                      labels: np.ndarray | None = None,
+                      weights: Literal["linear", "quadratic"] | None = None,
+                      sample_weight: np.ndarray | None = None) -> float:
     r"""
     Cohen' kappa: a statistic that measures inter-annotator agreement.
 
@@ -322,15 +311,14 @@ def cohen_kappa_score(y1: np.ndarray, y2: np.ndarray, *,
                                              sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def jaccard_score(y_true: np.ndarray, y_pred: np.ndarray, *,
-                  labels: Optional[np.ndarray] = None,
-                  pos_label: Union[str, int] = 1,
-                  average: Optional[Literal['micro', 'macro', 'samples',
-                                            'weighted', 'binary']] = 'binary',
-                  sample_weight: Optional[np.ndarray] = None,
+                  labels: np.ndarray | None = None,
+                  pos_label: str | int = 1,
+                  average: None | (Literal['micro', 'macro', 'samples',
+                                   'weighted', 'binary']) = 'binary',
+                  sample_weight: np.ndarray | None = None,
                   zero_division: Literal["warn", 0, 1] = "warn")\
-        -> Union[float, np.ndarray]:
+        -> float | np.ndarray:
     """
     Jaccard similarity coefficient score.
 
@@ -419,9 +407,8 @@ def jaccard_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         zero_division=zero_division)
 
 
-@_deprecate_positional_args
 def matthews_corrcoef(y_true: np.ndarray, y_pred: np.ndarray, *,
-                      sample_weight: Optional[np.ndarray] = None,) -> float:
+                      sample_weight: np.ndarray | None = None,) -> float:
     """
     Compute the Matthews correlation coefficient (MCC).
 
@@ -479,10 +466,9 @@ def matthews_corrcoef(y_true: np.ndarray, y_pred: np.ndarray, *,
                                              sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def zero_one_loss(y_true: np.ndarray, y_pred: np.ndarray, *,
                   normalize: bool = True,
-                  sample_weight: Optional[np.ndarray] = None) -> float:
+                  sample_weight: np.ndarray | None = None) -> float:
     """
     Zero-one classification loss.
 
@@ -529,15 +515,14 @@ def zero_one_loss(y_true: np.ndarray, y_pred: np.ndarray, *,
                                          sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def f1_score(y_true: np.ndarray, y_pred: np.ndarray, *,
-             labels: Optional[np.ndarray] = None,
-             pos_label: Union[str, int] = 1,
-             average: Optional[Literal['micro', 'macro', 'samples', 'weighted',
-                                       'binary']] = 'binary',
-             sample_weight: Optional[np.ndarray] = None,
+             labels: np.ndarray | None = None,
+             pos_label: str | int = 1,
+             average: None | (Literal['micro', 'macro', 'samples', 'weighted',
+                              'binary']) = 'binary',
+             sample_weight: np.ndarray | None = None,
              zero_division: Literal["warn", 0, 1] = "warn")\
-        -> Union[float, np.ndarray]:
+        -> float | np.ndarray:
     """
     Compute the F1 score, also known as balanced F-score or F-measure.
 
@@ -632,15 +617,14 @@ def f1_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         zero_division=zero_division)
 
 
-@_deprecate_positional_args
 def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, beta: float, *,
-                labels: Optional[np.ndarray] = None,
-                pos_label: Union[str, int] = 1,
-                average: Optional[Literal['micro', 'macro', 'samples',
-                                          'weighted', 'binary']] = 'binary',
-                sample_weight: Optional[np.ndarray] = None,
+                labels: np.ndarray | None = None,
+                pos_label: str | int = 1,
+                average: None | (Literal['micro', 'macro', 'samples',
+                                 'weighted', 'binary']) = 'binary',
+                sample_weight: np.ndarray | None = None,
                 zero_division: Literal["warn", 0, 1] = "warn")\
-        -> Union[float, np.ndarray]:
+        -> float | np.ndarray:
     """
     Compute the F-beta score.
 
@@ -735,21 +719,20 @@ def fbeta_score(y_true: np.ndarray, y_pred: np.ndarray, beta: float, *,
     return f
 
 
-@_deprecate_positional_args
 def precision_recall_fscore_support(y_true: np.ndarray, y_pred: np.ndarray, *,
                                     beta: float = 1.0,
-                                    labels: Optional[np.ndarray] = None,
-                                    pos_label: Union[str, int] = 1,
-                                    average: Optional[Literal[
+                                    labels: np.ndarray | None = None,
+                                    pos_label: str | int = 1,
+                                    average: None | (Literal[
                                         'micro', 'macro', 'samples',
-                                        'weighted', 'binary']] = 'binary',
-                                    warn_for: Tuple = ('precision', 'recall',
+                                        'weighted', 'binary']) = 'binary',
+                                    warn_for: tuple = ('precision', 'recall',
                                                        'f-score'),
-                                    sample_weight: Optional[np.ndarray] = None,
+                                    sample_weight: np.ndarray | None = None,
                                     zero_division: Literal["warn",
                                                            0, 1] = "warn")\
-        -> Tuple[Union[float, np.ndarray], Union[float, np.ndarray],
-                 Union[float, np.ndarray], Optional[np.ndarray]]:
+        -> tuple[float | np.ndarray, float | np.ndarray,
+                 float | np.ndarray, np.ndarray | None]:
     """
     Compute precision, recall, F-measure and support for each class.
 
@@ -868,16 +851,15 @@ def precision_recall_fscore_support(y_true: np.ndarray, y_pred: np.ndarray, *,
         sample_weight=sample_weight, zero_division=zero_division)
 
 
-@_deprecate_positional_args
 def precision_score(y_true: np.ndarray, y_pred: np.ndarray, *,
-                    labels: Optional[np.ndarray] = None,
-                    pos_label: Union[str, int] = 1,
-                    average: Optional[Literal[
-                        'micro', 'macro', 'samples', 'weighted', 'binary']]
+                    labels: np.ndarray | None = None,
+                    pos_label: str | int = 1,
+                    average: None | (Literal[
+                        'micro', 'macro', 'samples', 'weighted', 'binary'])
                     = 'binary',
-                    sample_weight: Optional[np.ndarray] = None,
+                    sample_weight: np.ndarray | None = None,
                     zero_division: Literal["warn", 0, 1] = "warn")\
-        -> Union[float, np.ndarray]:
+        -> float | np.ndarray:
     """
     Compute the precision.
 
@@ -962,15 +944,14 @@ def precision_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     return p
 
 
-@_deprecate_positional_args
 def recall_score(y_true: np.ndarray, y_pred: np.ndarray, *,
-                 labels: Optional[np.ndarray] = None,
-                 pos_label: Union[str, int] = 1,
-                 average: Optional[Literal['micro', 'macro', 'samples',
-                                           'weighted', 'binary']] = 'binary',
-                 sample_weight: Optional[np.ndarray] = None,
+                 labels: np.ndarray | None = None,
+                 pos_label: str | int = 1,
+                 average: None | (Literal['micro', 'macro', 'samples',
+                                  'weighted', 'binary']) = 'binary',
+                 sample_weight: np.ndarray | None = None,
                  zero_division: Literal["warn", 0, 1] = "warn")\
-        -> Union[float, np.ndarray]:
+        -> float | np.ndarray:
     """
     Compute the recall.
 
@@ -1054,9 +1035,8 @@ def recall_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     return r
 
 
-@_deprecate_positional_args
 def balanced_accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
-                            sample_weight: Optional[np.ndarray] = None,
+                            sample_weight: np.ndarray | None = None,
                             adjusted: bool = False) -> float:
     """
     Compute the balanced accuracy.
@@ -1118,14 +1098,13 @@ def balanced_accuracy_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         adjusted=adjusted)
 
 
-@_deprecate_positional_args
 def classification_report(y_true: np.ndarray, y_pred: np.ndarray, *,
-                          labels: Optional[np.ndarray] = None,
-                          target_names: Optional[np.ndarray] = None,
-                          sample_weight: Optional[np.ndarray] = None,
+                          labels: np.ndarray | None = None,
+                          target_names: np.ndarray | None = None,
+                          sample_weight: np.ndarray | None = None,
                           digits: int = 2, output_dict: bool = False,
                           zero_division: Literal["warn", 0, 1] = "warn") \
-                              -> Union[str, Dict]:
+                              -> str | dict:
     """
     Build a text report showing the main classification metrics.
 
@@ -1197,9 +1176,8 @@ def classification_report(y_true: np.ndarray, y_pred: np.ndarray, *,
         zero_division=zero_division)
 
 
-@_deprecate_positional_args
 def hamming_loss(y_true: np.ndarray, y_pred: np.ndarray, *,
-                 sample_weight: Optional[np.ndarray] = None) -> float:
+                 sample_weight: np.ndarray | None = None) -> float:
     """
     Compute the average Hamming loss.
 
@@ -1259,11 +1237,10 @@ def hamming_loss(y_true: np.ndarray, y_pred: np.ndarray, *,
         y_true, y_pred, sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def log_loss(y_true: np.ndarray, y_pred: np.ndarray, *, eps: float = 1e-15,
              normalize: bool = True,
-             sample_weight: Optional[np.ndarray] = None,
-             labels: Optional[np.ndarray] = None) -> float:
+             sample_weight: np.ndarray | None = None,
+             labels: np.ndarray | None = None) -> float:
     r"""
     Log loss, aka logistic loss or cross-entropy loss.
 
@@ -1329,10 +1306,9 @@ def log_loss(y_true: np.ndarray, y_pred: np.ndarray, *, eps: float = 1e-15,
         sample_weight=sample_weight, labels=labels)
 
 
-@_deprecate_positional_args
 def hinge_loss(y_true: np.ndarray, pred_decision: np.ndarray, *,
-               labels: Optional[np.ndarray] = None,
-               sample_weight: Optional[np.ndarray] = None) -> float:
+               labels: np.ndarray | None = None,
+               sample_weight: np.ndarray | None = None) -> float:
     """
     Average hinge loss (non-regularized).
 
@@ -1388,10 +1364,9 @@ def hinge_loss(y_true: np.ndarray, pred_decision: np.ndarray, *,
         sample_weight=sample_weight)
 
 
-@_deprecate_positional_args
 def brier_score_loss(y_true: np.ndarray, y_prob: np.ndarray, *,
-                     sample_weight: Optional[np.ndarray] = None,
-                     pos_label: Optional[int] = None) -> float:
+                     sample_weight: np.ndarray | None = None,
+                     pos_label: int | None = None) -> float:
     """
     Compute the Brier score loss.
 

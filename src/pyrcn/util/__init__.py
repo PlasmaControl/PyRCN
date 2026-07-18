@@ -4,10 +4,11 @@
 # Michael Schindler <michael.schindler@maschindler.de>
 # License: BSD 3 clause
 
-from ._util import (
-    new_logger, get_mnist, argument_parser, concatenate_sequences,
-    value_to_tuple, batched)
+from __future__ import annotations
+
 from ._feature_extractor import FeatureExtractor
+from ._util import (argument_parser, batched, concatenate_sequences, get_mnist,
+                    new_logger, value_to_tuple)
 
 __all__ = ('new_logger', 'get_mnist', 'argument_parser', 'FeatureExtractor',
            'concatenate_sequences', 'value_to_tuple', 'batched')

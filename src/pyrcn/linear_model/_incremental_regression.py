@@ -6,17 +6,17 @@
 from __future__ import annotations
 
 import sys
-from typing import Union, cast
+from typing import cast
 
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.utils.validation import _deprecate_positional_args
-from sklearn.utils.extmath import safe_sparse_dot
-from sklearn.preprocessing import StandardScaler
 from sklearn.exceptions import NotFittedError
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils.extmath import safe_sparse_dot
+from sklearn.utils.validation import validate_data
 
 
-class IncrementalRegression(BaseEstimator, RegressorMixin):
+class IncrementalRegression(RegressorMixin, BaseEstimator):
     """
     Linear regression.
 
@@ -50,7 +50,6 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         ``fit_intercept = False``.
     """
 
-    @_deprecate_positional_args
     def __init__(self, *, alpha: float = 1e-5,
                  fit_intercept: bool = True,
                  normalize: bool = False):
@@ -91,7 +90,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
         self : returns a partially fitted IncrementalRegression model
         """
         if validate:
-            self._validate_data(X, y, multi_output=True)
+            validate_data(self, X, y, multi_output=True)
 
         X_preprocessed = self._preprocessing(
             X, partial_normalize=partial_normalize)
@@ -217,7 +216,7 @@ class IncrementalRegression(BaseEstimator, RegressorMixin):
             self._output_weights.nbytes + sys.getsizeof(self.scaler)
 
     @property
-    def coef_(self) -> Union[np.ndarray, None]:
+    def coef_(self) -> np.ndarray | None:
         """
         Return the output weights without intercept.
 

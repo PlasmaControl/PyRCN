@@ -1,11 +1,13 @@
 """Testing for blocks.input_to_node module."""
-import scipy
+from __future__ import annotations
+
 import numpy as np
 import pytest
+import scipy
 from sklearn.utils.extmath import safe_sparse_dot
 
-from pyrcn.base.blocks import (InputToNode, PredefinedWeightsInputToNode,
-                               BatchIntrinsicPlasticity)
+from pyrcn.base.blocks import (BatchIntrinsicPlasticity, InputToNode,
+                               PredefinedWeightsInputToNode)
 
 
 def test_input_to_node_invalid_bias_scaling() -> None:

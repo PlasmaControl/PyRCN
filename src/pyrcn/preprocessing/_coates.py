@@ -5,26 +5,22 @@
 
 from __future__ import annotations
 
-import sys
+from collections.abc import Callable
+from typing import Literal
+
 import numpy as np
-
-from sklearn.base import BaseEstimator, TransformerMixin, ClusterMixin
-from sklearn.utils import check_random_state
-from sklearn.exceptions import NotFittedError
+from sklearn.base import (BaseEstimator, ClusterMixin, TransformerMixin,
+                          is_clusterer)
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from sklearn.exceptions import NotFittedError
 from sklearn.feature_extraction.image import PatchExtractor
-
-if sys.version_info >= (3, 8):
-    from typing import Union, Callable, Dict, Tuple, Literal
-else:
-    from typing_extensions import Literal
-    from typing import Union, Callable, Dict, Tuple
+from sklearn.preprocessing import StandardScaler
+from sklearn.utils import check_random_state
 
 
-def inplace_pool_max(X: np.ndarray, axis: Union[None, int, np.integer] = None)\
-        -> Union[float, np.ndarray]:
+def inplace_pool_max(X: np.ndarray, axis: int | None = None)\
+        -> float | np.ndarray:
     """
     Apply max-Pooling on an array.
 
@@ -45,8 +41,8 @@ def inplace_pool_max(X: np.ndarray, axis: Union[None, int, np.integer] = None)\
     return np.max(X, axis=axis)
 
 
-def inplace_pool_min(X: np.ndarray, axis: Union[None, int, np.integer] = None)\
-        -> Union[float, np.ndarray]:
+def inplace_pool_min(X: np.ndarray, axis: int | None = None)\
+        -> float | np.ndarray:
     """
     Apply min-Pooling on an array.
 
@@ -68,8 +64,8 @@ def inplace_pool_min(X: np.ndarray, axis: Union[None, int, np.integer] = None)\
 
 
 def inplace_pool_average(X: np.ndarray,
-                         axis: Union[None, int, np.integer] = None)\
-        -> Union[float, np.ndarray]:
+                         axis: int | None = None)\
+        -> float | np.ndarray:
     """
     Apply average-Pooling on an array.
 
@@ -111,13 +107,13 @@ def inplace_pool_mean(X: np.ndarray, axis: None = None) -> np.number:
     return np.mean(X, axis=axis)
 
 
-POOLINGS: Dict[str, Callable] = {'max': inplace_pool_max,
+POOLINGS: dict[str, Callable] = {'max': inplace_pool_max,
                                  'min': inplace_pool_min,
                                  'average': inplace_pool_average,
                                  'mean': inplace_pool_mean}
 
 
-class Coates(BaseEstimator, TransformerMixin):
+class Coates(TransformerMixin, BaseEstimator):
     """
     Coates Preprocessing.
 
@@ -135,15 +131,15 @@ class Coates(BaseEstimator, TransformerMixin):
     random_state : Union[None, int, np.random.RandomState], default=None
     """
 
-    def __init__(self, image_size: Tuple = (), patch_size: Tuple = (),
-                 stride_size: Tuple = (),
-                 n_patches: Union[int, np.integer] = 200,
+    def __init__(self, image_size: tuple = (), patch_size: tuple = (),
+                 stride_size: tuple = (),
+                 n_patches: int | np.integer = 200,
                  normalize: bool = True, whiten: bool = True,
-                 clusterer: ClusterMixin = KMeans(),
+                 clusterer: ClusterMixin | None = None,
                  pooling_func: Literal['max', 'min',
                                        'average', 'mean'] = 'max',
-                 pooling_size: Tuple = (),
-                 random_state: Union[None, int, np.random.RandomState] = None):
+                 pooling_size: tuple = (),
+                 random_state: None | int | np.random.RandomState = None):
         """Construct the Coates."""
         self.image_size = image_size
         self.patch_size = patch_size
@@ -154,7 +150,7 @@ class Coates(BaseEstimator, TransformerMixin):
         self.clusterer = clusterer
         self.pooling_func = pooling_func
         self.pooling_size = pooling_size
-        self.random_state = check_random_state(random_state)
+        self.random_state = random_state
         self._normalizer = StandardScaler()
         self._whitener = PCA(whiten=True)
 
@@ -172,6 +168,8 @@ class Coates(BaseEstimator, TransformerMixin):
         -------
         self : returns a trained Coates.
         """
+        if self.clusterer is None:
+            self.clusterer = KMeans()
         self._validate_hyperparameters()
         self.clusterer.fit(self._preprocessing(Coates._extract_random_patches(
             X, image_size=self.image_size, patch_size=self.patch_size,
@@ -192,6 +190,7 @@ class Coates(BaseEstimator, TransformerMixin):
         -------
         features : returns the transformed features.
         """
+        assert self.clusterer is not None
         # patches[#samples][#patches][#features]
         patches = Coates._extract_equidistant_patches(
             X, image_size=self.image_size, patch_size=self.patch_size,
@@ -223,6 +222,7 @@ class Coates(BaseEstimator, TransformerMixin):
         -------
         patches : returns the original features.
         """
+        assert self.clusterer is not None
         patch_array = Coates._reshape_arrays_to_images(X, image_size=(
             int(X.shape[-1] / self.clusterer.cluster_centers_.shape[0]),
             self.clusterer.cluster_centers_.shape[0]))
@@ -242,23 +242,23 @@ class Coates(BaseEstimator, TransformerMixin):
 
         """
         if len(self.patch_size) not in {2, 3}:
-            raise ValueError('patch_size has invalid format, got {0}'
+            raise ValueError('patch_size has invalid format, got {}'
                              .format(self.patch_size))
 
         if len(self.stride_size) != len(self.patch_size):
-            print('stride_size has invalid format, got {0}. '
+            print('stride_size has invalid format, got {}. '
                   'Set stride_size = patch_size '.format(self.stride_size))
             self.stride_size = self.patch_size
 
         if any(stride < patch for stride, patch in zip(self.stride_size,
                                                        self.patch_size)):
             raise ValueError('stride_size must be greater or equal than '
-                             'patch_size, got stride_size = {0}, patch_size '
-                             '= {1}'.format(self.stride_size, self.patch_size))
+                             'patch_size, got stride_size = {}, patch_size '
+                             '= {}'.format(self.stride_size, self.patch_size))
 
         if self.pooling_func not in POOLINGS:
-            raise ValueError("The pooling_func '{0}' is not supported. "
-                             "Supported activations are {1}."
+            raise ValueError("The pooling_func '{}' is not supported. "
+                             "Supported activations are {}."
                              .format(self.pooling_func, POOLINGS))
 
         if any(patches < pool for patches, pool in
@@ -266,16 +266,16 @@ class Coates(BaseEstimator, TransformerMixin):
                                              self.stride_size),
                    self.pooling_size)):
             raise ValueError('#patches must be greater or equal than pooling_'
-                             'size, got patch_size = {0}, pooling_size = {1}'
+                             'size, got patch_size = {}, pooling_size = {}'
                              .format(self.patch_size, self.pooling_size))
 
-        if getattr(self.clusterer, "_estimator_type", None) != "clusterer":
-            raise TypeError('clusterer must be of type clusterer, got {0}'
+        if not is_clusterer(self.clusterer):
+            raise TypeError('clusterer must be of type clusterer, got {}'
                             .format(self.clusterer))
 
     @staticmethod
     def _reshape_arrays_to_images(X: np.ndarray,
-                                  image_size: Tuple) -> np.ndarray:
+                                  image_size: tuple) -> np.ndarray:
         """
         Reshape an array to image.
 
@@ -295,7 +295,7 @@ class Coates(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _reshape_images_to_arrays(X: np.ndarray,
-                                  image_size: Tuple) -> np.ndarray:
+                                  image_size: tuple) -> np.ndarray:
         """
         Reshape an image to array.
 
@@ -314,7 +314,7 @@ class Coates(BaseEstimator, TransformerMixin):
         return X.reshape(index_dimensions + (int(np.prod(image_size)), ))
 
     @staticmethod
-    def _patches_per_image(image_size: Tuple, stride_size: Tuple) -> Tuple:
+    def _patches_per_image(image_size: tuple, stride_size: tuple) -> tuple:
         """
         Compute tuple strides fitting in image.
 
@@ -332,11 +332,10 @@ class Coates(BaseEstimator, TransformerMixin):
         return image_size[0] // stride_size[0], image_size[1] // stride_size[1]
 
     @staticmethod
-    def _extract_random_patches(X: np.ndarray, image_size: Tuple,
-                                patch_size: Tuple,
-                                n_patches: Union[int, np.integer],
-                                random_state: Union[
-                                    None, int, np.random.RandomState] = None)\
+    def _extract_random_patches(
+            X: np.ndarray, image_size: tuple, patch_size: tuple,
+            n_patches: int | np.integer,
+            random_state: None | int | np.random.RandomState = None)\
             -> np.ndarray:
         """
         Extract random patches from image array.
@@ -368,9 +367,9 @@ class Coates(BaseEstimator, TransformerMixin):
         return Coates._reshape_images_to_arrays(random_patches, patch_size)
 
     @staticmethod
-    def _extract_equidistant_patches(X: np.ndarray, image_size: Tuple,
-                                     patch_size: Tuple,
-                                     stride_size: Tuple) -> np.ndarray:
+    def _extract_equidistant_patches(X: np.ndarray, image_size: tuple,
+                                     patch_size: tuple,
+                                     stride_size: tuple) -> np.ndarray:
         """
         Extract equidistant patches from image array.
 
@@ -465,6 +464,7 @@ class Coates(BaseEstimator, TransformerMixin):
         nm_patches = Coates._patches_per_image(image_size=self.image_size,
                                                stride_size=self.stride_size)
 
+        assert self.clusterer is not None
         # feature_pools[#samples][#features][#pools][#pool_features]
         feature_pools = Coates._extract_equidistant_patches(
             np.transpose(X, axes=(0, 2, 1)),

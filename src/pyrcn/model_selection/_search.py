@@ -6,17 +6,16 @@
 
 from __future__ import annotations
 
-from sklearn.base import BaseEstimator, is_classifier, clone
-from sklearn.model_selection._search import BaseSearchCV
-from sklearn.utils.validation import indexable, _check_method_params
-from sklearn.model_selection._split import check_cv
+from collections.abc import Callable, Iterable
+import time
+from typing import Any
 
 import numpy as np
-import time
 from scipy import optimize
-from collections.abc import Iterable
-
-from typing import Union, Optional, Callable, Dict, Any, List, Tuple
+from sklearn.base import BaseEstimator, clone, is_classifier
+from sklearn.model_selection._search import BaseSearchCV
+from sklearn.model_selection._split import check_cv
+from sklearn.utils.validation import _check_method_params, indexable
 
 
 class SequentialSearchCV(BaseSearchCV):
@@ -112,15 +111,15 @@ class SequentialSearchCV(BaseSearchCV):
 
     def __init__(self, estimator: BaseEstimator,
                  searches: list,
-                 scoring: Union[str, Callable, list, tuple, dict, None] = None,
-                 n_jobs: Union[int, np.integer, None] = None,
+                 scoring: str | Callable | list | tuple | dict | None = None,
+                 n_jobs: int | np.integer | None = None,
                  refit: bool = True,
-                 cv: Union[int, np.integer, Iterable, None] = None,
-                 verbose: Union[int, np.integer] = 0,
-                 pre_dispatch: Union[int, np.integer, str] = '2*n_jobs',
-                 error_score: Union[int, float] = np.nan) -> None:
+                 cv: int | np.integer | Iterable | None = None,
+                 verbose: int | np.integer = 0,
+                 pre_dispatch: int | np.integer | str = '2*n_jobs',
+                 error_score: int | float = np.nan) -> None:
         """Construct the SequentialSearchCV."""
-        self.estimator: Optional[BaseEstimator] = None
+        self.estimator: BaseEstimator | None = None
         super().__init__(
             estimator, scoring=scoring, n_jobs=n_jobs, refit=refit, cv=cv,
             verbose=verbose, pre_dispatch=pre_dispatch,
@@ -137,8 +136,8 @@ class SequentialSearchCV(BaseSearchCV):
         """
         evaluate_candidates(self.searches)
 
-    def fit(self, X: np.ndarray, y: Optional[np.ndarray], *,
-            groups: Optional[np.ndarray] = None, **fit_params: Any)\
+    def fit(self, X: np.ndarray, y: np.ndarray | None, *,
+            groups: np.ndarray | None = None, **fit_params: Any)\
             -> SequentialSearchCV:
         """
         Run fit with all sets of parameters.
@@ -158,15 +157,15 @@ class SequentialSearchCV(BaseSearchCV):
             Parameters passed to the ```fit``` method of the estimator.
         """
         def evaluate_candidates(searches: list) -> None:
-            self.all_cv_results_: Dict[str, dict] = {}
-            self.all_best_estimator_: Dict[str, BaseEstimator] = {}
-            self.all_best_score_: Dict[str, Any] = {}
-            self.all_best_params_: Dict[str, dict] = {}
-            self.all_best_index_: Dict[str, int] = {}
-            self.all_scorer_: Dict[str, Any] = {}
-            self.all_n_splits_: Dict[str, int] = {}
-            self.all_refit_time_: Dict[str, float] = {}
-            self.all_multimetric_: Dict[str, bool] = {}
+            self.all_cv_results_: dict[str, dict] = {}
+            self.all_best_estimator_: dict[str, BaseEstimator] = {}
+            self.all_best_score_: dict[str, Any] = {}
+            self.all_best_params_: dict[str, dict] = {}
+            self.all_best_index_: dict[str, int] = {}
+            self.all_scorer_: dict[str, Any] = {}
+            self.all_n_splits_: dict[str, int] = {}
+            self.all_refit_time_: dict[str, float] = {}
+            self.all_multimetric_: dict[str, bool] = {}
             for name, search, params, *kwargs in searches:
                 if len(kwargs) == 1 and 'refit' in kwargs[0].keys():
                     result = search(
@@ -293,7 +292,7 @@ class SequentialSearchCV(BaseSearchCV):
         return {}
 
     @property
-    def best_index_(self) -> Union[int, np.integer]:
+    def best_index_(self) -> int | np.integer:
         """
         The index (of the cv_results_ arrays) which corresponds to the best
         candidate.
@@ -314,7 +313,7 @@ class SequentialSearchCV(BaseSearchCV):
         return 0
 
     @property
-    def scorer_(self) -> Dict:
+    def scorer_(self) -> dict:
         """
         Scorer function used on the held out data.
 
@@ -330,7 +329,7 @@ class SequentialSearchCV(BaseSearchCV):
         return self.all_scorer_[self.searches[-1][0]]
 
     @property
-    def n_splits_(self) -> Union[int, np.integer]:
+    def n_splits_(self) -> int | np.integer:
         """
         The number of cross-validation splits (folds/iterations).
 
@@ -467,10 +466,10 @@ class SHGOSearchCV(BaseSearchCV):
     GridSearchCV : Does exhaustive search over a grid of parameters.
     """
 
-    def __init__(self, estimator: BaseEstimator, func: Callable, params: Dict,
-                 *, args: Tuple = (),
-                 constraints: Union[Dict, List, None] = None,
-                 refit: bool = True, cv: Optional[int] = None,
+    def __init__(self, estimator: BaseEstimator, func: Callable, params: dict,
+                 *, args: tuple = (),
+                 constraints: dict | list | None = None,
+                 refit: bool = True, cv: int | None = None,
                  return_train_score: bool = False) -> None:
         super().__init__(estimator=estimator, refit=refit, cv=cv,
                          return_train_score=return_train_score)
@@ -479,8 +478,8 @@ class SHGOSearchCV(BaseSearchCV):
         self.args = args
         self.constraints = constraints
 
-    def fit(self, X: np.ndarray, y: Optional[np.ndarray] = None, *,
-            groups: Optional[np.ndarray] = None,
+    def fit(self, X: np.ndarray, y: np.ndarray | None = None, *,
+            groups: np.ndarray | None = None,
             **fit_params: dict) -> SHGOSearchCV:
         """
         Run the optimization based on the parameters defined before.

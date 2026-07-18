@@ -3,7 +3,8 @@
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>,
 # License: BSD 3 clause
 
-from ._value_projection import MatrixToValueProjection
+from __future__ import annotations
 
+from ._value_projection import MatrixToValueProjection
 
 __all__ = ('MatrixToValueProjection',)

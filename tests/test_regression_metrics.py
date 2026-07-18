@@ -1,11 +1,13 @@
 """Testing for Metrics module."""
 
-import pyrcn.metrics
-import sklearn.metrics
-from sklearn.datasets import make_regression
+from __future__ import annotations
+
 import numpy as np
 import pytest
+import sklearn.metrics
+from sklearn.datasets import make_regression
 
+import pyrcn.metrics
 
 rng_true = np.random.RandomState(42)
 rng_pred = np.random.RandomState(1234)

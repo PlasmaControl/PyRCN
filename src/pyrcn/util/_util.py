@@ -4,20 +4,19 @@
 # Michael Schindler <michael.schindler@maschindler.de>
 # License: BSD 3 clause
 
-import sys
-from typing import Union, Tuple, Iterable
+from __future__ import annotations
 
-import random
-import os
-import torch
-import logging
 import argparse
-import numpy as np
+from collections.abc import Iterable, Iterator
 from itertools import islice
+import logging
+import os
+import random
+import sys
 
-from sklearn.utils import check_X_y, check_consistent_length
+import numpy as np
 from sklearn.datasets import fetch_openml
-
+from sklearn.utils import check_consistent_length, check_X_y
 
 argument_parser = argparse.ArgumentParser(
     description='Standard input parser for HPC on PyRCN.')
@@ -33,7 +32,7 @@ logging.basicConfig(
 )
 
 
-def batched(iterable: Iterable, n: int) -> Tuple:
+def batched(iterable: Iterable, n: int) -> Iterator[tuple]:
     """
     Iterate over batches of size n.
 
@@ -64,9 +63,8 @@ def batched(iterable: Iterable, n: int) -> Tuple:
         yield batch
 
 
-def value_to_tuple(value: Union[float, int],
-                   size: Union[float, int, Tuple[Union[float, int], ...]]) \
-        -> Tuple[Union[float, int], ...]:
+def value_to_tuple(value: float | int | tuple[float | int, ...],
+                   size: int) -> tuple[float | int, ...]:
     """
     Convert a value to a tuple of values.
 
@@ -82,10 +80,9 @@ def value_to_tuple(value: Union[float, int],
     value : Tuple[Union[float, int], ...]
         Tuple of values.
     """
-    if isinstance(value, float) or isinstance(value, int):
+    if isinstance(value, (float, int)):
         return (value, ) * size
-    elif isinstance(value, Tuple):
-        return value
+    return value
 
 
 def seed_everything(seed: int = 42) -> None:
@@ -100,10 +97,6 @@ def seed_everything(seed: int = 42) -> None:
     random.seed(seed)
     os.environ['PYTHONHASHSEED'] = str(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
 
 
 def new_logger(name: str, directory: str = os.getcwd()) -> logging.Logger:
@@ -113,13 +106,13 @@ def new_logger(name: str, directory: str = os.getcwd()) -> logging.Logger:
     formatter = logging.Formatter(
         fmt='%(asctime)s %(levelname)s %(name)s %(message)s')
     handler = logging.FileHandler(
-        os.path.join(directory, '{0}.log'.format(name)))
+        os.path.join(directory, f'{name}.log'))
     handler.setFormatter(formatter)
     logger.addHandler(handler)
     return logger
 
 
-def get_mnist(directory: str = os.getcwd()) -> Tuple[np.ndarray, np.ndarray]:
+def get_mnist(directory: str = os.getcwd()) -> tuple[np.ndarray, np.ndarray]:
     """Load the MNIST dataset from harddisk."""
     npzfilepath = os.path.join(directory, 'MNIST.npz')
 
@@ -135,10 +128,10 @@ def get_mnist(directory: str = os.getcwd()) -> Tuple[np.ndarray, np.ndarray]:
         return X, y
 
 
-def concatenate_sequences(X: Union[list, np.ndarray],
-                          y: Union[list, np.ndarray],
+def concatenate_sequences(X: list | np.ndarray,
+                          y: list | np.ndarray,
                           sequence_to_value: bool = False)\
-        -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
     Concatenate multiple sequences to scikit-learn compatible numpy arrays.
 

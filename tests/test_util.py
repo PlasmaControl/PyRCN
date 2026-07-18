@@ -1,7 +1,11 @@
 """Testing for pyrcn.utils module"""
+from __future__ import annotations
+
 import os
+
 import pytest
-from pyrcn.util import new_logger, argument_parser, get_mnist
+
+from pyrcn.util import argument_parser, get_mnist, new_logger
 
 
 def test_new_logger() -> None:

@@ -5,15 +5,15 @@
 
 from __future__ import annotations
 
-from typing import Union, Any
+from typing import Any
+
+import numpy as np
 import scipy
 import scipy.stats
-import numpy as np
-
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
-class NormalDistribution(BaseEstimator, TransformerMixin):
+class NormalDistribution(TransformerMixin, BaseEstimator):
     """
     Transform an input distribution to a normal distribution.
 
@@ -23,7 +23,7 @@ class NormalDistribution(BaseEstimator, TransformerMixin):
         Defining number of random variates
     """
 
-    def __init__(self, size: Union[int, np.integer] = 1):
+    def __init__(self, size: int | np.integer = 1):
         """Construct the NormalDistribution."""
         self._transformer = scipy.stats.norm
         self._mean = 0

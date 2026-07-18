@@ -8,26 +8,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.9, 3.11, 3.12]  # 3
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+      - name: Install package with test dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest flake8 pytest-flake8-v2 mypy pytest-mypy pytest-cov \
-          types-setuptools
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install -e .[test]
       - name: Lint with flake8
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --exit-zero --show-source --statistics  # --max-complexity=10
+        run: flake8 src/pyrcn tests
+      - name: Type-check with mypy
+        run: mypy src/pyrcn
       - name: Test with pytest
-        run: |
-          pytest
+        run: pytest --cov=src/pyrcn --cov-branch --cov-report=xml --cov-report=term-missing
       - name: Test installed PyRCN
         run: |
           pip install .

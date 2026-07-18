@@ -1,19 +1,19 @@
 """Testing for Extreme Learning Machine module."""
 
+from __future__ import annotations
+
 import numpy as np
 import pytest
-from sklearn.datasets import load_iris, load_digits
-from sklearn.model_selection import train_test_split
-from sklearn.model_selection import GridSearchCV
-from sklearn.pipeline import FeatureUnion
-from sklearn.linear_model import Ridge
-from sklearn.exceptions import NotFittedError
 from sklearn.base import clone
+from sklearn.datasets import load_digits, load_iris
+from sklearn.exceptions import NotFittedError
+from sklearn.linear_model import Ridge
+from sklearn.model_selection import GridSearchCV, train_test_split
+from sklearn.pipeline import FeatureUnion
 
 from pyrcn.base.blocks import InputToNode
-from pyrcn.linear_model import IncrementalRegression
 from pyrcn.extreme_learning_machine import ELMClassifier, ELMRegressor
-
+from pyrcn.linear_model import IncrementalRegression
 
 X_iris, y_iris = load_iris(return_X_y=True)
 
@@ -64,9 +64,9 @@ def test_elm_regressor_jobs() -> None:
     elm = GridSearchCV(ELMRegressor(), param_grid)
     elm.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
     y_elm = elm.predict(X_test.reshape(-1, 1))
-    print("tests - elm:\n sin | cos \n {0}".format(y_test-y_elm))
-    print("best_params_: {0}".format(elm.best_params_))
-    print("best_score: {0}".format(elm.best_score_))
+    print(f"tests - elm:\n sin | cos \n {y_test-y_elm}")
+    print(f"best_params_: {elm.best_params_}")
+    print(f"best_score: {elm.best_score_}")
     np.testing.assert_allclose(y_test, y_elm, atol=1e-1)
 
 
@@ -89,15 +89,15 @@ def test_elm_regressor_chunk() -> None:
     elm = GridSearchCV(ELMRegressor(), param_grid)
     elm.fit(X_train.reshape(-1, 1), y_train, n_jobs=2)
     y_elm = elm.predict(X_test.reshape(-1, 1))
-    print("tests - elm:\n sin | cos \n {0}".format(y_test-y_elm))
-    print("best_params_: {0}".format(elm.best_params_))
-    print("best_score: {0}".format(elm.best_score_))
+    print(f"tests - elm:\n sin | cos \n {y_test-y_elm}")
+    print(f"best_params_: {elm.best_params_}")
+    print(f"best_score: {elm.best_score_}")
     np.testing.assert_allclose(y_test, y_elm, atol=1e-1)
     elm.fit(X_train.reshape(-1, 1), y_train)
     y_elm = elm.predict(X_test.reshape(-1, 1))
-    print("tests - elm:\n sin | cos \n {0}".format(y_test-y_elm))
-    print("best_params_: {0}".format(elm.best_params_))
-    print("best_score: {0}".format(elm.best_score_))
+    print(f"tests - elm:\n sin | cos \n {y_test-y_elm}")
+    print(f"best_params_: {elm.best_params_}")
+    print(f"best_score: {elm.best_score_}")
     np.testing.assert_allclose(y_test, y_elm, atol=1e-1)
     with pytest.raises(ValueError):
         elm = clone(elm.best_estimator_).set_params(chunk_size=-1)
@@ -130,12 +130,12 @@ def test_iris_ensemble_iterative_regression() -> None:
     y_predicted = cls.predict(X_test)
 
     for record in range(len(y_test)):
-        print('predicted: {0} \ttrue: {1}'
+        print('predicted: {} \ttrue: {}'
               .format(y_predicted[record], y_test[record]))
 
-    print('score: {0}'.format(cls.score(X_test, y_test)))
-    print('proba: {0}'.format(cls.predict_proba(X_test)))
-    print('log_proba: {0}'.format(cls.predict_log_proba(X_test)))
+    print(f'score: {cls.score(X_test, y_test)}')
+    print(f'proba: {cls.predict_proba(X_test)}')
+    print(f'log_proba: {cls.predict_log_proba(X_test)}')
     assert cls.score(X_test, y_test) >= 4./5.
 
 

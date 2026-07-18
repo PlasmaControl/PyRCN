@@ -3,22 +3,17 @@
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
-import sys
+from __future__ import annotations
 
 import numpy as np
 import scipy
-from scipy.sparse.linalg import eigs as eigens
 from scipy.sparse.linalg import ArpackNoConvergence
-
-if sys.version_info >= (3, 8):
-    from typing import Union
-else:
-    from typing import Union
+from scipy.sparse.linalg import eigs as eigens
 
 
 def _antisymmetric_weights(
-        weights: Union[np.ndarray, scipy.sparse.csr_matrix]) \
-        -> Union[np.ndarray, scipy.sparse.csr_matrix]:
+        weights: np.ndarray | scipy.sparse.csr_matrix) \
+        -> np.ndarray | scipy.sparse.csr_matrix:
     """
     Transform a given weight matrix to get antisymmetric, e.g., compute
     weights - weights.T
@@ -39,9 +34,9 @@ def _antisymmetric_weights(
 
 
 def _unitary_spectral_radius(
-        weights: Union[np.ndarray, scipy.sparse.csr_matrix],
+        weights: np.ndarray | scipy.sparse.csr_matrix,
         random_state: np.random.RandomState) \
-        -> Union[np.ndarray, scipy.sparse.csr_matrix]:
+        -> np.ndarray | scipy.sparse.csr_matrix:
     """
     Normalize a given weight matrix to the unitary spectral radius, e.g.,
     the maximum absolute eigenvalue.
@@ -94,7 +89,7 @@ def _make_sparse(k_in: int, dense_weights: np.ndarray,
 
     for neuron in range(n_outputs):
         all_indices = np.arange(n_inputs)
-        keep_indices = np.random.choice(n_inputs, k_in, replace=False)
+        keep_indices = random_state.choice(n_inputs, k_in, replace=False)
         zero_indices = np.setdiff1d(all_indices, keep_indices)
         dense_weights[zero_indices, neuron] = 0
 
@@ -104,7 +99,7 @@ def _make_sparse(k_in: int, dense_weights: np.ndarray,
 def _normal_random_weights(
         n_inputs: int, n_outputs: int, k_in: int,
         random_state: np.random.RandomState) \
-        -> Union[np.ndarray, scipy.sparse.csr_matrix]:
+        -> np.ndarray | scipy.sparse.csr_matrix:
     """
     Sparse or dense normal random weights.
 
@@ -136,7 +131,7 @@ def _normal_random_weights(
 def _uniform_random_weights(
         n_inputs: int, n_outputs: int, k_in: int,
         random_state: np.random.RandomState) \
-        -> Union[np.ndarray, scipy.sparse.csr_matrix]:
+        -> np.ndarray | scipy.sparse.csr_matrix:
     """
     Sparse or dense uniform random weights in range [-1, 1].
 
@@ -168,7 +163,7 @@ def _uniform_random_weights(
 def _uniform_random_input_weights(
         n_features_in: int, hidden_layer_size: int, fan_in: int,
         random_state: np.random.RandomState) \
-        -> Union[np.ndarray, scipy.sparse.csr_matrix]:
+        -> np.ndarray | scipy.sparse.csr_matrix:
     """
     Return uniform random input weights in range [-1, 1].
 
@@ -216,7 +211,7 @@ def _uniform_random_bias(
 def _uniform_random_recurrent_weights(
         hidden_layer_size: int, fan_in: int,
         random_state: np.random.RandomState) \
-        -> Union[np.ndarray, scipy.sparse.csr_matrix]:
+        -> np.ndarray | scipy.sparse.csr_matrix:
     """
     Return uniformly distributed random reservoir weights.
 
@@ -241,7 +236,7 @@ def _uniform_random_recurrent_weights(
 def _normal_random_recurrent_weights(
         hidden_layer_size: int, fan_in: int,
         random_state: np.random.RandomState) \
-        -> Union[np.ndarray, scipy.sparse.csr_matrix]:
+        -> np.ndarray | scipy.sparse.csr_matrix:
     """
     Return normally distributed random reservoir weights.
 

@@ -6,24 +6,21 @@
 from __future__ import annotations
 
 import sys
-
-from scipy.sparse.csr import csr_matrix
-from scipy.sparse import issparse
+from typing import Literal
 
 import numpy as np
-from sklearn.utils.validation import _deprecate_positional_args
+from scipy.sparse import csr_matrix, issparse
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.exceptions import NotFittedError
 from sklearn.utils import check_random_state, deprecated
 from sklearn.utils.extmath import safe_sparse_dot
-from sklearn.exceptions import NotFittedError
+from sklearn.utils.validation import validate_data
 
 from ...base import (ACTIVATIONS, _normal_random_recurrent_weights,
                      _uniform_random_recurrent_weights)
 
-from typing import Union, Literal, Optional
 
-
-class NodeToNode(BaseEstimator, TransformerMixin):
+class NodeToNode(TransformerMixin, BaseEstimator):
     """
     NodeToNode class for reservoir computing modules.
 
@@ -63,7 +60,6 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         A set of predefined recurrent weights.
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500, sparsity: float = 1.,
                  reservoir_activation: Literal['tanh', 'identity',
@@ -71,9 +67,9 @@ class NodeToNode(BaseEstimator, TransformerMixin):
                                                'bounded_relu'] = 'tanh',
                  spectral_radius: float = 1., leakage: float = 1.,
                  bidirectional: bool = False,
-                 k_rec: Union[int, np.integer, None] = None,
-                 random_state: Union[int, np.random.RandomState, None] = 42,
-                 predefined_recurrent_weights: Optional[np.ndarray] = None
+                 k_rec: int | np.integer | None = None,
+                 random_state: int | np.random.RandomState | None = 42,
+                 predefined_recurrent_weights: np.ndarray | None = None
                  ) -> None:
         """Construct the NodeToNode."""
         self.hidden_layer_size = hidden_layer_size
@@ -105,8 +101,7 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self : returns a trained NodeToNode.
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y)
-        self._check_n_features(X, reset=True)
+        validate_data(self, X)
 
         if self.k_rec is not None:
             self.sparsity = float(self.k_rec) / float(X.shape[1])
@@ -182,27 +177,28 @@ class NodeToNode(BaseEstimator, TransformerMixin):
         self._random_state = check_random_state(self.random_state)
 
         if self.hidden_layer_size <= 0:
-            raise ValueError("hidden_layer_size must be > 0, got {0}%s."
-                             .format(self.hidden_layer_size))
+            raise ValueError(
+                "hidden_layer_size must be > 0, "
+                f"got {self.hidden_layer_size}")
         if self.sparsity <= 0. or self.sparsity > 1.:
-            raise ValueError("sparsity must be between 0. and 1., got {0}."
+            raise ValueError("sparsity must be between 0. and 1., got {}."
                              .format(self.sparsity))
         if self.reservoir_activation not in ACTIVATIONS:
-            raise ValueError("The activation_function {0} is not supported. "
-                             "Supported activations are {1}."
+            raise ValueError("The activation_function {} is not supported. "
+                             "Supported activations are {}."
                              .format(self.reservoir_activation, ACTIVATIONS))
         if self.spectral_radius < 0.:
-            raise ValueError("spectral_radius must be >= 0, got {0}."
+            raise ValueError("spectral_radius must be >= 0, got {}."
                              .format(self.spectral_radius))
         if self.leakage <= 0. or self.leakage > 1.:
-            raise ValueError("leakage must be between 0. and 1., got {0}."
+            raise ValueError("leakage must be between 0. and 1., got {}."
                              .format(self.leakage))
         if self.bidirectional not in [False, True]:
             raise ValueError("bidirectional must be either False or True,"
-                             "got {0}.".format(self.bidirectional))
+                             "got {}.".format(self.bidirectional))
         if self.k_rec is not None and (
                 self.k_rec <= 0 or self.k_rec >= self.hidden_layer_size):
-            raise ValueError("k_rec must be > 0, got {0}.".format(self.k_rec))
+            raise ValueError(f"k_rec must be > 0, got {self.k_rec}.")
 
     def __sizeof__(self) -> int:
         """
@@ -222,13 +218,13 @@ class NodeToNode(BaseEstimator, TransformerMixin):
                 sys.getsizeof(self.random_state)
 
     @property
-    def recurrent_weights(self) -> Union[np.ndarray, csr_matrix]:
+    def recurrent_weights(self) -> np.ndarray | csr_matrix:
         """
         Return the recurrent weights.
 
         Returns
         -------
-        recurrent_weights : Union[np.ndarray, scipy.sparse.csr.csr_matrix]
+        recurrent_weights : Union[np.ndarray, scipy.sparse.csr_matrix]
         of size (hidden_layer_size, hidden_layer_size)
         """
         return self._recurrent_weights
@@ -271,7 +267,6 @@ class EulerNodeToNode(NodeToNode):
     random_state : Union[int, np.random.RandomState, None], default = 42
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500,
                  sparsity: float = 1.,
@@ -281,9 +276,9 @@ class EulerNodeToNode(NodeToNode):
                  recurrent_scaling: float = 1.,
                  gamma: float = 0.001,
                  epsilon: float = 0.01,
-                 k_rec: Union[int, np.integer, None] = None,
-                 random_state: Union[int, np.random.RandomState,
-                                     None] = 42) -> None:
+                 k_rec: int | np.integer | None = None,
+                 random_state: (int | np.random.RandomState |
+                                None) = 42) -> None:
         """Construct the EulerNodeToNode."""
         super().__init__(hidden_layer_size=hidden_layer_size,
                          sparsity=sparsity,
@@ -308,8 +303,7 @@ class EulerNodeToNode(NodeToNode):
         self : returns a trained EulerNodeToNode.
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y)
-        self._check_n_features(X, reset=True)
+        validate_data(self, X)
 
         if self.k_rec is not None:
             self.sparsity = float(self.k_rec) / float(X.shape[1])
@@ -398,7 +392,6 @@ class PredefinedWeightsNodeToNode(NodeToNode):
         Whether to work bidirectional.
     """
 
-    @_deprecate_positional_args
     def __init__(self,
                  predefined_recurrent_weights: np.ndarray, *,
                  reservoir_activation: Literal['tanh', 'identity',
@@ -410,7 +403,7 @@ class PredefinedWeightsNodeToNode(NodeToNode):
         """Construct the PredefinedWeightsNodeToNode."""
         if predefined_recurrent_weights.ndim != 2:
             raise ValueError('predefined_recurrent_weights has not the '
-                             'expected ndim {0}, given 2.'
+                             'expected ndim {}, given 2.'
                              .format(predefined_recurrent_weights.shape))
         super().__init__(
             hidden_layer_size=predefined_recurrent_weights.shape[0],
@@ -483,7 +476,6 @@ class HebbianNodeToNode(NodeToNode):
         Method used to fit the recurrent weights.
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500,
                  sparsity: float = 1.,
@@ -493,10 +485,10 @@ class HebbianNodeToNode(NodeToNode):
                  spectral_radius: float = 1.,
                  leakage: float = 1.,
                  bidirectional: bool = False,
-                 k_rec: Union[int, np.integer, None] = None,
-                 random_state: Union[int, np.random.RandomState, None] = 42,
+                 k_rec: int | np.integer | None = None,
+                 random_state: int | np.random.RandomState | None = 42,
                  learning_rate: float = 0.01,
-                 epochs: Union[int, np.integer] = 100,
+                 epochs: int | np.integer = 100,
                  training_method:  Literal['hebbian', 'anti_hebbian', 'oja',
                                            'anti_oja'] = 'hebbian'):
         """Construct the HebbianNodeToNode."""

@@ -1,11 +1,64 @@
-﻿"""The :mod:`activations` contains various activation functions for PyRCN."""
+"""The :mod:`activations` contains various activation functions for PyRCN."""
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
 
+from __future__ import annotations
+
+from collections.abc import Callable
+
 import numpy as np
-from sklearn.neural_network._base import ACTIVATIONS
-from typing import Dict, Callable
+from scipy.special import expit as logistic_sigmoid
+
+
+def inplace_identity(X: np.ndarray) -> None:
+    """
+    Compute the identity function inplace.
+
+    This is a no-op, kept for API consistency with the other activations.
+
+    Parameters
+    ----------
+    X : ndarray
+        The input data.
+    """
+    # Nothing to do
+
+
+def inplace_tanh(X: np.ndarray) -> None:
+    """
+    Compute the hyperbolic tangent function inplace.
+
+    Parameters
+    ----------
+    X : ndarray
+        The input data.
+    """
+    np.tanh(X, out=X)
+
+
+def inplace_logistic(X: np.ndarray) -> None:
+    """
+    Compute the logistic sigmoid function inplace.
+
+    Parameters
+    ----------
+    X : ndarray
+        The input data.
+    """
+    logistic_sigmoid(X, out=X)
+
+
+def inplace_relu(X: np.ndarray) -> None:
+    """
+    Compute the rectified linear unit function inplace.
+
+    Parameters
+    ----------
+    X : ndarray
+        The input data.
+    """
+    np.maximum(X, 0, out=X)
 
 
 def inplace_softplus(X: np.ndarray) -> None:
@@ -74,7 +127,7 @@ def inplace_identity_inverse(X: np.ndarray) -> None:
     X : ndarray
         The input data.
     """
-    ACTIVATIONS['identity'](X)
+    inplace_identity(X)
 
 
 def inplace_logistic_inverse(X: np.ndarray) -> None:
@@ -102,7 +155,7 @@ def inplace_relu_inverse(X: np.ndarray) -> None:
     X : ndarray
         The input data.
     """
-    ACTIVATIONS['relu'](X)
+    inplace_relu(X)
 
 
 def inplace_bounded_relu_inverse(X: np.ndarray) -> None:
@@ -119,14 +172,20 @@ def inplace_bounded_relu_inverse(X: np.ndarray) -> None:
     X : ndarray
         The input data.
     """
-    ACTIVATIONS['bounded_relu'](X)
+    inplace_bounded_relu(X)
 
 
-ACTIVATIONS.update({'bounded_relu': inplace_bounded_relu,
-                    'softmax': inplace_softmax,
-                    'softplus': inplace_softplus})
+ACTIVATIONS: dict[str, Callable] = {
+    'identity': inplace_identity,
+    'tanh': inplace_tanh,
+    'logistic': inplace_logistic,
+    'relu': inplace_relu,
+    'bounded_relu': inplace_bounded_relu,
+    'softmax': inplace_softmax,
+    'softplus': inplace_softplus,
+}
 
-ACTIVATIONS_INVERSE: Dict[str, Callable] = {
+ACTIVATIONS_INVERSE: dict[str, Callable] = {
     'tanh': inplace_tanh_inverse,
     'identity': inplace_identity_inverse,
     'logistic': inplace_logistic_inverse,
@@ -134,7 +193,7 @@ ACTIVATIONS_INVERSE: Dict[str, Callable] = {
     'bounded_relu': inplace_bounded_relu_inverse
 }
 
-ACTIVATIONS_INVERSE_BOUNDS: Dict[str, tuple] = {
+ACTIVATIONS_INVERSE_BOUNDS: dict[str, tuple] = {
     'tanh': (-.99, .99),
     'identity': (-np.inf, np.inf),
     'logistic': (0.01, .99),

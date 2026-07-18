@@ -1,10 +1,12 @@
 """Testing for blocks.node_to_node module."""
+from __future__ import annotations
+
 import numpy as np
 import pytest
 from sklearn.utils.extmath import safe_sparse_dot
 
-from pyrcn.base.blocks import (
-    InputToNode, NodeToNode,PredefinedWeightsNodeToNode, HebbianNodeToNode)
+from pyrcn.base.blocks import (HebbianNodeToNode, InputToNode, NodeToNode,
+                               PredefinedWeightsNodeToNode)
 
 
 def test_input_to_node_invalid_spectral_radius() -> None:

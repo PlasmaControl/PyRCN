@@ -1,12 +1,14 @@
 """Testing for Metrics module."""
 
-import pyrcn.metrics
+from __future__ import annotations
+
+import numpy as np
+import pytest
 import sklearn.metrics
 from sklearn.datasets import (make_classification,
                               make_multilabel_classification)
-import numpy as np
-import pytest
 
+import pyrcn.metrics
 
 rng_true = np.random.RandomState(42)
 rng_pred = np.random.RandomState(1234)

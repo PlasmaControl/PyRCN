@@ -6,24 +6,23 @@
 from __future__ import annotations
 
 import sys
-from scipy.sparse import csr_matrix
-from scipy.sparse import issparse
+from typing import Literal
+
 import numpy as np
-from sklearn.utils.validation import _deprecate_positional_args
+from scipy.sparse import csr_matrix, issparse
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils import check_random_state, deprecated
-from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import StandardScaler
+from sklearn.utils import check_random_state, deprecated
+from sklearn.utils.extmath import safe_sparse_dot
+from sklearn.utils.validation import validate_data
 
 from ...base import (ACTIVATIONS, ACTIVATIONS_INVERSE,
                      ACTIVATIONS_INVERSE_BOUNDS, _uniform_random_bias,
                      _uniform_random_input_weights)
 
-from typing import Union, Literal, Optional
 
-
-class InputToNode(BaseEstimator, TransformerMixin):
+class InputToNode(TransformerMixin, BaseEstimator):
     """
     InputToNode class for reservoir computing modules.
 
@@ -67,7 +66,6 @@ class InputToNode(BaseEstimator, TransformerMixin):
         A set of predefined bias weights.
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  hidden_layer_size: int = 500,
                  sparsity: float = 1.,
@@ -75,10 +73,10 @@ class InputToNode(BaseEstimator, TransformerMixin):
                                            'relu', 'bounded_relu'] = 'tanh',
                  input_scaling: float = 1., input_shift: float = 0.,
                  bias_scaling: float = 1., bias_shift: float = 0.,
-                 k_in: Union[int, None] = None,
-                 random_state: Union[int, np.random.RandomState, None] = 42,
-                 predefined_input_weights: Optional[np.ndarray] = None,
-                 predefined_bias_weights: Optional[np.ndarray] = None) -> None:
+                 k_in: int | None = None,
+                 random_state: int | np.random.RandomState | None = 42,
+                 predefined_input_weights: np.ndarray | None = None,
+                 predefined_bias_weights: np.ndarray | None = None) -> None:
         """Construct the InputToNode."""
         self.hidden_layer_size = hidden_layer_size
         self.sparsity = sparsity
@@ -112,8 +110,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self : returns a fitted InputToNode.
         """
         self._validate_hyperparameters()
-        self._validate_data(X, y)
-        self._check_n_features(X, reset=True)
+        validate_data(self, X)
         if self.k_in is not None:
             self.sparsity = float(self.k_in) / float(X.shape[1])
         fan_in = int(np.rint(self.hidden_layer_size * self.sparsity))
@@ -162,7 +159,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
 
     @staticmethod
     def _node_inputs(X: np.ndarray,
-                     input_weights: Union[np.ndarray, csr_matrix],
+                     input_weights: np.ndarray | csr_matrix,
                      input_scaling: float, input_shift: float,
                      bias: np.ndarray, bias_scaling: float, bias_shift: float)\
             -> np.ndarray:
@@ -202,25 +199,25 @@ class InputToNode(BaseEstimator, TransformerMixin):
         self._random_state = check_random_state(self.random_state)
 
         if self.hidden_layer_size <= 0:
-            raise ValueError("hidden_layer_size must be > 0, got {0}."
+            raise ValueError("hidden_layer_size must be > 0, got {}."
                              .format(self.hidden_layer_size))
         if self.sparsity <= 0. or self.sparsity > 1.:
-            raise ValueError("sparsity must be between 0. and 1., got {0}."
+            raise ValueError("sparsity must be between 0. and 1., got {}."
                              .format(self.sparsity))
         if self.input_activation not in ACTIVATIONS:
-            raise ValueError("The activation_function '{0}' is not supported."
-                             "Supported activations are {1}."
+            raise ValueError("The activation_function '{}' is not supported."
+                             "Supported activations are {}."
                              .format(self.input_activation, ACTIVATIONS))
         if self.input_scaling <= 0.:
-            raise ValueError("input_scaling must be > 0, got {0}."
+            raise ValueError("input_scaling must be > 0, got {}."
                              .format(self.input_scaling))
         if self.bias_scaling < 0:
-            raise ValueError("bias must be > 0, got {0}."
+            raise ValueError("bias must be > 0, got {}."
                              .format(self.bias_scaling))
         if self.k_in is not None and (self.k_in <= 0
                                       or self.k_in >= self.hidden_layer_size):
             raise ValueError("k_in must be > 0 and < self.hidden_layer_size"
-                             " {0}, got {1}."
+                             " {}, got {}."
                              .format(self.hidden_layer_size, self.k_in))
 
     def __sizeof__(self) -> int:
@@ -241,7 +238,7 @@ class InputToNode(BaseEstimator, TransformerMixin):
                 self._input_weights.nbytes + sys.getsizeof(self._random_state)
 
     @property
-    def input_weights(self) -> Union[np.ndarray, csr_matrix]:
+    def input_weights(self) -> np.ndarray | csr_matrix:
         """
         Return the input weights.
 
@@ -297,20 +294,19 @@ class PredefinedWeightsInputToNode(InputToNode):
     random_state : Union[int, np.random.RandomState, None], default = 42
     """
 
-    @_deprecate_positional_args
     def __init__(self,
                  predefined_input_weights: np.ndarray, *,
                  input_activation: Literal['tanh', 'identity', 'logistic',
                                            'relu', 'bounded_relu'] = 'tanh',
                  input_scaling: float = 1., input_shift: float = 0.,
-                 predefined_bias_weights: Optional[np.ndarray] = None,
+                 predefined_bias_weights: np.ndarray | None = None,
                  bias_scaling: float = 0., bias_shift: float = 0.,
-                 random_state: Union[int, np.random.RandomState, None] = 42)\
+                 random_state: int | np.random.RandomState | None = 42)\
             -> None:
         """Construct the PredefinedWeightsInputToNode."""
         if predefined_input_weights.ndim != 2:
             raise ValueError('predefined_input_weights has not the expected'
-                             'ndim 2, given {0}.'
+                             'ndim 2, given {}.'
                              .format(predefined_input_weights.shape))
         super().__init__(hidden_layer_size=predefined_input_weights.shape[1],
                          input_activation=input_activation,
@@ -336,35 +332,6 @@ class PredefinedWeightsInputToNode(InputToNode):
         """
         super().fit(X, y)
         return self
-
-
-"""
-class NonlinearVectorAutoregression(InputToNode):
-    #
-    # Non-linear vector autoregression (NVAR) class
-
-    #
-
-    @_deprecate_positional_args
-    def __init__(self, *,
-                 delay: int = 2, order: int = 2, stride: int = 1) -> None:
-        super().__init__()
-        self.delay = delay
-        self.order = order
-        self.stride = stride
-        self._linear_dimension = 0
-        self._non_linear_dimension = 0
-
-    def fit(self, X: np.ndarray, y: None = None) -> InputToNode:
-        self._validate_hyperparameters()
-        self._validate_data(X, y)
-        n_samples, n_features = X.shape
-        self._linear_dimension = self.delay * n_features
-        self._non_linear_dimension = comb(
-            self._linear_dimension + self.order - 1, self.order)
-        self.hidden_layer_size = self._linear_dimension + \
-                                 self._non_linear_dimension
-"""
 
 
 class BatchIntrinsicPlasticity(InputToNode):
@@ -399,7 +366,6 @@ class BatchIntrinsicPlasticity(InputToNode):
     random_state : Union[int, np.random.RandomState, None], default = 42
     """
 
-    @_deprecate_positional_args
     def __init__(self, *,
                  distribution: Literal['exponential', 'uniform',
                                        'normal'] = 'normal',
@@ -407,7 +373,7 @@ class BatchIntrinsicPlasticity(InputToNode):
                  input_activation: Literal['tanh', 'identity', 'logistic',
                                            'relu', 'bounded_relu'] = 'tanh',
                  hidden_layer_size: int = 500, sparsity: float = 1.,
-                 random_state: Union[int, np.random.RandomState, None] = 42):
+                 random_state: int | np.random.RandomState | None = 42):
         """Construct the BatchIntrinsicPlasticity InputToNode."""
         super().__init__(input_activation=input_activation,
                          hidden_layer_size=hidden_layer_size,
@@ -415,8 +381,8 @@ class BatchIntrinsicPlasticity(InputToNode):
         self.distribution = distribution
         self.algorithm = algorithm
         self._scaler = StandardScaler()
-        self._m = 1
-        self._c = 0
+        self._m = 1.
+        self._c = 0.
 
     IN_DISTRIBUTION_PARAMS = {'exponential': (-.5, -.5),
                               'uniform': (.7, .0),
@@ -528,7 +494,7 @@ class BatchIntrinsicPlasticity(InputToNode):
             t.sort()
             ACTIVATIONS_INVERSE[self.input_activation](t)
         else:
-            raise ValueError('Not a valid activation inverse, got {0}'
+            raise ValueError('Not a valid activation inverse, got {}'
                              .format(self.distribution))
 
         v = safe_sparse_dot(np.linalg.pinv(phi), t)
@@ -551,7 +517,7 @@ class BatchIntrinsicPlasticity(InputToNode):
         """
         if self.input_activation != 'tanh':
             raise ValueError('This algorithm is working with tanh-activation'
-                             'only, got {0}'.format(self.input_activation))
+                             'only, got {}'.format(self.input_activation))
         super().fit(X, y=y)
 
         s = BatchIntrinsicPlasticity._node_inputs(
@@ -568,8 +534,8 @@ class BatchIntrinsicPlasticity(InputToNode):
         super()._validate_hyperparameters()
 
         if self.algorithm not in {'neumann', 'dresden'}:
-            raise ValueError('The selected algorithm is unknown, got {0}'
+            raise ValueError('The selected algorithm is unknown, got {}'
                              .format(self.algorithm))
         if self.distribution not in {'exponential', 'uniform', 'normal'}:
-            raise ValueError('The selected distribution is unknown, got {0}'
+            raise ValueError('The selected distribution is unknown, got {}'
                              .format(self.distribution))

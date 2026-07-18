@@ -1,6 +1,9 @@
 """Testing for activation functions in the module (pyrcn.base)."""
+from __future__ import annotations
+
 import numpy as np
 from scipy.special import expit as logistic_sigmoid
+
 from pyrcn.base import (ACTIVATIONS, ACTIVATIONS_INVERSE,
                         ACTIVATIONS_INVERSE_BOUNDS)
 

@@ -4,19 +4,14 @@
 # License: BSD 3 clause
 
 from __future__ import annotations
-import sys
+
+from typing import Literal, cast
 
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-if sys.version_info >= (3, 8):
-    from typing import Literal, cast
-else:
-    from typing_extensions import Literal
-    from typing import cast
 
-
-class MatrixToValueProjection(BaseEstimator, TransformerMixin):
+class MatrixToValueProjection(TransformerMixin, BaseEstimator):
     """
     Projection of a matrix to any kind of indices, e.g. of the maximum value.
 
