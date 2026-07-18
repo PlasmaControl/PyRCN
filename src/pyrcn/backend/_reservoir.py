@@ -1,4 +1,11 @@
-"""PyTorch reservoir module (batched leaky-integrator recurrence)."""
+"""PyTorch reservoir built on ``nn.RNNCell``.
+
+Reuses torch's fused single-step cell op for the ``tanh``/``relu`` activations
+and adds only what torch lacks: leaky integration and the extra PyRCN
+activations (``logistic``/``identity``/``bounded_relu``). ``weight_ih`` is a
+frozen identity (the reservoir input is added directly; input weights belong to
+``InputToNode``) and ``spectral_radius`` is folded into ``weight_hh``.
+"""
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
 # License: BSD 3 clause
@@ -9,63 +16,54 @@ from collections.abc import Callable
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
-_ACTIVATIONS: dict[str, Callable[[torch.Tensor], torch.Tensor]] = {
-    "tanh": torch.tanh,
-    "relu": torch.relu,
+_FUSED = ("tanh", "relu")
+_EXTRA_ACTIVATIONS: dict[str, Callable[[torch.Tensor], torch.Tensor]] = {
     "logistic": torch.sigmoid,
     "identity": lambda t: t,
     "bounded_relu": lambda t: t.clamp(0.0, 1.0),
 }
+_SUPPORTED = _FUSED + tuple(_EXTRA_ACTIVATIONS)
 
 
-class Reservoir(nn.Module):
-    """Leaky-integrator reservoir as a batched PyTorch module.
+class LeakyESNCell(nn.RNNCell):
+    """One leaky reservoir step::
 
-    Computes, per time step, the same recurrence as the legacy NumPy
-    ``NodeToNode``::
+        h' = (1 - leakage) * h + leakage * f(x + spectral_radius * (h @ W))
 
-        h_t = (1 - leakage) * h_{t-1}
-              + leakage * f(x_t + spectral_radius * (h_{t-1} @ W_hh))
-
-    The recurrent weights ``W_hh`` are a dense ``Parameter`` with
-    ``requires_grad=False`` by default; they are assigned externally (e.g. from
-    any of PyRCN's initialization strategies) via ``set_recurrent_weights``.
-
-    Parameters
-    ----------
-    hidden_size : int
-        Reservoir size (and input feature size at each step).
-    spectral_radius : float, default=1.0
-        Scales the recurrent contribution.
-    leakage : float, default=1.0
-        Leaky-integration factor in ``(0, 1]``.
-    activation : str, default="tanh"
-        One of ``{"tanh", "relu", "logistic", "identity", "bounded_relu"}``.
-    device, dtype : optional
-        Passed through to the parameter tensor.
+    ``tanh``/``relu`` reuse ``nn.RNNCell``'s fused op; others use
+    ``affine + activation``. ``spectral_radius`` folds into ``weight_hh`` and
+    ``weight_ih`` is a frozen identity, so ``x`` is added unchanged.
     """
 
     def __init__(self, hidden_size: int, spectral_radius: float = 1.0,
                  leakage: float = 1.0, activation: str = "tanh",
                  device: torch.device | str | int | None = None,
                  dtype: torch.dtype | None = None) -> None:
-        super().__init__()
-        if activation not in _ACTIVATIONS:
+        if activation not in _SUPPORTED:
             raise ValueError(
                 f"unknown activation {activation!r}; supported: "
-                f"{sorted(_ACTIVATIONS)}")
-        self.hidden_size = hidden_size
+                f"{sorted(_SUPPORTED)}")
+        nonlinearity = activation if activation in _FUSED else "tanh"
+        super().__init__(input_size=hidden_size, hidden_size=hidden_size,
+                         bias=False, nonlinearity=nonlinearity, device=device,
+                         dtype=dtype)
         self.spectral_radius = float(spectral_radius)
         self.leakage = float(leakage)
         self.activation = activation
-        self.weight_hh = nn.Parameter(
-            torch.zeros(hidden_size, hidden_size, device=device,
-                        dtype=dtype),
-            requires_grad=False)
+        with torch.no_grad():
+            self.weight_ih.copy_(torch.eye(
+                hidden_size, device=device, dtype=self.weight_ih.dtype))
+        for p in self.parameters():
+            p.requires_grad_(False)
 
     def set_recurrent_weights(self, weights: object) -> None:
-        """Assign the (hidden_size, hidden_size) recurrent weight matrix."""
+        """Load the ``(hidden_size, hidden_size)`` recurrent matrix.
+
+        Stored transposed and pre-scaled by ``spectral_radius`` so both paths
+        yield ``spectral_radius * (h @ weights)``.
+        """
         w = torch.as_tensor(
             weights, dtype=self.weight_hh.dtype, device=self.weight_hh.device)
         if w.shape != (self.hidden_size, self.hidden_size):
@@ -74,36 +72,55 @@ class Reservoir(nn.Module):
                 f"{(self.hidden_size, self.hidden_size)}, got "
                 f"{tuple(w.shape)}")
         with torch.no_grad():
-            self.weight_hh.copy_(w)
+            self.weight_hh.copy_(self.spectral_radius * w.T)
+
+    def forward(self, input: torch.Tensor,
+                hx: torch.Tensor | None = None) -> torch.Tensor:
+        if hx is None:
+            hx = torch.zeros(input.shape[0], self.hidden_size,
+                             dtype=input.dtype, device=input.device)
+        if self.activation in _FUSED:
+            updated = super().forward(input, hx)            # fused cell op
+        else:
+            pre = input + F.linear(hx, self.weight_hh)      # weight_ih is I
+            updated = _EXTRA_ACTIVATIONS[self.activation](pre)
+        return (1.0 - self.leakage) * hx + self.leakage * updated
+
+
+class Reservoir(nn.Module):
+    """Run a :class:`LeakyESNCell` over batched (padded) sequences.
+
+    Parameters mirror the recurrence; see :class:`LeakyESNCell`. ``forward``
+    takes ``x`` of shape ``(n_sequences, length, hidden_size)`` and an optional
+    ``initial_state`` ``(n_sequences, hidden_size)`` (zeros by default), and
+    returns ``(states, final_state)``.
+    """
+
+    def __init__(self, hidden_size: int, spectral_radius: float = 1.0,
+                 leakage: float = 1.0, activation: str = "tanh",
+                 device: torch.device | str | int | None = None,
+                 dtype: torch.dtype | None = None) -> None:
+        super().__init__()
+        self.hidden_size = hidden_size
+        self.cell = LeakyESNCell(
+            hidden_size, spectral_radius=spectral_radius, leakage=leakage,
+            activation=activation, device=device, dtype=dtype)
+
+    def set_recurrent_weights(self, weights: object) -> None:
+        """Load the recurrent weight matrix into the cell."""
+        self.cell.set_recurrent_weights(weights)
 
     def forward(self, x: torch.Tensor,
                 initial_state: torch.Tensor | None = None
                 ) -> tuple[torch.Tensor, torch.Tensor]:
-        """Run the recurrence over a batch of (padded) sequences.
-
-        Parameters
-        ----------
-        x : torch.Tensor of shape (n_sequences, length, hidden_size)
-            Per-step reservoir inputs.
-        initial_state : torch.Tensor (n_sequences, hidden_size), or None
-            Initial hidden state; zeros when ``None``.
-
-        Returns
-        -------
-        states : torch.Tensor of shape (n_sequences, length, hidden_size)
-        final_state : torch.Tensor of shape (n_sequences, hidden_size)
-        """
         n_sequences, length, _ = x.shape
         if initial_state is None:
             h = torch.zeros(
                 n_sequences, self.hidden_size, dtype=x.dtype, device=x.device)
         else:
             h = initial_state
-        act = _ACTIVATIONS[self.activation]
         outputs = []
         for t in range(length):
-            pre = x[:, t, :] + self.spectral_radius * (h @ self.weight_hh)
-            h = (1.0 - self.leakage) * h + self.leakage * act(pre)
+            h = self.cell(x[:, t, :], h)
             outputs.append(h)
-        states = torch.stack(outputs, dim=1)
-        return states, h
+        return torch.stack(outputs, dim=1), h

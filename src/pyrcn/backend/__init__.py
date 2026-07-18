@@ -7,6 +7,6 @@ API yet; a curated public ``pyrcn.nn`` surface is planned once the frontend
 reaches parity with the legacy NumPy path.
 """
 
-from ._reservoir import Reservoir
+from ._reservoir import LeakyESNCell, Reservoir
 
-__all__ = ["Reservoir"]
+__all__ = ["LeakyESNCell", "Reservoir"]
