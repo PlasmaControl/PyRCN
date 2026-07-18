@@ -308,23 +308,27 @@ the `nn.Module` foundation. **Phase B** adds gradient-based training (D9) as new
 Phase-A parity is proven, then retired.
 
 ### Phase A — torch backend, fixed reservoir + closed-form (behavior-preserving)
-- **A0 · Scaffolding & deps.** Add torch as a hard dependency (D4); create a
+- **A0 · Scaffolding & deps. — done.** Add torch as a hard dependency (D4); create a
   private `pyrcn.backend` (torch) package; `device`/`dtype` helpers; stand up
   the parity harness (torch-float64 vs legacy NumPy-float64, D3). Legacy path
   stays alive for comparison.
-- **A1 · Sequence normalization (D1 + task=).** `check_sequences`: accept
+- **A1 · Sequence normalization (D1 + task=). — done.** `check_sequences`: accept
   list / object-array / 2-D / 3-D → canonical padded batch `(N, L_max, F)` +
   `lengths`; task auto-detect + `task=` override; INV-1 (2-D → N=1). Replaces
   `concatenate_sequences` + `_check_if_sequence*`. Tests for every input form.
-- **A2 · Reservoir engine (D2/D6/D7/D10).** Reservoir `nn.Module`: dense
+- **A2 · Reservoir engine (D2/D6/D7/D10). — done** (feature map, leaky /
+  Euler / bidirectional cells, torch-native init; parity by injection).
+  Reservoir `nn.Module`: dense
   `Parameter` input/recurrent weights (`requires_grad=False`), **RC init
   preserved** (spectral radius, `k_in`/`k_rec` sparsity, antisymmetric/Euler
   variants, predefined weights); batched masked recurrence over `L_max`; leaky
   integration; bidirectional; `washout`; `initial_state`→`final_state`. Input
   feature-map (`InputToNode` math) as an `nn.Module` too.
-- **A3 · Closed-form readout (D11).** `IncrementalRegression` reimplemented
-  torch-native (dual NumPy/torch): incremental `K`/`xTy`, ridge solve on-device,
-  fills the readout `nn.Linear`; mergeable `__add__` preserved.
+- **A3 · Closed-form readout (D11). — done.** `IncrementalRegression`
+  reimplemented torch-native as `backend.IncrementalRidge`: incremental
+  `K`/`xTy`, ridge solve on-device, `fit_intercept` via ones-column, mergeable
+  `__add__` preserved. Parity vs the legacy readout by injecting identical
+  features/targets (single-batch, postpone-then-solve, merge == concat).
 - **A4 · Estimator integration (D5/D8).** `ESN*/ELM*` `fit`/`predict` with the
   single NumPy↔torch conversion at the edge; orchestrate
   normalize→feature-map→reservoir→readout; `predict(initial_state=,
