@@ -13,7 +13,7 @@ import pytest
 import torch
 
 from pyrcn.backend import Reservoir
-from pyrcn.base.blocks import NodeToNode
+from pyrcn.base.blocks import HebbianNodeToNode, NodeToNode
 
 RTOL, ATOL = 1e-8, 1e-11
 
@@ -61,6 +61,29 @@ def test_reservoir_parity(activation: str, k_rec: int | None,
         states.squeeze(0).numpy(), expected, rtol=RTOL, atol=ATOL)
     np.testing.assert_allclose(
         final.squeeze(0).numpy(), expected[-1], rtol=RTOL, atol=ATOL)
+
+
+@pytest.mark.parametrize("training_method",
+                         ["hebbian", "anti_hebbian", "oja", "anti_oja"])
+def test_hebbian_learned_weights_parity(training_method: str) -> None:
+    # Hebbian only *learns* the weights (in fit); transform is the standard
+    # recurrence, so the torch form is the standard Reservoir with the
+    # NumPy-learned weights injected.
+    hidden_size = 20
+    hebbian = HebbianNodeToNode(
+        hidden_layer_size=hidden_size, spectral_radius=0.9, leakage=0.8,
+        reservoir_activation="tanh", random_state=42, learning_rate=1e-3,
+        epochs=2, training_method=training_method)
+    X = np.random.RandomState(0).normal(size=(30, hidden_size)) * 0.3
+    hebbian.fit(X)
+    expected = hebbian.transform(X)
+
+    res = Reservoir(hidden_size=hidden_size, spectral_radius=0.9, leakage=0.8,
+                    activation="tanh", dtype=torch.float64)
+    res.set_recurrent_weights(_dense(hebbian._recurrent_weights))
+    states, _ = res(torch.as_tensor(X, dtype=torch.float64).unsqueeze(0))
+    np.testing.assert_allclose(
+        states.squeeze(0).numpy(), expected, rtol=RTOL, atol=ATOL)
 
 
 def test_reservoir_bidirectional_parity() -> None:

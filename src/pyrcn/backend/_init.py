@@ -44,6 +44,26 @@ def normal_recurrent_weights(
     return spectral_normalize(weights)
 
 
+def antisymmetric_recurrent_weights(
+        hidden_size: int, *, fan_in: int | None = None,
+        generator: torch.Generator | None = None,
+        dtype: torch.dtype | None = None,
+        device: torch.device | str | int | None = None) -> torch.Tensor:
+    """Antisymmetric uniform recurrent weights ``U - U.T`` (used by EuSN).
+
+    ``U`` is uniform in ``[-1, 1)`` (optionally sparsified to ``fan_in``
+    entries per column before antisymmetrization).
+    """
+    u = torch.rand(hidden_size, hidden_size, generator=generator, dtype=dtype,
+                   device=device) * 2.0 - 1.0
+    if fan_in is not None and fan_in < hidden_size:
+        for column in range(hidden_size):
+            order = torch.randperm(
+                hidden_size, generator=generator, device=device)
+            u[order[fan_in:], column] = 0.0
+    return u - u.T
+
+
 def simple_cycle_weights(
         hidden_size: int, forward_weight: float = 0.9, *,
         dtype: torch.dtype | None = None,
