@@ -113,7 +113,9 @@ class InputToNode(TransformerMixin, BaseEstimator):
         validate_data(self, X)
         if self.k_in is not None:
             self.sparsity = float(self.k_in) / float(X.shape[1])
-        fan_in = int(np.rint(self.hidden_layer_size * self.sparsity))
+            fan_in = self.k_in                      # k_in inputs per node
+        else:
+            fan_in = int(np.rint(self.hidden_layer_size * self.sparsity))
         if self.predefined_input_weights is not None:
             assert self.predefined_input_weights.shape == (
                 self.n_features_in_, self.hidden_layer_size)
