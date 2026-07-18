@@ -20,12 +20,13 @@ RTOL, ATOL = 1e-8, 1e-11
 
 def _fit_nodetonode(hidden_size: int, *, spectral_radius: float,
                     leakage: float, activation: str, random_state: int,
-                    k_rec: int | None = None) -> NodeToNode:
+                    k_rec: int | None = None,
+                    bidirectional: bool = False) -> NodeToNode:
     """A real NodeToNode with PyRCN-initialized recurrent weights."""
     n2n = NodeToNode(
         hidden_layer_size=hidden_size, spectral_radius=spectral_radius,
         leakage=leakage, reservoir_activation=activation, k_rec=k_rec,
-        random_state=random_state)
+        bidirectional=bidirectional, random_state=random_state)
     # NodeToNode's input dimension equals hidden_size (the InputToNode output).
     n2n.fit(np.zeros((2 * hidden_size, hidden_size)))
     return n2n
@@ -60,6 +61,24 @@ def test_reservoir_parity(activation: str, k_rec: int | None,
         states.squeeze(0).numpy(), expected, rtol=RTOL, atol=ATOL)
     np.testing.assert_allclose(
         final.squeeze(0).numpy(), expected[-1], rtol=RTOL, atol=ATOL)
+
+
+def test_reservoir_bidirectional_parity() -> None:
+    hidden_size = 20
+    n2n = _fit_nodetonode(
+        hidden_size, spectral_radius=0.9, leakage=0.6, activation="tanh",
+        random_state=3, bidirectional=True)
+    X = np.random.RandomState(0).normal(size=(30, hidden_size)) * 0.3
+    expected = n2n.transform(X)                      # (30, 2*hidden_size)
+
+    res = Reservoir(hidden_size=hidden_size, spectral_radius=0.9, leakage=0.6,
+                    activation="tanh", bidirectional=True, dtype=torch.float64)
+    res.set_recurrent_weights(_dense(n2n._recurrent_weights))
+    states, _ = res(torch.as_tensor(X, dtype=torch.float64).unsqueeze(0))
+
+    assert states.shape == (1, 30, 2 * hidden_size)
+    np.testing.assert_allclose(
+        states.squeeze(0).numpy(), expected, rtol=RTOL, atol=ATOL)
 
 
 def test_reservoir_batched_matches_per_sequence() -> None:

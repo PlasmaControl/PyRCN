@@ -90,18 +90,22 @@ class LeakyESNCell(nn.RNNCell):
 class Reservoir(nn.Module):
     """Run a :class:`LeakyESNCell` over batched (padded) sequences.
 
-    Parameters mirror the recurrence; see :class:`LeakyESNCell`. ``forward``
-    takes ``x`` of shape ``(n_sequences, length, hidden_size)`` and an optional
-    ``initial_state`` ``(n_sequences, hidden_size)`` (zeros by default), and
-    returns ``(states, final_state)``.
+    ``forward`` takes ``x`` of shape ``(n_sequences, length, hidden_size)`` and
+    an optional ``initial_state`` ``(n_sequences, hidden_size)`` (zeros by
+    default), returning ``(states, final_state)``. With ``bidirectional=True``
+    the same cell is run forward and over the time-reversed input (shared
+    weights, as ``NodeToNode`` does); the two state sequences are concatenated
+    on the feature axis, so ``states`` has ``2 * hidden_size`` features.
     """
 
     def __init__(self, hidden_size: int, spectral_radius: float = 1.0,
                  leakage: float = 1.0, activation: str = "tanh",
+                 bidirectional: bool = False,
                  device: torch.device | str | int | None = None,
                  dtype: torch.dtype | None = None) -> None:
         super().__init__()
         self.hidden_size = hidden_size
+        self.bidirectional = bidirectional
         self.cell = LeakyESNCell(
             hidden_size, spectral_radius=spectral_radius, leakage=leakage,
             activation=activation, device=device, dtype=dtype)
@@ -110,17 +114,32 @@ class Reservoir(nn.Module):
         """Load the recurrent weight matrix into the cell."""
         self.cell.set_recurrent_weights(weights)
 
-    def forward(self, x: torch.Tensor,
-                initial_state: torch.Tensor | None = None
-                ) -> tuple[torch.Tensor, torch.Tensor]:
-        n_sequences, length, _ = x.shape
-        if initial_state is None:
-            h = torch.zeros(
-                n_sequences, self.hidden_size, dtype=x.dtype, device=x.device)
-        else:
-            h = initial_state
+    def _zeros(self, n_sequences: int, x: torch.Tensor) -> torch.Tensor:
+        return torch.zeros(
+            n_sequences, self.hidden_size, dtype=x.dtype, device=x.device)
+
+    def _run(self, x: torch.Tensor,
+             h: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         outputs = []
-        for t in range(length):
+        for t in range(x.shape[1]):
             h = self.cell(x[:, t, :], h)
             outputs.append(h)
         return torch.stack(outputs, dim=1), h
+
+    def forward(self, x: torch.Tensor,
+                initial_state: torch.Tensor | None = None
+                ) -> tuple[torch.Tensor, torch.Tensor]:
+        n_sequences = x.shape[0]
+        if not self.bidirectional:
+            if initial_state is None:
+                initial_state = self._zeros(n_sequences, x)
+            return self._run(x, initial_state)
+        if initial_state is not None:
+            raise ValueError(
+                "initial_state is not supported with bidirectional=True")
+        states_fw, final_fw = self._run(x, self._zeros(n_sequences, x))
+        reversed_states, final_bw = self._run(
+            torch.flip(x, dims=[1]), self._zeros(n_sequences, x))
+        states = torch.cat(
+            [states_fw, torch.flip(reversed_states, dims=[1])], dim=-1)
+        return states, torch.cat([final_fw, final_bw], dim=-1)
