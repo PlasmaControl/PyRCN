@@ -258,6 +258,47 @@ built **clean from the companion modules**. ⚠️ Do **not** resurrect or port 
 old `pyrcn.nn` draft (removed in commit `3e41df2`) — it was messy; the new
 `pyrcn.nn` is a fresh, minimal surface over the Phase-A backend `nn.Module`s.
 
+## Torch module implementation & reuse (D14)
+
+**D14 — maximize reuse of `nn.RNNCell` / `nn.Linear`; add only what torch
+lacks (leaky integration + extra activations).** No duplication of torch's
+weight / init / `state_dict` / bidirectional machinery.
+
+**Block → torch module mapping**
+- **`InputToNode` → subclass `nn.Linear`** (`weight` = input weights, `bias`),
+  plus `input_scaling`/`input_shift`/`bias_scaling`/`bias_shift` and the input
+  activation applied in `forward`. This is the real feature map for **ELM**
+  (ELM = these + readout) and the input stage for **ESN**.
+- **`NodeToNode` → subclass `nn.RNNCell`** (recurrence). Reuse its fused
+  single-step op for `tanh`/`relu` via `(1-λ)h + λ·super().forward(x, h)`
+  (verified parity 1.1e-16). For `logistic`/`identity`/`bounded_relu` (not in
+  the fused op) compute the affine with `F.linear` + apply the activation, still
+  `+ leaky`. `weight_ih` = identity (input is added directly — the input weights
+  belong to `InputToNode`); `spectral_radius` is folded into `weight_hh`. A thin
+  layer loops the cell over time (lengths/mask, `initial_state`→`final_state`)
+  and does bidirectional (reuse `nn.RNN` structure: tie reverse=forward+flip for
+  the parity check, independent scaled weights otherwise).
+
+**Two-activation handling.** PyRCN applies an *input* activation (`InputToNode`)
+AND a *reservoir* activation (`NodeToNode`); a single RNN cell has one. So for a
+nonlinear `input_activation` (e.g. the `ESNClassifier` default `tanh`)
+`InputToNode` stays a separate stage feeding the cell (cell `weight_ih` =
+identity). For `input_activation='identity'` the input weights may be folded into
+the cell's `weight_ih` (a fused `ESNCell`).
+
+**Efficiency notes / obstacles (all minor, none blocking).**
+- `nn.RNN`'s *whole-sequence* fused kernel supports only non-leaky `tanh`/`relu`;
+  leaky needs per-step control → per-step loop that still reuses the fused
+  *single-step* cell op. An optional whole-sequence fast-path (delegating to
+  `nn.RNN`) for the non-leaky `tanh`/`relu` case can be added later.
+- The three extra activations use `affine + activation` rather than the fused
+  cell op.
+
+**Deferred:** a fused single-cell `ESNCell` (input+recurrence, one activation)
+for `input_activation='identity'` as the idiomatic/fast path in the public
+`pyrcn.nn`. Refactor note: the A2 custom `Reservoir` becomes a thin layer over
+the `nn.RNNCell` subclass; its behavioral parity tests carry over unchanged.
+
 ## Roadmap / workstreams
 
 Two phases. **Phase A** delivers the full torch backend with a fixed reservoir
