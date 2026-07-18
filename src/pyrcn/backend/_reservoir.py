@@ -13,19 +13,11 @@ frozen identity (the reservoir input is added directly; input weights belong to
 
 from __future__ import annotations
 
-from collections.abc import Callable
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-_FUSED = ("tanh", "relu")
-_EXTRA_ACTIVATIONS: dict[str, Callable[[torch.Tensor], torch.Tensor]] = {
-    "logistic": torch.sigmoid,
-    "identity": lambda t: t,
-    "bounded_relu": lambda t: t.clamp(0.0, 1.0),
-}
-_SUPPORTED = _FUSED + tuple(_EXTRA_ACTIVATIONS)
+from ._activations import ACTIVATIONS, FUSED, SUPPORTED
 
 
 class _ReservoirCell(nn.RNNCell):
@@ -40,11 +32,11 @@ class _ReservoirCell(nn.RNNCell):
     def __init__(self, hidden_size: int, activation: str,
                  device: torch.device | str | int | None,
                  dtype: torch.dtype | None) -> None:
-        if activation not in _SUPPORTED:
+        if activation not in SUPPORTED:
             raise ValueError(
                 f"unknown activation {activation!r}; supported: "
-                f"{sorted(_SUPPORTED)}")
-        nonlinearity = activation if activation in _FUSED else "tanh"
+                f"{sorted(SUPPORTED)}")
+        nonlinearity = activation if activation in FUSED else "tanh"
         super().__init__(input_size=hidden_size, hidden_size=hidden_size,
                          bias=False, nonlinearity=nonlinearity, device=device,
                          dtype=dtype)
@@ -70,10 +62,10 @@ class _ReservoirCell(nn.RNNCell):
             x.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
 
     def _activate(self, x: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
-        if self.activation in _FUSED:
+        if self.activation in FUSED:
             return super().forward(x, h)                    # fused cell op
         pre = x + F.linear(h, self.weight_hh)               # weight_ih is I
-        return _EXTRA_ACTIVATIONS[self.activation](pre)
+        return ACTIVATIONS[self.activation](pre)
 
 
 class LeakyESNCell(_ReservoirCell):

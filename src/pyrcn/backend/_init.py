@@ -64,6 +64,47 @@ def antisymmetric_recurrent_weights(
     return u - u.T
 
 
+def uniform_input_weights(
+        n_features: int, hidden_size: int, *, fan_in: int | None = None,
+        generator: torch.Generator | None = None,
+        dtype: torch.dtype | None = None,
+        device: torch.device | str | int | None = None) -> torch.Tensor:
+    """Uniform input weights in ``[-1, 1)`` of shape ``(n_features, hidden)``.
+
+    If ``fan_in`` is given, exactly ``fan_in`` entries are kept per column
+    (hidden unit).
+    """
+    weights = torch.rand(n_features, hidden_size, generator=generator,
+                         dtype=dtype, device=device) * 2.0 - 1.0
+    if fan_in is not None and fan_in < n_features:
+        for column in range(hidden_size):
+            order = torch.randperm(
+                n_features, generator=generator, device=device)
+            weights[order[fan_in:], column] = 0.0
+    return weights
+
+
+def uniform_bias_weights(
+        hidden_size: int, *, generator: torch.Generator | None = None,
+        dtype: torch.dtype | None = None,
+        device: torch.device | str | int | None = None) -> torch.Tensor:
+    """Uniform bias in ``[-1, 1)`` of shape ``(hidden_size,)``."""
+    return torch.rand(hidden_size, generator=generator, dtype=dtype,
+                      device=device) * 2.0 - 1.0
+
+
+def bernoulli_input_weights(
+        n_features: int, hidden_size: int, *, value: float = 1.0,
+        p: float = 0.5, generator: torch.Generator | None = None,
+        dtype: torch.dtype | None = None,
+        device: torch.device | str | int | None = None) -> torch.Tensor:
+    """Signed-constant input weights ``+/- value`` (min-complexity ESNs)."""
+    probabilities = torch.full((n_features, hidden_size), p, dtype=dtype,
+                               device=device)
+    signs = torch.bernoulli(probabilities, generator=generator)
+    return (2.0 * signs - 1.0) * value
+
+
 def simple_cycle_weights(
         hidden_size: int, forward_weight: float = 0.9, *,
         dtype: torch.dtype | None = None,
