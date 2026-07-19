@@ -344,11 +344,17 @@ Phase-A parity is proven, then retired.
   backend; state-carry primitive verified — split-and-carry reproduces the
   whole-sequence pass). Defaults behavior-preserving; numpy fallback raises
   NotImplementedError for these.
-- **A5 · Parity & test migration.** Run the torch-f64 vs NumPy-f64 harness
-  across estimators + datasets; keep the existing suite green (INV-1 within
-  tolerance); add nested-params GridSearchCV test; `metrics` unaffected
-  (predict still returns NumPy). Drop the joblib/loky sequence-parallel path
-  (batched torch replaces it).
+- **A5 · Parity & test migration. — done.** Broadened the torch-vs-numpy
+  parity harness across all four estimators and both sequence/non-sequence
+  modes via a native-vs-forced-fallback twin (fallback wraps the input in a
+  single-transformer `FeatureUnion`); max observed difference ~3e-9 (float64
+  round-off). Model-selection tests (GridSearchCV / RandomizedSearchCV /
+  SequentialSearchCV / component-swap over bare-name params) confirm
+  `best_estimator_._use_torch` stays True through `clone` — model selection
+  unchanged (bare-name surface, per the A4 decision; the planned nested-params
+  test is moot since we kept bare names). Dropped the joblib/loky
+  sequence-parallel path (`n_jobs` now a serial no-op). `metrics` unaffected
+  (predict still returns NumPy). Suite 194 passed / 2 skipped.
 - **A6 · Retire legacy & finalize.** Remove the old Python reservoir loop /
   `concatenate_sequences`; docs; flake8/mypy/CI green with the torch dep; CPU
   device tests (CUDA optional / skipped when unavailable).
