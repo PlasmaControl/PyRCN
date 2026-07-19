@@ -1,16 +1,18 @@
-"""PyTorch closed-form (ridge) readout, the torch companion of
-``IncrementalRegression``.
+"""PyTorch readouts for :mod:`pyrcn.nn`.
 
-Accumulates the normal-equation statistics ``K = sum(Z^T Z)`` and
-``xTy = sum(Z^T y)`` over one or more batches and solves the ridge system
-``(K + alpha I) W = xTy`` once. This mirrors the sequence-fit flow, where
-each sequence contributes to ``K``/``xTy`` (``postpone_inverse=True``) and the
-final call triggers the single solve. The statistics are additive, so two
-readouts fitted on disjoint data can be merged with ``+`` (map-reduce).
-
+:class:`IncrementalRidge` is the closed-form (ridge) readout, the torch
+companion of ``IncrementalRegression``: it accumulates the normal-equation
+statistics ``K = sum(Z^T Z)`` and ``xTy = sum(Z^T y)`` over one or more
+batches and solves ``(K + alpha I) W = xTy`` once (mirroring the sequence-fit
+flow, where each sequence contributes with ``postpone_inverse=True`` and the
+final call triggers the single solve). The statistics are additive, so two
+readouts fitted on disjoint data merge with ``+`` (map-reduce).
 ``fit_intercept`` folds a bias into the weights by appending a column of ones
-to ``Z`` (as the legacy readout does); ``output_weights`` then has one extra
-row. All state is on-device; weights carry no gradient in the closed-form path.
+to ``Z``; its weights carry no gradient.
+
+:class:`LinearReadout` is the trainable counterpart -- a plain ``nn.Linear``
+whose weights are optimized by a gradient loop (see
+:func:`pyrcn.nn.train_readout`), used when ``solver='gradient'``.
 """
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
@@ -113,3 +115,36 @@ class IncrementalRidge(nn.Module):
         merged._K = self._K + other._K
         merged._xTy = self._xTy + other._xTy
         return merged
+
+
+class LinearReadout(nn.Module):
+    """Trainable linear readout (a thin wrapper over ``nn.Linear``).
+
+    The gradient-mode counterpart of :class:`IncrementalRidge`: its weights
+    are trainable ``Parameter``s optimized by :func:`pyrcn.nn.train_readout`
+    rather than solved in closed form.
+
+    Parameters
+    ----------
+    in_features, out_features : int
+        Readout input and output sizes.
+    fit_intercept : bool, default=True
+        Whether the underlying ``nn.Linear`` has a bias term.
+    """
+
+    def __init__(self, in_features: int, out_features: int, *,
+                 fit_intercept: bool = True,
+                 device: torch.device | str | int | None = None,
+                 dtype: torch.dtype | None = None) -> None:
+        super().__init__()
+        self.linear = nn.Linear(
+            in_features, out_features, bias=fit_intercept, device=device,
+            dtype=dtype)
+
+    def forward(self, Z: torch.Tensor) -> torch.Tensor:
+        return self.linear(Z)
+
+    def predict(self, Z: torch.Tensor) -> torch.Tensor:
+        """Return predictions ``(n_samples, out_features)`` without grad."""
+        with torch.no_grad():
+            return self.linear(Z)

@@ -30,9 +30,11 @@ Examples
 
 from . import init
 from ._input import InputFeatureMap
-from ._readout import IncrementalRidge
+from ._readout import IncrementalRidge, LinearReadout
 from ._reservoir import (EulerESNCell, EulerReservoir, LeakyESNCell,
                          Reservoir)
+from ._training import train_readout
 
 __all__ = ["Reservoir", "EulerReservoir", "LeakyESNCell", "EulerESNCell",
-           "InputFeatureMap", "IncrementalRidge", "init"]
+           "InputFeatureMap", "IncrementalRidge", "LinearReadout",
+           "train_readout", "init"]
