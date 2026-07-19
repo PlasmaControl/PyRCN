@@ -90,45 +90,6 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._torch_input_map: InputFeatureMap
         self._torch_readout: IncrementalRidge
 
-    def __add__(self, other: ELMRegressor) -> ELMRegressor:
-        """
-        Sum up two instances of an ```ELMRegressor```.
-
-        We always need to update the correlation matrices of the regressor.
-
-        Parameters
-        ----------
-        other : ELMRegressor
-            ```ELMRegressor``` to be added to ```self```
-
-        Returns
-        -------
-        self : returns the sum of two ```ELMRegressor``` instances.
-        """
-        self.regressor._K = self.regressor._K + other.regressor._K
-        self.regressor._xTy = self.regressor._xTy + other.regressor._xTy
-        return self
-
-    def __radd__(self, other: ELMRegressor) -> ELMRegressor:
-        """
-        Sum up multiple instances of an ```ELMRegressor```.
-
-        We always need to update the correlation matrices of the regressor.
-
-        Parameters
-        ----------
-        other : ELMRegressor
-            ```ELMRegressor``` to be added to ```self```
-
-        Returns
-        -------
-        self : returns the sum of multiple ```ELMRegressor``` instances.
-        """
-        if other == 0:
-            return self
-        else:
-            return self.__add__(other)
-
     def get_params(self, deep: bool = True) -> dict:
         """Get all parameters of the ESNRegressor."""
         if deep:

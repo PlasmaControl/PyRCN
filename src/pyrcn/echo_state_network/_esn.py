@@ -123,45 +123,6 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._torch_reservoir: Reservoir | EulerReservoir
         self._torch_readout: IncrementalRidge
 
-    def __add__(self, other: ESNRegressor) -> ESNRegressor:
-        """
-        Sum up two instances of an ```ESNRegressor```.
-
-        We always need to update the correlation matrices of the regressor.
-
-        Parameters
-        ----------
-        other : ESNRegressor
-            ```ESNRegressor``` to be added to ```self```
-
-        Returns
-        -------
-        self : returns the sum of two ```ESNRegressor``` instances.
-        """
-        self.regressor._K = self.regressor._K + other.regressor._K
-        self.regressor._xTy = self.regressor._xTy + other.regressor._xTy
-        return self
-
-    def __radd__(self, other: ESNRegressor) -> ESNRegressor:
-        """
-        Sum up multiple instances of an ```ESNRegressor```.
-
-        We always need to update the correlation matrices of the regressor.
-
-        Parameters
-        ----------
-        other : ESNRegressor
-            ```ESNRegressor``` to be added to ```self```
-
-        Returns
-        -------
-        self : returns the sum of two ```ESNRegressor``` instances.
-        """
-        if other == 0:
-            return self
-        else:
-            return self.__add__(other)
-
     def get_params(self, deep: bool = True) -> dict:
         """Get all parameters of the ESNRegressor."""
         if deep:
@@ -340,7 +301,6 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             validate_data(self, X, y, multi_output=True)
             self._input_to_node.fit(X)
             self._node_to_node.fit(self._input_to_node.transform(X))
-        # self._regressor = self._regressor.__class__()
         if self._use_torch:
             self._build_torch_backend(torch.float64)
             if self.requires_sequence:
@@ -856,7 +816,6 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
             self._node_to_node.fit(self._input_to_node.transform(X))
         self._encoder = LabelBinarizer().fit(y)
         y = self._encoder.transform(y)
-        # self._regressor = self._regressor.__class__()
         if self._use_torch:
             self._build_torch_backend(torch.float64)
             if self.requires_sequence:
