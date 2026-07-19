@@ -10,12 +10,19 @@ from typing import Any, Literal
 
 from joblib import Parallel, delayed
 import numpy as np
+import torch
 from sklearn.base import (BaseEstimator, ClassifierMixin, MultiOutputMixin,
                           RegressorMixin, clone, is_regressor)
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import validate_data
 
+from ..backend._bridge import (build_input_map, build_readout,
+                               build_reservoir, input_is_backable,
+                               node_is_backable, regressor_is_backable)
+from ..backend._input import InputFeatureMap
+from ..backend._readout import IncrementalRidge
+from ..backend._reservoir import EulerReservoir, Reservoir
 from ..base.blocks import InputToNode, NodeToNode
 from ..linear_model import IncrementalRegression
 from ..projection import MatrixToValueProjection
@@ -106,6 +113,10 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._requires_sequence = requires_sequence
         self.verbose = verbose
         self.decision_strategy = decision_strategy
+        self._use_torch: bool = False
+        self._torch_input_map: InputFeatureMap
+        self._torch_reservoir: Reservoir | EulerReservoir
+        self._torch_readout: IncrementalRidge
 
     def __add__(self, other: ESNRegressor) -> ESNRegressor:
         """
@@ -247,6 +258,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self : Returns a trained ```ESNRegressor``` model.
         """
         self._validate_hyperparameters()
+        self._use_torch = False
         validate_data(self, X=X, y=y, multi_output=True)
 
         # input_to_node
@@ -306,6 +318,10 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._validate_hyperparameters()
         if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
+        self._use_torch = (
+            input_is_backable(self._input_to_node)
+            and node_is_backable(self._node_to_node)
+            and regressor_is_backable(self._regressor))
         if self.requires_sequence:
             X, y, sequence_ranges = concatenate_sequences(X, y)
             self._input_to_node.fit(X)
@@ -315,10 +331,46 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             self._input_to_node.fit(X)
             self._node_to_node.fit(self._input_to_node.transform(X))
         # self._regressor = self._regressor.__class__()
+        if self._use_torch:
+            self._build_torch_backend(torch.float64)
+            if self.requires_sequence:
+                return self._torch_sequence_fit(X, y, sequence_ranges)
+            states = self._torch_states(X)
+            self._torch_readout.fit(
+                states, torch.as_tensor(np.asarray(y), dtype=torch.float64))
+            return self
         if self.requires_sequence:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
         else:
             return self.partial_fit(X, y, postpone_inverse=False)
+
+    def _build_torch_backend(self, dtype: torch.dtype) -> None:
+        """Build the torch backend modules from the fitted blocks."""
+        self._torch_input_map = build_input_map(
+            self._input_to_node, dtype=dtype)
+        self._torch_reservoir = build_reservoir(
+            self._node_to_node, dtype=dtype)
+        self._torch_readout = build_readout(self._regressor, dtype=dtype)
+
+    def _torch_states(self, seq: np.ndarray) -> torch.Tensor:
+        """Return reservoir states ``(L, hidden * dir)`` for one sequence."""
+        Z = self._torch_input_map(
+            torch.as_tensor(np.asarray(seq), dtype=torch.float64))
+        states, _ = self._torch_reservoir(Z.unsqueeze(0))
+        return states.squeeze(0)
+
+    def _torch_sequence_fit(self, X_cat: np.ndarray, y_cat: np.ndarray,
+                            sequence_ranges: np.ndarray) -> ESNRegressor:
+        """Accumulate the readout over sequences with a fresh zero state."""
+        n_seq = len(sequence_ranges)
+        for i, (start, stop) in enumerate(sequence_ranges):
+            states = self._torch_states(X_cat[start:stop])
+            ys = torch.as_tensor(
+                np.asarray(y_cat[start:stop]), dtype=torch.float64)
+            self._torch_readout.partial_fit(
+                states, ys, reset=(i == 0),
+                postpone_inverse=(i < n_seq - 1))
+        return self
 
     def _sequence_fit(self, X: np.ndarray, y: np.ndarray,
                       sequence_ranges: np.ndarray,
@@ -379,6 +431,16 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         """
         if self._input_to_node is None or self._regressor is None:
             raise NotFittedError(self)
+
+        if getattr(self, "_use_torch", False):
+            if self.requires_sequence is False:
+                states = self._torch_states(X)
+                return self._torch_readout.predict(states).numpy()
+            y = np.empty(shape=X.shape, dtype=object)
+            for k, seq in enumerate(X):
+                y[k] = self._torch_readout.predict(
+                    self._torch_states(seq)).numpy()
+            return y
 
         if self.requires_sequence is False:
             # input_to_node
@@ -730,6 +792,10 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         self._validate_hyperparameters()
         if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
+        self._use_torch = (
+            input_is_backable(self._input_to_node)
+            and node_is_backable(self._node_to_node)
+            and regressor_is_backable(self._regressor))
         if self.requires_sequence:
             self._check_if_sequence_to_value(X, y)
             X, y, sequence_ranges = concatenate_sequences(
@@ -743,6 +809,14 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         self._encoder = LabelBinarizer().fit(y)
         y = self._encoder.transform(y)
         # self._regressor = self._regressor.__class__()
+        if self._use_torch:
+            self._build_torch_backend(torch.float64)
+            if self.requires_sequence:
+                return self._torch_sequence_fit(X, y, sequence_ranges)
+            states = self._torch_states(X)
+            self._torch_readout.fit(
+                states, torch.as_tensor(np.asarray(y), dtype=torch.float64))
+            return self
         if self.requires_sequence:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
         else:
