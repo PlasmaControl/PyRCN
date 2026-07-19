@@ -1,6 +1,6 @@
 # PyRCN Backend Redesign — Living Plan
 
-> Status: **DRAFT / in progress**. We edit this incrementally as decisions are made.
+> Status: **Phase A + P1 complete** (torch backend behind ESN*/ELM*, public `pyrcn.nn`). Phase B (gradient training) is the remaining planned work. Edited incrementally as decisions are made.
 > Working note, not (yet) committed to any branch.
 
 ## Goal
@@ -371,13 +371,18 @@ Phase-A parity is proven, then retired.
   docs deferred to P1 (backend still marked private).
 
 ### Public torch API — `pyrcn.nn` (after Phase-A parity, D13)
-- **P1 · Promote the backend modules to a public, documented `pyrcn.nn`.** Only
-  once A5 parity holds. Clean, minimal surface over the Phase-A backend
-  `nn.Module`s (reservoir, feature map, readout); stable interfaces, docs,
-  examples for pure-PyTorch use. Built fresh — NOT the removed draft (`3e41df2`).
-  - **TODO on going public:** remove the "private / not-public-yet /
-    implementation-detail" disclaimers from the backend docstrings (e.g.
-    `pyrcn/backend/__init__.py`).
+- **P1 · Promote the backend modules to a public, documented `pyrcn.nn`. —
+  done.** Renamed `pyrcn.backend` → `pyrcn.nn` (single public package, built
+  from the Phase-A companion modules — NOT the removed draft `3e41df2`).
+  Public surface: reservoir layers `Reservoir`/`EulerReservoir`, cells
+  `LeakyESNCell`/`EulerESNCell`, `InputFeatureMap`, `IncrementalRidge`;
+  weight initializers under a `pyrcn.nn.init` submodule (mirrors
+  `torch.nn.init`). Frontend glue (`_bridge`) and the cell base
+  (`_ReservoirCell`) stay private. Removed the "implementation detail /
+  not-public-yet" disclaimer; added a pure-PyTorch usage example
+  (doctest-verified) and a Sphinx API page (`docs/.../pyrcn.nn.rst`).
+  `pyrcn.nn` registered in the top-level package. No behavior change; suite
+  195 passed / 3 skipped, flake8 + mypy clean.
 
 ### Phase B — gradient-based training (D9)
 - **B1 · Gradient readout solver.** Train the readout `nn.Linear` via an
