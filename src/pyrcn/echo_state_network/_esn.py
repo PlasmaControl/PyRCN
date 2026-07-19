@@ -6,7 +6,7 @@
 from __future__ import annotations
 
 import sys
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from joblib import Parallel, delayed
 import numpy as np
@@ -61,6 +61,10 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
     default='winner_takes_all'
         Decision strategy for sequence-to-label task. Ignored if the
         target output is a sequence
+    washout : int, default=0
+        Number of initial reservoir states (and matching targets) to drop
+        per sequence when fitting the readout, discarding the start
+        transient. Training-only; requires the torch backend.
     verbose : bool = False
         Verbosity output
     kwargs : Any
@@ -76,6 +80,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                  requires_sequence: Literal["auto"] | bool = "auto",
                  decision_strategy: Literal["winner_takes_all", "median",
                                             "last_value"] = "winner_takes_all",
+                 washout: int = 0,
                  verbose: bool = True,
                  **kwargs: Any) -> None:
         """Construct the ESNRegressor."""
@@ -111,6 +116,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                    if key in reg_params})
         self._regressor = self.regressor
         self._requires_sequence = requires_sequence
+        self.washout = washout
         self.verbose = verbose
         self.decision_strategy = decision_strategy
         self._use_torch: bool = False
@@ -167,7 +173,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             return {"input_to_node": self.input_to_node,
                     "node_to_node": self.node_to_node,
                     "regressor": self.regressor,
-                    "requires_sequence": self._requires_sequence}
+                    "requires_sequence": self._requires_sequence,
+                    "washout": self.washout}
 
     def set_params(self, **parameters: dict) -> ESNRegressor:
         """Set all possible parameters of the ESNRegressor."""
@@ -322,6 +329,10 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             input_is_backable(self._input_to_node)
             and node_is_backable(self._node_to_node)
             and regressor_is_backable(self._regressor))
+        if self.washout > 0 and not self._use_torch:
+            raise NotImplementedError(
+                "washout > 0 requires the torch backend (native "
+                "input_to_node / node_to_node / regressor)")
         if self.requires_sequence:
             X, y, sequence_ranges = concatenate_sequences(X, y)
             self._input_to_node.fit(X)
@@ -335,9 +346,10 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             self._build_torch_backend(torch.float64)
             if self.requires_sequence:
                 return self._torch_sequence_fit(X, y, sequence_ranges)
-            states = self._torch_states(X)
-            self._torch_readout.fit(
-                states, torch.as_tensor(np.asarray(y), dtype=torch.float64))
+            states, _ = self._torch_states(X)
+            states = states[self.washout:]
+            ys = torch.as_tensor(np.asarray(y), dtype=torch.float64)
+            self._torch_readout.fit(states, ys[self.washout:])
             return self
         if self.requires_sequence:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
@@ -352,21 +364,36 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             self._node_to_node, dtype=dtype)
         self._torch_readout = build_readout(self._regressor, dtype=dtype)
 
-    def _torch_states(self, seq: np.ndarray) -> torch.Tensor:
-        """Return reservoir states ``(L, hidden * dir)`` for one sequence."""
+    def _torch_states(self, seq: np.ndarray,
+                      initial_state: np.ndarray | None = None
+                      ) -> tuple[torch.Tensor, torch.Tensor]:
+        """Return ``(states (L, hidden*dir), final_state (hidden*dir,))``.
+
+        ``initial_state`` seeds the reservoir (zeros by default).
+        """
         Z = self._torch_input_map(
             torch.as_tensor(np.asarray(seq), dtype=torch.float64))
-        states, _ = self._torch_reservoir(Z.unsqueeze(0))
-        return states.squeeze(0)
+        if initial_state is None:
+            states, final = self._torch_reservoir(Z.unsqueeze(0))
+        else:
+            init = torch.as_tensor(
+                np.asarray(initial_state), dtype=torch.float64).reshape(1, -1)
+            states, final = self._torch_reservoir(Z.unsqueeze(0), init)
+        return states.squeeze(0), final.squeeze(0)
 
     def _torch_sequence_fit(self, X_cat: np.ndarray, y_cat: np.ndarray,
                             sequence_ranges: np.ndarray) -> ESNRegressor:
-        """Accumulate the readout over sequences with a fresh zero state."""
+        """Accumulate the readout over sequences with a fresh zero state.
+
+        The first ``washout`` states (and matching targets) of each sequence
+        are dropped so the initial transient does not train the readout.
+        """
         n_seq = len(sequence_ranges)
         for i, (start, stop) in enumerate(sequence_ranges):
-            states = self._torch_states(X_cat[start:stop])
+            states, _ = self._torch_states(X_cat[start:stop])
             ys = torch.as_tensor(
                 np.asarray(y_cat[start:stop]), dtype=torch.float64)
+            states, ys = states[self.washout:], ys[self.washout:]
             self._torch_readout.partial_fit(
                 states, ys, reset=(i == 0),
                 postpone_inverse=(i < n_seq - 1))
@@ -416,31 +443,48 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                                  postpone_inverse=False)
         return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def predict(self, X: np.ndarray, initial_state: np.ndarray | None = None,
+                return_state: bool = False
+                ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """
         Predict the targets using the trained ```ESNRegressor```.
 
         Parameters
         ----------
         X : ndarray of shape (n_samples, n_features)
+        initial_state : ndarray of shape (hidden_layer_size,), default=None
+            Reservoir state to start from (zeros by default). Applied to each
+            sequence in sequence mode. Requires the torch backend.
+        return_state : bool, default=False
+            If True, also return the final reservoir state(s). Requires the
+            torch backend.
 
         Returns
         -------
         y : ndarray of (n_samples,) or (n_samples, n_targets)
-            The predicted targets
+            The predicted targets. If ``return_state`` is True, a tuple
+            ``(y, final_state)`` is returned instead.
         """
         if self._input_to_node is None or self._regressor is None:
             raise NotFittedError(self)
 
         if getattr(self, "_use_torch", False):
             if self.requires_sequence is False:
-                states = self._torch_states(X)
-                return self._torch_readout.predict(states).numpy()
+                states, final = self._torch_states(X, initial_state)
+                y = self._torch_readout.predict(states).numpy()
+                return (y, final.numpy()) if return_state else y
             y = np.empty(shape=X.shape, dtype=object)
+            finals = np.empty(shape=X.shape, dtype=object)
             for k, seq in enumerate(X):
-                y[k] = self._torch_readout.predict(
-                    self._torch_states(seq)).numpy()
-            return y
+                states, final = self._torch_states(seq, initial_state)
+                y[k] = self._torch_readout.predict(states).numpy()
+                finals[k] = final.numpy()
+            return (y, finals) if return_state else y
+
+        if initial_state is not None or return_state:
+            raise NotImplementedError(
+                "initial_state / return_state require the torch backend "
+                "(native input_to_node / node_to_node / regressor)")
 
         if self.requires_sequence is False:
             # input_to_node
@@ -482,6 +526,10 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                 and not isinstance(self._requires_sequence, bool)):
             raise ValueError('Invalid value for requires_sequence, got {}'
                              .format(self._requires_sequence))
+
+        if not isinstance(self.washout, int) or self.washout < 0:
+            raise ValueError('Invalid value for washout, got {}'
+                             .format(self.washout))
 
         if not is_regressor(self._regressor):
             raise TypeError("The last step should be a regressor and "
@@ -704,6 +752,10 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
     default='winner_takes_all'
         Decision strategy for sequence-to-label task.
         Ignored if the target output is a sequence
+    washout : int, default=0
+        Number of initial reservoir states (and matching targets) to drop
+        per sequence when fitting the readout, discarding the start
+        transient. Training-only; requires the torch backend.
     verbose : bool = False
         Verbosity output
     kwargs : Any, default = None
@@ -718,13 +770,14 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
                  requires_sequence: Literal["auto"] | bool = "auto",
                  decision_strategy: Literal["winner_takes_all", "median",
                                             "last_value"] = "winner_takes_all",
+                 washout: int = 0,
                  verbose: bool = False,
                  **kwargs: Any) -> None:
         """Construct the ESNClassifier."""
         super().__init__(input_to_node=input_to_node,
                          node_to_node=node_to_node, regressor=regressor,
-                         requires_sequence=requires_sequence, verbose=verbose,
-                         **kwargs)
+                         requires_sequence=requires_sequence, washout=washout,
+                         verbose=verbose, **kwargs)
         self._decision_strategy = decision_strategy
         self._encoder = LabelBinarizer()
         self._sequence_to_value = False
@@ -796,6 +849,10 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
             input_is_backable(self._input_to_node)
             and node_is_backable(self._node_to_node)
             and regressor_is_backable(self._regressor))
+        if self.washout > 0 and not self._use_torch:
+            raise NotImplementedError(
+                "washout > 0 requires the torch backend (native "
+                "input_to_node / node_to_node / regressor)")
         if self.requires_sequence:
             self._check_if_sequence_to_value(X, y)
             X, y, sequence_ranges = concatenate_sequences(
@@ -813,9 +870,10 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
             self._build_torch_backend(torch.float64)
             if self.requires_sequence:
                 return self._torch_sequence_fit(X, y, sequence_ranges)
-            states = self._torch_states(X)
-            self._torch_readout.fit(
-                states, torch.as_tensor(np.asarray(y), dtype=torch.float64))
+            states, _ = self._torch_states(X)
+            states = states[self.washout:]
+            ys = torch.as_tensor(np.asarray(y), dtype=torch.float64)
+            self._torch_readout.fit(states, ys[self.washout:])
             return self
         if self.requires_sequence:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
@@ -823,7 +881,9 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
             super().partial_fit(X, y)
             return self
 
-    def predict(self, X: np.ndarray) -> np.ndarray:
+    def predict(self, X: np.ndarray, initial_state: np.ndarray | None = None,
+                return_state: bool = False
+                ) -> np.ndarray | tuple[np.ndarray, np.ndarray]:
         """
         Predict the classes using the trained ```ESNClassifier```.
 
@@ -831,13 +891,21 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         ----------
         X : ndarray of shape (n_samples, n_features)
             The input data.
+        initial_state : ndarray of shape (hidden_layer_size,), default=None
+            Reservoir state to start from (zeros by default). Requires the
+            torch backend.
+        return_state : bool, default=False
+            Not supported for classifiers.
 
         Returns
         -------
         y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
             The predicted classes.
         """
-        y = super().predict(X)
+        if return_state:
+            raise NotImplementedError(
+                "return_state is not supported for classifiers")
+        y = cast(np.ndarray, super().predict(X, initial_state=initial_state))
         if self.requires_sequence and self._sequence_to_value:
             for k, _ in enumerate(y):
                 y[k] = MatrixToValueProjection(
@@ -849,8 +917,7 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
                 y[k] = self._encoder.inverse_transform(y[k], threshold=None)
             return y
         else:
-            return self._encoder.inverse_transform(super().predict(X),
-                                                   threshold=None)
+            return self._encoder.inverse_transform(y, threshold=None)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """
@@ -866,7 +933,7 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         y_pred : ndarray of shape (n_samples,) or (n_samples, n_classes)
             The predicted probability estimates.
         """
-        y = super().predict(X)
+        y = cast(np.ndarray, super().predict(X))
         if self.requires_sequence and self._sequence_to_value:
             for k, _ in enumerate(y):
                 y[k] = MatrixToValueProjection(
