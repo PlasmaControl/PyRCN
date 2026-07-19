@@ -385,9 +385,22 @@ Phase-A parity is proven, then retired.
   195 passed / 3 skipped, flake8 + mypy clean.
 
 ### Phase B — gradient-based training (D9)
-- **B1 · Gradient readout solver.** Train the readout `nn.Linear` via an
-  optimizer loop (`solver='gradient'`); consistency test: fixed reservoir +
-  gradient should match closed-form within tolerance.
+- **B1 · Gradient readout solver. — done.** Added `pyrcn.nn.LinearReadout`
+  (trainable `nn.Linear` readout) + `pyrcn.nn.train_readout` (optimizer loop;
+  optimizer/loss by name, `weight_decay` = ridge strength). `ESN*`/`ELM*`
+  gain flat params `solver` (`closed_form` default / `gradient`), `optimizer`,
+  `learning_rate`, `epochs`, `batch_size` (validated, in `get_params` for
+  clone/GridSearch). In gradient mode the reservoir stays fixed: states are
+  computed once (dropping `washout` per sequence, concatenated in sequence
+  mode) and a fresh `LinearReadout` is trained; the `regressor` supplies the
+  readout config (`fit_intercept`, `alpha`→`weight_decay`). Gradient requires
+  native torch-backable components (else `NotImplementedError`). Consistency
+  check (D9): on well-conditioned (whitened) features a gradient-trained
+  readout matches the closed-form ridge to ~1e-6; through the raw reservoir /
+  ELM map convergence is slow, so the estimator tests assert learning + the
+  structural contracts. Defaults behavior-preserving; full suite green.
+  Note: gradient results are not yet reproducible via `random_state` (readout
+  init uses torch's global RNG) — a later refinement.
 - **B2 · Trainable reservoir.** `requires_grad=True` path; end-to-end backprop
   through reservoir + readout; training-loop config (optimizer, lr, epochs,
   loss, batch); reject the invalid "trainable + closed-form" combo.
