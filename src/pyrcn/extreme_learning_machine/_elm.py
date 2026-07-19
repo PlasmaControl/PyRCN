@@ -21,7 +21,8 @@ from sklearn.utils.validation import validate_data
 from ..nn._bridge import (
     build_input_map, build_readout, input_is_backable, regressor_is_backable)
 from ..nn._input import InputFeatureMap
-from ..nn._readout import IncrementalRidge
+from ..nn._readout import IncrementalRidge, LinearReadout
+from ..nn._training import train_readout
 from ..base.blocks import InputToNode
 from ..linear_model import IncrementalRegression
 
@@ -61,6 +62,11 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                              RegressorMixin | None) = None,
                  chunk_size: int | None = None,
                  verbose: bool = False,
+                 solver: str = "closed_form",
+                 optimizer: str = "adam",
+                 learning_rate: float = 1e-3,
+                 epochs: int = 100,
+                 batch_size: int | None = None,
                  **kwargs: Any) -> None:
         """Construct the ELMRegressor."""
         if input_to_node is None:
@@ -86,9 +92,15 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._regressor = self.regressor
         self._chunk_size = chunk_size
         self.verbose = verbose
+        self.solver = solver
+        self.optimizer = optimizer
+        self.learning_rate = learning_rate
+        self.epochs = epochs
+        self.batch_size = batch_size
         self._use_torch: bool = False
+        self._target_1d: bool = False
         self._torch_input_map: InputFeatureMap
-        self._torch_readout: IncrementalRidge
+        self._torch_readout: IncrementalRidge | LinearReadout
 
     def get_params(self, deep: bool = True) -> dict:
         """Get all parameters of the ESNRegressor."""
@@ -98,7 +110,12 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         else:
             return {"input_to_node": self.input_to_node,
                     "regressor": self.regressor,
-                    "chunk_size": self.chunk_size}
+                    "chunk_size": self.chunk_size,
+                    "solver": self.solver,
+                    "optimizer": self.optimizer,
+                    "learning_rate": self.learning_rate,
+                    "epochs": self.epochs,
+                    "batch_size": self.batch_size}
 
     def set_params(self, **parameters: dict) -> ELMRegressor:
         """Set all possible parameters of the ELMRegressor."""
@@ -187,6 +204,34 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._validate_hyperparameters()
         validate_data(self, X, y, multi_output=True)
 
+        self._target_1d = (np.asarray(y).ndim == 1)
+        backable = (input_is_backable(self._input_to_node)
+                    and regressor_is_backable(self._regressor))
+
+        if self.solver == "gradient":
+            if not backable:
+                raise NotImplementedError(
+                    "the gradient solver requires a torch-backable "
+                    "input_to_node and an IncrementalRegression readout")
+            self._input_to_node.fit(X)
+            dtype = torch.float64
+            fm = build_input_map(self._input_to_node, dtype=dtype)
+            feats = fm(torch.as_tensor(np.asarray(X), dtype=dtype))
+            y2 = torch.as_tensor(
+                np.asarray(y), dtype=dtype).reshape(feats.shape[0], -1)
+            lin_readout = LinearReadout(
+                feats.shape[1], y2.shape[1],
+                fit_intercept=self._regressor.fit_intercept, dtype=dtype)
+            train_readout(
+                lin_readout, feats, y2, optimizer=self.optimizer,
+                learning_rate=self.learning_rate, epochs=self.epochs,
+                batch_size=self.batch_size,
+                weight_decay=self._regressor.alpha)
+            self._torch_input_map = fm
+            self._torch_readout = lin_readout
+            self._use_torch = True
+            return self
+
         self._input_to_node.fit(X)
         self._use_torch = False
 
@@ -243,9 +288,12 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             The predicted targets
         """
         if getattr(self, "_use_torch", False):
-            Z = self._torch_input_map(
+            feats = self._torch_input_map(
                 torch.as_tensor(np.asarray(X), dtype=torch.float64))
-            return self._torch_readout.predict(Z).numpy()
+            pred = self._torch_readout.predict(feats)
+            if getattr(self, "_target_1d", False):
+                pred = pred.squeeze(-1)
+            return pred.numpy()
 
         hidden_layer_state = self._input_to_node.transform(X)
 
@@ -272,6 +320,26 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                             "implement fit and predict '{}' (type {}) "
                             "doesn't".format(self._regressor,
                                              type(self._regressor)))
+
+        if self.solver not in ("closed_form", "gradient"):
+            raise ValueError('Invalid value for solver, got {}'
+                             .format(self.solver))
+
+        if self.optimizer not in ("adam", "sgd"):
+            raise ValueError('Invalid value for optimizer, got {}'
+                             .format(self.optimizer))
+
+        if (not isinstance(self.epochs, int)
+                or isinstance(self.epochs, bool)
+                or self.epochs <= 0):
+            raise ValueError('Invalid value for epochs, got {}'
+                             .format(self.epochs))
+
+        if (not isinstance(self.learning_rate, (int, float))
+                or isinstance(self.learning_rate, bool)
+                or self.learning_rate <= 0):
+            raise ValueError('Invalid value for learning_rate, got {}'
+                             .format(self.learning_rate))
 
     def __sizeof__(self) -> int:
         """
@@ -407,10 +475,18 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
                  regressor: (IncrementalRegression |
                              RegressorMixin | None) = None,
                  chunk_size: int | None = None, verbose: bool = False,
+                 solver: str = "closed_form",
+                 optimizer: str = "adam",
+                 learning_rate: float = 1e-3,
+                 epochs: int = 100,
+                 batch_size: int | None = None,
                  **kwargs: Any) -> None:
         """Construct the ELMClassifier."""
         super().__init__(input_to_node=input_to_node, regressor=regressor,
-                         chunk_size=chunk_size, verbose=verbose, **kwargs)
+                         chunk_size=chunk_size, verbose=verbose,
+                         solver=solver, optimizer=optimizer,
+                         learning_rate=learning_rate, epochs=epochs,
+                         batch_size=batch_size, **kwargs)
         self._encoder = LabelBinarizer()
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
