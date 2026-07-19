@@ -207,9 +207,10 @@ class InputToNode(TransformerMixin, BaseEstimator):
             raise ValueError("sparsity must be between 0. and 1., got {}."
                              .format(self.sparsity))
         if self.input_activation not in ACTIVATIONS:
-            raise ValueError("The activation_function '{}' is not supported."
-                             "Supported activations are {}."
-                             .format(self.input_activation, ACTIVATIONS))
+            raise ValueError(
+                "The activation function '{}' is not supported. Supported "
+                "activations are {}.".format(
+                    self.input_activation, sorted(ACTIVATIONS)))
         if self.input_scaling <= 0.:
             raise ValueError("input_scaling must be > 0, got {}."
                              .format(self.input_scaling))

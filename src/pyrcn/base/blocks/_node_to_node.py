@@ -184,9 +184,10 @@ class NodeToNode(TransformerMixin, BaseEstimator):
             raise ValueError("sparsity must be between 0. and 1., got {}."
                              .format(self.sparsity))
         if self.reservoir_activation not in ACTIVATIONS:
-            raise ValueError("The activation_function {} is not supported. "
-                             "Supported activations are {}."
-                             .format(self.reservoir_activation, ACTIVATIONS))
+            raise ValueError(
+                "The activation function '{}' is not supported. Supported "
+                "activations are {}.".format(
+                    self.reservoir_activation, sorted(ACTIVATIONS)))
         if self.spectral_radius < 0.:
             raise ValueError("spectral_radius must be >= 0, got {}."
                              .format(self.spectral_radius))
