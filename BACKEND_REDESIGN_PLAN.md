@@ -339,8 +339,11 @@ Phase-A parity is proven, then retired.
   model selection is unchanged (decision: keep bare, additive nested deferred).
   Classifier `predict_proba` + decision strategies preserved unchanged. Full
   suite green (incl. the formerly-slow chunk test, now ~13s on the fast path).
-  DEFERRED to a follow-up (new capabilities, not behavior-preserving):
-  `washout` in fit, `predict(initial_state=, return_state=)`.
+  A4b done: `washout` (int, training-only, drops start transient per
+  sequence), `predict(initial_state=, return_state=)` (ESN-only, torch
+  backend; state-carry primitive verified — split-and-carry reproduces the
+  whole-sequence pass). Defaults behavior-preserving; numpy fallback raises
+  NotImplementedError for these.
 - **A5 · Parity & test migration.** Run the torch-f64 vs NumPy-f64 harness
   across estimators + datasets; keep the existing suite green (INV-1 within
   tolerance); add nested-params GridSearchCV test; `metrics` unaffected
