@@ -10,8 +10,9 @@ import numpy as np
 import pytest
 import torch
 
-from pyrcn.backend import (InputFeatureMap, bernoulli_input_weights,
-                           uniform_bias_weights, uniform_input_weights)
+from pyrcn.nn import InputFeatureMap
+from pyrcn.nn.init import (bernoulli_input_weights, uniform_bias_weights,
+                           uniform_input_weights)
 from pyrcn.base.blocks import InputToNode
 
 RTOL, ATOL = 1e-8, 1e-11

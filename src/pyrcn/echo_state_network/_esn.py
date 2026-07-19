@@ -16,12 +16,12 @@ from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import validate_data
 
-from ..backend._bridge import (build_input_map, build_readout,
-                               build_reservoir, input_is_backable,
-                               node_is_backable, regressor_is_backable)
-from ..backend._input import InputFeatureMap
-from ..backend._readout import IncrementalRidge
-from ..backend._reservoir import EulerReservoir, Reservoir
+from ..nn._bridge import (
+    build_input_map, build_readout, build_reservoir, input_is_backable,
+    node_is_backable, regressor_is_backable)
+from ..nn._input import InputFeatureMap
+from ..nn._readout import IncrementalRidge
+from ..nn._reservoir import EulerReservoir, Reservoir
 from ..base.blocks import InputToNode, NodeToNode
 from ..linear_model import IncrementalRegression
 from ..projection import MatrixToValueProjection

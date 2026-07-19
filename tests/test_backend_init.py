@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from pyrcn.backend import (delay_line_feedback_weights, delay_line_weights,
+from pyrcn.nn.init import (delay_line_feedback_weights, delay_line_weights,
                            normal_recurrent_weights, simple_cycle_weights)
 
 

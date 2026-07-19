@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 import torch
 
-from pyrcn.backend import Reservoir
+from pyrcn.nn import Reservoir
 from pyrcn.base.blocks import HebbianNodeToNode, NodeToNode
 
 RTOL, ATOL = 1e-8, 1e-11

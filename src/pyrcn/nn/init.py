@@ -1,12 +1,15 @@
-"""Torch-native initialization of reservoir (recurrent) weight matrices.
+"""Weight initializers for the :mod:`pyrcn.nn` reservoir components.
 
-Random/sparse designs are normalized to unit spectral radius (as PyRCN does);
-the reservoir's ``spectral_radius`` scales them at runtime. The
-minimum-complexity topologies (Rodan, 2010) are deterministic structured
-matrices whose scale is the ``forward_weight`` (and ``feedback_weight``).
+Random and sparse recurrent designs are normalized to unit spectral radius;
+a reservoir's ``spectral_radius`` then scales them at runtime. The
+minimum-complexity topologies (Rodan & Tino, 2011) are deterministic
+structured matrices whose scale is the ``forward_weight`` (and, for the
+delay-line-with-feedback design, the ``feedback_weight``). Input designs
+cover dense/sparse uniform weights, uniform bias, and signed-constant
+(Bernoulli) input weights.
 
-Used for real (non-parity) initialization; equivalence to the legacy path is
-verified separately by injecting identical weights.
+All initializers accept an optional :class:`torch.Generator` for
+reproducibility and the usual ``dtype`` / ``device`` placement arguments.
 """
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>

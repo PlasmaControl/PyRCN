@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 import torch
 
-from pyrcn.backend import InputFeatureMap, IncrementalRidge, Reservoir
+from pyrcn.nn import InputFeatureMap, IncrementalRidge, Reservoir
 
 
 def _run_pipeline(device: str) -> tuple[torch.Tensor, torch.Tensor]:

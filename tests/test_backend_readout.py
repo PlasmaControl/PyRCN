@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 import torch
 
-from pyrcn.backend import IncrementalRidge
+from pyrcn.nn import IncrementalRidge
 from pyrcn.linear_model import IncrementalRegression
 
 RTOL, ATOL = 1e-7, 1e-9

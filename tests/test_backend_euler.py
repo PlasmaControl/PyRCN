@@ -10,7 +10,8 @@ import numpy as np
 import pytest
 import torch
 
-from pyrcn.backend import EulerReservoir, antisymmetric_recurrent_weights
+from pyrcn.nn import EulerReservoir
+from pyrcn.nn.init import antisymmetric_recurrent_weights
 from pyrcn.base.blocks import EulerNodeToNode
 
 RTOL, ATOL = 1e-8, 1e-11

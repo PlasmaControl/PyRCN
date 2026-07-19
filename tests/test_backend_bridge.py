@@ -8,9 +8,9 @@ import torch
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import FeatureUnion
 
-from pyrcn.backend._bridge import (build_input_map, build_readout,
-                                   build_reservoir, input_is_backable,
-                                   node_is_backable, regressor_is_backable)
+from pyrcn.nn._bridge import (
+    build_input_map, build_readout, build_reservoir, input_is_backable,
+    node_is_backable, regressor_is_backable)
 from pyrcn.base.blocks import (BatchIntrinsicPlasticity, EulerNodeToNode,
                                HebbianNodeToNode, InputToNode, NodeToNode,
                                PredefinedWeightsInputToNode,
