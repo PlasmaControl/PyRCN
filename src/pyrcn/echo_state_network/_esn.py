@@ -8,11 +8,10 @@ from __future__ import annotations
 import sys
 from typing import Any, Literal, cast
 
-from joblib import Parallel, delayed
 import numpy as np
 import torch
 from sklearn.base import (BaseEstimator, ClassifierMixin, MultiOutputMixin,
-                          RegressorMixin, clone, is_regressor)
+                          RegressorMixin, is_regressor)
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import validate_data
@@ -422,20 +421,12 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         -------
         self : Returns a trained ESNRegressor model.
         """
-        if n_jobs is not None and n_jobs > 1:
-            reg = Parallel(n_jobs=n_jobs)(delayed(ESNRegressor.partial_fit)
-                                          (clone(self), X[idx[0]:idx[1], ...],
-                                           y[idx[0]:idx[1], ...],
-                                           postpone_inverse=True)
-                                          for idx in sequence_ranges[:-1])
-            reg = sum(reg)
-            self._regressor = reg._regressor
-        else:
-            [ESNRegressor.partial_fit(self,
-                                      X[idx[0]:idx[1], ...],
-                                      y[idx[0]:idx[1], ...],
-                                      postpone_inverse=True)
-             for idx in sequence_ranges[:-1]]
+        # n_jobs is accepted for API compatibility but ignored: the torch
+        # fast path batches this, and the numpy fallback runs serially.
+        for idx in sequence_ranges[:-1]:
+            ESNRegressor.partial_fit(self, X[idx[0]:idx[1], ...],
+                                     y[idx[0]:idx[1], ...],
+                                     postpone_inverse=True)
 
         # last sequence, calculate inverse and bias
         ESNRegressor.partial_fit(self, X=X[sequence_ranges[-1][0]:, ...],

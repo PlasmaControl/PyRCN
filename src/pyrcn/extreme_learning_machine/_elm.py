@@ -10,11 +10,10 @@ from __future__ import annotations
 import sys
 from typing import Any
 
-from joblib import Parallel, delayed
 import numpy as np
 import torch
 from sklearn.base import (BaseEstimator, ClassifierMixin, MultiOutputMixin,
-                          RegressorMixin, clone, is_regressor)
+                          RegressorMixin, is_regressor)
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import validate_data
@@ -252,23 +251,14 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         elif self._chunk_size < X.shape[0]:
             # setup chunk list
             chunks = list(range(0, X.shape[0], self._chunk_size))
-            # postpone inverse calculation for chunks n-1
-            if n_jobs is None or n_jobs < 2:
-                [ELMRegressor.partial_fit(
+            # n_jobs is accepted for API compatibility but ignored; chunks
+            # are accumulated serially (the torch fast path batches instead).
+            for idx in chunks[:-1]:
+                ELMRegressor.partial_fit(
                     self, X[idx:idx + self._chunk_size, ...],
                     y[idx:idx + self._chunk_size, ...],
                     transformer_weights=transformer_weights,
                     postpone_inverse=True)
-                 for idx in chunks[:-1]]
-            else:
-                reg = Parallel(n_jobs=n_jobs)(
-                    delayed(ELMRegressor.partial_fit)
-                    (clone(self), X[idx:idx + self._chunk_size, ...],
-                     y[idx:idx + self._chunk_size, ...],
-                     transformer_weights=transformer_weights,
-                     postpone_inverse=True) for idx in chunks[:-1])
-                reg = sum(reg)
-                self._regressor = reg._regressor
             # last chunk, calculate inverse and bias
             ELMRegressor.partial_fit(self, X=X[chunks[-1]:, ...],
                                      y=y[chunks[-1]:, ...],
