@@ -20,8 +20,9 @@ from ..nn._bridge import (
     build_input_map, build_readout, build_reservoir, input_is_backable,
     node_is_backable, regressor_is_backable)
 from ..nn._input import InputFeatureMap
-from ..nn._readout import IncrementalRidge
+from ..nn._readout import IncrementalRidge, LinearReadout
 from ..nn._reservoir import EulerReservoir, Reservoir
+from ..nn._training import train_readout
 from ..base.blocks import InputToNode, NodeToNode
 from ..linear_model import IncrementalRegression
 from ..projection import MatrixToValueProjection
@@ -81,6 +82,11 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                                             "last_value"] = "winner_takes_all",
                  washout: int = 0,
                  verbose: bool = True,
+                 solver: str = "closed_form",
+                 optimizer: str = "adam",
+                 learning_rate: float = 1e-3,
+                 epochs: int = 100,
+                 batch_size: int | None = None,
                  **kwargs: Any) -> None:
         """Construct the ESNRegressor."""
         if input_to_node is None:
@@ -118,10 +124,16 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self.washout = washout
         self.verbose = verbose
         self.decision_strategy = decision_strategy
+        self.solver = solver
+        self.optimizer = optimizer
+        self.learning_rate = learning_rate
+        self.epochs = epochs
+        self.batch_size = batch_size
         self._use_torch: bool = False
+        self._target_1d: bool = False
         self._torch_input_map: InputFeatureMap
         self._torch_reservoir: Reservoir | EulerReservoir
-        self._torch_readout: IncrementalRidge
+        self._torch_readout: IncrementalRidge | LinearReadout
 
     def get_params(self, deep: bool = True) -> dict:
         """Get all parameters of the ESNRegressor."""
@@ -134,7 +146,12 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                     "node_to_node": self.node_to_node,
                     "regressor": self.regressor,
                     "requires_sequence": self._requires_sequence,
-                    "washout": self.washout}
+                    "washout": self.washout,
+                    "solver": self.solver,
+                    "optimizer": self.optimizer,
+                    "learning_rate": self.learning_rate,
+                    "epochs": self.epochs,
+                    "batch_size": self.batch_size}
 
     def set_params(self, **parameters: dict) -> ESNRegressor:
         """Set all possible parameters of the ESNRegressor."""
@@ -285,10 +302,30 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._validate_hyperparameters()
         if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
-        self._use_torch = (
+        self._target_1d = (np.asarray(y).ndim == 1)
+        backable = (
             input_is_backable(self._input_to_node)
             and node_is_backable(self._node_to_node)
             and regressor_is_backable(self._regressor))
+        if self.solver == "gradient":
+            if not backable:
+                raise NotImplementedError(
+                    "the gradient solver requires torch-backable "
+                    "input_to_node, node_to_node and an "
+                    "IncrementalRegression readout")
+            if self.requires_sequence:
+                X, y, sequence_ranges = concatenate_sequences(X, y)
+                self._input_to_node.fit(X)
+                self._node_to_node.fit(self._input_to_node.transform(X))
+            else:
+                validate_data(self, X, y, multi_output=True)
+                self._input_to_node.fit(X)
+                self._node_to_node.fit(self._input_to_node.transform(X))
+            self._build_torch_backend(torch.float64)
+            self._use_torch = True
+            return self._torch_gradient_fit(
+                X, y, sequence_ranges if self.requires_sequence else None)
+        self._use_torch = backable
         if self.washout > 0 and not self._use_torch:
             raise NotImplementedError(
                 "washout > 0 requires the torch backend (native "
@@ -308,7 +345,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             states, _ = self._torch_states(X)
             states = states[self.washout:]
             ys = torch.as_tensor(np.asarray(y), dtype=torch.float64)
-            self._torch_readout.fit(states, ys[self.washout:])
+            cast(IncrementalRidge, self._torch_readout).fit(
+                states, ys[self.washout:])
             return self
         if self.requires_sequence:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
@@ -353,9 +391,45 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             ys = torch.as_tensor(
                 np.asarray(y_cat[start:stop]), dtype=torch.float64)
             states, ys = states[self.washout:], ys[self.washout:]
-            self._torch_readout.partial_fit(
+            cast(IncrementalRidge, self._torch_readout).partial_fit(
                 states, ys, reset=(i == 0),
                 postpone_inverse=(i < n_seq - 1))
+        return self
+
+    def _torch_gradient_fit(self, X: np.ndarray, y: np.ndarray,
+                            sequence_ranges: (np.ndarray | None)
+                            ) -> ESNRegressor:
+        """Train a fresh ``LinearReadout`` on the fixed reservoir states.
+
+        States are computed once through the frozen reservoir, dropping the
+        first ``washout`` states (and matching targets) per sequence, then a
+        ``LinearReadout`` is trained with an optimizer loop.
+        """
+        if sequence_ranges is not None:
+            states_list = []
+            y_list = []
+            for start, stop in sequence_ranges:
+                states, _ = self._torch_states(X[start:stop])
+                ys = torch.as_tensor(
+                    np.asarray(y[start:stop]), dtype=torch.float64)
+                states_list.append(states[self.washout:])
+                y_list.append(ys[self.washout:])
+            all_states = torch.cat(states_list, dim=0)
+            all_y = torch.cat(y_list, dim=0)
+        else:
+            states, _ = self._torch_states(X)
+            all_states = states[self.washout:]
+            all_y = torch.as_tensor(
+                np.asarray(y), dtype=torch.float64)[self.washout:]
+        y2 = all_y.reshape(all_states.shape[0], -1)
+        readout = LinearReadout(
+            all_states.shape[1], y2.shape[1],
+            fit_intercept=self._regressor.fit_intercept, dtype=torch.float64)
+        train_readout(
+            readout, all_states, y2, optimizer=self.optimizer,
+            learning_rate=self.learning_rate, epochs=self.epochs,
+            batch_size=self.batch_size, weight_decay=self._regressor.alpha)
+        self._torch_readout = readout
         return self
 
     def _sequence_fit(self, X: np.ndarray, y: np.ndarray,
@@ -420,15 +494,22 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             raise NotFittedError(self)
 
         if getattr(self, "_use_torch", False):
+            squeeze = getattr(self, "_target_1d", False)
             if self.requires_sequence is False:
                 states, final = self._torch_states(X, initial_state)
-                y = self._torch_readout.predict(states).numpy()
+                pred = self._torch_readout.predict(states)
+                if squeeze:
+                    pred = pred.squeeze(-1)
+                y = pred.numpy()
                 return (y, final.numpy()) if return_state else y
             y = np.empty(shape=X.shape, dtype=object)
             finals = np.empty(shape=X.shape, dtype=object)
             for k, seq in enumerate(X):
                 states, final = self._torch_states(seq, initial_state)
-                y[k] = self._torch_readout.predict(states).numpy()
+                pred = self._torch_readout.predict(states)
+                if squeeze:
+                    pred = pred.squeeze(-1)
+                y[k] = pred.numpy()
                 finals[k] = final.numpy()
             return (y, finals) if return_state else y
 
@@ -487,6 +568,26 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                             "implement fit and predict '{}' (type {})"
                             "doesn't".format(self._regressor,
                                              type(self._regressor)))
+
+        if self.solver not in ("closed_form", "gradient"):
+            raise ValueError('Invalid value for solver, got {}'
+                             .format(self.solver))
+
+        if self.optimizer not in ("adam", "sgd"):
+            raise ValueError('Invalid value for optimizer, got {}'
+                             .format(self.optimizer))
+
+        if (not isinstance(self.epochs, int)
+                or isinstance(self.epochs, bool)
+                or self.epochs <= 0):
+            raise ValueError('Invalid value for epochs, got {}'
+                             .format(self.epochs))
+
+        if (not isinstance(self.learning_rate, (int, float))
+                or isinstance(self.learning_rate, bool)
+                or self.learning_rate <= 0):
+            raise ValueError('Invalid value for learning_rate, got {}'
+                             .format(self.learning_rate))
 
     def __sizeof__(self) -> int:
         """
@@ -723,12 +824,19 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
                                             "last_value"] = "winner_takes_all",
                  washout: int = 0,
                  verbose: bool = False,
+                 solver: str = "closed_form",
+                 optimizer: str = "adam",
+                 learning_rate: float = 1e-3,
+                 epochs: int = 100,
+                 batch_size: int | None = None,
                  **kwargs: Any) -> None:
         """Construct the ESNClassifier."""
         super().__init__(input_to_node=input_to_node,
                          node_to_node=node_to_node, regressor=regressor,
                          requires_sequence=requires_sequence, washout=washout,
-                         verbose=verbose, **kwargs)
+                         verbose=verbose, solver=solver, optimizer=optimizer,
+                         learning_rate=learning_rate, epochs=epochs,
+                         batch_size=batch_size, **kwargs)
         self._decision_strategy = decision_strategy
         self._encoder = LabelBinarizer()
         self._sequence_to_value = False
@@ -796,14 +904,22 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         self._validate_hyperparameters()
         if self.requires_sequence == "auto":
             self._check_if_sequence(X, y)
-        self._use_torch = (
+        backable = (
             input_is_backable(self._input_to_node)
             and node_is_backable(self._node_to_node)
             and regressor_is_backable(self._regressor))
-        if self.washout > 0 and not self._use_torch:
-            raise NotImplementedError(
-                "washout > 0 requires the torch backend (native "
-                "input_to_node / node_to_node / regressor)")
+        if self.solver == "gradient":
+            if not backable:
+                raise NotImplementedError(
+                    "the gradient solver requires torch-backable "
+                    "input_to_node, node_to_node and an "
+                    "IncrementalRegression readout")
+        else:
+            self._use_torch = backable
+            if self.washout > 0 and not self._use_torch:
+                raise NotImplementedError(
+                    "washout > 0 requires the torch backend (native "
+                    "input_to_node / node_to_node / regressor)")
         if self.requires_sequence:
             self._check_if_sequence_to_value(X, y)
             X, y, sequence_ranges = concatenate_sequences(
@@ -816,6 +932,12 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
             self._node_to_node.fit(self._input_to_node.transform(X))
         self._encoder = LabelBinarizer().fit(y)
         y = self._encoder.transform(y)
+        self._target_1d = (np.asarray(y).ndim == 1)
+        if self.solver == "gradient":
+            self._build_torch_backend(torch.float64)
+            self._use_torch = True
+            return self._torch_gradient_fit(
+                X, y, sequence_ranges if self.requires_sequence else None)
         if self._use_torch:
             self._build_torch_backend(torch.float64)
             if self.requires_sequence:
@@ -823,7 +945,8 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
             states, _ = self._torch_states(X)
             states = states[self.washout:]
             ys = torch.as_tensor(np.asarray(y), dtype=torch.float64)
-            self._torch_readout.fit(states, ys[self.washout:])
+            cast(IncrementalRidge, self._torch_readout).fit(
+                states, ys[self.washout:])
             return self
         if self.requires_sequence:
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
