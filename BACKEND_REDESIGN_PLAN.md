@@ -329,12 +329,18 @@ Phase-A parity is proven, then retired.
   `K`/`xTy`, ridge solve on-device, `fit_intercept` via ones-column, mergeable
   `__add__` preserved. Parity vs the legacy readout by injecting identical
   features/targets (single-batch, postpone-then-solve, merge == concat).
-- **A4 · Estimator integration (D5/D8).** `ESN*/ELM*` `fit`/`predict` with the
-  single NumPy↔torch conversion at the edge; orchestrate
-  normalize→feature-map→reservoir→readout; `predict(initial_state=,
-  return_state=)`; `washout` in fit; params refactor to nested + `**kwargs`
-  alias + own `_get_param_names` (D8); external `regressor=` round-trip;
-  classifier `predict_proba` + decision strategies preserved.
+- **A4 · Estimator integration (D5/D8). — core done.** `ESN*/ELM*`
+  `fit`/`predict` route feature-map→reservoir→readout through the torch
+  backend (single float64 conversion at the edge) via the config→backend
+  bridge, on a **fast path + numpy fallback**: the fast path engages only when
+  every component is a torch-backable pyrcn default; arbitrary sub-estimators
+  (`FeatureUnion` input, external `Ridge`, `normalize=True`) and `partial_fit`
+  keep the legacy numpy path. Param surface kept as-is (bare names) so
+  model selection is unchanged (decision: keep bare, additive nested deferred).
+  Classifier `predict_proba` + decision strategies preserved unchanged. Full
+  suite green (incl. the formerly-slow chunk test, now ~13s on the fast path).
+  DEFERRED to a follow-up (new capabilities, not behavior-preserving):
+  `washout` in fit, `predict(initial_state=, return_state=)`.
 - **A5 · Parity & test migration.** Run the torch-f64 vs NumPy-f64 harness
   across estimators + datasets; keep the existing suite green (INV-1 within
   tolerance); add nested-params GridSearchCV test; `metrics` unaffected
