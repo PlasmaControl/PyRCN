@@ -355,9 +355,20 @@ Phase-A parity is proven, then retired.
   test is moot since we kept bare names). Dropped the joblib/loky
   sequence-parallel path (`n_jobs` now a serial no-op). `metrics` unaffected
   (predict still returns NumPy). Suite 194 passed / 2 skipped.
-- **A6 · Retire legacy & finalize.** Remove the old Python reservoir loop /
-  `concatenate_sequences`; docs; flake8/mypy/CI green with the torch dep; CPU
-  device tests (CUDA optional / skipped when unavailable).
+- **A6 · Finalize (legacy retirement deferred). — done.** Reframed: the numpy
+  reservoir loop (`NodeToNode.transform`), `concatenate_sequences`, and the
+  numpy weight init CANNOT be removed under fast-path + fallback — the fast
+  path still calls `concatenate_sequences` and injects numpy-init weights, and
+  the fallback path + standalone block tests + parity tests still exercise the
+  numpy reservoir loop. True retirement waits until the companion pattern (P1+)
+  makes the blocks torch-native. Done here: removed the dead+broken
+  `__add__`/`__radd__` merge operators (only the dropped joblib `sum(reg)`
+  used them; they read `regressor._K`, absent on a torch estimator) and two
+  dead commented lines; added `tests/test_backend_device.py` (CPU runs, CUDA
+  skipped when unavailable); dropped `joblib` from explicit deps (sklearn
+  pulls it transitively). CI commands verified locally (flake8 `src/pyrcn
+  tests`, mypy `src/pyrcn`, full pytest) — 196 passed / 3 skipped. User-facing
+  docs deferred to P1 (backend still marked private).
 
 ### Public torch API — `pyrcn.nn` (after Phase-A parity, D13)
 - **P1 · Promote the backend modules to a public, documented `pyrcn.nn`.** Only
