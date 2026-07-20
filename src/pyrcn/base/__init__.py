@@ -6,8 +6,8 @@ of the building blocks for Reservoir Computing Networks [#]_.
 
 References
 ----------
-    .. [#] P. Steiner et al., ‘PyRCN: A Toolbox for Exploration and Application
-    of Reservoir Computing Networks’, under review.
+.. [#] P. Steiner et al., ‘PyRCN: A Toolbox for Exploration and
+   Application of Reservoir Computing Networks’, under review.
 """
 
 from __future__ import annotations

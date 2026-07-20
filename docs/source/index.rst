@@ -33,8 +33,8 @@ It is actively developed to be extended into several directions:
 
 * Interaction with `sktime <https://sktime.org/>`_
 * Interaction with `hmmlearn <https://hmmlearn.readthedocs.io/en/stable/>`_
-* More towards future work: Related architectures, such as Liquid State Machines (LSMs)
-and Perturbative Neural Networks (PNNs)
+* More towards future work: Related architectures, such as Liquid State
+  Machines (LSMs) and Perturbative Neural Networks (PNNs)
 
 PyRCN has successfully been used for several tasks:
 

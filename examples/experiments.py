@@ -13,9 +13,19 @@ from scipy.signal import convolve2d
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 
-from pyrcn.util import new_logger, argument_parser, get_mnist, tud_colors
+from pyrcn.util import new_logger, argument_parser, get_mnist
 
 train_size = 60000
+
+# Local RGBA palette (matplotlib tab10 colors).
+palette = {
+    'lightblue': (0.12, 0.47, 0.71, 1.0),
+    'orange': (1.0, 0.5, 0.05, 1.0),
+    'lightgreen': (0.17, 0.63, 0.17, 1.0),
+    'lightpurple': (0.58, 0.40, 0.74, 1.0),
+    'gray': (0.5, 0.5, 0.5, 1.0),
+    'red': (0.84, 0.15, 0.16, 1.0),
+}
 
 
 def images_filter(images, kernel, stride=1):
@@ -133,7 +143,7 @@ def plot_confusion(directory):
     color_array = np.zeros((n_colorsteps, 4))
     lower_margin = 255
     color_array[:lower_margin, :] += np.linspace(
-        start=tud_colors['lightgreen'], stop=tud_colors['red'],
+        start=palette['lightgreen'], stop=palette['red'],
         num=lower_margin)
 
     cm = ListedColormap(color_array)

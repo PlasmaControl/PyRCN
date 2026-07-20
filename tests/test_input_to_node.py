@@ -184,6 +184,10 @@ def test_input_to_node_sparse() -> None:
     i2n.fit(X)
     assert i2n._input_weights.shape == (3, 5)
     assert safe_sparse_dot(X, i2n._input_weights).shape == (10, 5)
+    # k_in is the number of inputs connected to each hidden node.
+    W = i2n._input_weights
+    W = W.toarray() if hasattr(W, 'toarray') else np.asarray(W)
+    assert np.all((W != 0).sum(axis=0) == 2)
     assert i2n.__sizeof__() != 0
     assert i2n.input_weights is not None
     assert i2n.bias_weights is not None

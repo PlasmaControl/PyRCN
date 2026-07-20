@@ -24,8 +24,7 @@ from sklearn.model_selection import (ParameterGrid, RandomizedSearchCV,
 from sklearn.metrics import make_scorer
 from sklearn.preprocessing import MultiLabelBinarizer
 
-from sklearn.utils.fixes import loguniform
-from scipy.stats import uniform
+from scipy.stats import uniform, loguniform
 
 from pyrcn.echo_state_network import ESNClassifier
 from pyrcn.model_selection import SequentialSearchCV
@@ -93,22 +92,22 @@ step4_esn_params = {'alpha': loguniform(1e-5, 1e1)}
 kwargs_step1 = {
     'n_iter': 200, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
     'scoring': make_scorer(mean_squared_error, greater_is_better=False,
-                           needs_proba=True)
+                           response_method='predict_proba')
 }
 kwargs_step2 = {
     'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
     'scoring': make_scorer(mean_squared_error, greater_is_better=False,
-                           needs_proba=True)
+                           response_method='predict_proba')
 }
 kwargs_step3 = {
     'verbose': 1, 'n_jobs': -1,
     'scoring': make_scorer(mean_squared_error, greater_is_better=False,
-                           needs_proba=True)
+                           response_method='predict_proba')
 }
 kwargs_step4 = {
     'n_iter': 50, 'random_state': 42, 'verbose': 1, 'n_jobs': -1,
     'scoring': make_scorer(mean_squared_error, greater_is_better=False,
-                           needs_proba=True)
+                           response_method='predict_proba')
 }
 
 searches = [('step1', RandomizedSearchCV, step1_esn_params, kwargs_step1),

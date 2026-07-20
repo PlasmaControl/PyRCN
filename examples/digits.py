@@ -106,7 +106,7 @@ base_esn = ESNClassifier(**initially_fixed_params)
 # searches that we have defined before. It can be combined with any model
 # selection tool from
 # scikit-learn.
-sequential_search = SequentialSearchCV(base_esn,searches=searches).fit(
+sequential_search = SequentialSearchCV(base_esn, searches=searches).fit(
     X_tr, y_tr)
 
 

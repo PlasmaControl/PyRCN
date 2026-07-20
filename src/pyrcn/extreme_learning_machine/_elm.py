@@ -10,14 +10,19 @@ from __future__ import annotations
 import sys
 from typing import Any
 
-from joblib import Parallel, delayed
 import numpy as np
+import torch
 from sklearn.base import (BaseEstimator, ClassifierMixin, MultiOutputMixin,
-                          RegressorMixin, clone, is_regressor)
+                          RegressorMixin, is_regressor)
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import LabelBinarizer
 from sklearn.utils.validation import validate_data
 
+from ..nn._bridge import (
+    build_input_map, build_readout, input_is_backable, regressor_is_backable)
+from ..nn._input import InputFeatureMap
+from ..nn._readout import IncrementalRidge, LinearReadout
+from ..nn._training import LOSSES, OPTIMIZERS, torch_generator, train_readout
 from ..base.blocks import InputToNode
 from ..linear_model import IncrementalRegression
 
@@ -44,6 +49,19 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
     chunk_size : Optional[int], default=None
          if X.shape[0] > chunk_size, calculate results incrementally with
          partial_fit
+    solver : {"closed_form", "gradient"}, default="closed_form"
+        Readout training method. ``"closed_form"`` solves the ridge normal
+        equations; ``"gradient"`` trains the readout with an optimizer loop.
+    optimizer : {"adam", "adamw", "sgd", "rmsprop", "adagrad"}, default="adam"
+        Optimizer used when ``solver="gradient"``.
+    learning_rate : float, default=1e-3
+        Learning rate used when ``solver="gradient"``.
+    epochs : int, default=100
+        Number of training epochs when ``solver="gradient"``.
+    batch_size : Optional[int], default=None
+        Mini-batch size when ``solver="gradient"`` (``None`` = full batch).
+    loss : {"mse", "mae", "huber"}, default="mse"
+        Loss used when ``solver="gradient"``.
     verbose : bool = False
         Verbosity output
     kwargs : Any, default = None
@@ -57,6 +75,12 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                              RegressorMixin | None) = None,
                  chunk_size: int | None = None,
                  verbose: bool = False,
+                 solver: str = "closed_form",
+                 optimizer: str = "adam",
+                 learning_rate: float = 1e-3,
+                 epochs: int = 100,
+                 batch_size: int | None = None,
+                 loss: str = "mse",
                  **kwargs: Any) -> None:
         """Construct the ELMRegressor."""
         if input_to_node is None:
@@ -82,45 +106,16 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._regressor = self.regressor
         self._chunk_size = chunk_size
         self.verbose = verbose
-
-    def __add__(self, other: ELMRegressor) -> ELMRegressor:
-        """
-        Sum up two instances of an ```ELMRegressor```.
-
-        We always need to update the correlation matrices of the regressor.
-
-        Parameters
-        ----------
-        other : ELMRegressor
-            ```ELMRegressor``` to be added to ```self```
-
-        Returns
-        -------
-        self : returns the sum of two ```ELMRegressor``` instances.
-        """
-        self.regressor._K = self.regressor._K + other.regressor._K
-        self.regressor._xTy = self.regressor._xTy + other.regressor._xTy
-        return self
-
-    def __radd__(self, other: ELMRegressor) -> ELMRegressor:
-        """
-        Sum up multiple instances of an ```ELMRegressor```.
-
-        We always need to update the correlation matrices of the regressor.
-
-        Parameters
-        ----------
-        other : ELMRegressor
-            ```ELMRegressor``` to be added to ```self```
-
-        Returns
-        -------
-        self : returns the sum of multiple ```ELMRegressor``` instances.
-        """
-        if other == 0:
-            return self
-        else:
-            return self.__add__(other)
+        self.solver = solver
+        self.optimizer = optimizer
+        self.learning_rate = learning_rate
+        self.epochs = epochs
+        self.batch_size = batch_size
+        self.loss = loss
+        self._use_torch: bool = False
+        self._target_1d: bool = False
+        self._torch_input_map: InputFeatureMap
+        self._torch_readout: IncrementalRidge | LinearReadout
 
     def get_params(self, deep: bool = True) -> dict:
         """Get all parameters of the ESNRegressor."""
@@ -130,7 +125,13 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         else:
             return {"input_to_node": self.input_to_node,
                     "regressor": self.regressor,
-                    "chunk_size": self.chunk_size}
+                    "chunk_size": self.chunk_size,
+                    "solver": self.solver,
+                    "optimizer": self.optimizer,
+                    "learning_rate": self.learning_rate,
+                    "epochs": self.epochs,
+                    "batch_size": self.batch_size,
+                    "loss": self.loss}
 
     def set_params(self, **parameters: dict) -> ELMRegressor:
         """Set all possible parameters of the ELMRegressor."""
@@ -177,6 +178,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                 f"got {self._regressor}")
         self._validate_hyperparameters()
         validate_data(self, X, y, multi_output=True)
+        self._use_torch = False
 
         # input_to_node
         try:
@@ -207,7 +209,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         n_jobs : int, default=None
             The number of jobs to run in parallel. ```-1``` means using all
             processors.
-            See :term:`Glossary <n_jobs>` for more details.
+            See the scikit-learn glossary for n_jobs.
         transformer_weights :  Union[np.ndarray, None], default=None
             ignored
 
@@ -218,7 +220,50 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._validate_hyperparameters()
         validate_data(self, X, y, multi_output=True)
 
+        self._target_1d = (np.asarray(y).ndim == 1)
+        backable = (input_is_backable(self._input_to_node)
+                    and regressor_is_backable(self._regressor))
+
+        if self.solver == "gradient":
+            if not backable:
+                raise NotImplementedError(
+                    "the gradient solver requires a torch-backable "
+                    "input_to_node and an IncrementalRegression readout")
+            self._input_to_node.fit(X)
+            dtype = torch.float64
+            gen = torch_generator(self._input_to_node.random_state)
+            fm = build_input_map(self._input_to_node, dtype=dtype)
+            feats = fm(torch.as_tensor(np.asarray(X), dtype=dtype))
+            y2 = torch.as_tensor(
+                np.asarray(y), dtype=dtype).reshape(feats.shape[0], -1)
+            lin_readout = LinearReadout(
+                feats.shape[1], y2.shape[1],
+                fit_intercept=self._regressor.fit_intercept,
+                generator=gen, dtype=dtype)
+            train_readout(
+                lin_readout, feats, y2, optimizer=self.optimizer,
+                learning_rate=self.learning_rate, epochs=self.epochs,
+                batch_size=self.batch_size, loss=self.loss,
+                weight_decay=self._regressor.alpha, generator=gen)
+            self._torch_input_map = fm
+            self._torch_readout = lin_readout
+            self._use_torch = True
+            return self
+
         self._input_to_node.fit(X)
+        self._use_torch = False
+
+        if (input_is_backable(self._input_to_node)
+                and regressor_is_backable(self._regressor)):
+            dtype = torch.float64
+            fm = build_input_map(self._input_to_node, dtype=dtype)
+            Z = fm(torch.as_tensor(np.asarray(X), dtype=dtype))
+            readout = build_readout(self._regressor, dtype=dtype)
+            readout.fit(Z, torch.as_tensor(np.asarray(y), dtype=dtype))
+            self._torch_input_map = fm
+            self._torch_readout = readout
+            self._use_torch = True
+            return self
 
         if self._chunk_size is None or self._chunk_size >= X.shape[0]:
             # input_to_node
@@ -230,23 +275,14 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         elif self._chunk_size < X.shape[0]:
             # setup chunk list
             chunks = list(range(0, X.shape[0], self._chunk_size))
-            # postpone inverse calculation for chunks n-1
-            if n_jobs is None or n_jobs < 2:
-                [ELMRegressor.partial_fit(
+            # n_jobs is accepted for API compatibility but ignored; chunks
+            # are accumulated serially (the torch fast path batches instead).
+            for idx in chunks[:-1]:
+                ELMRegressor.partial_fit(
                     self, X[idx:idx + self._chunk_size, ...],
                     y[idx:idx + self._chunk_size, ...],
                     transformer_weights=transformer_weights,
                     postpone_inverse=True)
-                 for idx in chunks[:-1]]
-            else:
-                reg = Parallel(n_jobs=n_jobs)(
-                    delayed(ELMRegressor.partial_fit)
-                    (clone(self), X[idx:idx + self._chunk_size, ...],
-                     y[idx:idx + self._chunk_size, ...],
-                     transformer_weights=transformer_weights,
-                     postpone_inverse=True) for idx in chunks[:-1])
-                reg = sum(reg)
-                self._regressor = reg._regressor
             # last chunk, calculate inverse and bias
             ELMRegressor.partial_fit(self, X=X[chunks[-1]:, ...],
                                      y=y[chunks[-1]:, ...],
@@ -269,6 +305,14 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         y : ndarray of (n_samples,) or (n_samples, n_targets)
             The predicted targets
         """
+        if getattr(self, "_use_torch", False):
+            feats = self._torch_input_map(
+                torch.as_tensor(np.asarray(X), dtype=torch.float64))
+            pred = self._torch_readout.predict(feats)
+            if getattr(self, "_target_1d", False):
+                pred = pred.squeeze(-1)
+            return pred.numpy()
+
         hidden_layer_state = self._input_to_node.transform(X)
 
         return self._regressor.predict(hidden_layer_state)
@@ -294,6 +338,30 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                             "implement fit and predict '{}' (type {}) "
                             "doesn't".format(self._regressor,
                                              type(self._regressor)))
+
+        if self.solver not in ("closed_form", "gradient"):
+            raise ValueError('Invalid value for solver, got {}'
+                             .format(self.solver))
+
+        if self.optimizer not in OPTIMIZERS:
+            raise ValueError('Invalid value for optimizer, got {}'
+                             .format(self.optimizer))
+
+        if self.loss not in LOSSES:
+            raise ValueError('Invalid value for loss, got {}'
+                             .format(self.loss))
+
+        if (not isinstance(self.epochs, int)
+                or isinstance(self.epochs, bool)
+                or self.epochs <= 0):
+            raise ValueError('Invalid value for epochs, got {}'
+                             .format(self.epochs))
+
+        if (not isinstance(self.learning_rate, (int, float))
+                or isinstance(self.learning_rate, bool)
+                or self.learning_rate <= 0):
+            raise ValueError('Invalid value for learning_rate, got {}'
+                             .format(self.learning_rate))
 
     def __sizeof__(self) -> int:
         """
@@ -417,6 +485,19 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
     chunk_size : Optional[int], default=None
          if X.shape[0] > chunk_size, calculate results incrementally
          with partial_fit
+    solver : {"closed_form", "gradient"}, default="closed_form"
+        Readout training method. ``"closed_form"`` solves the ridge normal
+        equations; ``"gradient"`` trains the readout with an optimizer loop.
+    optimizer : {"adam", "adamw", "sgd", "rmsprop", "adagrad"}, default="adam"
+        Optimizer used when ``solver="gradient"``.
+    learning_rate : float, default=1e-3
+        Learning rate used when ``solver="gradient"``.
+    epochs : int, default=100
+        Number of training epochs when ``solver="gradient"``.
+    batch_size : Optional[int], default=None
+        Mini-batch size when ``solver="gradient"`` (``None`` = full batch).
+    loss : {"mse", "mae", "huber"}, default="mse"
+        Loss used when ``solver="gradient"``.
     verbose : bool = False
         Verbosity output
     kwargs : Any, default = None
@@ -429,10 +510,19 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
                  regressor: (IncrementalRegression |
                              RegressorMixin | None) = None,
                  chunk_size: int | None = None, verbose: bool = False,
+                 solver: str = "closed_form",
+                 optimizer: str = "adam",
+                 learning_rate: float = 1e-3,
+                 epochs: int = 100,
+                 batch_size: int | None = None,
+                 loss: str = "mse",
                  **kwargs: Any) -> None:
         """Construct the ELMClassifier."""
         super().__init__(input_to_node=input_to_node, regressor=regressor,
-                         chunk_size=chunk_size, verbose=verbose, **kwargs)
+                         chunk_size=chunk_size, verbose=verbose,
+                         solver=solver, optimizer=optimizer,
+                         learning_rate=learning_rate, epochs=epochs,
+                         batch_size=batch_size, loss=loss, **kwargs)
         self._encoder = LabelBinarizer()
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
@@ -489,7 +579,7 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
         n_jobs : Union[int, np.integer, None], default=None
             The number of jobs to run in parallel. ```-1``` means using all
             processors.
-            See :term:`Glossary <n_jobs>` for more details.
+            See the scikit-learn glossary for n_jobs.
         transformer_weights : Optional[np.ndarray], default=None
             ignored
 

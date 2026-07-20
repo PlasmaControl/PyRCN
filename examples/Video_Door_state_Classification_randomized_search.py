@@ -6,8 +6,7 @@ from pyrcn.metrics import mean_squared_error
 
 from sklearn.metrics import make_scorer
 from sklearn.model_selection import RandomizedSearchCV
-from sklearn.utils.fixes import loguniform
-from scipy.stats import uniform
+from scipy.stats import loguniform, uniform
 from joblib import dump, load
 
 
@@ -102,7 +101,7 @@ step0_esn_params = {'input_scaling': uniform(loc=1e-2, scale=1),
 kwargs_step0 = {'n_iter': 1000, 'random_state': 42, 'verbose': 1, 'n_jobs': 1,
                 'scoring': make_scorer(mean_squared_error,
                                        greater_is_better=False,
-                                       needs_proba=True)}
+                                       response_method='predict_proba')}
 
 base_esn = ESNClassifier(**initially_fixed_params)
 

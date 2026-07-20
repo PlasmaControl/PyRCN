@@ -1,3 +1,5 @@
+.. _whats rc:
+
 Definition of Reservoir Computing
 =================================
 

@@ -35,15 +35,17 @@ class NodeToNode(TransformerMixin, BaseEstimator):
     reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
     'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear
-            bottleneck, returns f(x) = x
-            - 'logistic', the logistic sigmoid function,
-            returns f(x) = 1/(1+exp(-x)).
-            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function,
-            returns f(x) = max(0, x)
-            - 'bounded_relu', the bounded rectified linear unit function,
-            returns f(x) = min(max(x, 0),1)
+
+        - 'identity', no-op activation, useful to implement linear
+          bottleneck, returns f(x) = x
+        - 'logistic', the logistic sigmoid function,
+          returns f(x) = 1/(1+exp(-x)).
+        - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+        - 'relu', the rectified linear unit function,
+          returns f(x) = max(0, x)
+        - 'bounded_relu', the bounded rectified linear unit function,
+          returns f(x) = min(max(x, 0),1)
+
     spectral_radius : float, default = 1.
         Scales the recurrent weight matrix.
     leakage : float, default = 1.
@@ -184,9 +186,10 @@ class NodeToNode(TransformerMixin, BaseEstimator):
             raise ValueError("sparsity must be between 0. and 1., got {}."
                              .format(self.sparsity))
         if self.reservoir_activation not in ACTIVATIONS:
-            raise ValueError("The activation_function {} is not supported. "
-                             "Supported activations are {}."
-                             .format(self.reservoir_activation, ACTIVATIONS))
+            raise ValueError(
+                "The activation function '{}' is not supported. Supported "
+                "activations are {}.".format(
+                    self.reservoir_activation, sorted(ACTIVATIONS)))
         if self.spectral_radius < 0.:
             raise ValueError("spectral_radius must be >= 0, got {}."
                              .format(self.spectral_radius))
@@ -245,15 +248,17 @@ class EulerNodeToNode(NodeToNode):
     reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
     'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear
-            bottleneck, returns f(x) = x
-            - 'logistic', the logistic sigmoid function,
-            returns f(x) = 1/(1+exp(-x)).
-            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function,
-            returns f(x) = max(0, x)
-            - 'bounded_relu', the bounded rectified linear unit function,
-            returns f(x) = min(max(x, 0),1)
+
+        - 'identity', no-op activation, useful to implement linear
+          bottleneck, returns f(x) = x
+        - 'logistic', the logistic sigmoid function,
+          returns f(x) = 1/(1+exp(-x)).
+        - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+        - 'relu', the rectified linear unit function,
+          returns f(x) = max(0, x)
+        - 'bounded_relu', the bounded rectified linear unit function,
+          returns f(x) = min(max(x, 0),1)
+
     recurrent_scaling : float, default = 1.
         Scales the recurrent weight matrix.
     gamma : float, default = 0.001
@@ -375,15 +380,17 @@ class PredefinedWeightsNodeToNode(NodeToNode):
     reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
     'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear
-            bottleneck, returns f(x) = x
-            - 'logistic', the logistic sigmoid function,
-            returns f(x) = 1/(1+exp(-x)).
-            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function,
-            returns f(x) = max(0, x)
-            - 'bounded_relu', the bounded rectified linear unit function,
-            returns f(x) = min(max(x, 0),1)
+
+        - 'identity', no-op activation, useful to implement linear
+          bottleneck, returns f(x) = x
+        - 'logistic', the logistic sigmoid function,
+          returns f(x) = 1/(1+exp(-x)).
+        - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+        - 'relu', the rectified linear unit function,
+          returns f(x) = max(0, x)
+        - 'bounded_relu', the bounded rectified linear unit function,
+          returns f(x) = min(max(x, 0),1)
+
     spectral_radius :  float, default = 1.
         Scales the recurrent weight matrix.
     leakage : float, default = 1.
@@ -448,15 +455,17 @@ class HebbianNodeToNode(NodeToNode):
     reservoir_activation : Literal['tanh', 'identity', 'logistic', 'relu',
     'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear
-            bottleneck, returns f(x) = x
-            - 'logistic', the logistic sigmoid function,
-            returns f(x) = 1/(1+exp(-x)).
-            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function,
-            returns f(x) = max(0, x)
-            - 'bounded_relu', the bounded rectified linear unit function,
-            returns f(x) = min(max(x, 0),1)
+
+        - 'identity', no-op activation, useful to implement linear
+          bottleneck, returns f(x) = x
+        - 'logistic', the logistic sigmoid function,
+          returns f(x) = 1/(1+exp(-x)).
+        - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+        - 'relu', the rectified linear unit function,
+          returns f(x) = max(0, x)
+        - 'bounded_relu', the bounded rectified linear unit function,
+          returns f(x) = min(max(x, 0),1)
+
     spectral_radius :  float, default = 1.
         Scales the recurrent weight matrix.
     leakage : float, default = 1.

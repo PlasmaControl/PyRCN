@@ -83,8 +83,6 @@ def mean_absolute_error(y_true: np.ndarray, y_pred: np.ndarray, *,
         -> float:
     """Mean absolute error regression loss.
 
-    Read more in the :ref:`User Guide <mean_absolute_error>`.
-
     Parameters
     ----------
     y_true : array-like of shape (n_samples,) or (n_samples, n_outputs)
@@ -93,23 +91,22 @@ def mean_absolute_error(y_true: np.ndarray, y_pred: np.ndarray, *,
         Estimated target values.
     sample_weight : array-like of shape (n_samples,), default=None
         Sample weights.
-    multioutput : {'raw_values', 'uniform_average'}  or array-like of shape
-    (n_outputs,), default='uniform_average'
-        Defines aggregating of multiple output values.
-        Array-like value defines weights used to average errors.
-        'raw_values' :
-            Returns a full set of errors in case of multioutput input.
-        'uniform_average' :
-            Errors of all outputs are averaged with uniform weight.
+    multioutput : str or array-like, default='uniform_average'
+        Defines aggregating of multiple output values, one of
+        {'raw_values', 'uniform_average'} or an array-like of shape
+        (n_outputs,). An array-like value defines weights used to average
+        errors. With 'raw_values', a full set of errors is returned in case
+        of multioutput input. With 'uniform_average', errors of all outputs
+        are averaged with uniform weight.
 
     Returns
     -------
     loss : float or ndarray of floats
         If multioutput is 'raw_values', then mean absolute error is returned
-        for each output separately.
-        If multioutput is 'uniform_average' or an ndarray of weights, then the
-        weighted average of all output errors is returned.
-        MAE output is non-negative floating point. The best value is 0.0.
+        for each output separately. If multioutput is 'uniform_average' or
+        an ndarray of weights, then the weighted average of all output
+        errors is returned. MAE output is non-negative floating point. The
+        best value is 0.0.
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
         y_true, y_pred, sample_weight, multioutput=multioutput)
@@ -129,13 +126,10 @@ def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
                                        "variance_weighted"] | None) =
                                    "uniform_average")\
         -> float:
-    """
-    Mean absolute percentage error regression loss.
+    """Mean absolute percentage error regression loss.
 
-    Note here that we do not represent the output as a percentage in range
-    [0, 100]. Instead, we represent it in range [0, 1/eps]. Read more in the
-    :ref:`User Guide <mean_absolute_percentage_error>`.
-    .. versionadded:: 0.24
+    Note that the output is not represented as a percentage in range
+    [0, 100]. Instead, it is represented in range [0, 1/eps].
 
     Parameters
     ----------
@@ -145,26 +139,25 @@ def mean_absolute_percentage_error(y_true: np.ndarray, y_pred: np.ndarray,
         Estimated target values.
     sample_weight : array-like of shape (n_samples,), default=None
         Sample weights.
-    multioutput : {'raw_values', 'uniform_average'} or array-like
-        Defines aggregating of multiple output values.
-        Array-like value defines weights used to average errors.
-        If input is list then the shape must be (n_outputs,).
-        'raw_values' :
-            Returns a full set of errors in case of multioutput input.
-        'uniform_average' :
-            Errors of all outputs are averaged with uniform weight.
+    multioutput : str or array-like, default='uniform_average'
+        Defines aggregating of multiple output values, one of
+        {'raw_values', 'uniform_average'} or an array-like of shape
+        (n_outputs,). An array-like value defines weights used to average
+        errors. With 'raw_values', a full set of errors is returned in case
+        of multioutput input. With 'uniform_average', errors of all outputs
+        are averaged with uniform weight.
 
     Returns
     -------
     loss : float or ndarray of floats in the range [0, 1/eps]
         If multioutput is 'raw_values', then mean absolute percentage error
-        is returned for each output separately.
-        If multioutput is 'uniform_average' or an ndarray of weights, then the
-        weighted average of all output errors is returned.
-        MAPE output is non-negative floating point. The best value is 0.0.
-        But note the fact that bad predictions can lead to arbitarily large
-        MAPE values, especially if some y_true values are very close to zero.
-        Note that we return a large value instead of `inf` when y_true is zero.
+        is returned for each output separately. If multioutput is
+        'uniform_average' or an ndarray of weights, then the weighted average
+        of all output errors is returned. MAPE output is non-negative
+        floating point. The best value is 0.0. Note that bad predictions can
+        lead to arbitrarily large MAPE values, especially if some y_true
+        values are very close to zero. A large value is returned instead of
+        ``inf`` when y_true is zero.
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
         y_true, y_pred, sample_weight, multioutput=multioutput)
@@ -185,8 +178,6 @@ def mean_squared_error(y_true: np.ndarray, y_pred: np.ndarray, *,
                        squared: bool = True) -> float:
     """Mean squared error regression loss.
 
-    Read more in the :ref:`User Guide <mean_squared_error>`.
-
     Parameters
     ----------
     y_true : array-like of shape (n_samples,) or (n_samples, n_outputs)
@@ -195,14 +186,13 @@ def mean_squared_error(y_true: np.ndarray, y_pred: np.ndarray, *,
         Estimated target values.
     sample_weight : array-like of shape (n_samples,), default=None
         Sample weights.
-    multioutput : {'raw_values', 'uniform_average'} or array-like of shape
-    (n_outputs,), default='uniform_average'
-        Defines aggregating of multiple output values.
-        Array-like value defines weights used to average errors.
-        'raw_values' :
-            Returns a full set of errors in case of multioutput input.
-        'uniform_average' :
-            Errors of all outputs are averaged with uniform weight.
+    multioutput : str or array-like, default='uniform_average'
+        Defines aggregating of multiple output values, one of
+        {'raw_values', 'uniform_average'} or an array-like of shape
+        (n_outputs,). An array-like value defines weights used to average
+        errors. With 'raw_values', a full set of errors is returned in case
+        of multioutput input. With 'uniform_average', errors of all outputs
+        are averaged with uniform weight.
     squared : bool, default=True
         If True returns MSE value, if False returns RMSE value.
 
@@ -235,8 +225,6 @@ def mean_squared_log_error(y_true: np.ndarray, y_pred: np.ndarray, *,
                            "uniform_average") -> float:
     """Mean squared logarithmic error regression loss.
 
-    Read more in the :ref:`User Guide <mean_squared_log_error>`.
-
     Parameters
     ----------
     y_true : array-like of shape (n_samples,) or (n_samples, n_outputs)
@@ -245,15 +233,13 @@ def mean_squared_log_error(y_true: np.ndarray, y_pred: np.ndarray, *,
         Estimated target values.
     sample_weight : array-like of shape (n_samples,), default=None
         Sample weights.
-    multioutput : {'raw_values', 'uniform_average'} or array-like of shape
-    (n_outputs,), default='uniform_average'
-        Defines aggregating of multiple output values.
-        Array-like value defines weights used to average errors.
-        'raw_values' :
-            Returns a full set of errors when the input is of multioutput
-            format.
-        'uniform_average' :
-            Errors of all outputs are averaged with uniform weight.
+    multioutput : str or array-like, default='uniform_average'
+        Defines aggregating of multiple output values, one of
+        {'raw_values', 'uniform_average'} or an array-like of shape
+        (n_outputs,). An array-like value defines weights used to average
+        errors. With 'raw_values', a full set of errors is returned in case
+        of multioutput input. With 'uniform_average', errors of all outputs
+        are averaged with uniform weight.
 
     Returns
     -------
@@ -279,34 +265,32 @@ def median_absolute_error(y_true: np.ndarray, y_pred: np.ndarray, *,
                           sample_weight: np.ndarray | None = None) -> float:
     """Median absolute error regression loss.
 
-    Median absolute error output is non-negative floating point. The best value
-    is 0.0. Read more in the :ref:`User Guide <median_absolute_error>`.
+    Median absolute error output is non-negative floating point. The best
+    value is 0.0.
 
     Parameters
     ----------
-    y_true : array-like of shape = (n_samples) or (n_samples, n_outputs)
+    y_true : array-like of shape (n_samples,) or (n_samples, n_outputs)
         Ground truth (correct) target values.
-    y_pred : array-like of shape = (n_samples) or (n_samples, n_outputs)
+    y_pred : array-like of shape (n_samples,) or (n_samples, n_outputs)
         Estimated target values.
-    multioutput : {'raw_values', 'uniform_average'} or array-like of shape
-    (n_outputs,), default='uniform_average'
-        Defines aggregating of multiple output values. Array-like value defines
-        weights used to average errors.
-        'raw_values' :
-            Returns a full set of errors in case of multioutput input.
-        'uniform_average' :
-            Errors of all outputs are averaged with uniform weight.
+    multioutput : str or array-like, default='uniform_average'
+        Defines aggregating of multiple output values, one of
+        {'raw_values', 'uniform_average'} or an array-like of shape
+        (n_outputs,). An array-like value defines weights used to average
+        errors. With 'raw_values', a full set of errors is returned in case
+        of multioutput input. With 'uniform_average', errors of all outputs
+        are averaged with uniform weight.
     sample_weight : array-like of shape (n_samples,), default=None
         Sample weights.
-        .. versionadded:: 0.24
 
     Returns
     -------
     loss : float or ndarray of floats
         If multioutput is 'raw_values', then mean absolute error is returned
-        for each output separately.
-        If multioutput is 'uniform_average' or an ndarray of weights, then the
-        weighted average of all output errors is returned.
+        for each output separately. If multioutput is 'uniform_average' or
+        an ndarray of weights, then the weighted average of all output
+        errors is returned.
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
         y_true, y_pred, sample_weight, multioutput=multioutput)
@@ -328,7 +312,6 @@ def explained_variance_score(y_true: np.ndarray, y_pred: np.ndarray, *,
     """Explained variance regression score function.
 
     Best possible score is 1.0, lower values are worse.
-    Read more in the :ref:`User Guide <explained_variance_score>`.
 
     Parameters
     ----------
@@ -338,17 +321,15 @@ def explained_variance_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         Estimated target values.
     sample_weight : array-like of shape (n_samples,), default=None
         Sample weights.
-    multioutput : {'raw_values', 'uniform_average', 'variance_weighted'} or
-    array-like of shape (n_outputs,), default='uniform_average'
-        Defines aggregating of multiple output scores.
-        Array-like value defines weights used to average scores.
-        'raw_values' :
-            Returns a full set of scores in case of multioutput input.
-        'uniform_average' :
-            Scores of all outputs are averaged with uniform weight.
-        'variance_weighted' :
-            Scores of all outputs are averaged, weighted by the variances
-            of each individual output.
+    multioutput : str or array-like, default='uniform_average'
+        Defines aggregating of multiple output scores, one of
+        {'raw_values', 'uniform_average', 'variance_weighted'} or an
+        array-like of shape (n_outputs,). An array-like value defines
+        weights used to average scores. With 'raw_values', a full set of
+        scores is returned in case of multioutput input. With
+        'uniform_average', scores of all outputs are averaged with uniform
+        weight. With 'variance_weighted', scores of all outputs are
+        averaged, weighted by the variances of each individual output.
 
     Returns
     -------
@@ -375,15 +356,12 @@ def r2_score(y_true: np.ndarray, y_pred: np.ndarray, *,
              multioutput: (np.ndarray | Literal[
                  "raw_values", "uniform_average", "variance_weighted"] |
                                 None) = "uniform_average") -> float:
-    """
-    R^2 (coefficient of determination) regression score function.
+    """R^2 (coefficient of determination) regression score function.
 
     Best possible score is 1.0 and it can be negative (because the
     model can be arbitrarily worse). A constant model that always
     predicts the expected value of y, disregarding the input features,
     would get a R^2 score of 0.0.
-
-    Read more in the :ref:`User Guide <r2_score>`.
 
     Parameters
     ----------
@@ -393,20 +371,15 @@ def r2_score(y_true: np.ndarray, y_pred: np.ndarray, *,
         Estimated target values.
     sample_weight : array-like of shape (n_samples,), default=None
         Sample weights.
-    multioutput : {'raw_values', 'uniform_average', 'variance_weighted'},
-    array-like of shape (n_outputs,) or None, default='uniform_average'
-        Defines aggregating of multiple output scores.
-        Array-like value defines weights used to average scores.
-        Default is "uniform_average".
-        'raw_values' :
-            Returns a full set of scores in case of multioutput input.
-        'uniform_average' :
-            Scores of all outputs are averaged with uniform weight.
-        'variance_weighted' :
-            Scores of all outputs are averaged, weighted by the variances
-            of each individual output.
-        .. versionchanged:: 0.19
-            Default value of multioutput is 'uniform_average'.
+    multioutput : str, array-like or None, default='uniform_average'
+        Defines aggregating of multiple output scores, one of
+        {'raw_values', 'uniform_average', 'variance_weighted'}, an
+        array-like of shape (n_outputs,) or None. An array-like value
+        defines weights used to average scores. With 'raw_values', a full
+        set of scores is returned in case of multioutput input. With
+        'uniform_average', scores of all outputs are averaged with uniform
+        weight. With 'variance_weighted', scores of all outputs are
+        averaged, weighted by the variances of each individual output.
 
     Returns
     -------
@@ -416,16 +389,10 @@ def r2_score(y_true: np.ndarray, y_pred: np.ndarray, *,
 
     Notes
     -----
-    This is not a symmetric function.
-    Unlike most other scores, R^2 score may be negative (it need not actually
-    be the square of a quantity R).
-    This metric is not well-defined for single samples and will return a NaN
-    value if n_samples is less than two.
-
-    References
-    ----------
-    .. [1] `Wikipedia entry on the Coefficient of determination
-            <https://en.wikipedia.org/wiki/Coefficient_of_determination>`_
+    This is not a symmetric function. Unlike most other scores, the R^2
+    score may be negative (it need not actually be the square of a quantity
+    R). This metric is not well-defined for single samples and will return a
+    NaN value if n_samples is less than two.
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
         y_true, y_pred, sample_weight, multioutput=multioutput)
@@ -439,10 +406,7 @@ def r2_score(y_true: np.ndarray, y_pred: np.ndarray, *,
 
 
 def max_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
-    """
-    max_error metric calculates the maximum residual error.
-
-    Read more in the :ref:`User Guide <max_error>`.
+    """Calculate the maximum residual error.
 
     Parameters
     ----------
@@ -470,8 +434,6 @@ def mean_tweedie_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
                           power: float = 0) -> float:
     """Mean Tweedie deviance regression loss.
 
-    Read more in the :ref:`User Guide <mean_tweedie_deviance>`.
-
     Parameters
     ----------
     y_true : array-like of shape (n_samples,)
@@ -481,21 +443,19 @@ def mean_tweedie_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
     sample_weight : array-like of shape (n_samples,), default=None
         Sample weights.
     power : float, default=0
-        Tweedie power parameter. Either power <= 0 or power >= 1.
-        The higher `p` the less weight is given to extreme
-        deviations between true and predicted targets.
-        - power < 0: Extreme stable distribution. Requires: y_pred > 0.
-        - power = 0 : Normal distribution, output corresponds to
-          mean_squared_error. y_true and y_pred can be any real numbers.
-        - power = 1 : Poisson distribution. Requires: y_true >= 0 and
-          y_pred > 0.
-        - 1 < p < 2 : Compound Poisson distribution. Requires: y_true >= 0
-          and y_pred > 0.
-        - power = 2 : Gamma distribution. Requires: y_true > 0 and y_pred > 0.
-        - power = 3 : Inverse Gaussian distribution. Requires: y_true > 0
-          and y_pred > 0.
-        - otherwise : Positive stable distribution. Requires: y_true > 0
-          and y_pred > 0.
+        Tweedie power parameter. Either power <= 0 or power >= 1. The higher
+        the power, the less weight is given to extreme deviations between
+        true and predicted targets. The distribution depends on power:
+        power < 0 is the extreme stable distribution (requires y_pred > 0);
+        power = 0 is the normal distribution (output corresponds to
+        mean_squared_error, y_true and y_pred can be any real numbers);
+        power = 1 is the Poisson distribution (requires y_true >= 0 and
+        y_pred > 0); 1 < power < 2 is the compound Poisson distribution
+        (requires y_true >= 0 and y_pred > 0); power = 2 is the Gamma
+        distribution (requires y_true > 0 and y_pred > 0); power = 3 is the
+        inverse Gaussian distribution (requires y_true > 0 and y_pred > 0);
+        otherwise it is the positive stable distribution (requires
+        y_true > 0 and y_pred > 0).
 
     Returns
     -------
@@ -516,9 +476,8 @@ def mean_poisson_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
                           sample_weight: np.ndarray | None = None) -> float:
     """Mean Poisson deviance regression loss.
 
-    Poisson deviance is equivalent to the Tweedie deviance with
-    the power parameter `power=1`.
-    Read more in the :ref:`User Guide <mean_tweedie_deviance>`.
+    Poisson deviance is equivalent to the Tweedie deviance with the power
+    parameter power=1.
 
     Parameters
     ----------
@@ -540,13 +499,11 @@ def mean_poisson_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
 
 def mean_gamma_deviance(y_true: np.ndarray, y_pred: np.ndarray, *,
                         sample_weight: np.ndarray | None = None) -> float:
-    """
-    Mean Gamma deviance regression loss.
+    """Mean Gamma deviance regression loss.
 
-    Gamma deviance is equivalent to the Tweedie deviance with
-    the power parameter `power=2`. It is invariant to scaling of
-    the target variable, and measures relative errors.
-    Read more in the :ref:`User Guide <mean_tweedie_deviance>`.
+    Gamma deviance is equivalent to the Tweedie deviance with the power
+    parameter power=2. It is invariant to scaling of the target variable,
+    and measures relative errors.
 
     Parameters
     ----------

@@ -12,7 +12,7 @@ from sklearn.model_selection import (
     RandomizedSearchCV, GridSearchCV,
     ParameterGrid)
 from sklearn.cluster import MiniBatchKMeans
-from sklearn.utils.fixes import loguniform
+from scipy.stats import loguniform
 from scipy.stats import uniform
 from joblib import dump, load
 

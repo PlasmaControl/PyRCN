@@ -64,6 +64,7 @@ def mackey_glass(n_timesteps: int, n_future: int = 1, tau: int = 17,
 
     Mackey-Glass timeseries [#]_ [#]_, computed from the Mackey-Glass
     delayed differential equation:
+
     .. math::
         \\frac{dx}{dt} = \\beta\\frac{x(t-\\tau)}{1+x(t-\\tau)^n}-\\gamma x(t)
 
@@ -148,6 +149,7 @@ def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
 
     Lorenz timeseries [#]_ [#]_, computed from the Lorenz delayed differential
     equation:
+
     .. math::
         \\frac{dx}{dt} = \\sigma(y - x)
         \\frac{dy}{dt} = x(\\rho - z) - y
@@ -220,6 +222,7 @@ def load_digits(*, n_class: int | np.integer = 10,
     Load and return the digits dataset (classification).
 
     Each datapoint is a 8x8 image of a digit.
+
     =================   ==============
     Classes                         10
     Samples per class             ~180
@@ -227,7 +230,9 @@ def load_digits(*, n_class: int | np.integer = 10,
     Dimensionality                  64
     Features             integers 0-16
     =================   ==============
-    Read more in the :ref:`User Guide <digits_dataset>`.
+
+    Read more in the scikit-learn User Guide (Optical recognition of
+    handwritten digits dataset).
 
     Parameters
     ----------
@@ -236,6 +241,7 @@ def load_digits(*, n_class: int | np.integer = 10,
     return_X_y : bool, default=False
         If True, returns ``(data, target)`` instead of a Bunch object.
         See below for more information about the `data` and `target` object.
+
         .. versionadded:: 0.18
     as_frame : bool, default=False
         If True, the data is a pandas DataFrame including columns with
@@ -243,12 +249,14 @@ def load_digits(*, n_class: int | np.integer = 10,
         a pandas DataFrame or Series depending on the number of target columns.
         If `return_X_y` is True, then (`data`, `target`) will be pandas
         DataFrames or Series as described below.
+
         .. versionadded:: 0.23
 
     Returns
     -------
     data : :class:`~sklearn.utils.Bunch`
         Dictionary-like object, with the following attributes.
+
         data : {ndarray, dataframe} of shape (1797, 64)
             The flattened data matrix. If `as_frame=True`, `data` will be
             a pandas DataFrame.
@@ -259,10 +267,12 @@ def load_digits(*, n_class: int | np.integer = 10,
             The names of the dataset columns.
         target_names: list
             The names of target classes.
+
             .. versionadded:: 0.20
         frame: DataFrame of shape (1797, 65)
             Only present when `as_frame=True`. DataFrame with `data` and
             `target`.
+
             .. versionadded:: 0.23
         images: {ndarray} of shape (1797, 8, 8)
             The raw image data.
