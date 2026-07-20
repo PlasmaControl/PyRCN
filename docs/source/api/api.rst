@@ -10,4 +10,10 @@ PyRCN API
    pyrcn.echo_state_network
    pyrcn.extreme_learning_machine
    pyrcn.linear_model
-   pyrcn.cluster
+   pyrcn.model_selection
+   pyrcn.metrics
+   pyrcn.datasets
+   pyrcn.projection
+   pyrcn.preprocessing
+   pyrcn.postprocessing
+   pyrcn.util

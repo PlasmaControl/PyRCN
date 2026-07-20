@@ -123,7 +123,8 @@ class LinearReadout(nn.Module):
     """Trainable linear readout (a thin wrapper over ``nn.Linear``).
 
     The gradient-mode counterpart of :class:`IncrementalRidge`: its weights
-    are trainable ``Parameter``s optimized by :func:`pyrcn.nn.train_readout`
+    are trainable ``Parameter`` objects optimized by
+    :func:`pyrcn.nn.train_readout`
     rather than solved in closed form.
 
     Parameters

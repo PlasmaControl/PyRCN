@@ -62,6 +62,7 @@ Building your first Reservoir Computing Network
         >>> from inspect import getmembers, isclass
         >>> getmembers(blocks, isclass)
         [('BatchIntrinsicPlasticity', <class 'pyrcn.base.blocks._input_to_node.BatchIntrinsicPlasticity'>),
+        ('EulerNodeToNode', <class 'pyrcn.base.blocks._node_to_node.EulerNodeToNode'>),
         ('HebbianNodeToNode', <class 'pyrcn.base.blocks._node_to_node.HebbianNodeToNode'>),
         ('InputToNode', <class 'pyrcn.base.blocks._input_to_node.InputToNode'>),
         ('NodeToNode', <class 'pyrcn.base.blocks._node_to_node.NodeToNode'>),
@@ -94,10 +95,12 @@ Training a RCN
 
     To train the ESN, only three steps are required:
 
-    1. Randomly distribute the time-series to each reservoir neuron (**Input-to-Node**).
-    2. Compute the state of each neuron based on the current input and the previous
-    state.
-    2. Compute a linear regression between the reservoir states and the target output.
+    1. Randomly distribute the time-series to each reservoir neuron
+       (**Input-to-Node**).
+    2. Compute the state of each neuron based on the current input and the
+       previous state.
+    3. Compute a linear regression between the reservoir states and the
+       target output.
 
     These steps are handled via :py:func:`pyrcn.echo_state_network.ESNRegressor.fit`,
     which is the most important function to train the ESN model:
@@ -120,6 +123,6 @@ Testing and predict using the ESN
 
     .. doctest::
 
-        >>> y_pred = esn.predict(X[:4000])
+        >>> y_pred = esn.predict(X[:4000].reshape(-1, 1))
 
     .. image:: _static/img/getting_started_mackey_glass_predicted.svg

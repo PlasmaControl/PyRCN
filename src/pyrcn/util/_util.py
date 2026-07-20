@@ -50,10 +50,7 @@ def batched(iterable: Iterable, n: int) -> Iterator[tuple]:
 
     Notes
     -----
-    Starting from Python 3.12, this is included in `itertools`_.
-
-    .. _itertools:
-    https://docs.python.org/3/library/itertools.html#itertools.batched
+    Starting from Python 3.12, this is available as ``itertools.batched``.
     """
     # batched('ABCDEFG', 3) --> ABC DEF G
     if n < 1:

@@ -37,15 +37,17 @@ class InputToNode(TransformerMixin, BaseEstimator):
     input_activation : Literal['tanh', 'identity', 'logistic', 'relu',
     'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear
-            bottleneck, returns f(x) = x
-            - 'logistic', the logistic sigmoid function,
-            returns f(x) = 1/(1+exp(-x)).
-            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function,
-            returns f(x) = max(0, x)
-            - 'bounded_relu', the bounded rectified linear unit function,
-            returns f(x) = min(max(x, 0),1)
+
+        - 'identity', no-op activation, useful to implement linear
+          bottleneck, returns f(x) = x
+        - 'logistic', the logistic sigmoid function,
+          returns f(x) = 1/(1+exp(-x)).
+        - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+        - 'relu', the rectified linear unit function,
+          returns f(x) = max(0, x)
+        - 'bounded_relu', the bounded rectified linear unit function,
+          returns f(x) = min(max(x, 0),1)
+
     input_scaling :  float, default = 1.
         Scales the input weight matrix.
     input_shift :  float, default = 0.
@@ -277,15 +279,17 @@ class PredefinedWeightsInputToNode(InputToNode):
     input_activation : Literal['tanh', 'identity', 'logistic', 'relu',
     'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear
-            bottleneck, returns f(x) = x
-            - 'logistic', the logistic sigmoid function,
-            returns f(x) = 1/(1+exp(-x)).
-            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function,
-            returns f(x) = max(0, x)
-            - 'bounded_relu', the bounded rectified linear unit function,
-            returns f(x) = min(max(x, 0),1)
+
+        - 'identity', no-op activation, useful to implement linear
+          bottleneck, returns f(x) = x
+        - 'logistic', the logistic sigmoid function,
+          returns f(x) = 1/(1+exp(-x)).
+        - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+        - 'relu', the rectified linear unit function,
+          returns f(x) = max(0, x)
+        - 'bounded_relu', the bounded rectified linear unit function,
+          returns f(x) = min(max(x, 0),1)
+
     input_scaling :  float, default = 1.
         Scales the input weight matrix.
     input_shift :  float, default = 0.
@@ -351,15 +355,17 @@ class BatchIntrinsicPlasticity(InputToNode):
     input_activation : Literal['tanh', 'identity', 'logistic', 'relu',
     'bounded_relu'], default = 'tanh'
         This element represents the activation function in the hidden layer.
-            - 'identity', no-op activation, useful to implement linear
-            bottleneck, returns f(x) = x
-            - 'logistic', the logistic sigmoid function,
-            returns f(x) = 1/(1+exp(-x)).
-            - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
-            - 'relu', the rectified linear unit function,
-            returns f(x) = max(0, x)
-            - 'bounded_relu', the bounded rectified linear unit function,
-            returns f(x) = min(max(x, 0),1)
+
+        - 'identity', no-op activation, useful to implement linear
+          bottleneck, returns f(x) = x
+        - 'logistic', the logistic sigmoid function,
+          returns f(x) = 1/(1+exp(-x)).
+        - 'tanh', the hyperbolic tan function, returns f(x) = tanh(x).
+        - 'relu', the rectified linear unit function,
+          returns f(x) = max(0, x)
+        - 'bounded_relu', the bounded rectified linear unit function,
+          returns f(x) = min(max(x, 0),1)
+
     hidden_layer_size : int, default=500
         Sets the number of nodes in hidden layer.
         Equals number of output features.

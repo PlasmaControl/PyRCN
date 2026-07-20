@@ -44,6 +44,18 @@ Feature map and readout
    :undoc-members:
    :show-inheritance:
 
+.. autoclass:: pyrcn.nn.LinearReadout
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Gradient training
+-----------------
+
+.. autofunction:: pyrcn.nn.train_readout
+
+.. autofunction:: pyrcn.nn.torch_generator
+
 Weight initializers
 -------------------
 

@@ -197,40 +197,41 @@ class SequentialSearchCV(BaseSearchCV):
         A dict with keys as column headers and values as columns.
 
         It can be imported into a pandas DataFrame. For instance the below
-        given table will be represented by a cv_results_ dict of:
+        given table will be represented by a ``cv_results_`` dict of::
 
-        {
-        'param_kernel' : masked_array(data = ['rbf', 'rbf', 'rbf'],
-                                      mask = False),
-        'param_gamma'  : masked_array(data = [0.1 0.2 0.3], mask = False),
-        'split0_test_score'  : [0.80, 0.84, 0.70],
-        'split1_test_score'  : [0.82, 0.50, 0.70],
-        'mean_test_score'    : [0.81, 0.67, 0.70],
-        'std_test_score'     : [0.01, 0.24, 0.00],
-        'rank_test_score'    : [1, 3, 2],
-        'split0_train_score' : [0.80, 0.92, 0.70],
-        'split1_train_score' : [0.82, 0.55, 0.70],
-        'mean_train_score'   : [0.81, 0.74, 0.70],
-        'std_train_score'    : [0.01, 0.19, 0.00],
-        'mean_fit_time'      : [0.73, 0.63, 0.43],
-        'std_fit_time'       : [0.01, 0.02, 0.01],
-        'mean_score_time'    : [0.01, 0.06, 0.04],
-        'std_score_time'     : [0.00, 0.00, 0.00],
-        'params'             : [{'kernel' : 'rbf', 'gamma' : 0.1}, ...],
-        }
+            {
+            'param_kernel' : masked_array(data = ['rbf', 'rbf', 'rbf'],
+                                          mask = False),
+            'param_gamma'  : masked_array(data = [0.1 0.2 0.3],
+                                          mask = False),
+            'split0_test_score'  : [0.80, 0.84, 0.70],
+            'split1_test_score'  : [0.82, 0.50, 0.70],
+            'mean_test_score'    : [0.81, 0.67, 0.70],
+            'std_test_score'     : [0.01, 0.24, 0.00],
+            'rank_test_score'    : [1, 3, 2],
+            'split0_train_score' : [0.80, 0.92, 0.70],
+            'split1_train_score' : [0.82, 0.55, 0.70],
+            'mean_train_score'   : [0.81, 0.74, 0.70],
+            'std_train_score'    : [0.01, 0.19, 0.00],
+            'mean_fit_time'      : [0.73, 0.63, 0.43],
+            'std_fit_time'       : [0.01, 0.02, 0.01],
+            'mean_score_time'    : [0.01, 0.06, 0.04],
+            'std_score_time'     : [0.00, 0.00, 0.00],
+            'params'             : [{'kernel' : 'rbf', 'gamma' : 0.1}, ...],
+            }
 
         Note
         ----
         The key 'params' is used to store a list of parameter settings dicts
         for all the parameter candidates.
 
-        The mean_fit_time, std_fit_time, mean_score_time and std_score_time
-        are all in seconds.
+        The mean_fit_time, std_fit_time, mean_score_time and
+        std_score_time are all in seconds.
 
         For multi-metric evaluation, the scores for all the scorers are
-        available in the cv_results_ dict at the keys ending with that scorer’s
-        name ('_<scorer_name>') instead of '_score' shown above.
-        (‘split0_test_precision’, ‘mean_train_precision’ etc.)
+        available in the ``cv_results_`` dict at the keys ending with that
+        scorer's name ('_<scorer_name>') instead of '_score' shown above
+        ('split0_test_precision', 'mean_train_precision' etc.).
 
         Returns
         -------
@@ -294,12 +295,12 @@ class SequentialSearchCV(BaseSearchCV):
     @property
     def best_index_(self) -> int | np.integer:
         """
-        The index (of the cv_results_ arrays) which corresponds to the best
-        candidate.
+        The index of the ``cv_results_`` arrays for the best candidate.
 
-        The dict at search.cv_results_['params'][search.best_index_] gives the
-        parameter setting for the best model, that gives the highest mean score
-        (search.best_score_).
+        The dict at
+        ``search.cv_results_['params'][search.best_index_]`` gives the
+        parameter setting for the best model, that gives the highest mean
+        score (``search.best_score_``).
 
         For multi-metric evaluation, this is present only if refit is
         specified.
@@ -396,15 +397,16 @@ class SHGOSearchCV(BaseSearchCV):
         objective function.
     constraints : Dict, List[Dict], None, default=None
         Constraints definitions, where each definition is a dictionary with
-        fields:
-            type : str
-                Constraint type: ‘eq’ for equality, ‘ineq’ for inequality.
-            fun : Callable
-                The function defining the constraint.
-            jac : Optional[Callable]
-                The Jacobian of ``fun`` (only for SLSQP).
-            args : List, Tuple
-                Extra arguments to be passed to the function and Jacobian.
+        the following fields:
+
+        - type : str
+          Constraint type: 'eq' for equality, 'ineq' for inequality.
+        - fun : Callable
+          The function defining the constraint.
+        - jac : Optional[Callable]
+          The Jacobian of ``fun`` (only for SLSQP).
+        - args : List, Tuple
+          Extra arguments to be passed to the function and Jacobian.
     refit : bool, default=True
         Refit an estimator using the best found parameters on the whole
         dataset.
@@ -415,16 +417,17 @@ class SHGOSearchCV(BaseSearchCV):
     cv : int, cross-validation generator or an iterable, default=None
         Determines the cross-validation splitting strategy.
         Possible inputs for cv are:
+
         - None, to use the default 5-fold cross validation,
-        - integer, to specify the number of folds in a `(Stratified)KFold`,
-        - :term:`CV splitter`,
-        - An iterable yielding (train, test) splits as arrays of indices.
-        For integer/None inputs, if the estimator is a classifier and ``y`` is
-        either binary or multiclass, :class:`StratifiedKFold` is used. In all
-        other cases, :class:`KFold` is used. These splitters are instantiated
-        with `shuffle=False` so the splits will be the same across calls.
-        Refer :ref:`User Guide <cross_validation>` for the various
-        cross-validation strategies that can be used here.
+        - integer, to specify the number of folds in a
+          ``(Stratified)KFold``,
+        - a CV splitter,
+        - an iterable yielding (train, test) splits as arrays of indices.
+
+        For integer/None inputs, if the estimator is a classifier and ``y``
+        is either binary or multiclass, ``StratifiedKFold`` is used. In all
+        other cases, ``KFold`` is used. These splitters are instantiated
+        with ``shuffle=False`` so the splits will be the same across calls.
     return_train_score : bool, default=False
         If ``False``, the ``cv_results_`` attribute will not include training
         scores.
@@ -455,11 +458,11 @@ class SHGOSearchCV(BaseSearchCV):
     classes_ : ndarray of shape (n_classes,)
         The classes labels. This is present only if ``refit`` is specified and
         the underlying estimator is a classifier.
-    feature_names_in_ : ndarray of shape (`n_features_in_`,)
-        Names of features seen during :term:`fit`. Only defined if
-        `best_estimator_` is defined (see the documentation for the `refit`
-        parameter for more details) and that `best_estimator_` exposes
-        `feature_names_in_` when fit.
+    feature_names_in_ : ndarray of shape (``n_features_in_``,)
+        Names of features seen during fit. Only defined if
+        ``best_estimator_`` is defined (see the documentation for the
+        ``refit`` parameter for more details) and that ``best_estimator_``
+        exposes ``feature_names_in_`` when fit.
 
     See Also
     --------
@@ -494,9 +497,9 @@ class SHGOSearchCV(BaseSearchCV):
             Target relative to X for classification or regression; None for
             unsupervised learning.
         groups : np.ndarray of shape(n_samples, ), default = None
-            Group labels for the samples used while splitting the dataset into
-            train/test set. Only used in conjunction with a "Group" :term:`cv`
-            instance (e.g., :class:`~sklearn.model_selection.GroupKFold`).
+            Group labels for the samples used while splitting the dataset
+            into train/test set. Only used in conjunction with a "Group" cv
+            instance (e.g., ``sklearn.model_selection.GroupKFold``).
         **fit_params : dict of str -> object
             Parameters passed to the ``fit`` method of the estimator.
 

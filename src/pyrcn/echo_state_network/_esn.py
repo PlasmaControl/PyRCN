@@ -65,6 +65,26 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         Number of initial reservoir states (and matching targets) to drop
         per sequence when fitting the readout, discarding the start
         transient. Training-only; requires the torch backend.
+    solver : {"closed_form", "gradient"}, default="closed_form"
+        Readout training method. ``"closed_form"`` solves the ridge normal
+        equations (requires a fixed reservoir); ``"gradient"`` trains the
+        readout with an optimizer loop and enables the ``trainable_*`` flags.
+    optimizer : {"adam", "sgd"}, default="adam"
+        Optimizer used when ``solver="gradient"``.
+    learning_rate : float, default=1e-3
+        Learning rate used when ``solver="gradient"``.
+    epochs : int, default=100
+        Number of training epochs when ``solver="gradient"``.
+    batch_size : Optional[int], default=None
+        Mini-batch size when ``solver="gradient"`` (``None`` means full
+        batch). With a trainable reservoir/input, batches are over sequences.
+    trainable_reservoir : bool, default=False
+        If True (requires ``solver="gradient"``), train the recurrent
+        reservoir weights by backpropagation through the recurrence.
+    trainable_input : bool, default=False
+        If True (requires ``solver="gradient"``), train the input
+        feature-map weights. Combine with ``trainable_reservoir`` for a
+        fully trainable RNN.
     verbose : bool = False
         Verbosity output
     kwargs : Any
@@ -297,7 +317,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         n_jobs : Optional[int, np.integer], default=None
             The number of jobs to run in parallel. ```-1``` means using all
             processors.
-            See :term:`Glossary <n_jobs>` for more details.
+            See the scikit-learn glossary for n_jobs.
         transformer_weights : Optional[np.ndarray] = None
             ignored
 
@@ -539,7 +559,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         n_jobs : Union[int, np.integer, None], default=None
             The number of jobs to run in parallel. ```-1``` means using all
             processors.
-            See :term:`Glossary <n_jobs>` for more details.
+            See the scikit-learn glossary for n_jobs.
 
         Returns
         -------
@@ -908,6 +928,26 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         Number of initial reservoir states (and matching targets) to drop
         per sequence when fitting the readout, discarding the start
         transient. Training-only; requires the torch backend.
+    solver : {"closed_form", "gradient"}, default="closed_form"
+        Readout training method. ``"closed_form"`` solves the ridge normal
+        equations (requires a fixed reservoir); ``"gradient"`` trains the
+        readout with an optimizer loop and enables the ``trainable_*`` flags.
+    optimizer : {"adam", "sgd"}, default="adam"
+        Optimizer used when ``solver="gradient"``.
+    learning_rate : float, default=1e-3
+        Learning rate used when ``solver="gradient"``.
+    epochs : int, default=100
+        Number of training epochs when ``solver="gradient"``.
+    batch_size : Optional[int], default=None
+        Mini-batch size when ``solver="gradient"`` (``None`` means full
+        batch). With a trainable reservoir/input, batches are over sequences.
+    trainable_reservoir : bool, default=False
+        If True (requires ``solver="gradient"``), train the recurrent
+        reservoir weights by backpropagation through the recurrence.
+    trainable_input : bool, default=False
+        If True (requires ``solver="gradient"``), train the input
+        feature-map weights. Combine with ``trainable_reservoir`` for a
+        fully trainable RNN.
     verbose : bool = False
         Verbosity output
     kwargs : Any, default = None
@@ -998,7 +1038,7 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         n_jobs : int, default=None
             The number of jobs to run in parallel. ```-1``` means using all
             processors.
-            See :term:`Glossary <n_jobs>` for more details.
+            See the scikit-learn glossary for n_jobs.
         transformer_weights : ignored
 
         Returns

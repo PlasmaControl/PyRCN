@@ -49,6 +49,17 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
     chunk_size : Optional[int], default=None
          if X.shape[0] > chunk_size, calculate results incrementally with
          partial_fit
+    solver : {"closed_form", "gradient"}, default="closed_form"
+        Readout training method. ``"closed_form"`` solves the ridge normal
+        equations; ``"gradient"`` trains the readout with an optimizer loop.
+    optimizer : {"adam", "sgd"}, default="adam"
+        Optimizer used when ``solver="gradient"``.
+    learning_rate : float, default=1e-3
+        Learning rate used when ``solver="gradient"``.
+    epochs : int, default=100
+        Number of training epochs when ``solver="gradient"``.
+    batch_size : Optional[int], default=None
+        Mini-batch size when ``solver="gradient"`` (``None`` = full batch).
     verbose : bool = False
         Verbosity output
     kwargs : Any, default = None
@@ -193,7 +204,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         n_jobs : int, default=None
             The number of jobs to run in parallel. ```-1``` means using all
             processors.
-            See :term:`Glossary <n_jobs>` for more details.
+            See the scikit-learn glossary for n_jobs.
         transformer_weights :  Union[np.ndarray, None], default=None
             ignored
 
@@ -465,6 +476,17 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
     chunk_size : Optional[int], default=None
          if X.shape[0] > chunk_size, calculate results incrementally
          with partial_fit
+    solver : {"closed_form", "gradient"}, default="closed_form"
+        Readout training method. ``"closed_form"`` solves the ridge normal
+        equations; ``"gradient"`` trains the readout with an optimizer loop.
+    optimizer : {"adam", "sgd"}, default="adam"
+        Optimizer used when ``solver="gradient"``.
+    learning_rate : float, default=1e-3
+        Learning rate used when ``solver="gradient"``.
+    epochs : int, default=100
+        Number of training epochs when ``solver="gradient"``.
+    batch_size : Optional[int], default=None
+        Mini-batch size when ``solver="gradient"`` (``None`` = full batch).
     verbose : bool = False
         Verbosity output
     kwargs : Any, default = None
@@ -545,7 +567,7 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
         n_jobs : Union[int, np.integer, None], default=None
             The number of jobs to run in parallel. ```-1``` means using all
             processors.
-            See :term:`Glossary <n_jobs>` for more details.
+            See the scikit-learn glossary for n_jobs.
         transformer_weights : Optional[np.ndarray], default=None
             ignored
 

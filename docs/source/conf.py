@@ -40,6 +40,22 @@ extensions = [
 ]
 master_doc = 'index'
 
+# Render numpydoc "Attributes" sections as info fields rather than separate
+# object descriptions (avoids duplicate-object-description warnings for
+# dataclass attributes and properties).
+napoleon_use_ivar = True
+
+# Do not document scikit-learn's dynamically added metadata-routing methods
+# (set_*_request); their docstrings reference sklearn-only glossary terms and
+# labels that do not resolve in this documentation.
+autodoc_default_options = {
+    'exclude-members': (
+        'set_fit_request,set_predict_request,set_partial_fit_request,'
+        'set_score_request,set_transform_request,'
+        'set_predict_proba_request,set_inverse_transform_request'
+    ),
+}
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

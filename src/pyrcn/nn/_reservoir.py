@@ -69,9 +69,9 @@ class _ReservoirCell(nn.RNNCell):
 
 
 class LeakyESNCell(_ReservoirCell):
-    """Leaky reservoir step::
+    """Leaky reservoir step.
 
-        h' = (1 - leakage) * h + leakage * f(x + spectral_radius * (h @ W))
+    ``h' = (1 - leakage) * h + leakage * f(x + spectral_radius * (h @ W))``
     """
 
     def __init__(self, hidden_size: int, spectral_radius: float = 1.0,
@@ -97,9 +97,9 @@ class LeakyESNCell(_ReservoirCell):
 
 
 class EulerESNCell(_ReservoirCell):
-    """Euler (EuSN) reservoir step::
+    """Euler (EuSN) reservoir step.
 
-        h' = h + epsilon * f(x + h @ (recurrent_scaling * W + gamma * I))
+    ``h' = h + epsilon * f(x + h @ (recurrent_scaling * W + gamma * I))``
     """
 
     def __init__(self, hidden_size: int, recurrent_scaling: float = 1.0,

@@ -1,3 +1,5 @@
+.. _installation guide:
+
 ==================
 Installation guide
 ==================
@@ -13,10 +15,10 @@ command in a PowerShell or CommandLine in Windows, or in a shell in Linux/MacOS:
 
     python --version
 
-As any package, **PyRCN** has several dependencies as listed in the `requirements.txt
- <https://github.com/PlasmaControl/PyRCN/blob/main/requirements.txt>`_. To avoid any
-unexpected interaction with the basic system as installed on your computer, we highly
-recommend  using a virtual environment
+As any package, **PyRCN** has several dependencies, declared in
+`pyproject.toml <https://github.com/PlasmaControl/PyRCN/blob/main/pyproject.toml>`_.
+To avoid any unexpected interaction with the basic system as installed on your
+computer, we highly recommend using a virtual environment
 
 You can find more information about virtual environments, by checking the `Python
 documentation on virtual environments and packages
