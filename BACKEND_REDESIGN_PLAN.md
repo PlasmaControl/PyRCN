@@ -1,10 +1,34 @@
 # PyRCN Backend Redesign — Living Plan
 
-> Status: **Complete through Phase B.** Torch backend behind ESN*/ELM* (fast
-> path + NumPy fallback), public `pyrcn.nn`, gradient and fully-trainable
-> training (readout / reservoir / input), examples updated, and the Sphinx
-> docs build clean. On branch `backend-redesign` (pushed to origin; no PR
-> yet). Edited incrementally as decisions are made.
+> Status: **Backend redesign shipped and released.** Torch backend behind
+> ESN*/ELM* (fast path + NumPy fallback), public `pyrcn.nn`, gradient and
+> fully-trainable training (readout / reservoir / input). Merged `dev → main`
+> and **released as `0.1.0` on PyPI**. Documentation fully modernized on
+> `origin/dev`. **Active task: raise test coverage toward 100% + a read-only
+> performance-bottleneck analysis** (see "Current work"). Edited incrementally.
+
+## Current work (active task — resume here after compaction)
+
+**Two goals, requested 2026-07 (post-release):**
+1. **Coverage → ~100%.** Baseline is **86%** (branch coverage). Purely additive
+   tests, no behavior change. Delegate the reading/test-writing to **subagents**
+   (keep this conversation's context lean — the user explicitly warned about
+   compaction). Genuinely unreachable lines (CUDA/GPU path, optional-dep
+   fallbacks, defensive raises) get `# pragma: no cover` + a one-line reason.
+   - Baseline missing-line report + JSON at
+     `<scratchpad>/cov_missing.txt` and `cov.json` (regenerate with
+     `pytest --cov=src/pyrcn --cov-branch --cov-report=term-missing`).
+2. **Performance bottlenecks — ANALYSIS ONLY, propose a ranked list first.**
+   Read as a rigorous reviewer, find real bottlenecks, deliver a ranked report
+   (impact / risk / expected speedup / how parity is proven). **Change NO code
+   for speed without the user's explicit go-ahead.**
+
+**Hard constraints on any future optimization (user was emphatic):**
+- Output must be **numerically identical within a tight tolerance** (~1e-12 on
+  float64); mathematically-equivalent float reordering is allowed, nothing
+  looser. Verify each change by capturing current output on fixed seeds and
+  asserting equality after.
+- **No performance regression**, full suite stays green throughout.
 
 ## Status summary
 
@@ -20,18 +44,31 @@
   B2+ (`trainable_input`, BPTT mini-batching over sequences). Optimizers
   {adam, adamw, sgd, rmsprop, adagrad}, losses {mse, mae, huber}.
 - Examples updated to the current API (no torch usage introduced).
-- Documentation: complete API reference incl. `pyrcn.nn`; Sphinx build clean
-  (0 warnings); tutorials refreshed.
 - Activation set unified to the five supported by both backends (dropped the
   NumPy-only `softmax`/`softplus`).
 - GitHub issues addressed locally: #54 (activation validation), #61
   (estimators run; notebooks fixed).
+- **Release: `backend-redesign` squash-merged to `dev`; `dev` fast-forwarded to
+  `main`; version bumped to `0.1.0` and published to PyPI** via a GitHub Release
+  triggering `python-publish-pypi.yml` (after fixing the `PYPI_API_TOKEN`
+  secret; a first attempt 403'd on a malformed token). `0.1.0` is immutable.
+- **Documentation fully modernized (on `origin/dev`, tip `5c22002`; not yet
+  merged to `main`):** polished RTD theme (brand accent, logo, SVG favicon,
+  `sphinx-design` cards, intersphinx, MathJax); rebuilt landing page (badges
+  incl. CI-generated coverage badge, capability cards, DOE + ESF funding);
+  installation (Python 3.10+, extras, torch CPU/GPU); RC introduction with a
+  generated ESN schematic; getting-started (verified doctests + gradient
+  snippet + regenerated plots); tutorials; development/contributing;
+  **API reference converted to full autosummary** (per-object stub pages,
+  gitignored). Citation updated to the EAAI 2022 article everywhere. Copyright
+  unified: **TU Dresden 2020-2024; Plasma Control Group, Princeton University
+  2024-2026** (LICENSE, docs two-line footer, README license section). All
+  builds 0 warnings; 24 doctests pass.
 
 **Open / deferred**
-- B3 demonstrations: gradient/trainable example notebooks (part of the
-  deferred post-upgrade demonstrations batch). Not started.
+- B3 demonstrations: gradient/trainable example notebooks. Not started.
 - Issue #53 (multiple reservoirs, one readout): under discussion.
-- Merge / PR of `backend-redesign` (target `dev`, not `main`); none opened.
+- Docs are on `dev`; **no `dev → main` PR opened yet** (user declined for now).
 - GitHub issue comments (#54, #61) held until merge.
 - Audio examples (`f0_extraction`, `multipitch_tracking`) remain
   non-functional: dataset loaders (`fetch_ptdb_tug_dataset`,
