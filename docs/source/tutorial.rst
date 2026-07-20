@@ -1,44 +1,37 @@
+=========
 Tutorials
 =========
 
-We have prepared a collection of Jupyter (IPython) notebooks that show how to use the
-package.
+We have prepared a collection of Jupyter notebooks that show how to use the
+package. You can view them online, run them interactively on Binder, or
+download the corresponding Python scripts from the `examples folder
+<https://github.com/PlasmaControl/PyRCN/tree/main/examples>`_.
 
-You can view them online or download Python scripts:
-
-https://github.com/PlasmaControl/PyRCN/tree/main/examples
-
-The notebook
-`PyRCN_Intro <https://github.com/PlasmaControl/PyRCN/blob/main/examples/PyRCN_Intro.ipynb>`_
-or its corresponding
-`Python script <https://github.com/PlasmaControl/PyRCN/blob/main/examples/PyRCN_Intro.py>`_
-show how to construct different RCNs with building blocks.
+The notebook `PyRCN_Intro
+<https://github.com/PlasmaControl/PyRCN/blob/main/examples/PyRCN_Intro.ipynb>`_,
+or its corresponding `Python script
+<https://github.com/PlasmaControl/PyRCN/blob/main/examples/PyRCN_Intro.py>`_,
+shows how to construct different RCNs from building blocks.
 
 .. image:: https://mybinder.org/badge_logo.svg
-    :target: https://mybinder.org/v2/gh/PlasmaControl/PyRCN/main?filepath=examples%2FPyRCN_Intro.ipynb
+    :target: https://mybinder.org/v2/gh/PlasmaControl/PyRCN/main?labpath=examples%2FPyRCN_Intro.ipynb
+    :alt: Launch PyRCN_Intro on Binder
 
-
-The notebook
-`Impulse responses
+The notebook `Impulse responses
 <https://github.com/PlasmaControl/PyRCN/blob/main/examples/esn_impulse_responses.ipynb>`_
-is an interactive tool to demonstrate the impact of different hyper-parameters on the
-impulse responses of an ESN.
+is an interactive tool that demonstrates the impact of the different
+hyper-parameters on the impulse responses of an ESN.
 
 .. image:: https://mybinder.org/badge_logo.svg
-    :target: https://mybinder.org/v2/gh/PlasmaControl/PyRCN/main?filepath=examples%2Fesn_impulse_responses.ipynb
+    :target: https://mybinder.org/v2/gh/PlasmaControl/PyRCN/main?labpath=examples%2Fesn_impulse_responses.ipynb
+    :alt: Launch esn_impulse_responses on Binder
 
-The Jupyter notebook
-`digits <https://github.com/PlasmaControl/PyRCN/blob/main/examples/digits.ipynb>`_
-or its corresponding
-`Python script <https://github.com/PlasmaControl/PyRCN/blob/main/examples/digits.py>`_
-show how to set up an ESN for a small hand-written digit recognition experiment.
+The notebook `digits
+<https://github.com/PlasmaControl/PyRCN/blob/main/examples/digits.ipynb>`_, or
+its corresponding `Python script
+<https://github.com/PlasmaControl/PyRCN/blob/main/examples/digits.py>`_, shows
+how to set up an ESN for a small hand-written digit recognition experiment.
 
 .. image:: https://mybinder.org/badge_logo.svg
-    :target: https://mybinder.org/v2/gh/PlasmaControl/PyRCN/main?filepath=examples%2Fdigits.ipynb
-
-Fore more advanced examples, please have a look at our
-`Automatic Music Transcription Repository
-<https://github.com/TUD-STKS/Automatic-Music-Transcription>`_,
-in which we provide an entire feature extraction,
-training and test pipeline for multipitch tracking and for note onset detection using
-PyRCN. This is currently transferred to this repository.
+    :target: https://mybinder.org/v2/gh/PlasmaControl/PyRCN/main?labpath=examples%2Fdigits.ipynb
+    :alt: Launch digits on Binder
