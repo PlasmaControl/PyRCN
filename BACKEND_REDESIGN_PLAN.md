@@ -1,7 +1,41 @@
 # PyRCN Backend Redesign — Living Plan
 
-> Status: **Phase A + P1 complete** (torch backend behind ESN*/ELM*, public `pyrcn.nn`). Phase B (gradient training) is the remaining planned work. Edited incrementally as decisions are made.
-> Working note, not (yet) committed to any branch.
+> Status: **Complete through Phase B.** Torch backend behind ESN*/ELM* (fast
+> path + NumPy fallback), public `pyrcn.nn`, gradient and fully-trainable
+> training (readout / reservoir / input), examples updated, and the Sphinx
+> docs build clean. On branch `backend-redesign` (pushed to origin; no PR
+> yet). Edited incrementally as decisions are made.
+
+## Status summary
+
+**Completed**
+- Phase 1 modernization (branch `modernize-sklearn`; PR #62 to `dev`).
+- Phase A (A0-A6) + A4b: torch backend behind ESN*/ELM* (fast path + NumPy
+  fallback for arbitrary sub-estimators); `washout`;
+  `predict(initial_state=, return_state=)`.
+- P1: public, documented `pyrcn.nn`; "implementation detail" disclaimer
+  removed.
+- Phase B: B1 (gradient readout solver + `random_state` reproducibility +
+  tight closed-form consistency demo), B2 (trainable reservoir, BPTT),
+  B2+ (`trainable_input`, BPTT mini-batching over sequences). Optimizers
+  {adam, adamw, sgd, rmsprop, adagrad}, losses {mse, mae, huber}.
+- Examples updated to the current API (no torch usage introduced).
+- Documentation: complete API reference incl. `pyrcn.nn`; Sphinx build clean
+  (0 warnings); tutorials refreshed.
+- Activation set unified to the five supported by both backends (dropped the
+  NumPy-only `softmax`/`softplus`).
+- GitHub issues addressed locally: #54 (activation validation), #61
+  (estimators run; notebooks fixed).
+
+**Open / deferred**
+- B3 demonstrations: gradient/trainable example notebooks (part of the
+  deferred post-upgrade demonstrations batch). Not started.
+- Issue #53 (multiple reservoirs, one readout): under discussion.
+- Merge / PR of `backend-redesign` (target `dev`, not `main`); none opened.
+- GitHub issue comments (#54, #61) held until merge.
+- Audio examples (`f0_extraction`, `multipitch_tracking`) remain
+  non-functional: dataset loaders (`fetch_ptdb_tug_dataset`,
+  `fetch_maps_piano_dataset`) intentionally not restored.
 
 ## Goal
 Keep the **frontend** (the scikit-learn-compatible API) unchanged; replace the
