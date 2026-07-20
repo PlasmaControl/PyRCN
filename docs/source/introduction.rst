@@ -17,13 +17,15 @@ Herbert Jaeger. The `Scholarpedia article about Echo State Networks
 <http://www.scholarpedia.org/article/Echo_state_network>`_ gives an excellent
 introduction to the topic.
 
-.. figure:: _static/img/echo_state_network.svg
+.. figure:: _static/img/esn_schematic.svg
    :alt: Schematic overview of an Echo State Network
    :align: center
    :width: 85%
 
-   Schematic overview of an Echo State Network: a fixed random input layer
-   feeds a recurrent reservoir, and only the linear readout is trained.
+   Schematic overview of an Echo State Network. The input weights
+   :math:`W^{\mathrm{in}}` and the recurrent reservoir weights
+   :math:`W^{\mathrm{res}}` are randomly initialized and kept fixed; only the
+   readout weights :math:`W^{\mathrm{out}}` are trained.
 
 Echo State Networks
 ===================

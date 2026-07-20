@@ -134,9 +134,14 @@ If you use PyRCN, please cite the following publication:
 Acknowledgements
 ================
 
-This work was supported by the U.S. Department of Energy, Office of Science,
-Office of Fusion Energy Sciences, under Award Nos. DE-FC02-04ER54698 and
-DE-SC0024527; by the Princeton Laboratory for Artificial Intelligence under
+The initial development of PyRCN was funded by the European Social Fund
+(Application number: 100327771) and co-financed by tax funds based on the
+budget approved by the members of the Saxon State Parliament, and by Ghent
+University.
+
+The current work is supported by the U.S. Department of Energy, Office of
+Science, Office of Fusion Energy Sciences, under Award Nos. DE-FC02-04ER54698
+and DE-SC0024527; by the Princeton Laboratory for Artificial Intelligence under
 Award No. 2025-97; and by the U.S. Department of Energy under Contract No.
 DE-AC02-09CH11466.
 
