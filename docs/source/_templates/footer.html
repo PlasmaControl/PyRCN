@@ -1,0 +1,27 @@
+{% extends "!footer.html" %}
+
+{#- Render the copyright on two lines: the affiliation transferred from
+    TU Dresden (2020-2024) to Princeton University (2024-2026). -#}
+{% block contentinfo %}
+    <p>
+    {%- if show_copyright %}
+      &#169; Copyright 2020-2024, Chair of Speech Technology and Cognitive Systems, TU Dresden.<br />
+      &#169; Copyright 2024-2026, Plasma Control Group, Princeton University.
+    {%- endif %}
+
+    {%- if build_id and build_url %}
+      <span class="build">
+        Build <a href="{{ build_url }}">{{ build_id }}</a>.
+      </span>
+    {%- elif commit %}
+      <span class="commit">
+        Revision <code>{{ commit }}</code>.
+      </span>
+    {%- endif %}
+    {%- if last_updated %}
+      <span class="lastupdated">
+        Last updated on {{ last_updated }}.
+      </span>
+    {%- endif -%}
+    </p>
+{% endblock %}

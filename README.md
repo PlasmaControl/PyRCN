@@ -8,8 +8,7 @@ PyRCN ("Python Reservoir Computing Networks") is a light-weight and transparent 
 The API is fully scikit-learn-compatible, so that users of scikit-learn do not need to refactor their code in order to use the estimators implemented by this framework. 
 Scikit-learn's built-in parameter optimization methods and example datasets can also be used in the usual way.
 
-PyRCN is used by the [Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universität Dresden, Dresden, Germany](https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en) 
-and [IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium](https://www.ugent.be/ea/idlab/en). 
+PyRCN is developed and maintained by Peter Steiner, and used by the [Chair of Speech Technology and Cognitive Systems, Institute for Acoustics and Speech Communications, Technische Universität Dresden, Dresden, Germany](https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en), [IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium](https://www.ugent.be/ea/idlab/en) and the [Plasma Control group](https://control.princeton.edu/) (Egemen Kolemen) at Princeton University, USA. 
 
 Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger and Extreme Learning Machines (ELMs) by Guang-Bin Huang in different flavors, e.g. Classifier and Regressor. It is actively developed to be extended into several directions:
 
@@ -307,5 +306,13 @@ PyRCN: A Toolbox for Exploration and Application of Reservoir Computing Networks
 ```
 
 
+## License
+PyRCN is released under the BSD 3-Clause License. See [LICENSE](LICENSE).
+
+Copyright (c) 2020-2024, Chair of Speech Technology and Cognitive Systems, TU Dresden.
+Copyright (c) 2024-2026, Plasma Control Group, Princeton University.
+
 ## Acknowledgments
-This research was funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
+The initial development of PyRCN was funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
+
+The current work is supported by the U.S. Department of Energy, Office of Science, Office of Fusion Energy Sciences, under Award Nos. DE-FC02-04ER54698 and DE-SC0024527; by the Princeton Laboratory for Artificial Intelligence under Award No. 2025-97; and by the U.S. Department of Energy under Contract No. DE-AC02-09CH11466.
