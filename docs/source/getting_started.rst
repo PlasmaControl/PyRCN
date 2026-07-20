@@ -2,127 +2,125 @@
 Getting started
 ===============
 
-Before going further, please make sure that you have installed **PyRCN** as recommended
-in the :ref:`installation guide` in a new virtual environment. Afterwards, you can
-continue with this getting started guide.
+Before going further, please make sure that you have installed **PyRCN** as
+described in the :ref:`installation guide`, ideally in a fresh virtual
+environment.
 
-PyRCN is an open-source project which aims to provide a framework for developing
-Reservoir Computing Networks (RCNs) easily and transparently.
+PyRCN is an open-source project that aims to make it easy and transparent to
+build Reservoir Computing Networks (RCNs). To learn more about the theory behind
+it, see :ref:`whats rc`.
 
-To learn more about the theoretical aspects of reservoir computing, you can read the
-page :ref:`whats rc`.
+Building an Echo State Network
+==============================
 
-We also recommend you to have a look at the introduction page of `ReservoirPy
-<https://reservoirpy.readthedocs.io/en/latest/whats_rc.html>`_, which is another great
-resource, in particular for Echo State Networks.
+An Echo State Network is created with a single command, using the
+:py:class:`pyrcn.echo_state_network.ESNRegressor` (for regression) or
+:py:class:`pyrcn.echo_state_network.ESNClassifier` (for classification) class:
 
-Playing with blocks -- Building blocks of Reservoir Computing
-=============================================================
+.. doctest::
 
-In the recent years, several groups have built toolboxes for Reservoir Computing.
-However, they were mostly able to implement one specific type of RCNs from
-- Echo State Networks
-- Extreme Learning Machines
-- Liquid State Machines
+    >>> from pyrcn.echo_state_network import ESNRegressor
+    >>> esn = ESNRegressor()
+    >>> esn
+    ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(),
+                 regressor=IncrementalRegression())
 
-Problem is that, despite the similarities of different RCN architectures, nobody has
-decomposed RCNs in building blocks. Together with PyRCN, we aim to do that and provide
-building blocks with which almost any RCN structure can be composed.
+As we can see, the ``esn`` is composed of several building blocks:
+:py:class:`pyrcn.base.blocks.InputToNode` connects the input features to the
+reservoir neurons, :py:class:`pyrcn.base.blocks.NodeToNode` defines the
+recurrent connections inside the reservoir, and
+:py:class:`pyrcn.linear_model.IncrementalRegression` is the trained readout. By
+default, the input and reservoir connections are randomly initialized and then
+kept fixed.
 
-Building your first Reservoir Computing Network
------------------------------------------------
+The building blocks can be customized and swapped. The module
+:py:mod:`pyrcn.base.blocks` offers several ready-made variants:
 
-    Essentially, with only one command, an Echo State Network can be defined
-    using the :py:class:`pyrcn.echo_state_network.ESNRegressor` or
-    :py:class:`pyrcn.echo_state_network.ESNClassifier` class:
+.. doctest::
 
-    .. doctest::
+    >>> import pyrcn.base.blocks as blocks
+    >>> from inspect import getmembers, isclass
+    >>> sorted(name for name, _ in getmembers(blocks, isclass))
+    ['BatchIntrinsicPlasticity', 'EulerNodeToNode', 'HebbianNodeToNode',
+     'InputToNode', 'NodeToNode', 'PredefinedWeightsInputToNode',
+     'PredefinedWeightsNodeToNode']
 
-        >>> from pyrcn.echo_state_network import ESNRegressor, ESNClassifier
-        >>> esn = ESNRegressor()
-        >>> esn
-        ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(),
-                     regressor=IncrementalRegression())
+Have a look at their documentation and at the examples to see how they are used.
 
-    As we can see, the  ``esn`` consists of different building blocks, e.g.
-    :py:class:`pyrcn.base.blocks.InputToNode`, :py:class:`pyrcn.base.blocks
-    .NodeToNode` and :py:class:`pyrcn.linear_model.IncrementalRegression`.
+Training on a time series
+=========================
 
-    The first block is used to connect the input features to the hidden neurons,
-    the second building block defines how the connections inside the
-    hidden neurons are organized. By default, all connections are randomly initialized
-    and fixed.
+RCNs can be trained on many kinds of data. Echo State Networks are especially
+well suited to sequential data such as time series. As a demonstration, PyRCN
+ships the Mackey-Glass time series, a common benchmark for ESNs:
 
-    In case one would like to customize the building blocks, you can have a look at the
-    included modules of :py:module:``pyrcn.base.blocks``.
+.. doctest::
 
-    .. doctest::
+    >>> from pyrcn.datasets import mackey_glass
+    >>> X, y = mackey_glass(n_timesteps=8000)
 
-        >>> import pyrcn.base.blocks as blocks
-        >>> from inspect import getmembers, isclass
-        >>> getmembers(blocks, isclass)
-        [('BatchIntrinsicPlasticity', <class 'pyrcn.base.blocks._input_to_node.BatchIntrinsicPlasticity'>),
-        ('EulerNodeToNode', <class 'pyrcn.base.blocks._node_to_node.EulerNodeToNode'>),
-        ('HebbianNodeToNode', <class 'pyrcn.base.blocks._node_to_node.HebbianNodeToNode'>),
-        ('InputToNode', <class 'pyrcn.base.blocks._input_to_node.InputToNode'>),
-        ('NodeToNode', <class 'pyrcn.base.blocks._node_to_node.NodeToNode'>),
-        ('PredefinedWeightsInputToNode', <class 'pyrcn.base.blocks._input_to_node.PredefinedWeightsInputToNode'>),
-        ('PredefinedWeightsNodeToNode', <class 'pyrcn.base.blocks._node_to_node.PredefinedWeightsNodeToNode'>)]
+Plotting it shows a quasi-periodic, chaotic signal:
 
-    Obviously, there are a lot of derived modules from the basic building blocks available.
-    Look their functions up in the documentation or in examples!
+.. image:: _static/img/getting_started_mackey_glass.svg
 
-Training a RCN
---------------
+We use the ESN for a one-step-ahead prediction of this time series. Training
+takes three conceptual steps:
 
-    RCNs can be trained on different kinds of data. In particular, ESNs can then be
-    trained on sequential data, such as timeseries, especially chaotic ones. In PyRCN,
-    we have re-implemented the Mackey-Glass time-series from `ReservoirPy
-    <https://reservoirpy.readthedocs.io/en/latest/whats_rc.html>`_, which is a common
-    demonstration for ESNs:
+1. Randomly project the input into the reservoir neurons (**Input-to-Node**).
+2. Update the state of each neuron from the current input and the previous state
+   (**Node-to-Node**).
+3. Fit a linear readout from the reservoir states to the target
+   (**Node-to-Output**).
 
-    .. doctest::
+All three are handled by
+:py:meth:`pyrcn.echo_state_network.ESNRegressor.fit`. We train on the first half
+of the series:
 
-        >>> from pyrcn.datasets import mackey_glass
-        >>> X, y = mackey_glass(n_timesteps=8000)
+.. doctest::
 
-    If we visualize the Mackey-Glass time-series, we can see that it is a
-    quasi-periodic time-series.
-    We now use an :py:class:``pyrcn.echo_state_network.ESNRegressor`` to do a one-step
-    ahead prediction of this time-series.
+    >>> esn.fit(X[:4000].reshape(-1, 1), y[:4000])
+    ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(),
+                 regressor=IncrementalRegression(), requires_sequence=False)
 
-    .. image:: _static/img/getting_started_mackey_glass.svg
+The ESN is fitted with a single command and is ready to use.
 
-    To train the ESN, only three steps are required:
+Predicting on unseen data
+=========================
 
-    1. Randomly distribute the time-series to each reservoir neuron
-       (**Input-to-Node**).
-    2. Compute the state of each neuron based on the current input and the
-       previous state.
-    3. Compute a linear regression between the reservoir states and the
-       target output.
+We now use :py:meth:`pyrcn.echo_state_network.ESNRegressor.predict` to predict
+the second, unseen half of the series:
 
-    These steps are handled via :py:func:`pyrcn.echo_state_network.ESNRegressor.fit`,
-    which is the most important function to train the ESN model:
+.. doctest::
 
-    .. doctest::
+    >>> y_pred = esn.predict(X[4000:].reshape(-1, 1))
+    >>> y_pred.shape
+    (4000,)
 
-        >>> # Fit the ESN model
-        >>> esn.fit(X[:4000].reshape(-1, 1), y[:4000])
-        ESNRegressor(input_to_node=InputToNode(), node_to_node=NodeToNode(),
-             regressor=IncrementalRegression(), requires_sequence=False)
+The prediction closely follows the target signal:
 
-    You can see that the ESN can be fitted using only one command. Afterwards, it is
-    ready to use!
+.. image:: _static/img/getting_started_mackey_glass_predicted.svg
 
-Testing and predict using the ESN
----------------------------------
+Training the readout with gradient descent
+==========================================
 
-    Finally, we use the :py:func:`pyrcn.echo_state_network.ESNRegressor.predict` function
-    to use the trained ESN to predict the test data:
+By default, the readout is trained in closed form by (regularized) linear
+regression. PyRCN can instead train it iteratively with a gradient-based
+optimizer, which is selected with ``solver="gradient"``. The reservoir stays
+fixed, and the readout is optimized over several ``epochs``:
 
-    .. doctest::
+.. doctest::
 
-        >>> y_pred = esn.predict(X[:4000].reshape(-1, 1))
+    >>> esn_grad = ESNRegressor(solver="gradient", epochs=50,
+    ...                         learning_rate=0.01)
+    >>> esn_grad.fit(X[:4000].reshape(-1, 1), y[:4000])
+    ESNRegressor(epochs=50, input_to_node=InputToNode(), learning_rate=0.01,
+                 node_to_node=NodeToNode(), regressor=IncrementalRegression(),
+                 requires_sequence=False, solver='gradient')
+    >>> y_grad = esn_grad.predict(X[4000:].reshape(-1, 1))
+    >>> y_grad.shape
+    (4000,)
 
-    .. image:: _static/img/getting_started_mackey_glass_predicted.svg
+The optimizer (for example ``"adam"`` or ``"sgd"``), the ``learning_rate`` and
+the number of ``epochs`` can all be configured. The gradient solver is also the
+basis for making the input and reservoir weights trainable, via
+``trainable_input=True`` and ``trainable_reservoir=True``.

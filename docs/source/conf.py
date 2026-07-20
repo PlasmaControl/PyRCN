@@ -11,6 +11,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 from pyrcn import __version__
+import doctest
 import os
 import sys
 sys.path.insert(0, os.path.abspath('..'))
@@ -56,6 +57,14 @@ intersphinx_mapping = {
 # object descriptions (avoids duplicate-object-description warnings for
 # dataclass attributes and properties).
 napoleon_use_ivar = True
+
+# Make the runnable doctests robust to line wrapping in reprs (estimator reprs
+# wrap at 79 columns) without weakening what they check.
+doctest_default_flags = (
+    doctest.ELLIPSIS
+    | doctest.NORMALIZE_WHITESPACE
+    | doctest.DONT_ACCEPT_TRUE_FOR_1
+)
 
 # Do not document scikit-learn's dynamically added metadata-routing methods
 # (set_*_request); their docstrings reference sklearn-only glossary terms and
