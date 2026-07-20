@@ -9,32 +9,62 @@ PyRCN
 
 **A Python 3 framework for building Reservoir Computing Networks (RCNs).**
 
-.. image:: https://badge.fury.io/py/PyRCN.svg
-    :target: https://badge.fury.io/py/PyRCN
+|pypi| |license| |ci| |docs| |coverage|
 
+PyRCN ("Python Reservoir Computing Networks") is a light-weight and transparent
+Python 3 framework for Reservoir Computing and is based on widely used scientific
+Python packages, such as numpy, scipy, and torch.
 
-PyRCN ("Python Reservoir Computing Networks") is a light-weight and transparent Python 3
-framework for Reservoir Computing and is based on widely used scientific Python packages,
-such as numpy or scipy.
+The API is fully `scikit-learn <https://scikit-learn.org/stable>`_-compatible, so
+that users of scikit-learn do not need to refactor their code in order to use the
+estimators implemented by this framework. Scikit-learn's built-in parameter
+optimization methods and example datasets can also be used in the usual way.
 
-The API is fully `scikit-learn <https://scikit-learn.org/stable>`_-compatible, so that
-users of scikit-learn do not need to refactor their code in order to use the estimators
-implemented by this framework.
-Scikit-learn's built-in parameter optimization methods and example datasets can also be
-used in the usual way. PyRCN is used by the `Chair of Speech Technology and Cognitive
-Systems, Institute for Acoustics and Speech Communications, Technische Universität
-Dresden, Dresden, Germany <https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en>`_
-and `IDLab (Internet and Data Lab), Ghent University, Ghent, Belgium <https://www.ugent.be/ea/idlab/en>`_
+PyRCN is developed and maintained by Peter Steiner, and used by the `Chair of
+Speech Technology and Cognitive Systems, Technische Universität Dresden, Germany
+<https://tu-dresden.de/ing/elektrotechnik/ias/stks?set_language=en>`_, `IDLab
+(Internet and Data Lab), Ghent University, Belgium
+<https://www.ugent.be/ea/idlab/en>`_ and the `Plasma Control group
+<https://control.princeton.edu/>`_ (Egemen Kolemen) at Princeton University, USA.
 
-Currently, it implements Echo State Networks (ESNs) by Herbert Jaeger and Extreme
-Learning Machines (ELMs) by Guang-Bin Huang in different flavors,
-e.g. Classifier and Regressor.
-It is actively developed to be extended into several directions:
+Highlights
+==========
 
-* Interaction with `sktime <https://sktime.org/>`_
-* Interaction with `hmmlearn <https://hmmlearn.readthedocs.io/en/stable/>`_
-* More towards future work: Related architectures, such as Liquid State
-  Machines (LSMs) and Perturbative Neural Networks (PNNs)
+.. grid:: 1 2 2 2
+   :gutter: 3
+
+   .. grid-item-card:: scikit-learn compatible
+      :link: getting_started
+      :link-type: doc
+
+      Every estimator follows the scikit-learn API. Pipelines, grid search and
+      cross-validation work unchanged, with no code to refactor.
+
+   .. grid-item-card:: Echo State Networks & ELMs
+      :link: api/pyrcn.echo_state_network
+      :link-type: doc
+
+      Echo State Network and Extreme Learning Machine regressors and classifiers,
+      composed from reusable building blocks: input-to-node, node-to-node and the
+      readout.
+
+   .. grid-item-card:: PyTorch backend
+      :link: api/pyrcn.nn
+      :link-type: doc
+
+      An optional torch-native backend (:py:mod:`pyrcn.nn`) runs reservoirs,
+      input maps and readouts as ``torch.nn`` modules.
+
+   .. grid-item-card:: Flexible training
+      :link: api/pyrcn.echo_state_network
+      :link-type: doc
+
+      Train the readout in closed form (ridge regression) or iteratively with
+      gradient-based optimizers, and optionally make the input and reservoir
+      weights trainable end to end.
+
+Applications
+============
 
 PyRCN has successfully been used for several tasks:
 
@@ -54,15 +84,14 @@ PyRCN has successfully been used for several tasks:
 
   * Stock price prediction
 
-* Ongoing research tasks:
+It is actively used and extended in ongoing research:
 
-  * Beat tracking in music signals
+* Audio signal processing
 
-  * Pattern recognition in sensor data
+* Nuclear fusion research, including plasma diagnostics and event prediction
 
-  * Phoneme recognition
-
-  * Unsupervised pre-training of RCNs and optimization of ESNs
+* Fundamental Reservoir Computing research, from unsupervised pre-training of
+  reservoirs to making Reservoir Computing faster and more efficient
 
 .. toctree::
    :maxdepth: 2
@@ -77,7 +106,7 @@ PyRCN has successfully been used for several tasks:
    api/api
 
 Indices and tables
-==================
+===================
 
 * :ref:`genindex`
 * :ref:`modindex`
@@ -88,39 +117,56 @@ Citation
 
 If you use PyRCN, please cite the following publication:
 
-.. code-block:: latex
+.. code-block:: bibtex
 
-    @misc{steiner2021pyrcn,
-          title={PyRCN: A Toolbox for Exploration and Application of Reservoir Computing Networks},
-          author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone and Peter Birkholz},
-          year={2021},
-          eprint={2103.04807},
-          archivePrefix={arXiv},
-          primaryClass={cs.LG}
+    @article{Steiner2022pyrcn,
+        title = {PyRCN: A toolbox for exploration and application of Reservoir Computing Networks},
+        journal = {Engineering Applications of Artificial Intelligence},
+        volume = {113},
+        pages = {104964},
+        year = {2022},
+        issn = {0952-1976},
+        doi = {10.1016/j.engappai.2022.104964},
+        url = {https://www.sciencedirect.com/science/article/pii/S0952197622001713},
+        author = {Steiner, Peter and Jalalvand, Azarakhsh and Stone, Simon and Birkholz, Peter},
     }
 
-
 Acknowledgements
-----------------
+================
 
-This research was funded by the European Social Fund (Application number: 100327771) and co-financed by tax funds based on the budget approved by the members of the Saxon State Parliament, and by Ghent University.
+This work was supported by the U.S. Department of Energy, Office of Science,
+Office of Fusion Energy Sciences, under Award Nos. DE-FC02-04ER54698 and
+DE-SC0024527; by the Princeton Laboratory for Artificial Intelligence under
+Award No. 2025-97; and by the U.S. Department of Energy under Contract No.
+DE-AC02-09CH11466.
 
-.. image:: _static/img/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg
-  :height: 90
-  :alt: Europäischer Sozialfonds
+.. raw:: html
 
-.. image:: _static/img/Logo_IDLab_White.png
-  :height: 70
-  :alt: IDLab
+   <div class="affiliation-logos">
+     <img src="_static/img/plasma_control_logo.svg" alt="Plasma Control group, Princeton University">
+     <img src="_static/img/Logo-STKS.jpg" alt="Chair of Speech Technology and Cognitive Systems, TU Dresden">
+     <img src="_static/img/TUD_Logo_HKS41_114.png" alt="Technische Universität Dresden">
+     <img src="_static/img/Logo_IDLab_White.png" alt="IDLab, Ghent University">
+     <img src="_static/img/logo_UGent_EN_RGB_2400_color-on-white.png" alt="Ghent University">
+     <img src="_static/img/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg" alt="European Social Fund">
+   </div>
 
-.. image:: _static/img/logo_UGent_EN_RGB_2400_color-on-white.png
-  :height: 70
-  :alt: Ghent University
+.. |pypi| image:: https://img.shields.io/pypi/v/pyrcn.svg
+   :target: https://pypi.org/project/pyrcn/
+   :alt: PyPI version
 
-.. image:: _static/img/Logo-STKS.jpg
-  :height: 70
-  :alt: Kognitive Systeme und Sprachtechnologie
+.. |license| image:: https://img.shields.io/pypi/l/pyrcn.svg
+   :target: https://github.com/PlasmaControl/PyRCN/blob/main/LICENSE
+   :alt: License
 
-.. image:: _static/img/TUD_Logo_HKS41_114.png
-  :height: 70
-  :alt: Ghent University
+.. |ci| image:: https://github.com/PlasmaControl/PyRCN/actions/workflows/python-test-push.yml/badge.svg
+   :target: https://github.com/PlasmaControl/PyRCN/actions/workflows/python-test-push.yml
+   :alt: CI status
+
+.. |docs| image:: https://readthedocs.org/projects/pyrcn/badge/?version=latest
+   :target: https://pyrcn.readthedocs.io/en/latest/
+   :alt: Documentation status
+
+.. |coverage| image:: _static/img/coverage.svg
+   :target: https://github.com/PlasmaControl/PyRCN/actions/workflows/python-test-push.yml
+   :alt: Test coverage

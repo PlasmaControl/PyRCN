@@ -6,6 +6,8 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     strategy:
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
@@ -25,6 +27,22 @@ jobs:
         run: mypy src/pyrcn
       - name: Test with pytest
         run: pytest --cov=src/pyrcn --cov-branch --cov-report=xml --cov-report=term-missing
+      - name: Update coverage badge
+        # Regenerate the committed coverage badge from a single job. Runs only
+        # on dev; the push is a no-op on a protected branch (swallowed below),
+        # in which case the badge refreshes when dev is merged.
+        if: github.ref == 'refs/heads/dev' && matrix.python-version == '3.12'
+        run: |
+          pip install "genbadge[coverage]"
+          genbadge coverage -i coverage.xml -o docs/source/_static/img/coverage.svg
+          if ! git diff --quiet docs/source/_static/img/coverage.svg; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add docs/source/_static/img/coverage.svg
+            git commit -m "ci: update coverage badge [skip ci]"
+            git push origin HEAD:dev \
+              || echo "badge push skipped (protected branch or no permission)"
+          fi
       - name: Test installed PyRCN
         run: |
           pip install .

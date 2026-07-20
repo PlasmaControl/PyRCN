@@ -144,14 +144,17 @@ Fore more advanced examples, please have a look at our [Automatic Music Transcri
 
 If you use PyRCN, please cite the following publication:
 
-```latex
-@misc{steiner2021pyrcn,
-      title={PyRCN: A Toolbox for Exploration and Application of Reservoir Computing Networks}, 
-      author={Peter Steiner and Azarakhsh Jalalvand and Simon Stone and Peter Birkholz},
-      year={2021},
-      eprint={2103.04807},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+```bibtex
+@article{Steiner2022pyrcn,
+    title = {PyRCN: A toolbox for exploration and application of Reservoir Computing Networks},
+    journal = {Engineering Applications of Artificial Intelligence},
+    volume = {113},
+    pages = {104964},
+    year = {2022},
+    issn = {0952-1976},
+    doi = {10.1016/j.engappai.2022.104964},
+    url = {https://www.sciencedirect.com/science/article/pii/S0952197622001713},
+    author = {Steiner, Peter and Jalalvand, Azarakhsh and Stone, Simon and Birkholz, Peter},
 }
 ```
 

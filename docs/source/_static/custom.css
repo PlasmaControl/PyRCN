@@ -92,3 +92,24 @@ a:hover {
 .wy-nav-content {
     max-width: 900px;
 }
+
+/* --- Badge row on the landing page -------------------------------------- */
+.rst-content p img {
+    vertical-align: middle;
+}
+
+/* --- Affiliation / funding logo strip ----------------------------------- */
+.affiliation-logos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.75rem 2.25rem;
+    margin: 1.25rem 0 2rem;
+}
+
+.affiliation-logos img {
+    height: 55px;
+    width: auto;
+    max-width: 220px;
+    object-fit: contain;
+}
