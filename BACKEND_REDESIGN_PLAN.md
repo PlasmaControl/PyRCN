@@ -402,9 +402,17 @@ Phase-A parity is proven, then retired.
   Gradient fits are reproducible via `random_state`: the readout init and the
   shuffle are seeded from it (`pyrcn.nn.torch_generator`, threaded through
   `LinearReadout(generator=)` and `train_readout(generator=)`).
-- **B2 · Trainable reservoir.** `requires_grad=True` path; end-to-end backprop
-  through reservoir + readout; training-loop config (optimizer, lr, epochs,
-  loss, batch); reject the invalid "trainable + closed-form" combo.
+- **B2 · Trainable reservoir. — done.** `ESN*` gain `trainable_reservoir`
+  (bool, default False). With `solver="gradient"` it unfreezes the reservoir's
+  recurrent weights (`Reservoir/EulerReservoir.set_recurrent_trainable`) and
+  optimizes them jointly with the readout by backprop through the recurrence
+  (BPTT): each epoch recomputes the states (the fixed input feature map is
+  applied once and detached), full-batch. The RC init is the starting point.
+  The invalid `trainable + closed_form` combo is rejected; reproducible via
+  `random_state`; `predict` runs under `no_grad`. ESN-only (ELM has no
+  reservoir); sequence + non-sequence + classifier. Full suite 218 passed.
+  (Input-weight training could be a later `trainable_input` flag; mini-batching
+  in BPTT mode is deferred — currently full-batch.)
 - **B3 · Tests, examples, docs** for the gradient modes.
 
 ### Risks / notes
