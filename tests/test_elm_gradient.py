@@ -66,6 +66,20 @@ def test_elm_invalid_solver() -> None:
         ELMRegressor(solver="bogus").fit(X, y)
 
 
+def test_elm_gradient_reproducible() -> None:
+    # No torch.manual_seed: the estimator seeds its readout from random_state.
+    X = np.linspace(0, 10, 150).reshape(-1, 1)
+    y = np.sin(X).ravel()
+
+    def _pred() -> np.ndarray:
+        elm = ELMRegressor(
+            hidden_layer_size=40, solver="gradient", optimizer="adam",
+            learning_rate=0.1, epochs=150, random_state=42)
+        return elm.fit(X, y).predict(X)
+
+    np.testing.assert_array_equal(_pred(), _pred())
+
+
 def test_elm_gradient_classifier() -> None:
     torch.manual_seed(0)
     X, y = load_digits(return_X_y=True)

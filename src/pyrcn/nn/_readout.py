@@ -20,6 +20,8 @@ whose weights are optimized by a gradient loop (see
 
 from __future__ import annotations
 
+import math
+
 import torch
 import torch.nn as nn
 
@@ -134,12 +136,22 @@ class LinearReadout(nn.Module):
 
     def __init__(self, in_features: int, out_features: int, *,
                  fit_intercept: bool = True,
+                 generator: torch.Generator | None = None,
                  device: torch.device | str | int | None = None,
                  dtype: torch.dtype | None = None) -> None:
         super().__init__()
         self.linear = nn.Linear(
             in_features, out_features, bias=fit_intercept, device=device,
             dtype=dtype)
+        if generator is not None:
+            # Reproducible init from a seeded generator (nn.Linear's default
+            # init draws from torch's global RNG).
+            bound = 1.0 / math.sqrt(in_features)
+            with torch.no_grad():
+                self.linear.weight.uniform_(-bound, bound, generator=generator)
+                if self.linear.bias is not None:
+                    self.linear.bias.uniform_(
+                        -bound, bound, generator=generator)
 
     def forward(self, Z: torch.Tensor) -> torch.Tensor:
         return self.linear(Z)

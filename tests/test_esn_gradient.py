@@ -6,9 +6,9 @@ optimizer loop instead of the closed-form ridge solve. These tests check that
 the gradient path is wired correctly (runs, learns, right shapes, right
 guards) rather than asserting tight closed-form equivalence.
 
-A torch seed is set per gradient test because the readout's initial weights
-come from torch's global RNG (gradient reproducibility w.r.t. ``random_state``
-is a later refinement).
+Gradient fits are reproducible through the estimator's ``random_state`` (the
+readout init and shuffle are seeded from it), checked by
+``test_esn_gradient_reproducible`` without any global torch seeding.
 """
 from __future__ import annotations
 
@@ -79,6 +79,21 @@ def test_esn_invalid_solver() -> None:
     y = np.asarray(y)
     with pytest.raises(ValueError):
         ESNRegressor(solver="bogus").fit(X, y)
+
+
+def test_esn_gradient_reproducible() -> None:
+    # No torch.manual_seed: the estimator seeds its readout from random_state.
+    X, y = mackey_glass(n_timesteps=300)
+    X = np.asarray(X).reshape(-1, 1)
+    y = np.asarray(y)
+
+    def _pred() -> np.ndarray:
+        return ESNRegressor(
+            hidden_layer_size=40, spectral_radius=0.9, leakage=0.7,
+            solver="gradient", optimizer="adam", learning_rate=0.1,
+            epochs=150, random_state=42).fit(X, y).predict(X)
+
+    np.testing.assert_array_equal(_pred(), _pred())
 
 
 def test_esn_gradient_classifier() -> None:

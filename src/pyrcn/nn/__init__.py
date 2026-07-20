@@ -33,8 +33,8 @@ from ._input import InputFeatureMap
 from ._readout import IncrementalRidge, LinearReadout
 from ._reservoir import (EulerESNCell, EulerReservoir, LeakyESNCell,
                          Reservoir)
-from ._training import train_readout
+from ._training import torch_generator, train_readout
 
 __all__ = ["Reservoir", "EulerReservoir", "LeakyESNCell", "EulerESNCell",
            "InputFeatureMap", "IncrementalRidge", "LinearReadout",
-           "train_readout", "init"]
+           "train_readout", "torch_generator", "init"]

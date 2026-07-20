@@ -22,7 +22,7 @@ from ..nn._bridge import (
 from ..nn._input import InputFeatureMap
 from ..nn._readout import IncrementalRidge, LinearReadout
 from ..nn._reservoir import EulerReservoir, Reservoir
-from ..nn._training import train_readout
+from ..nn._training import torch_generator, train_readout
 from ..base.blocks import InputToNode, NodeToNode
 from ..linear_model import IncrementalRegression
 from ..projection import MatrixToValueProjection
@@ -422,13 +422,16 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             all_y = torch.as_tensor(
                 np.asarray(y), dtype=torch.float64)[self.washout:]
         y2 = all_y.reshape(all_states.shape[0], -1)
+        gen = torch_generator(self._input_to_node.random_state)
         readout = LinearReadout(
             all_states.shape[1], y2.shape[1],
-            fit_intercept=self._regressor.fit_intercept, dtype=torch.float64)
+            fit_intercept=self._regressor.fit_intercept, generator=gen,
+            dtype=torch.float64)
         train_readout(
             readout, all_states, y2, optimizer=self.optimizer,
             learning_rate=self.learning_rate, epochs=self.epochs,
-            batch_size=self.batch_size, weight_decay=self._regressor.alpha)
+            batch_size=self.batch_size, weight_decay=self._regressor.alpha,
+            generator=gen)
         self._torch_readout = readout
         return self
 

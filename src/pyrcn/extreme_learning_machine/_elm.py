@@ -22,7 +22,7 @@ from ..nn._bridge import (
     build_input_map, build_readout, input_is_backable, regressor_is_backable)
 from ..nn._input import InputFeatureMap
 from ..nn._readout import IncrementalRidge, LinearReadout
-from ..nn._training import train_readout
+from ..nn._training import torch_generator, train_readout
 from ..base.blocks import InputToNode
 from ..linear_model import IncrementalRegression
 
@@ -215,18 +215,20 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                     "input_to_node and an IncrementalRegression readout")
             self._input_to_node.fit(X)
             dtype = torch.float64
+            gen = torch_generator(self._input_to_node.random_state)
             fm = build_input_map(self._input_to_node, dtype=dtype)
             feats = fm(torch.as_tensor(np.asarray(X), dtype=dtype))
             y2 = torch.as_tensor(
                 np.asarray(y), dtype=dtype).reshape(feats.shape[0], -1)
             lin_readout = LinearReadout(
                 feats.shape[1], y2.shape[1],
-                fit_intercept=self._regressor.fit_intercept, dtype=dtype)
+                fit_intercept=self._regressor.fit_intercept,
+                generator=gen, dtype=dtype)
             train_readout(
                 lin_readout, feats, y2, optimizer=self.optimizer,
                 learning_rate=self.learning_rate, epochs=self.epochs,
                 batch_size=self.batch_size,
-                weight_decay=self._regressor.alpha)
+                weight_decay=self._regressor.alpha, generator=gen)
             self._torch_input_map = fm
             self._torch_readout = lin_readout
             self._use_torch = True

@@ -13,17 +13,30 @@ regularization, so with a fixed reservoir this converges to the closed-form
 
 from __future__ import annotations
 
+import numpy as np
 import torch
 import torch.nn as nn
+from sklearn.utils import check_random_state
 
 OPTIMIZERS = {"adam": torch.optim.Adam, "sgd": torch.optim.SGD}
 LOSSES = {"mse": nn.MSELoss}
 
 
+def torch_generator(
+        random_state: int | np.random.RandomState | None
+) -> torch.Generator:
+    """Return a ``torch.Generator`` seeded deterministically from a
+    scikit-learn ``random_state`` (int / ``RandomState`` / ``None``)."""
+    rng = check_random_state(random_state)
+    seed = int(rng.randint(np.iinfo(np.int32).max))
+    return torch.Generator().manual_seed(seed)
+
+
 def train_readout(readout: nn.Module, Z: torch.Tensor, y: torch.Tensor, *,
                   optimizer: str = "adam", learning_rate: float = 1e-3,
                   epochs: int = 100, batch_size: int | None = None,
-                  weight_decay: float = 0.0, loss: str = "mse") -> nn.Module:
+                  weight_decay: float = 0.0, loss: str = "mse",
+                  generator: torch.Generator | None = None) -> nn.Module:
     """Train ``readout`` on ``(Z, y)`` with a gradient optimizer loop.
 
     Parameters
@@ -43,6 +56,8 @@ def train_readout(readout: nn.Module, Z: torch.Tensor, y: torch.Tensor, *,
     weight_decay : float, default=0.0
         L2 penalty (ridge strength).
     loss : {"mse"}, default="mse"
+    generator : torch.Generator or None, default=None
+        Seeds the mini-batch shuffling for reproducibility.
 
     Returns
     -------
@@ -63,7 +78,8 @@ def train_readout(readout: nn.Module, Z: torch.Tensor, y: torch.Tensor, *,
     step = n_samples if batch_size is None else int(batch_size)
     readout.train()
     for _ in range(int(epochs)):
-        permutation = torch.randperm(n_samples, device=Z.device)
+        permutation = torch.randperm(
+            n_samples, generator=generator, device=Z.device)
         for start in range(0, n_samples, step):
             index = permutation[start:start + step]
             opt.zero_grad()
