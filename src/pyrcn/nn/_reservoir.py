@@ -164,6 +164,10 @@ class Reservoir(nn.Module):
         """Load the recurrent weight matrix into the cell."""
         self.cell.set_recurrent_weights(weights)
 
+    def set_recurrent_trainable(self, trainable: bool = True) -> None:
+        """Enable/disable gradient training of the recurrent weights."""
+        self.cell.weight_hh.requires_grad_(trainable)
+
     def forward(self, x: torch.Tensor,
                 initial_state: torch.Tensor | None = None
                 ) -> tuple[torch.Tensor, torch.Tensor]:
@@ -205,6 +209,10 @@ class EulerReservoir(nn.Module):
     def set_recurrent_weights(self, weights: object) -> None:
         """Load the recurrent weight matrix into the cell."""
         self.cell.set_recurrent_weights(weights)
+
+    def set_recurrent_trainable(self, trainable: bool = True) -> None:
+        """Enable/disable gradient training of the recurrent weights."""
+        self.cell.weight_hh.requires_grad_(trainable)
 
     def forward(self, x: torch.Tensor,
                 initial_state: torch.Tensor | None = None

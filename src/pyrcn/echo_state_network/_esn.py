@@ -22,7 +22,7 @@ from ..nn._bridge import (
 from ..nn._input import InputFeatureMap
 from ..nn._readout import IncrementalRidge, LinearReadout
 from ..nn._reservoir import EulerReservoir, Reservoir
-from ..nn._training import torch_generator, train_readout
+from ..nn._training import OPTIMIZERS, torch_generator, train_readout
 from ..base.blocks import InputToNode, NodeToNode
 from ..linear_model import IncrementalRegression
 from ..projection import MatrixToValueProjection
@@ -87,6 +87,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                  learning_rate: float = 1e-3,
                  epochs: int = 100,
                  batch_size: int | None = None,
+                 trainable_reservoir: bool = False,
                  **kwargs: Any) -> None:
         """Construct the ESNRegressor."""
         if input_to_node is None:
@@ -129,6 +130,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.batch_size = batch_size
+        self.trainable_reservoir = trainable_reservoir
         self._use_torch: bool = False
         self._target_1d: bool = False
         self._torch_input_map: InputFeatureMap
@@ -151,7 +153,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                     "optimizer": self.optimizer,
                     "learning_rate": self.learning_rate,
                     "epochs": self.epochs,
-                    "batch_size": self.batch_size}
+                    "batch_size": self.batch_size,
+                    "trainable_reservoir": self.trainable_reservoir}
 
     def set_params(self, **parameters: dict) -> ESNRegressor:
         """Set all possible parameters of the ESNRegressor."""
@@ -323,8 +326,10 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                 self._node_to_node.fit(self._input_to_node.transform(X))
             self._build_torch_backend(torch.float64)
             self._use_torch = True
-            return self._torch_gradient_fit(
-                X, y, sequence_ranges if self.requires_sequence else None)
+            ranges = sequence_ranges if self.requires_sequence else None
+            if self.trainable_reservoir:
+                return self._torch_trainable_fit(X, y, ranges)
+            return self._torch_gradient_fit(X, y, ranges)
         self._use_torch = backable
         if self.washout > 0 and not self._use_torch:
             raise NotImplementedError(
@@ -435,6 +440,62 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self._torch_readout = readout
         return self
 
+    def _torch_trainable_fit(self, X: np.ndarray, y: np.ndarray,
+                             sequence_ranges: (np.ndarray | None)
+                             ) -> ESNRegressor:
+        """Jointly train the recurrent weights and the readout (BPTT).
+
+        The fixed input feature map is applied once (detached); each epoch
+        recomputes the reservoir states so gradients flow through the
+        recurrence, and the recurrent weights and the readout are updated
+        together. Full-batch updates (``batch_size`` is ignored here).
+        """
+        dtype = torch.float64
+        self._torch_reservoir.set_recurrent_trainable(True)
+        feats_list = []
+        y_list = []
+        if sequence_ranges is not None:
+            for start, stop in sequence_ranges:
+                feats = self._torch_input_map(torch.as_tensor(
+                    np.asarray(X[start:stop]), dtype=dtype)).detach()
+                ys = torch.as_tensor(np.asarray(y[start:stop]), dtype=dtype)
+                feats_list.append(feats)
+                y_list.append(ys[self.washout:])
+        else:
+            feats = self._torch_input_map(torch.as_tensor(
+                np.asarray(X), dtype=dtype)).detach()
+            feats_list.append(feats)
+            y_list.append(
+                torch.as_tensor(np.asarray(y), dtype=dtype)[self.washout:])
+        all_y = torch.cat(y_list, dim=0)
+        y2 = all_y.reshape(all_y.shape[0], -1)
+        with torch.no_grad():
+            probe, _ = self._torch_reservoir(feats_list[0].unsqueeze(0))
+        gen = torch_generator(self._input_to_node.random_state)
+        readout = LinearReadout(
+            probe.shape[-1], y2.shape[1],
+            fit_intercept=self._regressor.fit_intercept, generator=gen,
+            dtype=dtype)
+        params = [p for p in self._torch_reservoir.parameters()
+                  if p.requires_grad] + list(readout.parameters())
+        optimizer = OPTIMIZERS[self.optimizer](
+            params, lr=self.learning_rate,
+            weight_decay=self._regressor.alpha)
+        loss_fn = torch.nn.MSELoss()
+        readout.train()
+        for _ in range(int(self.epochs)):
+            optimizer.zero_grad()
+            states_list = []
+            for feats in feats_list:
+                states, _ = self._torch_reservoir(feats.unsqueeze(0))
+                states_list.append(states.squeeze(0)[self.washout:])
+            loss = loss_fn(readout(torch.cat(states_list, dim=0)), y2)
+            loss.backward()
+            optimizer.step()
+        readout.eval()
+        self._torch_readout = readout
+        return self
+
     def _sequence_fit(self, X: np.ndarray, y: np.ndarray,
                       sequence_ranges: np.ndarray,
                       n_jobs: (int | np.integer |
@@ -498,23 +559,26 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
 
         if getattr(self, "_use_torch", False):
             squeeze = getattr(self, "_target_1d", False)
-            if self.requires_sequence is False:
-                states, final = self._torch_states(X, initial_state)
-                pred = self._torch_readout.predict(states)
-                if squeeze:
-                    pred = pred.squeeze(-1)
-                y = pred.numpy()
-                return (y, final.numpy()) if return_state else y
-            y = np.empty(shape=X.shape, dtype=object)
-            finals = np.empty(shape=X.shape, dtype=object)
-            for k, seq in enumerate(X):
-                states, final = self._torch_states(seq, initial_state)
-                pred = self._torch_readout.predict(states)
-                if squeeze:
-                    pred = pred.squeeze(-1)
-                y[k] = pred.numpy()
-                finals[k] = final.numpy()
-            return (y, finals) if return_state else y
+            # No grad in inference: a trainable reservoir has requires_grad
+            # weights, so its forward would otherwise track gradients.
+            with torch.no_grad():
+                if self.requires_sequence is False:
+                    states, final = self._torch_states(X, initial_state)
+                    pred = self._torch_readout.predict(states)
+                    if squeeze:
+                        pred = pred.squeeze(-1)
+                    y = pred.numpy()
+                    return (y, final.numpy()) if return_state else y
+                y = np.empty(shape=X.shape, dtype=object)
+                finals = np.empty(shape=X.shape, dtype=object)
+                for k, seq in enumerate(X):
+                    states, final = self._torch_states(seq, initial_state)
+                    pred = self._torch_readout.predict(states)
+                    if squeeze:
+                        pred = pred.squeeze(-1)
+                    y[k] = pred.numpy()
+                    finals[k] = final.numpy()
+                return (y, finals) if return_state else y
 
         if initial_state is not None or return_state:
             raise NotImplementedError(
@@ -591,6 +655,11 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                 or self.learning_rate <= 0):
             raise ValueError('Invalid value for learning_rate, got {}'
                              .format(self.learning_rate))
+
+        if self.trainable_reservoir and self.solver != "gradient":
+            raise ValueError(
+                "trainable_reservoir=True requires solver='gradient' "
+                "(a trainable reservoir cannot use the closed-form solver)")
 
     def __sizeof__(self) -> int:
         """
@@ -832,6 +901,7 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
                  learning_rate: float = 1e-3,
                  epochs: int = 100,
                  batch_size: int | None = None,
+                 trainable_reservoir: bool = False,
                  **kwargs: Any) -> None:
         """Construct the ESNClassifier."""
         super().__init__(input_to_node=input_to_node,
@@ -839,7 +909,8 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
                          requires_sequence=requires_sequence, washout=washout,
                          verbose=verbose, solver=solver, optimizer=optimizer,
                          learning_rate=learning_rate, epochs=epochs,
-                         batch_size=batch_size, **kwargs)
+                         batch_size=batch_size,
+                         trainable_reservoir=trainable_reservoir, **kwargs)
         self._decision_strategy = decision_strategy
         self._encoder = LabelBinarizer()
         self._sequence_to_value = False
@@ -939,8 +1010,10 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         if self.solver == "gradient":
             self._build_torch_backend(torch.float64)
             self._use_torch = True
-            return self._torch_gradient_fit(
-                X, y, sequence_ranges if self.requires_sequence else None)
+            ranges = sequence_ranges if self.requires_sequence else None
+            if self.trainable_reservoir:
+                return self._torch_trainable_fit(X, y, ranges)
+            return self._torch_gradient_fit(X, y, ranges)
         if self._use_torch:
             self._build_torch_backend(torch.float64)
             if self.requires_sequence:
