@@ -48,6 +48,11 @@ class InputFeatureMap(nn.Linear):
         for p in self.parameters():
             p.requires_grad_(False)
 
+    def set_input_trainable(self, trainable: bool = True) -> None:
+        """Enable/disable gradient training of the input weights and bias."""
+        for p in self.parameters():
+            p.requires_grad_(trainable)
+
     def set_input_weights(self, input_weights: object,
                           bias_weights: object) -> None:
         """Load input weights ``(in_features, out_features)`` and bias.

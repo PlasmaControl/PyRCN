@@ -88,6 +88,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                  epochs: int = 100,
                  batch_size: int | None = None,
                  trainable_reservoir: bool = False,
+                 trainable_input: bool = False,
                  **kwargs: Any) -> None:
         """Construct the ESNRegressor."""
         if input_to_node is None:
@@ -131,6 +132,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self.epochs = epochs
         self.batch_size = batch_size
         self.trainable_reservoir = trainable_reservoir
+        self.trainable_input = trainable_input
         self._use_torch: bool = False
         self._target_1d: bool = False
         self._torch_input_map: InputFeatureMap
@@ -154,7 +156,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                     "learning_rate": self.learning_rate,
                     "epochs": self.epochs,
                     "batch_size": self.batch_size,
-                    "trainable_reservoir": self.trainable_reservoir}
+                    "trainable_reservoir": self.trainable_reservoir,
+                    "trainable_input": self.trainable_input}
 
     def set_params(self, **parameters: dict) -> ESNRegressor:
         """Set all possible parameters of the ESNRegressor."""
@@ -327,7 +330,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             self._build_torch_backend(torch.float64)
             self._use_torch = True
             ranges = sequence_ranges if self.requires_sequence else None
-            if self.trainable_reservoir:
+            if self.trainable_reservoir or self.trainable_input:
                 return self._torch_trainable_fit(X, y, ranges)
             return self._torch_gradient_fit(X, y, ranges)
         self._use_torch = backable
@@ -443,55 +446,78 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
     def _torch_trainable_fit(self, X: np.ndarray, y: np.ndarray,
                              sequence_ranges: (np.ndarray | None)
                              ) -> ESNRegressor:
-        """Jointly train the recurrent weights and the readout (BPTT).
+        """Jointly train input/reservoir weights and the readout (BPTT).
 
-        The fixed input feature map is applied once (detached); each epoch
-        recomputes the reservoir states so gradients flow through the
-        recurrence, and the recurrent weights and the readout are updated
-        together. Full-batch updates (``batch_size`` is ignored here).
+        Whichever of the input feature map and the reservoir is marked
+        trainable is optimized together with the readout by backpropagating
+        through the recurrence; each epoch recomputes the states. A fixed
+        input feature map is applied once and detached (cheaper); a trainable
+        one is recomputed each step so gradients reach its weights.
+        Mini-batching (``batch_size``) is over sequences; ``None`` is
+        full-batch. In non-sequence mode there is a single sequence, so it is
+        always full-BPTT over that sequence.
         """
         dtype = torch.float64
-        self._torch_reservoir.set_recurrent_trainable(True)
-        feats_list = []
-        y_list = []
+        train_input = self.trainable_input
+        if train_input:
+            self._torch_input_map.set_input_trainable(True)
+        if self.trainable_reservoir:
+            self._torch_reservoir.set_recurrent_trainable(True)
         if sequence_ranges is not None:
-            for start, stop in sequence_ranges:
-                feats = self._torch_input_map(torch.as_tensor(
-                    np.asarray(X[start:stop]), dtype=dtype)).detach()
-                ys = torch.as_tensor(np.asarray(y[start:stop]), dtype=dtype)
-                feats_list.append(feats)
-                y_list.append(ys[self.washout:])
+            segments = [(X[a:b], y[a:b]) for a, b in sequence_ranges]
         else:
-            feats = self._torch_input_map(torch.as_tensor(
-                np.asarray(X), dtype=dtype)).detach()
-            feats_list.append(feats)
-            y_list.append(
-                torch.as_tensor(np.asarray(y), dtype=dtype)[self.washout:])
-        all_y = torch.cat(y_list, dim=0)
-        y2 = all_y.reshape(all_y.shape[0], -1)
-        with torch.no_grad():
-            probe, _ = self._torch_reservoir(feats_list[0].unsqueeze(0))
+            segments = [(X, y)]
+        inputs = [torch.as_tensor(np.asarray(xs), dtype=dtype)
+                  for xs, _ in segments]
+        targets = [torch.as_tensor(np.asarray(ys), dtype=dtype)[self.washout:]
+                   for _, ys in segments]
+        fixed_feats = (None if train_input
+                       else [self._torch_input_map(x).detach()
+                             for x in inputs])
+        n_targets = 1 if targets[0].ndim == 1 else targets[0].shape[1]
         gen = torch_generator(self._input_to_node.random_state)
+        with torch.no_grad():
+            probe_feats = (self._torch_input_map(inputs[0])
+                           if fixed_feats is None else fixed_feats[0])
+            probe, _ = self._torch_reservoir(probe_feats.unsqueeze(0))
         readout = LinearReadout(
-            probe.shape[-1], y2.shape[1],
+            probe.shape[-1], n_targets,
             fit_intercept=self._regressor.fit_intercept, generator=gen,
             dtype=dtype)
-        params = [p for p in self._torch_reservoir.parameters()
-                  if p.requires_grad] + list(readout.parameters())
+        params: list = []
+        if train_input:
+            params += [p for p in self._torch_input_map.parameters()
+                       if p.requires_grad]
+        if self.trainable_reservoir:
+            params += [p for p in self._torch_reservoir.parameters()
+                       if p.requires_grad]
+        params += list(readout.parameters())
         optimizer = OPTIMIZERS[self.optimizer](
-            params, lr=self.learning_rate,
-            weight_decay=self._regressor.alpha)
+            params, lr=self.learning_rate, weight_decay=self._regressor.alpha)
         loss_fn = torch.nn.MSELoss()
+        n_seq = len(inputs)
+        step = n_seq if self.batch_size is None else min(
+            int(self.batch_size), n_seq)
         readout.train()
         for _ in range(int(self.epochs)):
-            optimizer.zero_grad()
-            states_list = []
-            for feats in feats_list:
-                states, _ = self._torch_reservoir(feats.unsqueeze(0))
-                states_list.append(states.squeeze(0)[self.washout:])
-            loss = loss_fn(readout(torch.cat(states_list, dim=0)), y2)
-            loss.backward()
-            optimizer.step()
+            order = torch.randperm(n_seq, generator=gen).tolist()
+            for begin in range(0, n_seq, step):
+                batch = order[begin:begin + step]
+                optimizer.zero_grad()
+                states_parts = []
+                target_parts = []
+                for j in batch:
+                    feats = (self._torch_input_map(inputs[j])
+                             if fixed_feats is None else fixed_feats[j])
+                    states, _ = self._torch_reservoir(feats.unsqueeze(0))
+                    states_parts.append(states.squeeze(0)[self.washout:])
+                    target_parts.append(targets[j])
+                predicted = readout(torch.cat(states_parts, dim=0))
+                expected = torch.cat(target_parts, dim=0).reshape(
+                    predicted.shape[0], -1)
+                loss = loss_fn(predicted, expected)
+                loss.backward()
+                optimizer.step()
         readout.eval()
         self._torch_readout = readout
         return self
@@ -656,10 +682,12 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             raise ValueError('Invalid value for learning_rate, got {}'
                              .format(self.learning_rate))
 
-        if self.trainable_reservoir and self.solver != "gradient":
+        if ((self.trainable_reservoir or self.trainable_input)
+                and self.solver != "gradient"):
             raise ValueError(
-                "trainable_reservoir=True requires solver='gradient' "
-                "(a trainable reservoir cannot use the closed-form solver)")
+                "trainable_reservoir / trainable_input require "
+                "solver='gradient' (trainable weights cannot use the "
+                "closed-form solver)")
 
     def __sizeof__(self) -> int:
         """
@@ -902,6 +930,7 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
                  epochs: int = 100,
                  batch_size: int | None = None,
                  trainable_reservoir: bool = False,
+                 trainable_input: bool = False,
                  **kwargs: Any) -> None:
         """Construct the ESNClassifier."""
         super().__init__(input_to_node=input_to_node,
@@ -910,7 +939,8 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
                          verbose=verbose, solver=solver, optimizer=optimizer,
                          learning_rate=learning_rate, epochs=epochs,
                          batch_size=batch_size,
-                         trainable_reservoir=trainable_reservoir, **kwargs)
+                         trainable_reservoir=trainable_reservoir,
+                         trainable_input=trainable_input, **kwargs)
         self._decision_strategy = decision_strategy
         self._encoder = LabelBinarizer()
         self._sequence_to_value = False
@@ -1011,7 +1041,7 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
             self._build_torch_backend(torch.float64)
             self._use_torch = True
             ranges = sequence_ranges if self.requires_sequence else None
-            if self.trainable_reservoir:
+            if self.trainable_reservoir or self.trainable_input:
                 return self._torch_trainable_fit(X, y, ranges)
             return self._torch_gradient_fit(X, y, ranges)
         if self._use_torch:

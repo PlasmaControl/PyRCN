@@ -73,3 +73,59 @@ def test_trainable_classifier_runs() -> None:
     assert clf._use_torch is True
     assert clf._torch_reservoir.cell.weight_hh.requires_grad is True
     assert len(clf.predict(X)) == len(X)
+
+
+def test_trainable_input_learns_and_updates_weights() -> None:
+    X, y = _sin_next_step()
+    fixed = _reg(trainable_input=False, epochs=80).fit(X, y)
+    trained = _reg(trainable_input=True, epochs=80).fit(X, y)
+    assert all(p.requires_grad
+               for p in trained._torch_input_map.parameters())
+    w_fixed = fixed._torch_input_map.weight.detach().numpy()
+    w_trained = trained._torch_input_map.weight.detach().numpy()
+    assert not np.allclose(w_fixed, w_trained)   # input weights moved
+    assert trained.score(X, y) > 0.6
+
+
+def test_trainable_input_and_reservoir_together() -> None:
+    X, y = _sin_next_step()
+    esn = _reg(trainable_input=True, trainable_reservoir=True,
+               epochs=80).fit(X, y)
+    assert all(p.requires_grad for p in esn._torch_input_map.parameters())
+    assert esn._torch_reservoir.cell.weight_hh.requires_grad is True
+    assert esn.score(X, y) > 0.6
+
+
+def test_trainable_input_requires_gradient_solver() -> None:
+    with pytest.raises(ValueError):
+        ESNRegressor(trainable_input=True, solver="closed_form").fit(
+            np.zeros((10, 1)), np.zeros(10))
+
+
+def _sequences(n_seq: int = 6, length: int = 100
+               ) -> tuple[np.ndarray, np.ndarray]:
+    flat = np.sin(np.linspace(0, 12 * np.pi, n_seq * length))
+    X = np.empty(n_seq, dtype=object)
+    y = np.empty(n_seq, dtype=object)
+    for k in range(n_seq):
+        seg = flat[k * length:(k + 1) * length].reshape(-1, 1)
+        X[k] = seg
+        y[k] = np.roll(seg.ravel(), -1)
+    return X, y
+
+
+def test_bptt_minibatching_runs_and_is_reproducible() -> None:
+    X, y = _sequences()
+
+    def _pred(batch_size: int) -> np.ndarray:
+        esn = ESNRegressor(
+            hidden_layer_size=20, spectral_radius=0.9, leakage=0.7,
+            solver="gradient", trainable_reservoir=True, optimizer="adam",
+            learning_rate=0.05, epochs=40, batch_size=batch_size,
+            random_state=42)
+        return esn.fit(X, y).predict(X)
+
+    out = _pred(2)                                   # 2 sequences / step
+    assert len(out) == 6
+    a, b = _pred(3), _pred(3)
+    assert all(np.array_equal(a[k], b[k]) for k in range(6))
