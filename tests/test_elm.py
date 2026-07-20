@@ -145,3 +145,56 @@ def test_elm_classifier_no_valid_params() -> None:
         ELMClassifier(input_to_node=ELMRegressor()).fit(X, y)
     with pytest.raises(TypeError):
         ELMClassifier(regressor=InputToNode()).fit(X, y)
+
+
+def test_elm_regressor_partial_fit_verbose() -> None:
+    X, y = load_digits(return_X_y=True)
+    elm = ELMRegressor(hidden_layer_size=20, verbose=True)
+    elm.partial_fit(X[:10], y[:10].astype(float))
+
+
+def test_elm_regressor_chunk_numpy() -> None:
+    rng = np.random.RandomState(42)
+    X = rng.normal(size=(30, 3))
+    y = rng.normal(size=(30,))
+    elm = ELMRegressor(
+        hidden_layer_size=10, chunk_size=10,
+        regressor=IncrementalRegression(normalize=True))
+    elm.fit(X, y)
+    pred = elm.predict(X)
+    assert pred.shape[0] == 30
+
+
+def test_elm_regressor_invalid_optimizer() -> None:
+    X = np.zeros(shape=(10, 2))
+    y = np.zeros(shape=(10,))
+    with pytest.raises(ValueError):
+        ELMRegressor(optimizer="invalid").fit(X, y)
+
+
+def test_elm_regressor_invalid_loss() -> None:
+    X = np.zeros(shape=(10, 2))
+    y = np.zeros(shape=(10,))
+    with pytest.raises(ValueError):
+        ELMRegressor(loss="invalid").fit(X, y)
+
+
+def test_elm_regressor_invalid_epochs() -> None:
+    X = np.zeros(shape=(10, 2))
+    y = np.zeros(shape=(10,))
+    with pytest.raises(ValueError):
+        ELMRegressor(epochs=0).fit(X, y)
+
+
+def test_elm_regressor_invalid_learning_rate() -> None:
+    X = np.zeros(shape=(10, 2))
+    y = np.zeros(shape=(10,))
+    with pytest.raises(ValueError):
+        ELMRegressor(learning_rate=0.).fit(X, y)
+
+
+def test_elm_hidden_layer_state_not_fitted() -> None:
+    elm = ELMRegressor()
+    elm.input_to_node = None
+    with pytest.raises(NotFittedError):
+        elm.hidden_layer_state(np.zeros(shape=(5, 2)))

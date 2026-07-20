@@ -12,7 +12,8 @@ import numpy as np
 import pytest
 import torch
 
-from pyrcn.nn import Reservoir
+from pyrcn.nn import (EulerESNCell, EulerReservoir, LeakyESNCell,
+                      Reservoir)
 from pyrcn.base.blocks import HebbianNodeToNode, NodeToNode
 
 RTOL, ATOL = 1e-8, 1e-11
@@ -123,3 +124,60 @@ def test_reservoir_batched_matches_per_sequence() -> None:
 
     np.testing.assert_allclose(states[0].numpy(), e1, rtol=RTOL, atol=ATOL)
     np.testing.assert_allclose(states[1].numpy(), e2, rtol=RTOL, atol=ATOL)
+
+
+def test_cell_unknown_activation_raises() -> None:
+    with pytest.raises(ValueError, match="unknown activation"):
+        LeakyESNCell(5, activation="nope", dtype=torch.float64)
+
+
+def test_set_recurrent_weights_wrong_shape_raises() -> None:
+    cell = LeakyESNCell(5, dtype=torch.float64)
+    with pytest.raises(ValueError, match="expected weights of shape"):
+        cell.set_recurrent_weights(torch.zeros(4, 4, dtype=torch.float64))
+
+
+def test_leaky_cell_forward_defaults_state_to_zeros() -> None:
+    cell = LeakyESNCell(4, spectral_radius=0.9, leakage=1.0,
+                        activation="tanh", dtype=torch.float64)
+    cell.set_recurrent_weights(torch.eye(4, dtype=torch.float64))
+    x = torch.arange(8, dtype=torch.float64).reshape(2, 4) * 0.1
+    # hx=None -> zero initial state -> h' = tanh(x + 0)
+    got = cell(x)
+    expected = cell(x, torch.zeros(2, 4, dtype=torch.float64))
+    np.testing.assert_allclose(got.numpy(), expected.numpy())
+    np.testing.assert_allclose(got.numpy(), torch.tanh(x).numpy())
+
+
+def test_euler_cell_forward_defaults_state_to_zeros() -> None:
+    cell = EulerESNCell(4, recurrent_scaling=0.5, gamma=0.01, epsilon=0.1,
+                        activation="tanh", dtype=torch.float64)
+    cell.set_recurrent_weights(torch.eye(4, dtype=torch.float64))
+    x = torch.arange(8, dtype=torch.float64).reshape(2, 4) * 0.1
+    got = cell(x)
+    expected = cell(x, torch.zeros(2, 4, dtype=torch.float64))
+    np.testing.assert_allclose(got.numpy(), expected.numpy())
+
+
+def test_bidirectional_with_initial_state_raises() -> None:
+    res = Reservoir(hidden_size=5, bidirectional=True, dtype=torch.float64)
+    res.set_recurrent_weights(torch.eye(5, dtype=torch.float64))
+    x = torch.zeros(1, 3, 5, dtype=torch.float64)
+    with pytest.raises(ValueError, match="bidirectional"):
+        res(x, initial_state=torch.zeros(1, 5, dtype=torch.float64))
+
+
+def test_euler_reservoir_set_recurrent_trainable_toggles() -> None:
+    res = EulerReservoir(hidden_size=5, dtype=torch.float64)
+    assert not res.cell.weight_hh.requires_grad
+    res.set_recurrent_trainable(True)
+    assert res.cell.weight_hh.requires_grad
+    res.set_recurrent_trainable(False)
+    assert not res.cell.weight_hh.requires_grad
+
+
+def test_reservoir_set_recurrent_trainable_toggles() -> None:
+    res = Reservoir(hidden_size=5, dtype=torch.float64)
+    assert not res.cell.weight_hh.requires_grad
+    res.set_recurrent_trainable(True)
+    assert res.cell.weight_hh.requires_grad

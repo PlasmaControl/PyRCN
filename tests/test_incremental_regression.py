@@ -86,3 +86,40 @@ def test_compare_ridge() -> None:
 
     print(f"incremental: {i_reg.coef_} ridge: {ridge.coef_}")
     np.testing.assert_allclose(i_reg.coef_, ridge.coef_, rtol=.0001)
+
+
+def test_incremental_partial_normalize() -> None:
+    print('\ntest_incremental_partial_normalize():')
+    rs = np.random.RandomState(42)
+    X = rs.normal(size=(20, 3))
+    y = rs.normal(size=(20, 2))
+    reg = IncrementalRegression(normalize=True)
+    reg.partial_fit(X, y)
+    reg.predict(X)
+
+
+def test_incremental_coef_intercept_2d() -> None:
+    print('\ntest_incremental_coef_intercept_2d():')
+    rs = np.random.RandomState(42)
+    X = rs.normal(size=(20, 3))
+    y = rs.normal(size=(20, 2))
+    reg = IncrementalRegression(fit_intercept=True).fit(X, y)
+    assert reg.coef_.shape == (2, 3)
+    assert reg.intercept_.shape == (2,)
+
+
+def test_incremental_no_intercept() -> None:
+    print('\ntest_incremental_no_intercept():')
+    rs = np.random.RandomState(42)
+    X = rs.normal(size=(20, 3))
+    y = rs.normal(size=(20, 2))
+    reg = IncrementalRegression(fit_intercept=False).fit(X, y)
+    assert reg.coef_.shape == (2, 3)
+    assert reg.intercept_.size == 0
+
+
+def test_incremental_coef_not_fitted() -> None:
+    print('\ntest_incremental_coef_not_fitted():')
+    reg = IncrementalRegression()
+    assert reg.coef_.shape == ()
+    assert reg.intercept_.size == 0

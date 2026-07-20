@@ -422,7 +422,9 @@ def max_error(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     """
     y_type, y_true, y_pred, sample_weight, multioutput = _check_reg_targets(
         y_true, y_pred, None)
-    if sample_weight is not None:
+    if sample_weight is not None:  # pragma: no cover
+        # sample_weight is always None here (passed as None above), so this
+        # branch is unreachable; kept for parity with the other metrics.
         check_consistent_length(y_true, y_pred, sample_weight)
     else:
         check_consistent_length(y_true, y_pred)

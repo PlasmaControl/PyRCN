@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 import torch
 
-from pyrcn.nn import IncrementalRidge
+from pyrcn.nn import IncrementalRidge, LinearReadout
 from pyrcn.linear_model import IncrementalRegression
 
 RTOL, ATOL = 1e-7, 1e-9
@@ -122,3 +122,57 @@ def test_predict_before_fit_raises() -> None:
     ridge = IncrementalRidge(dtype=torch.float64)
     with pytest.raises(RuntimeError):
         ridge.predict(torch.zeros(3, 4, dtype=torch.float64))
+
+
+def test_solve_without_statistics_raises() -> None:
+    ridge = IncrementalRidge(dtype=torch.float64)
+    with pytest.raises(RuntimeError, match="no statistics accumulated"):
+        ridge.solve()
+
+
+def test_forward_equals_predict() -> None:
+    n_features = 6
+    Z = _rng(0).normal(size=(20, n_features))
+    y = _rng(1).normal(size=(20, 2))
+    ridge = IncrementalRidge(alpha=1e-3, dtype=torch.float64)
+    ridge.fit(torch.as_tensor(Z, dtype=torch.float64),
+              torch.as_tensor(y, dtype=torch.float64))
+    Zt = torch.as_tensor(Z, dtype=torch.float64)
+    np.testing.assert_allclose(
+        ridge(Zt).numpy(), ridge.predict(Zt).numpy())
+
+
+def test_merge_without_statistics_raises() -> None:
+    Z = torch.as_tensor(_rng(0).normal(size=(10, 4)), dtype=torch.float64)
+    y = torch.as_tensor(_rng(1).normal(size=(10, 2)), dtype=torch.float64)
+    fitted = IncrementalRidge(dtype=torch.float64)
+    fitted.fit(Z, y)
+    empty = IncrementalRidge(dtype=torch.float64)
+    with pytest.raises(RuntimeError, match="accumulated statistics"):
+        _ = fitted + empty
+
+
+def test_linear_readout_reproducible_init_and_predict() -> None:
+    in_features, out_features = 5, 2
+    g1 = torch.Generator().manual_seed(0)
+    g2 = torch.Generator().manual_seed(0)
+    r1 = LinearReadout(in_features, out_features, generator=g1,
+                       dtype=torch.float64)
+    r2 = LinearReadout(in_features, out_features, generator=g2,
+                       dtype=torch.float64)
+    assert torch.equal(r1.linear.weight, r2.linear.weight)
+    assert torch.equal(r1.linear.bias, r2.linear.bias)
+
+    Z = torch.as_tensor(_rng(0).normal(size=(7, in_features)),
+                        dtype=torch.float64)
+    # forward and (no-grad) predict agree numerically
+    np.testing.assert_allclose(
+        r1(Z).detach().numpy(), r1.predict(Z).numpy())
+    assert r1.predict(Z).shape == (7, out_features)
+
+
+def test_linear_readout_no_bias_when_no_intercept() -> None:
+    g = torch.Generator().manual_seed(1)
+    r = LinearReadout(4, 3, fit_intercept=False, generator=g,
+                      dtype=torch.float64)
+    assert r.linear.bias is None

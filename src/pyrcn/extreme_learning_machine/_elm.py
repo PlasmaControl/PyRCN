@@ -288,7 +288,9 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                                      y=y[chunks[-1]:, ...],
                                      transformer_weights=transformer_weights,
                                      postpone_inverse=False)
-        else:
+        else:  # pragma: no cover
+            # chunk_size is validated (None or int >= 0); a non-None value
+            # is always either >= or < X.shape[0], so this is unreachable.
             raise ValueError(f'chunk_size invalid {self._chunk_size}')
         return self
 

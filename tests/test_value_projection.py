@@ -49,3 +49,16 @@ def test_matrix_to_value_projection_proba() -> None:
         output_strategy="last_value", needs_proba=True).fit(X)
     y = trf.transform(X)
     np.testing.assert_equal(y, X[-1, :])
+
+
+def test_matrix_to_value_projection_unknown_strategy() -> None:
+    print('\ntest_matrix_to_value_projection_unknown_strategy():')
+    # An unrecognised strategy skips every if/elif branch, leaving X
+    # unchanged before argmax over the flattened matrix.
+    r = np.random.RandomState(1234)
+    X = r.rand(5, 3)
+    idx_true = np.array([0, 0, 0, 1, 2])
+    X[range(5), idx_true] += 1
+    trf = MatrixToValueProjection(output_strategy="unknown").fit(X)  # type: ignore[arg-type]  # noqa: E501
+    y = trf.transform(X)
+    np.testing.assert_equal(y, np.argmax(X))

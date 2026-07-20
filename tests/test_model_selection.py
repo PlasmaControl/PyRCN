@@ -43,6 +43,110 @@ def test_sequentialSearchCV_equivalence() -> None:
     assert (isinstance(ss.multimetric, bool))
 
 
+def test_sequentialSearchCV_properties() -> None:
+    """Access remaining SequentialSearchCV properties when refit=True."""
+    iris = datasets.load_iris()
+    X = iris.data[:, [0, 2]]
+    y = iris.target
+    cv = KFold(2, shuffle=True, random_state=42)
+    svm = SVC(random_state=42)
+    param_grid = {'C': [1, 2]}
+    ss = SequentialSearchCV(
+        svm, searches=[
+            ('gs1', GridSearchCV, param_grid, {'cv': cv})]).fit(X, y)
+    assert isinstance(ss.best_params_, dict)
+    assert ss.best_params_ != {}
+    assert ss.scorer_ is not None
+
+
+def test_sequentialSearchCV_norefit() -> None:
+    """Property defaults are returned when refit=False."""
+    import numpy as np
+    iris = datasets.load_iris()
+    X = iris.data[:, [0, 2]]
+    y = iris.target
+    cv = KFold(2, shuffle=True, random_state=42)
+    svm = SVC(random_state=42)
+    param_grid = {'C': [1, 2]}
+    ss = SequentialSearchCV(
+        svm, searches=[('gs1', GridSearchCV, param_grid, {'cv': cv})],
+        refit=False).fit(X, y)
+    assert ss.best_estimator_ is None
+    assert np.isnan(ss.best_score_)
+    assert ss.best_params_ == {}
+    assert ss.best_index_ == 0
+
+
+def test_SHGOSearchCV_svc() -> None:
+    """Optimize an SVC with SHGO and refit on the full data."""
+    import numpy as np
+    import pandas as pd
+    from sklearn.base import BaseEstimator, clone
+    from sklearn.metrics import accuracy_score
+
+    iris = datasets.load_iris()
+    X = pd.DataFrame(iris.data[:, [0, 2]], columns=['a', 'b'])
+    y = iris.target
+    cv = KFold(2, shuffle=True, random_state=42)
+    svm = SVC(random_state=42)
+
+    def func(params: Iterable, param_names: Iterable,
+             base_estimator: BaseEstimator, X: pd.DataFrame,
+             y: np.ndarray, train: list, test: list) -> float:
+        est = clone(base_estimator)
+        for name, param in zip(param_names, params):
+            est.set_params(**{name: param})
+        scores = []
+        for tr, te in zip(train, test):
+            fitted = clone(est).fit(X.iloc[tr], y[tr])
+            y_pred = fitted.predict(X.iloc[te])
+            scores.append(-accuracy_score(y[te], y_pred))
+        return float(np.mean(scores))
+
+    params = {'C': (0.5, 2.0)}
+    search = SHGOSearchCV(estimator=svm, func=func, params=params,
+                          cv=cv).fit(X, y)
+    assert isinstance(search.best_params_, dict)
+    assert 'C' in search.best_params_
+    assert search.best_estimator_ is not None
+    assert search.n_splits_ == 2
+    assert isinstance(search.refit_time_, float)
+    assert hasattr(search, 'feature_names_in_')
+    y_pred = search.predict(X)
+    assert accuracy_score(y, y_pred) >= 0.0
+
+
+def test_SHGOSearchCV_unsupervised() -> None:
+    """SHGO optimizes an unsupervised estimator with y=None."""
+    import numpy as np
+    from sklearn.base import BaseEstimator, clone
+    from sklearn.neighbors import KernelDensity
+
+    iris = datasets.load_iris()
+    X = iris.data[:, [0, 2]]
+    cv = KFold(2, shuffle=True, random_state=42)
+    kde = KernelDensity()
+
+    def func(params: Iterable, param_names: Iterable,
+             base_estimator: BaseEstimator, X: np.ndarray,
+             y: np.ndarray, train: list, test: list) -> float:
+        est = clone(base_estimator)
+        for name, param in zip(param_names, params):
+            est.set_params(**{name: param})
+        scores = []
+        for tr, te in zip(train, test):
+            fitted = clone(est).fit(X[tr])
+            scores.append(-fitted.score(X[te]))
+        return float(np.mean(scores))
+
+    params = {'bandwidth': (0.2, 1.0)}
+    search = SHGOSearchCV(estimator=kde, func=func, params=params,
+                          cv=cv).fit(X, None)
+    assert 'bandwidth' in search.best_params_
+    assert search.best_estimator_ is not None
+    assert search.n_splits_ == 2
+
+
 @pytest.mark.skip(reason="no way of currently testing this")
 def test_SHGOSearchCV() -> None:
     """Test the SHGO search."""

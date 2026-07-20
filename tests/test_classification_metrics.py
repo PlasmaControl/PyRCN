@@ -30,6 +30,13 @@ for k in range(10):
     _, y_pred_mlb[k] = make_multilabel_classification(
         n_samples=10 * (k + 1), n_features=20, random_state=rng_pred)
 
+rng_score = np.random.RandomState(7)
+y_prob_bin = np.empty(shape=(10,), dtype=object)
+pred_decision = np.empty(shape=(10,), dtype=object)
+for k in range(10):
+    y_prob_bin[k] = rng_score.uniform(size=10 * (k + 1))
+    pred_decision[k] = rng_score.uniform(-1, 1, size=10 * (k + 1))
+
 
 def test_accuracy_score() -> None:
     np.testing.assert_equal(
@@ -352,3 +359,62 @@ def test_hamming_loss() -> None:
             y_pred=np.concatenate(y_pred_mlb)))
     with pytest.raises(TypeError):
         pyrcn.metrics.hamming_loss(y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+
+
+def test_classification_report() -> None:
+    report = pyrcn.metrics.classification_report(
+        y_true=y_true_bin, y_pred=y_true_bin)
+    assert isinstance(report, str)
+    report_dict = pyrcn.metrics.classification_report(
+        y_true=y_true_bin, y_pred=y_pred_bin, sample_weight=sample_weight,
+        output_dict=True)
+    assert isinstance(report_dict, dict)
+    np.testing.assert_equal(
+        pyrcn.metrics.classification_report(
+            y_true=y_true_bin, y_pred=y_pred_bin, output_dict=True),
+        sklearn.metrics.classification_report(
+            y_true=np.concatenate(y_true_bin),
+            y_pred=np.concatenate(y_pred_bin), output_dict=True))
+    with pytest.raises(TypeError):
+        pyrcn.metrics.classification_report(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+
+
+def test_hinge_loss() -> None:
+    np.testing.assert_equal(
+        np.greater_equal(pyrcn.metrics.hinge_loss(
+            y_true=y_true_bin, pred_decision=pred_decision), 0), True)
+    np.testing.assert_almost_equal(
+        pyrcn.metrics.hinge_loss(
+            y_true=y_true_bin, pred_decision=pred_decision,
+            sample_weight=sample_weight),
+        sklearn.metrics.hinge_loss(
+            y_true=np.concatenate(y_true_bin),
+            pred_decision=np.concatenate(pred_decision)))
+    with pytest.raises(TypeError):
+        pyrcn.metrics.hinge_loss(
+            y_true=y_true_bin[0], pred_decision=pred_decision[0])
+
+
+def test_log_loss() -> None:
+    # log_loss forwards the removed ``eps`` argument to scikit-learn>=1.5,
+    # which raises a TypeError; the sequence-handling branches are still
+    # exercised before the failing call.
+    with pytest.raises(TypeError):
+        pyrcn.metrics.log_loss(
+            y_true=y_true_bin, y_pred=y_prob_bin,
+            sample_weight=sample_weight)
+    with pytest.raises(TypeError):
+        pyrcn.metrics.log_loss(y_true=y_true_bin, y_pred=y_prob_bin)
+
+
+def test_brier_score_loss() -> None:
+    # brier_score_loss forwards ``y_prob``, renamed to ``y_proba`` in
+    # scikit-learn>=1.5, which raises a TypeError; the sequence-handling
+    # branches are still exercised before the failing call.
+    with pytest.raises(TypeError):
+        pyrcn.metrics.brier_score_loss(
+            y_true=y_true_bin, y_prob=y_prob_bin,
+            sample_weight=sample_weight)
+    with pytest.raises(TypeError):
+        pyrcn.metrics.brier_score_loss(y_true=y_true_bin, y_prob=y_prob_bin)

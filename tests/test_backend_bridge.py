@@ -8,9 +8,11 @@ import torch
 from sklearn.linear_model import Ridge
 from sklearn.pipeline import FeatureUnion
 
+import scipy.sparse as sp
+
 from pyrcn.nn._bridge import (
-    build_input_map, build_readout, build_reservoir, input_is_backable,
-    node_is_backable, regressor_is_backable)
+    _dense, build_input_map, build_readout, build_reservoir,
+    input_is_backable, node_is_backable, regressor_is_backable)
 from pyrcn.base.blocks import (BatchIntrinsicPlasticity, EulerNodeToNode,
                                HebbianNodeToNode, InputToNode, NodeToNode,
                                PredefinedWeightsInputToNode,
@@ -108,6 +110,16 @@ def test_build_reservoir_matches_transform_euler() -> None:
     states, _ = res(torch.as_tensor(X, dtype=torch.float64).unsqueeze(0))
     np.testing.assert_allclose(
         states.squeeze(0).numpy(), expected, rtol=RTOL, atol=ATOL)
+
+
+def test_dense_densifies_sparse_and_passes_arrays() -> None:
+    # sparse input hits the ``toarray`` branch; dense input is returned as-is.
+    dense = np.arange(6, dtype=float).reshape(2, 3)
+    sparse = sp.csr_matrix(dense)
+    out_sparse = _dense(sparse)
+    assert isinstance(out_sparse, np.ndarray)
+    np.testing.assert_array_equal(out_sparse, dense)
+    np.testing.assert_array_equal(_dense(dense), dense)
 
 
 def test_build_readout_matches_incremental_regression() -> None:

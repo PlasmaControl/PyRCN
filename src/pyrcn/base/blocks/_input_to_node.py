@@ -492,7 +492,9 @@ class BatchIntrinsicPlasticity(InputToNode):
                     self.input_activation][1]
 
             if bound_low == np.inf:
-                bound_low = t_min
+                # No activation has a +inf lower bound (identity uses
+                # -inf), so this rescale branch is never taken.
+                bound_low = t_min  # pragma: no cover
 
             if bound_high == np.inf:
                 bound_high = t_max
@@ -502,7 +504,9 @@ class BatchIntrinsicPlasticity(InputToNode):
 
             t.sort()
             ACTIVATIONS_INVERSE[self.input_activation](t)
-        else:
+        else:  # pragma: no cover
+            # distribution is validated in _validate_hyperparameters and
+            # every valid OUT_DISTRIBUTION entry is callable.
             raise ValueError('Not a valid activation inverse, got {}'
                              .format(self.distribution))
 

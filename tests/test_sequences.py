@@ -80,3 +80,75 @@ def test_inconsistent_features_raises() -> None:
 def test_bad_ndim_raises() -> None:
     with pytest.raises(ValueError):
         check_sequences(np.ones((2, 3, 4, 5)))
+
+
+def test_non_2d_sequence_raises() -> None:
+    # _as_2d rejects a sequence that is not 2-D.
+    with pytest.raises(ValueError):
+        check_sequences([np.ones(4)])
+
+
+def test_object_array_not_1d_raises() -> None:
+    arr = np.empty((2, 2), dtype=object)
+    for idx in np.ndindex(arr.shape):
+        arr[idx] = np.ones((3, 2))
+    with pytest.raises(ValueError):
+        check_sequences(arr)
+
+
+def test_empty_list_raises() -> None:
+    with pytest.raises(ValueError):
+        check_sequences([])
+
+
+def test_unsupported_X_type_raises() -> None:
+    with pytest.raises(ValueError):
+        check_sequences("not a sequence")
+
+
+def test_unsupported_y_type_raises() -> None:
+    with pytest.raises(ValueError):
+        check_sequences([np.ones((3, 2)), np.ones((3, 2))], y=5)
+
+
+def test_seq2seq_misaligned_targets_raises() -> None:
+    X = [np.ones((5, 2)), np.ones((3, 2))]
+    y = [np.ones((1, 1)), np.ones((1, 1))]
+    with pytest.raises(ValueError):
+        check_sequences(X, y, task="sequence-to-sequence")
+
+
+def test_unknown_task_raises() -> None:
+    X = [np.ones((5, 2))]
+    y = [np.ones((5, 1))]
+    with pytest.raises(ValueError):
+        check_sequences(X, y, task="bogus")
+
+
+def test_mixed_target_shapes_raises() -> None:
+    # One target aligned per-timestep, one not -> ambiguous in "auto".
+    X = [np.ones((5, 2)), np.ones((3, 2))]
+    y = [np.ones((5, 1)), np.atleast_1d(1.0)]
+    with pytest.raises(ValueError):
+        check_sequences(X, y, task="auto")
+
+
+def test_inconsistent_n_targets_seq2seq_raises() -> None:
+    X = [np.ones((4, 2)), np.ones((4, 2))]
+    y = [np.ones((4, 1)), np.ones((4, 2))]
+    with pytest.raises(ValueError):
+        check_sequences(X, y, task="sequence-to-sequence")
+
+
+def test_inconsistent_n_targets_seq2value_raises() -> None:
+    X = [np.ones((4, 2)), np.ones((4, 2))]
+    y = [np.ones(1), np.ones(2)]
+    with pytest.raises(ValueError):
+        check_sequences(X, y, task="sequence-to-value")
+
+
+def test_X_y_length_mismatch_raises() -> None:
+    X = [np.ones((5, 2)), np.ones((3, 2))]
+    y = [np.ones((5, 1))]
+    with pytest.raises(ValueError):
+        check_sequences(X, y)

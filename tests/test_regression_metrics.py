@@ -29,6 +29,16 @@ for k in range(10):
     _, y_pred_multi[k] = make_regression(
         n_samples=10 * (k + 1), n_features=20, random_state=rng_pred)
 
+rng_pos = np.random.RandomState(24)
+y_true_pos = np.empty(shape=(10,), dtype=object)
+y_pred_pos = np.empty(shape=(10,), dtype=object)
+sample_weight_pos = np.empty(shape=(10,), dtype=object)
+for k in range(10):
+    n = 10 * (k + 1)
+    y_true_pos[k] = rng_pos.uniform(0.5, 2.0, size=n)
+    y_pred_pos[k] = rng_pos.uniform(0.5, 2.0, size=n)
+    sample_weight_pos[k] = np.ones(n)
+
 
 def test_mean_absolute_error() -> None:
     np.testing.assert_equal(
@@ -275,3 +285,66 @@ def test_mean_tweedie_deviance() -> None:
     with pytest.raises(TypeError):
         pyrcn.metrics.mean_tweedie_deviance(
             y_true=y_true_multi[0], y_pred=y_pred_multi[0])
+
+
+def test_root_mean_squared_error() -> None:
+    np.testing.assert_equal(
+        pyrcn.metrics.mean_squared_error(
+            y_true=y_true_mono, y_pred=y_true_mono, squared=False), 0)
+    np.testing.assert_almost_equal(
+        pyrcn.metrics.mean_squared_error(
+            y_true=y_true_mono, y_pred=y_pred_mono, squared=False),
+        sklearn.metrics.root_mean_squared_error(
+            y_true=np.concatenate(y_true_mono),
+            y_pred=np.concatenate(y_pred_mono)))
+
+
+def test_mean_squared_log_error() -> None:
+    np.testing.assert_equal(
+        pyrcn.metrics.mean_squared_log_error(
+            y_true=y_true_pos, y_pred=y_true_pos), 0)
+    np.testing.assert_equal(
+        np.greater(pyrcn.metrics.mean_squared_log_error(
+            y_true=y_true_pos, y_pred=y_pred_pos), 0), True)
+    np.testing.assert_almost_equal(
+        pyrcn.metrics.mean_squared_log_error(
+            y_true=y_true_pos, y_pred=y_pred_pos,
+            sample_weight=sample_weight_pos),
+        sklearn.metrics.mean_squared_log_error(
+            y_true=np.concatenate(y_true_pos),
+            y_pred=np.concatenate(y_pred_pos)))
+    with pytest.raises(TypeError):
+        pyrcn.metrics.mean_squared_log_error(
+            y_true=y_true_pos[0], y_pred=y_pred_pos[0])
+
+
+def test_mean_poisson_deviance() -> None:
+    np.testing.assert_equal(
+        pyrcn.metrics.mean_poisson_deviance(
+            y_true=y_true_pos, y_pred=y_true_pos), 0)
+    np.testing.assert_almost_equal(
+        pyrcn.metrics.mean_poisson_deviance(
+            y_true=y_true_pos, y_pred=y_pred_pos,
+            sample_weight=sample_weight_pos),
+        sklearn.metrics.mean_poisson_deviance(
+            y_true=np.concatenate(y_true_pos),
+            y_pred=np.concatenate(y_pred_pos)))
+    with pytest.raises(TypeError):
+        pyrcn.metrics.mean_poisson_deviance(
+            y_true=y_true_pos[0], y_pred=y_pred_pos[0])
+
+
+def test_mean_gamma_deviance() -> None:
+    np.testing.assert_equal(
+        pyrcn.metrics.mean_gamma_deviance(
+            y_true=y_true_pos, y_pred=y_true_pos), 0)
+    np.testing.assert_almost_equal(
+        pyrcn.metrics.mean_gamma_deviance(
+            y_true=y_true_pos, y_pred=y_pred_pos,
+            sample_weight=sample_weight_pos),
+        sklearn.metrics.mean_gamma_deviance(
+            y_true=np.concatenate(y_true_pos),
+            y_pred=np.concatenate(y_pred_pos)))
+    with pytest.raises(TypeError):
+        pyrcn.metrics.mean_gamma_deviance(
+            y_true=y_true_pos[0], y_pred=y_pred_pos[0])

@@ -1,12 +1,17 @@
 """Testing for blocks.node_to_node module."""
 from __future__ import annotations
 
+from unittest.mock import patch
+
 import numpy as np
 import pytest
+from scipy.sparse.linalg import ArpackNoConvergence
+from sklearn.exceptions import NotFittedError
 from sklearn.utils.extmath import safe_sparse_dot
 
-from pyrcn.base.blocks import (HebbianNodeToNode, InputToNode, NodeToNode,
-                               PredefinedWeightsNodeToNode)
+from pyrcn.base._base import _unitary_spectral_radius
+from pyrcn.base.blocks import (EulerNodeToNode, HebbianNodeToNode, InputToNode,
+                               NodeToNode, PredefinedWeightsNodeToNode)
 
 
 def test_input_to_node_invalid_spectral_radius() -> None:
@@ -176,3 +181,31 @@ def test_node_to_node_hebbian() -> None:
     assert n2n._recurrent_weights.shape == (5, 5)
     assert safe_sparse_dot(
         i2n.transform(X), n2n._recurrent_weights).shape == (10, 5)
+
+
+def test_euler_node_to_node_k_rec() -> None:
+    print('\ntest_euler_node_to_node_k_rec():')
+    X = np.zeros(shape=(10, 5))
+    n2n = EulerNodeToNode(hidden_layer_size=5, k_rec=2, random_state=42)
+    n2n.fit(X)
+    assert n2n._recurrent_weights.shape == (5, 5)
+    out = n2n.transform(X)
+    assert out.shape == (10, 5)
+
+
+def test_euler_node_to_node_not_fitted() -> None:
+    print('\ntest_euler_node_to_node_not_fitted():')
+    n2n = EulerNodeToNode(hidden_layer_size=5, random_state=42)
+    with pytest.raises(NotFittedError):
+        n2n.transform(np.zeros(shape=(10, 5)))
+
+
+def test_unitary_spectral_radius_no_convergence() -> None:
+    print('\ntest_unitary_spectral_radius_no_convergence():')
+    rs = np.random.RandomState(42)
+    weights = rs.normal(size=(10, 10))
+    exc = ArpackNoConvergence(
+        "no convergence", np.array([2.0, -1.0]), np.zeros((10, 0)))
+    with patch("pyrcn.base._base.eigens", side_effect=exc):
+        result = _unitary_spectral_radius(weights, rs)
+    np.testing.assert_allclose(result, weights / 2.0)

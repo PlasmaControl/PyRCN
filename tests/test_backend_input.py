@@ -90,3 +90,17 @@ def test_uniform_bias_shape_and_range() -> None:
         20, generator=torch.Generator().manual_seed(0), dtype=torch.float64)
     assert b.shape == (20,)
     assert float(b.max()) < 1.0 and float(b.min()) >= -1.0
+
+
+def test_input_feature_map_unknown_activation_raises() -> None:
+    with pytest.raises(ValueError, match="unknown activation"):
+        InputFeatureMap(6, 20, activation="nope", dtype=torch.float64)
+
+
+def test_set_input_trainable_toggles() -> None:
+    fm = InputFeatureMap(6, 20, dtype=torch.float64)
+    assert not fm.weight.requires_grad and not fm.bias.requires_grad
+    fm.set_input_trainable(True)
+    assert fm.weight.requires_grad and fm.bias.requires_grad
+    fm.set_input_trainable(False)
+    assert not fm.weight.requires_grad and not fm.bias.requires_grad

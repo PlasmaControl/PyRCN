@@ -196,3 +196,93 @@ def test_esn_classifier_no_valid_params() -> None:
         ESNClassifier(requires_sequence="True").fit(X, y)
     with pytest.raises(TypeError):
         ESNClassifier(regressor=InputToNode()).fit(X, y)
+
+
+def test_esn_regressor_invalid_optimizer() -> None:
+    X = np.zeros(shape=(10, 2))
+    y = np.zeros(shape=(10,))
+    with pytest.raises(ValueError):
+        ESNRegressor(optimizer="invalid").fit(X, y)
+
+
+def test_esn_regressor_invalid_loss() -> None:
+    X = np.zeros(shape=(10, 2))
+    y = np.zeros(shape=(10,))
+    with pytest.raises(ValueError):
+        ESNRegressor(loss="invalid").fit(X, y)
+
+
+def test_esn_regressor_invalid_epochs() -> None:
+    X = np.zeros(shape=(10, 2))
+    y = np.zeros(shape=(10,))
+    with pytest.raises(ValueError):
+        ESNRegressor(epochs=0).fit(X, y)
+
+
+def test_esn_regressor_invalid_learning_rate() -> None:
+    X = np.zeros(shape=(10, 2))
+    y = np.zeros(shape=(10,))
+    with pytest.raises(ValueError):
+        ESNRegressor(learning_rate=0.).fit(X, y)
+
+
+def test_esn_regressor_predict_not_fitted() -> None:
+    esn = ESNRegressor()
+    esn.input_to_node = None
+    with pytest.raises(NotFittedError):
+        esn.predict(np.zeros(shape=(5, 2)))
+
+
+def test_esn_hidden_layer_state_not_fitted() -> None:
+    esn = ESNRegressor()
+    esn.input_to_node = None
+    with pytest.raises(NotFittedError):
+        esn.hidden_layer_state(np.zeros(shape=(5, 2)))
+
+
+def test_esn_hidden_layer_state_non_sequence() -> None:
+    rng = np.random.RandomState(42)
+    X = rng.normal(size=(30, 3))
+    y = rng.normal(size=(30,))
+    esn = ESNRegressor(hidden_layer_size=10, random_state=42).fit(X, y)
+    hls = esn.hidden_layer_state(X)
+    assert hls.shape[0] == 30
+
+
+def test_esn_classifier_gradient_not_backable() -> None:
+    rng = np.random.RandomState(42)
+    X = rng.normal(size=(30, 4))
+    y = np.array([0, 1, 2] * 10)
+    esn = ESNClassifier(
+        hidden_layer_size=10, solver="gradient",
+        regressor=IncrementalRegression(normalize=True))
+    with pytest.raises(NotImplementedError):
+        esn.fit(X, y)
+
+
+def test_esn_classifier_washout_requires_torch() -> None:
+    rng = np.random.RandomState(42)
+    X = rng.normal(size=(30, 4))
+    y = np.array([0, 1, 2] * 10)
+    esn = ESNClassifier(
+        hidden_layer_size=10, washout=1,
+        regressor=IncrementalRegression(normalize=True))
+    with pytest.raises(NotImplementedError):
+        esn.fit(X, y)
+
+
+def test_esn_classifier_non_sequence_numpy() -> None:
+    rng = np.random.RandomState(42)
+    X = rng.normal(size=(30, 4))
+    y = np.array([0, 1, 2] * 10)
+    esn = ESNClassifier(
+        hidden_layer_size=10,
+        regressor=IncrementalRegression(normalize=True)).fit(X, y)
+    y_pred = esn.predict(X)
+    assert y_pred.shape[0] == 30
+
+
+def test_esn_classifier_return_state_not_supported() -> None:
+    esn = ESNClassifier(hidden_layer_size=10)
+    with pytest.raises(NotImplementedError):
+        esn.predict(np.zeros(shape=(5, 4)), return_state=True)

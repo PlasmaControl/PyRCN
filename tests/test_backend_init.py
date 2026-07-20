@@ -10,7 +10,8 @@ from __future__ import annotations
 import numpy as np
 import torch
 
-from pyrcn.nn.init import (delay_line_feedback_weights, delay_line_weights,
+from pyrcn.nn.init import (antisymmetric_recurrent_weights,
+                           delay_line_feedback_weights, delay_line_weights,
                            normal_recurrent_weights, simple_cycle_weights)
 
 
@@ -61,6 +62,25 @@ def test_delay_line_feedback_structure() -> None:
         expected[i, i - 1] = 0.9                        # forward
         expected[i - 1, i] = 0.1                        # feedback
     assert torch.equal(W, expected)
+
+
+def test_antisymmetric_recurrent_is_antisymmetric() -> None:
+    g = torch.Generator().manual_seed(0)
+    W = antisymmetric_recurrent_weights(10, generator=g, dtype=torch.float64)
+    assert W.shape == (10, 10)
+    np.testing.assert_allclose(W.numpy(), -W.T.numpy())
+
+
+def test_antisymmetric_recurrent_sparse_fan_in() -> None:
+    # fan_in < hidden_size exercises the per-column sparsification of U
+    # before antisymmetrization; the result stays antisymmetric.
+    g = torch.Generator().manual_seed(0)
+    W = antisymmetric_recurrent_weights(
+        12, fan_in=4, generator=g, dtype=torch.float64)
+    assert W.shape == (12, 12)
+    np.testing.assert_allclose(W.numpy(), -W.T.numpy())
+    # sparsifying U to 4 entries per column bounds each row/col of U-U.T.
+    assert int((W != 0).sum()) < 12 * 12
 
 
 def test_reproducible_with_generator() -> None:

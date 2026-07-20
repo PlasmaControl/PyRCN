@@ -117,7 +117,7 @@ def get_mnist(directory: str = os.getcwd()) -> tuple[np.ndarray, np.ndarray]:
         npzfile = np.load(npzfilepath, allow_pickle=True)
         logging.info('Dataset loaded')
         return npzfile['X'], npzfile['y']
-    else:
+    else:  # pragma: no cover - requires network download from openml
         X, y = fetch_openml(
             data_id=554, return_X_y=True, cache=True, as_frame=False)
         logging.info('Fetched dataset')

@@ -121,6 +121,17 @@ def test_bip_dresden() -> None:
           "y is uniformly distributed in [-.75, .75]")
 
 
+def test_bip_neumann_normal_relu() -> None:
+    print('\ntest_bip_neumann_normal_relu()')
+    rs = np.random.RandomState(42)
+    X = rs.normal(size=(100, 1))
+    i2n = BatchIntrinsicPlasticity(
+        hidden_layer_size=1, input_activation='relu', random_state=rs,
+        distribution='normal', algorithm='neumann')
+    i2n.fit(X.reshape(-1, 1))
+    i2n.transform(X.reshape(-1, 1))
+
+
 def test_bip_run_neumann() -> None:
     print('\ntest_bip_run_neumann()')
     rs = np.random.RandomState(42)
