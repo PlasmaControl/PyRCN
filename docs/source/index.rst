@@ -146,7 +146,6 @@ DE-AC02-09CH11466.
      <img src="_static/img/plasma_control_logo.svg" alt="Plasma Control group, Princeton University">
      <img src="_static/img/Logo-STKS.jpg" alt="Chair of Speech Technology and Cognitive Systems, TU Dresden">
      <img src="_static/img/TUD_Logo_HKS41_114.png" alt="Technische Universität Dresden">
-     <img src="_static/img/Logo_IDLab_White.png" alt="IDLab, Ghent University">
      <img src="_static/img/logo_UGent_EN_RGB_2400_color-on-white.png" alt="Ghent University">
      <img src="_static/img/SMWA_EFRE-ESF_Sachsen_Logokombi_quer_03.jpg" alt="European Social Fund">
    </div>
