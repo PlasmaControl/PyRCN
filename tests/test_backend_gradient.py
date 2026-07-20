@@ -11,7 +11,9 @@ import numpy as np
 import pytest
 import torch
 
+from pyrcn.base.blocks import InputToNode, NodeToNode
 from pyrcn.nn import IncrementalRidge, LinearReadout, train_readout
+from pyrcn.nn._bridge import build_input_map, build_reservoir
 
 
 def _whitened(n: int, p: int, t: int, seed: int
@@ -75,3 +77,52 @@ def test_train_readout_unknown_loss_raises() -> None:
     y = torch.zeros(5, 1, dtype=torch.float64)
     with pytest.raises(ValueError):
         train_readout(readout, Z, y, loss="huber")
+
+
+def test_gradient_reaches_closed_form_through_real_reservoir() -> None:
+    """Tight-consistency demo: gradient == closed-form through the reservoir.
+
+    The reservoir states are highly correlated (large condition number), so
+    first-order optimizers converge slowly -- but the objective is still a
+    convex quadratic with a unique minimum equal to the closed-form ridge
+    solution. Minimizing the *same* ridge objective (SSE + alpha||params||^2)
+    with a second-order optimizer (L-BFGS) reaches that minimum, so the
+    gradient-trained readout matches IncrementalRidge to a tight tolerance
+    even through the raw, ill-conditioned reservoir map.
+    """
+    X = np.sin(np.linspace(0, 8 * np.pi, 400)).reshape(-1, 1)
+    y = np.roll(X.ravel(), -1).reshape(-1, 1)          # next-step target
+    i2n = InputToNode(hidden_layer_size=40, random_state=42)
+    i2n.fit(X)
+    n2n = NodeToNode(hidden_layer_size=40, spectral_radius=0.9,
+                     leakage=0.7, random_state=42)
+    n2n.fit(i2n.transform(X))
+    feats = build_input_map(i2n, dtype=torch.float64)(
+        torch.as_tensor(X, dtype=torch.float64))
+    states, _ = build_reservoir(n2n, dtype=torch.float64)(feats.unsqueeze(0))
+    states = states.squeeze(0)
+    targets = torch.as_tensor(y, dtype=torch.float64)
+    alpha = 1e-3
+
+    expected = IncrementalRidge(
+        alpha=alpha, fit_intercept=True, dtype=torch.float64
+    ).fit(states, targets).predict(states).numpy()
+
+    torch.manual_seed(0)
+    readout = LinearReadout(40, 1, fit_intercept=True, dtype=torch.float64)
+    optimizer = torch.optim.LBFGS(
+        readout.parameters(), lr=1.0, max_iter=500, history_size=50,
+        line_search_fn="strong_wolfe")
+
+    def closure() -> torch.Tensor:
+        optimizer.zero_grad()
+        residual = readout(states) - targets
+        penalty = sum((p ** 2).sum() for p in readout.parameters())
+        loss = (residual ** 2).sum() + alpha * penalty
+        loss.backward()
+        return loss
+
+    optimizer.step(closure)
+    got = readout.predict(states).numpy()
+
+    np.testing.assert_allclose(got, expected, rtol=1e-3, atol=1e-3)
