@@ -14,7 +14,7 @@ import seaborn as sns
 from sklearn.decomposition import PCA
 from sklearn.cluster import KMeans
 
-from src.pyrcn.util import get_mnist, tud_colors
+from pyrcn.util import get_mnist
 
 
 matplotlib.rc('image', cmap='binary')
@@ -92,7 +92,7 @@ def main():
                                 labelbottom=False)
 
         ax_barchart.bar(list(map(int, values)), cos_similarity[:, i],
-                        tick_label=values, color=tud_colors['lightblue'])
+                        tick_label=values, color='tab:blue')
         # ax_barchart.set_xlim([0, 9])
         ax_barchart.grid(which='both', axis='y')
         ax_barchart.set_yticks([-1., 0., 1.], minor=False)

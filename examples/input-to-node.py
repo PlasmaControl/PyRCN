@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 from pyrcn.base.blocks import InputToNode
 
-from pyrcn.util import tud_colors, get_mnist
+from pyrcn.util import get_mnist
 
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -57,10 +57,10 @@ def input2node_distribution(directory):
 
             if activation == 'bounded_relu':
                 ax.hist(node_out, label=activation, density=True,
-                        bins=[.0, .1, .9, 1.], color=tud_colors['lightblue'])
+                        bins=[.0, .1, .9, 1.], color="tab:blue")
             else:
                 ax.hist(node_out, label=activation, density=True, bins=20,
-                        color=tud_colors['lightblue'])
+                        color="tab:blue")
 
             ax.grid(axis='y')
             ax.set_yscale('log')

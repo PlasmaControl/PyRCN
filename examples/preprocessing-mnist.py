@@ -12,10 +12,20 @@ from sklearn.decomposition import PCA
 
 from sklearn.cluster import KMeans
 
-from pyrcn.util import tud_colors, new_logger, get_mnist
+from pyrcn.util import new_logger, get_mnist
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize
+
+# Local RGBA palette (matplotlib tab10 colors).
+palette = {
+    'lightblue': (0.12, 0.47, 0.71, 1.0),
+    'orange': (1.0, 0.5, 0.05, 1.0),
+    'lightgreen': (0.17, 0.63, 0.17, 1.0),
+    'lightpurple': (0.58, 0.40, 0.74, 1.0),
+    'gray': (0.5, 0.5, 0.5, 1.0),
+    'red': (0.84, 0.15, 0.16, 1.0),
+}
 
 
 example_image_idx = 5
@@ -148,8 +158,8 @@ def plot_historgram(directory, *args, **kwargs):
     idx_fringe = (25, 17)
     idx_center = (13, 12)
 
-    example[idx_center[0], idx_center[1], :] = tud_colors['lightblue'][:-1]
-    example[idx_fringe[0], idx_fringe[1], :] = tud_colors['orange'][:-1]
+    example[idx_center[0], idx_center[1], :] = palette['lightblue'][:-1]
+    example[idx_fringe[0], idx_fringe[1], :] = palette['orange'][:-1]
 
     bins = np.array(range(0, 287, 32)).astype(int)
 
@@ -171,12 +181,12 @@ def plot_historgram(directory, *args, **kwargs):
     axs[0].set_yticklabels([0, 27])
 
     axs[1].bar(bins[1:] - 32, height=hist_fringe / 1000, width=16,
-               color=tud_colors['orange'], label='fringe', align='edge')
+               color=palette['orange'], label='fringe', align='edge')
     axs[1].bar(bins[1:] - 16, height=hist_center / 1000, width=16,
-               color=tud_colors['lightblue'], label='center', align='edge')
+               color=palette['lightblue'], label='center', align='edge')
     axs[1].tick_params(axis='x', labelrotation=90)
-    # axs[1].hist([], bins=range(0, 255, 32), color=[tud_colors['orange'],
-    #                                                tud_colors['lightblue']],
+    # axs[1].hist([], bins=range(0, 255, 32), color=[palette['orange'],
+    #                                                palette['lightblue']],
     #             align='left')
 
     axs[1].set_xticks(bins)
@@ -216,15 +226,15 @@ def plot_var(directory, *args, **kwargs):
                                      (28, 28)) / 255.  # blue
 
     for idx in pos:
-        example[idx, idx, :] = tud_colors['orange'][:-1]
+        example[idx, idx, :] = palette['orange'][:-1]
         meanX.append(scaler.mean_[idx * 28 + idx])
         varX.append(scaler.var_[idx * 28 + idx])
 
     axs[0].imshow(example, interpolation='none')
 
-    line_var, = axs[1].plot(pos, varX, color=tud_colors['orange'])
+    line_var, = axs[1].plot(pos, varX, color=palette['orange'])
     ax_mean = axs[1].twinx()
-    line_mean, = ax_mean.plot(pos, meanX, color=tud_colors['lightblue'])
+    line_mean, = ax_mean.plot(pos, meanX, color=palette['lightblue'])
 
     axs[1].legend((line_var, line_mean), (r'$\sigma^2$', r'$\mu$'),
                   bbox_to_anchor=(1.2, .5), loc="center left")
@@ -269,11 +279,11 @@ def plot_image_min_var(directory, *args, **kwargs):
     var_p1_2 = 255 ** 2 * p1_2 * (1 - p1_2)
 
     example_min_var_p1_1 = np.copy(example)
-    example_min_var_p1_1[scaler.var_ < var_p1_1, ...] = tud_colors['orange'][
+    example_min_var_p1_1[scaler.var_ < var_p1_1, ...] = palette['orange'][
                                                         :-1]
 
     example_min_var_p1_2 = np.copy(example)
-    example_min_var_p1_2[scaler.var_ < var_p1_2, ...] = tud_colors['orange'][
+    example_min_var_p1_2[scaler.var_ < var_p1_2, ...] = palette['orange'][
                                                         :-1]
 
     fig, axs = plt.subplots(1, 3, figsize=(5, 2))
@@ -480,7 +490,7 @@ def plot_imbalance(directory):
     ax.set_ylim([0, 8000])
     ax.set_yticks([7000], minor=True)
     ax.grid(which='minor', axis='y', alpha=.7, linestyle='--',
-            color=tud_colors['lightgreen'])
+            color=palette['lightgreen'])
     ax.set_ylabel(r'\#occurrences')
 
     ax.spines['top'].set_visible(False)
@@ -605,8 +615,8 @@ def plot_img_cluster(directory, *args, **kwargs):
     clusterer = KMeans(n_clusters=4, random_state=42)
     img_clusters = clusterer.fit_predict(img.reshape((784, 1))).reshape(
         (28, 28))
-    list_cluster_colors = [tud_colors['lightblue'], tud_colors['lightgreen'],
-                           tud_colors['lightpurple'], tud_colors['gray']]
+    list_cluster_colors = [palette['lightblue'], palette['lightgreen'],
+                           palette['lightpurple'], palette['gray']]
 
     img_cluster_colors = np.zeros((28, 28, 4))
 

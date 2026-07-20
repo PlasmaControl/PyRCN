@@ -162,9 +162,10 @@ plt.legend(["ESN prediction", "ELM prediction"])
 
 
 fig, axs = plt.subplots(1, 2, sharey=True)
-sns.heatmap(data=esn.hidden_layer_state[:100, :].T, ax=axs[0], cbar=False)
+sns.heatmap(data=esn.hidden_layer_state(X_test)[:100, :].T, ax=axs[0],
+            cbar=False)
 axs[0].set_xlabel("Time Step")
 axs[0].set_ylabel("Neuron Index")
-sns.heatmap(data=elm.hidden_layer_state[:100, :].T, ax=axs[1])
+sns.heatmap(data=elm.hidden_layer_state(X_test)[:100, :].T, ax=axs[1])
 axs[1].set_xlabel("Time Step")
 plt.show()

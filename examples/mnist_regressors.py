@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import (
     RandomizedSearchCV, GridSearchCV, ParameterGrid,
     cross_validate)
-from sklearn.utils.fixes import loguniform
+from scipy.stats import loguniform
 from sklearn.metrics import accuracy_score
 
 from pyrcn.model_selection import SequentialSearchCV

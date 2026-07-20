@@ -5,8 +5,7 @@ from joblib import dump, load
 
 from sklearn.preprocessing import StandardScaler
 from sklearn.utils import shuffle
-from sklearn.utils.fixes import loguniform
-from scipy.stats import uniform
+from scipy.stats import uniform, loguniform
 from sklearn.base import clone
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import (ParameterGrid, RandomizedSearchCV,
