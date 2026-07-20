@@ -1,0 +1,94 @@
+/* PyRCN documentation - brand accent layered on the Read the Docs theme.
+   Palette taken from the logo: primary #006ab3, dark #00305e, light #009ee0. */
+
+:root {
+    --pyrcn-blue: #006ab3;
+    --pyrcn-blue-dark: #00305e;
+    --pyrcn-blue-light: #009ee0;
+}
+
+/* --- Sidebar header (logo + search) ------------------------------------ */
+/* White backdrop so the blue logo reads clearly. */
+.wy-side-nav-search {
+    background-color: #ffffff;
+    padding-top: 1rem;
+}
+
+.wy-side-nav-search > a img.logo {
+    max-width: 190px;
+    padding: 0.25rem 0;
+}
+
+/* Version / title text under the logo needs a dark colour on white. */
+.wy-side-nav-search > div.version,
+.wy-side-nav-search .wy-dropdown > a {
+    color: var(--pyrcn-blue-dark);
+}
+
+.wy-side-nav-search input[type="text"] {
+    border-color: var(--pyrcn-blue);
+    border-radius: 6px;
+}
+
+/* --- Mobile top bar ----------------------------------------------------- */
+.wy-nav-top {
+    background-color: var(--pyrcn-blue-dark);
+}
+
+/* --- Links and accents -------------------------------------------------- */
+a,
+a:visited {
+    color: var(--pyrcn-blue);
+}
+
+a:hover {
+    color: var(--pyrcn-blue-dark);
+}
+
+/* Current page marker in the sidebar. */
+.wy-menu-vertical a:hover {
+    background-color: rgba(0, 106, 179, 0.10);
+}
+
+.wy-menu-vertical li.current > a,
+.wy-menu-vertical li.on a {
+    border-right: 3px solid var(--pyrcn-blue);
+}
+
+/* --- Inline code and admonition titles ---------------------------------- */
+.rst-content code.literal,
+.rst-content tt.literal {
+    color: var(--pyrcn-blue-dark);
+}
+
+/* --- sphinx-design cards ------------------------------------------------ */
+.sd-card {
+    border: 1px solid rgba(0, 48, 94, 0.15);
+    border-radius: 10px;
+    transition: box-shadow 0.15s ease-in-out, transform 0.15s ease-in-out;
+}
+
+.sd-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 48, 94, 0.12);
+    transform: translateY(-2px);
+}
+
+.sd-card .sd-card-title {
+    color: var(--pyrcn-blue-dark);
+}
+
+/* Buttons rendered by sphinx-design. */
+.sd-btn-primary {
+    background-color: var(--pyrcn-blue) !important;
+    border-color: var(--pyrcn-blue) !important;
+}
+
+.sd-btn-primary:hover {
+    background-color: var(--pyrcn-blue-dark) !important;
+    border-color: var(--pyrcn-blue-dark) !important;
+}
+
+/* --- Readability: widen the content column a touch ---------------------- */
+.wy-nav-content {
+    max-width: 900px;
+}

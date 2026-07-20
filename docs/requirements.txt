@@ -1,5 +1,6 @@
 sphinx>=7
 sphinx-rtd-theme>=2.0
 sphinx-copybutton>=0.5
+sphinx-design>=0.5
 pyrcn
 scikit-learn

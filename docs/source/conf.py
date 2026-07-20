@@ -36,9 +36,20 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
-    'sphinx_copybutton'
+    'sphinx.ext.intersphinx',
+    'sphinx_copybutton',
+    'sphinx_design',
 ]
 master_doc = 'index'
+
+# Resolve cross-references to the scientific Python stack we build on.
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3', None),
+    'numpy': ('https://numpy.org/doc/stable', None),
+    'scipy': ('https://docs.scipy.org/doc/scipy', None),
+    'sklearn': ('https://scikit-learn.org/stable', None),
+    'torch': ('https://pytorch.org/docs/stable', None),
+}
 
 # Render numpydoc "Attributes" sections as info fields rather than separate
 # object descriptions (avoids duplicate-object-description warnings for
@@ -72,7 +83,26 @@ exclude_patterns: list = []
 #
 html_theme = 'sphinx_rtd_theme'
 
+# Theme tweaks: a compact, always-expanded left navigation.
+html_theme_options = {
+    'logo_only': True,
+    'navigation_depth': 4,
+    'collapse_navigation': False,
+    'sticky_navigation': True,
+    'prev_next_buttons_location': 'both',
+    'style_external_links': True,
+}
+
+# Brand assets. The logo sits at the top of the sidebar; the SVG doubles as
+# the browser-tab favicon (modern browsers render SVG favicons).
+html_logo = '_static/img/pyrcn_logo.svg'
+html_favicon = '_static/img/pyrcn_logo.svg'
+html_title = 'PyRCN documentation'
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['_static']
+
+# Layer the brand accent on top of the Read the Docs theme.
+html_css_files = ['custom.css']
