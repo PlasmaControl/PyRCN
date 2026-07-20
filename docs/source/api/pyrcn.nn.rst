@@ -5,60 +5,64 @@ pyrcn.nn
 
 .. automodule:: pyrcn.nn
 
+.. currentmodule:: pyrcn.nn
+
 Reservoir layers
 ----------------
 
-.. autoclass:: pyrcn.nn.Reservoir
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
 
-.. autoclass:: pyrcn.nn.EulerReservoir
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   Reservoir
+   EulerReservoir
 
 Reservoir cells
 ---------------
 
-.. autoclass:: pyrcn.nn.LeakyESNCell
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
 
-.. autoclass:: pyrcn.nn.EulerESNCell
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   LeakyESNCell
+   EulerESNCell
 
 Feature map and readout
 ------------------------
 
-.. autoclass:: pyrcn.nn.InputFeatureMap
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
 
-.. autoclass:: pyrcn.nn.IncrementalRidge
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: pyrcn.nn.LinearReadout
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   InputFeatureMap
+   IncrementalRidge
+   LinearReadout
 
 Gradient training
 -----------------
 
-.. autofunction:: pyrcn.nn.train_readout
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
 
-.. autofunction:: pyrcn.nn.torch_generator
+   train_readout
+   torch_generator
 
 Weight initializers
 -------------------
 
-.. automodule:: pyrcn.nn.init
-   :members:
-   :undoc-members:
+.. currentmodule:: pyrcn.nn.init
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   antisymmetric_recurrent_weights
+   bernoulli_input_weights
+   delay_line_feedback_weights
+   delay_line_weights
+   normal_recurrent_weights
+   simple_cycle_weights
+   spectral_normalize
+   uniform_bias_weights
+   uniform_input_weights

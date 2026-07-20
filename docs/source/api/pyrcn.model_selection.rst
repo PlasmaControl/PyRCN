@@ -4,6 +4,12 @@ pyrcn.model_selection
 =====================
 
 .. automodule:: pyrcn.model_selection
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. currentmodule:: pyrcn.model_selection
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   SequentialSearchCV
+   SHGOSearchCV

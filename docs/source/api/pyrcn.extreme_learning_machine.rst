@@ -5,12 +5,14 @@ pyrcn.extreme_learning_machine
 
 .. automodule:: pyrcn.extreme_learning_machine
 
-.. autoclass:: pyrcn.extreme_learning_machine.ELMRegressor
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. currentmodule:: pyrcn.extreme_learning_machine
 
-.. autoclass:: pyrcn.extreme_learning_machine.ELMClassifier
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Extreme Learning Machine
+------------------------
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   ELMRegressor
+   ELMClassifier

@@ -4,6 +4,11 @@ pyrcn.projection
 ================
 
 .. automodule:: pyrcn.projection
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. currentmodule:: pyrcn.projection
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   MatrixToValueProjection

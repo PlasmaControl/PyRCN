@@ -5,15 +5,14 @@ pyrcn.echo_state_network
 
 .. automodule:: pyrcn.echo_state_network
 
+.. currentmodule:: pyrcn.echo_state_network
+
 Echo State Network
 ------------------
 
-.. autoclass:: pyrcn.echo_state_network.ESNRegressor
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
 
-.. autoclass:: pyrcn.echo_state_network.ESNClassifier
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   ESNRegressor
+   ESNClassifier

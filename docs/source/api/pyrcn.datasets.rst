@@ -1,9 +1,16 @@
 .. _`pyrcn.datasets`:
 
 pyrcn.datasets
-==================
+==============
 
 .. automodule:: pyrcn.datasets
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. currentmodule:: pyrcn.datasets
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   mackey_glass
+   lorenz
+   load_digits

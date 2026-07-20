@@ -5,38 +5,26 @@ pyrcn.base
 
 .. automodule:: pyrcn.base
 
-pyrcn.base.blocks.InputToNode
------------------------------
+.. currentmodule:: pyrcn.base.blocks
 
-.. autoclass:: pyrcn.base.blocks.InputToNode
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Input-to-Node
+-------------
 
-.. autoclass:: pyrcn.base.blocks.PredefinedWeightsInputToNode
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
 
-.. autoclass:: pyrcn.base.blocks.BatchIntrinsicPlasticity
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   InputToNode
+   PredefinedWeightsInputToNode
+   BatchIntrinsicPlasticity
 
-pyrcn.base.blocks.NodeToNode
-----------------------------
+Node-to-Node
+------------
 
-.. autoclass:: pyrcn.base.blocks.NodeToNode
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
 
-.. autoclass:: pyrcn.base.blocks.PredefinedWeightsNodeToNode
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. autoclass:: pyrcn.base.blocks.HebbianNodeToNode
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   NodeToNode
+   PredefinedWeightsNodeToNode
+   HebbianNodeToNode

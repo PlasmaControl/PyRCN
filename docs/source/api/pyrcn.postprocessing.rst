@@ -4,6 +4,11 @@ pyrcn.postprocessing
 ====================
 
 .. automodule:: pyrcn.postprocessing
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. currentmodule:: pyrcn.postprocessing
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   NormalDistribution

@@ -4,6 +4,11 @@ pyrcn.preprocessing
 ===================
 
 .. automodule:: pyrcn.preprocessing
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. currentmodule:: pyrcn.preprocessing
+
+.. autosummary::
+   :toctree: generated
+   :nosignatures:
+
+   Coates

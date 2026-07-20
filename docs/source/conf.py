@@ -36,12 +36,17 @@ release = __version__
 extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     'sphinx.ext.mathjax',
     'sphinx_copybutton',
     'sphinx_design',
 ]
+
+# Generate the per-object stub pages referenced by ``.. autosummary::``
+# directives at build time (also regenerated on Read the Docs).
+autosummary_generate = True
 master_doc = 'index'
 
 # Resolve cross-references to the scientific Python stack we build on.

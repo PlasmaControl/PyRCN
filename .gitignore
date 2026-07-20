@@ -175,6 +175,7 @@ dmypy.json
 /sequential_search_fsdd_kmeans_rec.joblib
 /sequential_search_fsdd_kmeans.joblib
 /docs/source/_build
+/docs/source/api/generated/
 /junit
 /pyrcn/junit
 /tests/junit
