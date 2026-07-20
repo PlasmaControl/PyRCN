@@ -9,26 +9,85 @@
 
 ## Current work (active task — resume here after compaction)
 
-**Two goals, requested 2026-07 (post-release):**
-1. **Coverage → ~100%.** Baseline is **86%** (branch coverage). Purely additive
-   tests, no behavior change. Delegate the reading/test-writing to **subagents**
-   (keep this conversation's context lean — the user explicitly warned about
-   compaction). Genuinely unreachable lines (CUDA/GPU path, optional-dep
-   fallbacks, defensive raises) get `# pragma: no cover` + a one-line reason.
-   - Baseline missing-line report + JSON at
-     `<scratchpad>/cov_missing.txt` and `cov.json` (regenerate with
-     `pytest --cov=src/pyrcn --cov-branch --cov-report=term-missing`).
-2. **Performance bottlenecks — ANALYSIS ONLY, propose a ranked list first.**
-   Read as a rigorous reviewer, find real bottlenecks, deliver a ranked report
-   (impact / risk / expected speedup / how parity is proven). **Change NO code
-   for speed without the user's explicit go-ahead.**
+**Requested 2026-07 (post-release). Constraints (user emphatic):** any
+optimization must be **numerically identical within ~1e-12 on float64**
+(mathematically-equivalent float reordering OK, nothing looser; verify by
+capturing current output on fixed seeds and asserting equality after); **no
+performance regression**; full suite stays green; heavy reading delegated to
+**subagents** to avoid context compaction.
 
-**Hard constraints on any future optimization (user was emphatic):**
-- Output must be **numerically identical within a tight tolerance** (~1e-12 on
-  float64); mathematically-equivalent float reordering is allowed, nothing
-  looser. Verify each change by capturing current output on fixed seeds and
-  asserting equality after.
-- **No performance regression**, full suite stays green throughout.
+### Goal A — coverage → ~100%. DONE.
+**86.2% → 99.60%** (commit `d2b2f79`, local, not pushed). Additive tests only;
+the only src edits are justified `# pragma: no cover` markers. Full suite green,
+flake8 clean. Residual: 2 lines blocked by the NormalDistribution.fit bug + 9
+hard partial branches. Reports at `<scratchpad>/cov_missing.txt`/`cov.json`
+(before) and `cov_after.*`.
+
+### Goal B — performance. Analysis DONE (4 read-only subagents). Implementing per approval.
+Ranked in-scope findings (all numerically identical within ~1e-12 unless noted):
+- **P1 — APPROVED, IMPLEMENTING NOW: two-tier reservoir dispatch**
+  (`nn/_reservoir.py`). Fast sub-case (`leakage==1.0` & tanh/relu, non-Euler) →
+  ATen fused `torch.rnn_tanh`/`rnn_relu` (~6-7×, measured bit-identical, diff
+  0.0). General case (leaky / Euler / logistic / identity / bounded_relu) →
+  `torch.jit.script` the recurrence (~1.9×, bit-identical). Behind a
+  parity-fixture gate (`tests/test_reservoir_parity.py`); I re-verify the parity
+  test + full suite + diff before committing.
+- **P2** strip `nn.Module`/`RNNCell` per-step dispatch — subsumed into P1's
+  scripted general path.
+- **P3** numpy readout `inv(K+αI)@xTy` → `np.linalg.solve`
+  (`linear_model/_incremental_regression.py`) — 2-3.5×, diff ≤1.7e-16.
+- **P4** torch readout LU `solve` → Cholesky (`nn/_readout.py`) — ~1.4×, diff
+  ≤1.25e-16, guard `alpha≤0` → fallback to solve.
+- **P5** drop the wasted numpy `input_to_node.transform` fed to
+  `node_to_node.fit` (only `shape[1]` used) in `_esn.py`/`_elm.py` — ~10% of
+  single-series fit; `np.array_equal` verified.
+- **P6** hoist `EulerNodeToNode`'s per-step `scaling·W + γ·I` rebuild
+  (`base/blocks/_node_to_node.py`) — ~9× on the Euler path, bit-identical.
+- **P7** drop `InputToNode`'s `np.ones` bias temp
+  (`base/blocks/_input_to_node.py`) — bit-identical.
+- **P8** `np.dot` instead of `safe_sparse_dot` for dense (`_node_to_node.py`) —
+  ~4%, bit-identical.
+- **P9** (medium risk) de-dup `concatenate_sequences` conversions
+  (`util/_util.py`) — needs before/after array-equality gating.
+- **P10** (larger) batched reservoir with `lengths`-masking — avoids ~37%
+  padding waste; only relevant if the batched `check_sequences` path is wired in
+  (estimators currently run per-sequence, batch=1).
+- **Thread oversubscription (biggest real-world effect, NOT bundled as
+  identical):** default multi-thread BLAS makes the per-step reservoir loop
+  pathologically slow (a single 8000-step series did not finish in 90 s at 48
+  threads — the cause of prior runaway CPU). Capping intra-op threads gives ~3×
+  on ragged workloads, BUT changing thread count reorders matmul reductions →
+  may exceed 1e-12 on long chaotic recurrences. Treat as an env/deployment knob
+  or verify per case. P1's fused kernel sidesteps most of it.
+- **Out of scope (change results > 1e-12):** `spectral_normalize`
+  eig→iterative; `fan_in` RNG-loop vectorization; folding `spectral_radius`
+  into `W` (rel ~1.8e-12, and the numpy path is the parity oracle); float32 /
+  GPU cuDNN.
+- Order after P1: P3, P5, P6, P7 are the next easy bit-identical wins; P4/P8
+  low-med; P9/P10 deferred.
+
+### Bugs found during the coverage push (PRE-EXISTING; NOT fixed — a fix changes behavior, needs separate go-ahead)
+- **`postprocessing/_normal_distribution.py`:** `fit` calls
+  `scipy.stats.norm.fit(X=…, y=…)`; those kwargs do not exist → **always raises
+  TypeError**, estimator unusable. (Blocks 2 coverage lines.)
+- **`metrics/_classification.py`:** `log_loss` forwards `eps=` (removed in
+  sklearn ≥1.5) → TypeError; `brier_score_loss` passes `y_prob=` (renamed to
+  `y_proba`) → TypeError. Both wrappers broken; coverage tests currently assert
+  the TypeError.
+- **`preprocessing/_coates.py`:** `inverse_transform` passes a 3-D array to
+  StandardScaler/PCA (require ≤2-D) → breaks when `normalize=True`/`whiten=True`;
+  and `_inverse_preprocessing` applies un-normalize/un-whiten in the wrong order.
+- **`linear_model/_incremental_regression.py:199`:** `normalize=True` via
+  `partial_fit` is a no-op (the scaler-transformed result is discarded, not
+  reassigned).
+- **`base/blocks/_input_to_node.py:~494`:** `if bound_low == np.inf` is almost
+  certainly meant to be `-np.inf` (dead code as written; pragma'd).
+- **`util/_util.py`:** `concatenate_sequences` raises on a ragged plain `list`
+  under NumPy 2 (`np.asarray` inhomogeneous shape); only object-arrays /
+  equal-length lists work.
+- **`model_selection/_search.py`:** `SHGOSearchCV.fit` iterates the raw
+  `self.cv` attribute instead of the checked splitter → crashes on `cv=None` /
+  `cv=int`.
 
 ## Status summary
 
