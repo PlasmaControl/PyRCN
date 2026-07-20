@@ -411,8 +411,12 @@ Phase-A parity is proven, then retired.
   The invalid `trainable + closed_form` combo is rejected; reproducible via
   `random_state`; `predict` runs under `no_grad`. ESN-only (ELM has no
   reservoir); sequence + non-sequence + classifier. Full suite 218 passed.
-  (Input-weight training could be a later `trainable_input` flag; mini-batching
-  in BPTT mode is deferred — currently full-batch.)
+  - **B2+ (done).** `trainable_input` (bool): with `solver="gradient"`, also
+    train the input feature-map weights (`InputFeatureMap.set_input_trainable`)
+    — alone or with `trainable_reservoir` for a fully trainable RNN (input +
+    reservoir + readout); requires the gradient solver. BPTT mini-batching:
+    `batch_size` batches over sequences (seeded shuffle; `None` = full-batch),
+    non-sequence stays full-BPTT. Reproducible via `random_state`. Suite 222.
 - **B3 · Tests, examples, docs** for the gradient modes.
 
 ### Risks / notes
