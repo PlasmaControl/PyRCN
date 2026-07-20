@@ -22,7 +22,8 @@ from ..nn._bridge import (
 from ..nn._input import InputFeatureMap
 from ..nn._readout import IncrementalRidge, LinearReadout
 from ..nn._reservoir import EulerReservoir, Reservoir
-from ..nn._training import OPTIMIZERS, torch_generator, train_readout
+from ..nn._training import (LOSSES, OPTIMIZERS, torch_generator,
+                            train_readout)
 from ..base.blocks import InputToNode, NodeToNode
 from ..linear_model import IncrementalRegression
 from ..projection import MatrixToValueProjection
@@ -69,7 +70,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         Readout training method. ``"closed_form"`` solves the ridge normal
         equations (requires a fixed reservoir); ``"gradient"`` trains the
         readout with an optimizer loop and enables the ``trainable_*`` flags.
-    optimizer : {"adam", "sgd"}, default="adam"
+    optimizer : {"adam", "adamw", "sgd", "rmsprop", "adagrad"}, default="adam"
         Optimizer used when ``solver="gradient"``.
     learning_rate : float, default=1e-3
         Learning rate used when ``solver="gradient"``.
@@ -78,6 +79,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
     batch_size : Optional[int], default=None
         Mini-batch size when ``solver="gradient"`` (``None`` means full
         batch). With a trainable reservoir/input, batches are over sequences.
+    loss : {"mse", "mae", "huber"}, default="mse"
+        Loss used when ``solver="gradient"``.
     trainable_reservoir : bool, default=False
         If True (requires ``solver="gradient"``), train the recurrent
         reservoir weights by backpropagation through the recurrence.
@@ -109,6 +112,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                  batch_size: int | None = None,
                  trainable_reservoir: bool = False,
                  trainable_input: bool = False,
+                 loss: str = "mse",
                  **kwargs: Any) -> None:
         """Construct the ESNRegressor."""
         if input_to_node is None:
@@ -153,6 +157,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self.batch_size = batch_size
         self.trainable_reservoir = trainable_reservoir
         self.trainable_input = trainable_input
+        self.loss = loss
         self._use_torch: bool = False
         self._target_1d: bool = False
         self._torch_input_map: InputFeatureMap
@@ -177,7 +182,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                     "epochs": self.epochs,
                     "batch_size": self.batch_size,
                     "trainable_reservoir": self.trainable_reservoir,
-                    "trainable_input": self.trainable_input}
+                    "trainable_input": self.trainable_input,
+                    "loss": self.loss}
 
     def set_params(self, **parameters: dict) -> ESNRegressor:
         """Set all possible parameters of the ESNRegressor."""
@@ -458,8 +464,8 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         train_readout(
             readout, all_states, y2, optimizer=self.optimizer,
             learning_rate=self.learning_rate, epochs=self.epochs,
-            batch_size=self.batch_size, weight_decay=self._regressor.alpha,
-            generator=gen)
+            batch_size=self.batch_size, loss=self.loss,
+            weight_decay=self._regressor.alpha, generator=gen)
         self._torch_readout = readout
         return self
 
@@ -514,7 +520,7 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         params += list(readout.parameters())
         optimizer = OPTIMIZERS[self.optimizer](
             params, lr=self.learning_rate, weight_decay=self._regressor.alpha)
-        loss_fn = torch.nn.MSELoss()
+        loss_fn = LOSSES[self.loss]()
         n_seq = len(inputs)
         step = n_seq if self.batch_size is None else min(
             int(self.batch_size), n_seq)
@@ -686,9 +692,13 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             raise ValueError('Invalid value for solver, got {}'
                              .format(self.solver))
 
-        if self.optimizer not in ("adam", "sgd"):
+        if self.optimizer not in OPTIMIZERS:
             raise ValueError('Invalid value for optimizer, got {}'
                              .format(self.optimizer))
+
+        if self.loss not in LOSSES:
+            raise ValueError('Invalid value for loss, got {}'
+                             .format(self.loss))
 
         if (not isinstance(self.epochs, int)
                 or isinstance(self.epochs, bool)
@@ -932,7 +942,7 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
         Readout training method. ``"closed_form"`` solves the ridge normal
         equations (requires a fixed reservoir); ``"gradient"`` trains the
         readout with an optimizer loop and enables the ``trainable_*`` flags.
-    optimizer : {"adam", "sgd"}, default="adam"
+    optimizer : {"adam", "adamw", "sgd", "rmsprop", "adagrad"}, default="adam"
         Optimizer used when ``solver="gradient"``.
     learning_rate : float, default=1e-3
         Learning rate used when ``solver="gradient"``.
@@ -941,6 +951,8 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
     batch_size : Optional[int], default=None
         Mini-batch size when ``solver="gradient"`` (``None`` means full
         batch). With a trainable reservoir/input, batches are over sequences.
+    loss : {"mse", "mae", "huber"}, default="mse"
+        Loss used when ``solver="gradient"``.
     trainable_reservoir : bool, default=False
         If True (requires ``solver="gradient"``), train the recurrent
         reservoir weights by backpropagation through the recurrence.
@@ -971,6 +983,7 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
                  batch_size: int | None = None,
                  trainable_reservoir: bool = False,
                  trainable_input: bool = False,
+                 loss: str = "mse",
                  **kwargs: Any) -> None:
         """Construct the ESNClassifier."""
         super().__init__(input_to_node=input_to_node,
@@ -980,7 +993,7 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
                          learning_rate=learning_rate, epochs=epochs,
                          batch_size=batch_size,
                          trainable_reservoir=trainable_reservoir,
-                         trainable_input=trainable_input, **kwargs)
+                         trainable_input=trainable_input, loss=loss, **kwargs)
         self._decision_strategy = decision_strategy
         self._encoder = LabelBinarizer()
         self._sequence_to_value = False

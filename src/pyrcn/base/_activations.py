@@ -61,39 +61,6 @@ def inplace_relu(X: np.ndarray) -> None:
     np.maximum(X, 0, out=X)
 
 
-def inplace_softplus(X: np.ndarray) -> None:
-    """
-    Compute the softplux activation function inplace:
-    .. math::
-        f(x) = \\mathrm{ln}(1 + e^{x})
-
-    Parameters
-    ----------
-    X : numpy.ndarray
-
-    beta : float, default=1
-        Scaling factor
-    """
-    np.log(1 + np.exp(X, out=X), out=X)
-
-
-def inplace_softmax(X: np.ndarray, beta: float = 1) -> None:
-    """
-    Compute the softmax activation function inplace:
-    .. math::
-        y_k = \\frac{e^{x_k}}{\\sum_{i=1}^{n} e^{x_i}}
-
-    Parameters
-    ----------
-    X : numpy.ndarray
-
-    beta : float, default=1
-        Scaling factor
-    """
-    denominator = np.sum(np.exp(beta*X))
-    np.divide(np.exp(beta*X, out=X), denominator, out=X)
-
-
 def inplace_bounded_relu(X: np.ndarray) -> None:
     """
     Compute the bounded rectified linear unit function inplace.
@@ -181,8 +148,6 @@ ACTIVATIONS: dict[str, Callable] = {
     'logistic': inplace_logistic,
     'relu': inplace_relu,
     'bounded_relu': inplace_bounded_relu,
-    'softmax': inplace_softmax,
-    'softplus': inplace_softplus,
 }
 
 ACTIVATIONS_INVERSE: dict[str, Callable] = {

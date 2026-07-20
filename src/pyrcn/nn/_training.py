@@ -18,8 +18,18 @@ import torch
 import torch.nn as nn
 from sklearn.utils import check_random_state
 
-OPTIMIZERS = {"adam": torch.optim.Adam, "sgd": torch.optim.SGD}
-LOSSES = {"mse": nn.MSELoss}
+OPTIMIZERS = {
+    "adam": torch.optim.Adam,
+    "adamw": torch.optim.AdamW,
+    "sgd": torch.optim.SGD,
+    "rmsprop": torch.optim.RMSprop,
+    "adagrad": torch.optim.Adagrad,
+}
+LOSSES = {
+    "mse": nn.MSELoss,
+    "mae": nn.L1Loss,
+    "huber": nn.HuberLoss,
+}
 
 
 def torch_generator(

@@ -71,14 +71,6 @@ def test_logistic() -> None:
     np.testing.assert_array_equal(X, X_true)
 
 
-def test_softplus() -> None:
-    print('\ttest_softplus():')
-    X = np.arange(-5, 5, dtype=float)
-    X_true = np.log(1 + np.exp(X))
-    ACTIVATIONS["softplus"](X)
-    np.testing.assert_array_equal(X, X_true)
-
-
 def test_relu() -> None:
     print('\ttest_relu():')
     X = np.concatenate((np.full((1, ), -np.inf), np.arange(-5, 5),
@@ -89,16 +81,6 @@ def test_relu() -> None:
     X_true = np.maximum(X, 0)
     ACTIVATIONS_INVERSE["relu"](X)
     np.testing.assert_array_equal(X, X_true)
-
-
-def test_softmax() -> None:
-    print('\ttest_softmax():')
-    X = np.arange(-5, 5, dtype=float)
-    X_true = np.exp(X) / np.exp(X).sum()
-    ACTIVATIONS["softmax"](X)
-    np.testing.assert_array_equal(X, X_true)
-    assert any([not X.sum() == 1.0, not X_true.sum() == 1.0,
-                not X.sum() == X_true.sum()]) is False
 
 
 def test_tanh() -> None:

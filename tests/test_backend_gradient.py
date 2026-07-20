@@ -68,7 +68,7 @@ def test_train_readout_unknown_optimizer_raises() -> None:
     Z = torch.zeros(5, 4, dtype=torch.float64)
     y = torch.zeros(5, 1, dtype=torch.float64)
     with pytest.raises(ValueError):
-        train_readout(readout, Z, y, optimizer="rmsprop")
+        train_readout(readout, Z, y, optimizer="bogus")
 
 
 def test_train_readout_unknown_loss_raises() -> None:
@@ -76,7 +76,7 @@ def test_train_readout_unknown_loss_raises() -> None:
     Z = torch.zeros(5, 4, dtype=torch.float64)
     y = torch.zeros(5, 1, dtype=torch.float64)
     with pytest.raises(ValueError):
-        train_readout(readout, Z, y, loss="huber")
+        train_readout(readout, Z, y, loss="bogus")
 
 
 def test_gradient_reaches_closed_form_through_real_reservoir() -> None:

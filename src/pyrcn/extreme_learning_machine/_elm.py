@@ -22,7 +22,7 @@ from ..nn._bridge import (
     build_input_map, build_readout, input_is_backable, regressor_is_backable)
 from ..nn._input import InputFeatureMap
 from ..nn._readout import IncrementalRidge, LinearReadout
-from ..nn._training import torch_generator, train_readout
+from ..nn._training import LOSSES, OPTIMIZERS, torch_generator, train_readout
 from ..base.blocks import InputToNode
 from ..linear_model import IncrementalRegression
 
@@ -52,7 +52,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
     solver : {"closed_form", "gradient"}, default="closed_form"
         Readout training method. ``"closed_form"`` solves the ridge normal
         equations; ``"gradient"`` trains the readout with an optimizer loop.
-    optimizer : {"adam", "sgd"}, default="adam"
+    optimizer : {"adam", "adamw", "sgd", "rmsprop", "adagrad"}, default="adam"
         Optimizer used when ``solver="gradient"``.
     learning_rate : float, default=1e-3
         Learning rate used when ``solver="gradient"``.
@@ -60,6 +60,8 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         Number of training epochs when ``solver="gradient"``.
     batch_size : Optional[int], default=None
         Mini-batch size when ``solver="gradient"`` (``None`` = full batch).
+    loss : {"mse", "mae", "huber"}, default="mse"
+        Loss used when ``solver="gradient"``.
     verbose : bool = False
         Verbosity output
     kwargs : Any, default = None
@@ -78,6 +80,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                  learning_rate: float = 1e-3,
                  epochs: int = 100,
                  batch_size: int | None = None,
+                 loss: str = "mse",
                  **kwargs: Any) -> None:
         """Construct the ELMRegressor."""
         if input_to_node is None:
@@ -108,6 +111,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         self.learning_rate = learning_rate
         self.epochs = epochs
         self.batch_size = batch_size
+        self.loss = loss
         self._use_torch: bool = False
         self._target_1d: bool = False
         self._torch_input_map: InputFeatureMap
@@ -126,7 +130,8 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
                     "optimizer": self.optimizer,
                     "learning_rate": self.learning_rate,
                     "epochs": self.epochs,
-                    "batch_size": self.batch_size}
+                    "batch_size": self.batch_size,
+                    "loss": self.loss}
 
     def set_params(self, **parameters: dict) -> ELMRegressor:
         """Set all possible parameters of the ELMRegressor."""
@@ -238,7 +243,7 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             train_readout(
                 lin_readout, feats, y2, optimizer=self.optimizer,
                 learning_rate=self.learning_rate, epochs=self.epochs,
-                batch_size=self.batch_size,
+                batch_size=self.batch_size, loss=self.loss,
                 weight_decay=self._regressor.alpha, generator=gen)
             self._torch_input_map = fm
             self._torch_readout = lin_readout
@@ -338,9 +343,13 @@ class ELMRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             raise ValueError('Invalid value for solver, got {}'
                              .format(self.solver))
 
-        if self.optimizer not in ("adam", "sgd"):
+        if self.optimizer not in OPTIMIZERS:
             raise ValueError('Invalid value for optimizer, got {}'
                              .format(self.optimizer))
+
+        if self.loss not in LOSSES:
+            raise ValueError('Invalid value for loss, got {}'
+                             .format(self.loss))
 
         if (not isinstance(self.epochs, int)
                 or isinstance(self.epochs, bool)
@@ -479,7 +488,7 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
     solver : {"closed_form", "gradient"}, default="closed_form"
         Readout training method. ``"closed_form"`` solves the ridge normal
         equations; ``"gradient"`` trains the readout with an optimizer loop.
-    optimizer : {"adam", "sgd"}, default="adam"
+    optimizer : {"adam", "adamw", "sgd", "rmsprop", "adagrad"}, default="adam"
         Optimizer used when ``solver="gradient"``.
     learning_rate : float, default=1e-3
         Learning rate used when ``solver="gradient"``.
@@ -487,6 +496,8 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
         Number of training epochs when ``solver="gradient"``.
     batch_size : Optional[int], default=None
         Mini-batch size when ``solver="gradient"`` (``None`` = full batch).
+    loss : {"mse", "mae", "huber"}, default="mse"
+        Loss used when ``solver="gradient"``.
     verbose : bool = False
         Verbosity output
     kwargs : Any, default = None
@@ -504,13 +515,14 @@ class ELMClassifier(ClassifierMixin, ELMRegressor):
                  learning_rate: float = 1e-3,
                  epochs: int = 100,
                  batch_size: int | None = None,
+                 loss: str = "mse",
                  **kwargs: Any) -> None:
         """Construct the ELMClassifier."""
         super().__init__(input_to_node=input_to_node, regressor=regressor,
                          chunk_size=chunk_size, verbose=verbose,
                          solver=solver, optimizer=optimizer,
                          learning_rate=learning_rate, epochs=epochs,
-                         batch_size=batch_size, **kwargs)
+                         batch_size=batch_size, loss=loss, **kwargs)
         self._encoder = LabelBinarizer()
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
