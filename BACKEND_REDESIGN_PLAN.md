@@ -399,8 +399,9 @@ Phase-A parity is proven, then retired.
   readout matches the closed-form ridge to ~1e-6; through the raw reservoir /
   ELM map convergence is slow, so the estimator tests assert learning + the
   structural contracts. Defaults behavior-preserving; full suite green.
-  Note: gradient results are not yet reproducible via `random_state` (readout
-  init uses torch's global RNG) — a later refinement.
+  Gradient fits are reproducible via `random_state`: the readout init and the
+  shuffle are seeded from it (`pyrcn.nn.torch_generator`, threaded through
+  `LinearReadout(generator=)` and `train_readout(generator=)`).
 - **B2 · Trainable reservoir.** `requires_grad=True` path; end-to-end backprop
   through reservoir + readout; training-loop config (optimizer, lr, epochs,
   loss, batch); reject the invalid "trainable + closed-form" combo.
