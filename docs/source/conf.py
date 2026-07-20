@@ -19,8 +19,8 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'PyRCN'
-copyright = '2021, Peter Steiner, Azarakhsh Jalalvand, Simon Stone,' \
-            'Peter Birkholz'
+copyright = '2020-2024, Chair of Speech Technology and Cognitive Systems, ' \
+            'TU Dresden; 2024-2026, Princeton University'
 author = 'Peter Steiner, Azarakhsh Jalalvand, Simon Stone, Peter Birkholz'
 
 # The full version, including alpha/beta/rc tags
