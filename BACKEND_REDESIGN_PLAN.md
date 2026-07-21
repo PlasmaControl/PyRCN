@@ -74,8 +74,11 @@ Ranked in-scope findings (all numerically identical within ~1e-12 unless noted):
   transform; P7 drop `InputToNode`'s `np.ones` bias temp → ~14%; P8 dense
   `np.dot` vs `safe_sparse_dot` → ~5% (interleaved A/B). Parity fixtures under
   `tests/fixtures/` (gitignore exception added for `*.npz`).
-- **P9** (medium risk) de-dup `concatenate_sequences` conversions
-  (`util/_util.py`) — needs before/after array-equality gating.
+- **P9 — REJECTED / OPEN (reverted):** de-dup `concatenate_sequences`
+  conversions (`util/_util.py`). Parity held bit-identical, but there was NO
+  measurable speed-up above noise (object-array path ~9.2→9.3ms; list path
+  ~0.162→0.166ms) — validation (`check_X_y`), not the redundant copy,
+  dominates. Rejected per the gate (no measured speed-up). Left open.
 - **P10** (larger) batched reservoir with `lengths`-masking — avoids ~37%
   padding waste; only relevant if the batched `check_sequences` path is wired in
   (estimators currently run per-sequence, batch=1).
@@ -90,8 +93,14 @@ Ranked in-scope findings (all numerically identical within ~1e-12 unless noted):
   eig→iterative; `fan_in` RNG-loop vectorization; folding `spectral_radius`
   into `W` (rel ~1.8e-12, and the numpy path is the parity oracle); float32 /
   GPU cuDNN.
-- Order after P1: P3, P5, P6, P7 are the next easy bit-identical wins; P4/P8
-  low-med; P9/P10 deferred.
+**Performance pass result (all committed, local, not pushed):** KEPT — P1
+(reservoir ~2.8-3.9×), P3 (numpy readout, up to ~2× at large h), P5 (skip
+discarded transform, ~1.3-1.6× on multi-feature input), P6 (Euler hoist
+~6.5×), P7 (bias temp ~14%), P8 (dense np.dot ~5%). REJECTED/OPEN — P4
+(Cholesky, can exceed 1e-12), P9 (concat dedup, no measurable speedup), P10
+(batched masking, no live path), thread-cap (not parity-safe), and the
+out-of-scope items. Every kept change has a committed parity regression test
+and an independently re-verified benchmark; full suite green throughout.
 
 ### Bugs found during the coverage push (PRE-EXISTING; NOT fixed — a fix changes behavior, needs separate go-ahead)
 - **`postprocessing/_normal_distribution.py`:** `fit` calls
