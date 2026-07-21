@@ -153,14 +153,20 @@ def test_elm_regressor_partial_fit_verbose() -> None:
     elm.partial_fit(X[:10], y[:10].astype(float))
 
 
+class _NonBackableRegression(IncrementalRegression):
+    """IncrementalRegression subclass: non-backable (exact-type check) but
+    still exposes ``partial_fit`` so the numpy chunk path can be exercised."""
+
+
 def test_elm_regressor_chunk_numpy() -> None:
     rng = np.random.RandomState(42)
     X = rng.normal(size=(30, 3))
     y = rng.normal(size=(30,))
     elm = ELMRegressor(
         hidden_layer_size=10, chunk_size=10,
-        regressor=IncrementalRegression(normalize=True))
+        regressor=_NonBackableRegression())
     elm.fit(X, y)
+    assert elm._use_torch is False
     pred = elm.predict(X)
     assert pred.shape[0] == 30
 

@@ -48,7 +48,6 @@ def test_node_is_backable_classification() -> None:
 
 def test_regressor_is_backable_classification() -> None:
     assert regressor_is_backable(IncrementalRegression())
-    assert not regressor_is_backable(IncrementalRegression(normalize=True))
     assert not regressor_is_backable(Ridge())
 
 

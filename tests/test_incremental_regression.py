@@ -15,18 +15,6 @@ from pyrcn.linear_model import IncrementalRegression
 X_diabetes, y_diabetes = load_diabetes(return_X_y=True)
 
 
-def test_normalize() -> None:
-    print('\ntest_normalize():')
-    rs = np.random.RandomState(42)
-    X = np.hstack((np.linspace(0., 10., 1000).reshape(-1, 1),
-                   np.linspace(-1., 1., 1000).reshape(-1, 1),
-                   rs.random(1000).reshape(-1, 1)))
-    transformation = rs.random(size=(3, 2))
-    y = np.matmul(X, transformation)
-    reg = IncrementalRegression(normalize=True)
-    reg.fit(X, y)
-
-
 def test_postpone_inverse() -> None:
     print('\ntest_postpone_inverse():')
     rs = np.random.RandomState(42)
@@ -88,16 +76,6 @@ def test_compare_ridge() -> None:
     np.testing.assert_allclose(i_reg.coef_, ridge.coef_, rtol=.0001)
 
 
-def test_incremental_partial_normalize() -> None:
-    print('\ntest_incremental_partial_normalize():')
-    rs = np.random.RandomState(42)
-    X = rs.normal(size=(20, 3))
-    y = rs.normal(size=(20, 2))
-    reg = IncrementalRegression(normalize=True)
-    reg.partial_fit(X, y)
-    reg.predict(X)
-
-
 def test_incremental_coef_intercept_2d() -> None:
     print('\ntest_incremental_coef_intercept_2d():')
     rs = np.random.RandomState(42)
@@ -141,7 +119,7 @@ def _reference_incremental_weights(batches, alpha, fit_intercept, postpone):
 
     This is the frozen reference formula (explicit matrix inverse) that the
     ``np.linalg.solve`` implementation must reproduce bit-tight. Covers both
-    the main solve and the incremental residual branch. ``normalize=False``.
+    the main solve and the incremental residual branch.
     """
     K = None
     xTy = None
@@ -201,7 +179,7 @@ def test_p3_solve_parity_residual_branch(fit_intercept, size) -> None:
 
     reg = IncrementalRegression(alpha=alpha, fit_intercept=fit_intercept)
     for i, (Xb, yb) in enumerate(batches):
-        reg.partial_fit(Xb, yb, partial_normalize=False, reset=(i == 0))
+        reg.partial_fit(Xb, yb, reset=(i == 0))
 
     ref = _reference_incremental_weights(
         batches, alpha, fit_intercept, [False] * len(batches))
@@ -225,7 +203,7 @@ def test_p3_solve_parity_postpone_then_residual() -> None:
 
     reg = IncrementalRegression(alpha=alpha, fit_intercept=True)
     for i, (Xb, yb) in enumerate(batches):
-        reg.partial_fit(Xb, yb, partial_normalize=False, reset=(i == 0),
+        reg.partial_fit(Xb, yb, reset=(i == 0),
                         postpone_inverse=postpone[i])
 
     ref = _reference_incremental_weights(batches, alpha, True, postpone)

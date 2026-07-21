@@ -5,13 +5,11 @@
 
 from __future__ import annotations
 
-import sys
 from typing import cast
 
 import numpy as np
 from sklearn.base import BaseEstimator, RegressorMixin
 from sklearn.exceptions import NotFittedError
-from sklearn.preprocessing import StandardScaler
 from sklearn.utils.extmath import safe_sparse_dot
 from sklearn.utils.validation import validate_data
 
@@ -38,8 +36,6 @@ class IncrementalRegression(RegressorMixin, BaseEstimator):
     fit_intercept : bool, default=True
         Fits a constant offset if True. Use this if input values are not
         average free.
-    normalize : bool, default=False
-        Performs a preprocessing normalization if True.
 
     Attributes
     ----------
@@ -51,20 +47,16 @@ class IncrementalRegression(RegressorMixin, BaseEstimator):
     """
 
     def __init__(self, *, alpha: float = 1e-5,
-                 fit_intercept: bool = True,
-                 normalize: bool = False):
+                 fit_intercept: bool = True):
         """Construct the IncrementalRegression."""
         self.alpha = alpha
         self.fit_intercept = fit_intercept
-        self.normalize = normalize
-        self.scaler = StandardScaler(copy=False)
 
         self._K: np.ndarray = np.ndarray([])
         self._xTy: np.ndarray = np.ndarray([])
         self._output_weights: np.ndarray = np.ndarray([])
 
     def partial_fit(self, X: np.ndarray, y: np.ndarray,
-                    partial_normalize: bool = True,
                     reset: bool = False, validate: bool = True,
                     postpone_inverse: bool = False) -> IncrementalRegression:
         """
@@ -75,8 +67,6 @@ class IncrementalRegression(RegressorMixin, BaseEstimator):
         X : ndarray of shape (samples, n_features)
         y : ndarray of shape (n_samples,) or (n_samples, n_targets)
             The targets to predict.
-        partial_normalize : bool, default=True
-            Partial fits the normalization transformer on this sample if True.
         reset : bool, default=False
             Begin a new fit, drop prior fits.
         validate: bool, default=True
@@ -92,8 +82,7 @@ class IncrementalRegression(RegressorMixin, BaseEstimator):
         if validate:
             validate_data(self, X, y, multi_output=True)
 
-        X_preprocessed = self._preprocessing(
-            X, partial_normalize=partial_normalize)
+        X_preprocessed = self._preprocessing(X)
 
         if reset:
             self._K = np.ndarray([])
@@ -137,8 +126,6 @@ class IncrementalRegression(RegressorMixin, BaseEstimator):
         X : ndarray of shape (samples, n_features)
         y : ndarray of shape (n_samples,) or (n_samples, n_targets)
             The targets to predict.
-        partial_normalize : bool, default=True
-            Partial fits the normalization transformer on this sample if True.
         reset : bool, default=False
             Begin a new fit, drop prior fits.
         validate: bool, default=True
@@ -151,8 +138,7 @@ class IncrementalRegression(RegressorMixin, BaseEstimator):
         -------
         self : returns a fitted IncrementalRegression model
         """
-        self.partial_fit(
-            X, y, partial_normalize=False, reset=True, validate=True)
+        self.partial_fit(X, y, reset=True, validate=True)
         return self
 
     def predict(self, X: np.ndarray) -> np.ndarray:
@@ -169,19 +155,16 @@ class IncrementalRegression(RegressorMixin, BaseEstimator):
         if self._output_weights.shape == ():
             raise NotFittedError(self)
 
-        return safe_sparse_dot(self._preprocessing(X, partial_normalize=False),
+        return safe_sparse_dot(self._preprocessing(X),
                                self._output_weights)
 
-    def _preprocessing(self, X: np.ndarray,
-                       partial_normalize: bool = True) -> np.ndarray:
+    def _preprocessing(self, X: np.ndarray) -> np.ndarray:
         """
         Apply preprocessing on the input data X.
 
         Parameters
         ----------
         X : ndarray of shape (samples, n_features)
-        partial_normalize : bool, default=True
-            Partial fits the normalization transformer on this sample if True.
 
         Returns
         -------
@@ -193,13 +176,6 @@ class IncrementalRegression(RegressorMixin, BaseEstimator):
         if self.fit_intercept:
             X_preprocessed = np.hstack(
                 (X_preprocessed, np.ones(shape=(X.shape[0], 1))))
-
-        if self.normalize:
-            if partial_normalize:
-                self.scaler.partial_fit(X_preprocessed)\
-                    .transform(X_preprocessed)
-            else:
-                self.scaler.fit_transform(X_preprocessed)
 
         return X_preprocessed
 
@@ -213,7 +189,7 @@ class IncrementalRegression(RegressorMixin, BaseEstimator):
             Object memory in bytes.
         """
         return object.__sizeof__(self) + self._K.nbytes + self._xTy.nbytes + \
-            self._output_weights.nbytes + sys.getsizeof(self.scaler)
+            self._output_weights.nbytes
 
     @property
     def coef_(self) -> np.ndarray | None:

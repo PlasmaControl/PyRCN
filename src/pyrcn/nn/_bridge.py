@@ -52,9 +52,8 @@ def node_is_backable(block: object) -> bool:
 
 
 def regressor_is_backable(regressor: object) -> bool:
-    """True if ``regressor`` is the ridge readout with normalize off."""
-    return (type(regressor) is IncrementalRegression
-            and not regressor.normalize)
+    """True if ``regressor`` is the ridge readout."""
+    return type(regressor) is IncrementalRegression
 
 
 def build_input_map(block: InputToNode, *, dtype: torch.dtype | None = None,

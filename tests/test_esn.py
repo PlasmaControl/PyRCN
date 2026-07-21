@@ -255,7 +255,7 @@ def test_esn_classifier_gradient_not_backable() -> None:
     y = np.array([0, 1, 2] * 10)
     esn = ESNClassifier(
         hidden_layer_size=10, solver="gradient",
-        regressor=IncrementalRegression(normalize=True))
+        regressor=Ridge())
     with pytest.raises(NotImplementedError):
         esn.fit(X, y)
 
@@ -266,7 +266,7 @@ def test_esn_classifier_washout_requires_torch() -> None:
     y = np.array([0, 1, 2] * 10)
     esn = ESNClassifier(
         hidden_layer_size=10, washout=1,
-        regressor=IncrementalRegression(normalize=True))
+        regressor=Ridge())
     with pytest.raises(NotImplementedError):
         esn.fit(X, y)
 
@@ -277,7 +277,8 @@ def test_esn_classifier_non_sequence_numpy() -> None:
     y = np.array([0, 1, 2] * 10)
     esn = ESNClassifier(
         hidden_layer_size=10,
-        regressor=IncrementalRegression(normalize=True)).fit(X, y)
+        regressor=Ridge()).fit(X, y)
+    assert esn._use_torch is False
     y_pred = esn.predict(X)
     assert y_pred.shape[0] == 30
 
