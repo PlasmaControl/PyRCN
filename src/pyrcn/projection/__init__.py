@@ -1,6 +1,6 @@
 """The :mod:`pyrcn.projection` module implements value projections."""
 
-# Authors: Peter Steiner <peter.steiner@princeton.edu>,
+# Authors: Peter Steiner <peter.steiner@pyrcn.net>,
 # License: BSD 3 clause
 
 from __future__ import annotations

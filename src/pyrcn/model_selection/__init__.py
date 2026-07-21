@@ -1,6 +1,6 @@
 """The :mod:`pyrcn.model_selection` to sequentially tune hyper-parameters."""
 
-# Authors: Peter Steiner <peter.steiner@princeton.edu> and
+# Authors: Peter Steiner <peter.steiner@pyrcn.net> and
 # Simon Stone <simon.stone@tu-dresden.de>
 # License: BSD 3 clause
 

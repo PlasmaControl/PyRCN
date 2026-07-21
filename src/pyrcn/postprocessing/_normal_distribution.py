@@ -1,6 +1,6 @@
 """The :mod:`normal_distribution` contains a class for NormalDistribution."""
 
-# Authors: Peter Steiner <peter.steiner@princeton.edu>,
+# Authors: Peter Steiner <peter.steiner@pyrcn.net>,
 # License: BSD 3 clause
 
 from __future__ import annotations

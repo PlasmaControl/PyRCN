@@ -8,7 +8,7 @@ per-sequence ``lengths`` vector. It replaces the ad-hoc
 ``concatenate_sequences`` plus the ``ndim``-based sequence heuristics.
 """
 
-# Authors: Peter Steiner <peter.steiner@princeton.edu>
+# Authors: Peter Steiner <peter.steiner@pyrcn.net>
 # License: BSD 3 clause
 
 from __future__ import annotations

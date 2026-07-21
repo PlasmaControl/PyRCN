@@ -10,7 +10,7 @@ also work on ordinary single arrays.
 
 from __future__ import annotations
 
-# Authors: Peter Steiner <peter.steiner@princeton.edu>
+# Authors: Peter Steiner <peter.steiner@pyrcn.net>
 # License: BSD 3 clause
 
 import functools

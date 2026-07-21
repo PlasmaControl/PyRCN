@@ -15,7 +15,7 @@ whose weights are optimized by a gradient loop (see
 :func:`pyrcn.nn.train_readout`), used when ``solver='gradient'``.
 """
 
-# Authors: Peter Steiner <peter.steiner@princeton.edu>
+# Authors: Peter Steiner <peter.steiner@pyrcn.net>
 # License: BSD 3 clause
 
 from __future__ import annotations

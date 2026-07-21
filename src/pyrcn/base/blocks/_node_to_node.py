@@ -1,6 +1,6 @@
 """The :mod:`node_to_node` contains NodeToNode classes and derivatives."""
 
-# Authors: Peter Steiner <peter.steiner@princeton.edu>
+# Authors: Peter Steiner <peter.steiner@pyrcn.net>
 # License: BSD 3 clause
 
 from __future__ import annotations

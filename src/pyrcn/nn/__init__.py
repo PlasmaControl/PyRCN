@@ -28,7 +28,7 @@ Examples
     >>> _ = IncrementalRidge(alpha=1e-3).fit(states[0], torch.randn(50, 1))
 """
 
-# Authors: Peter Steiner <peter.steiner@princeton.edu>
+# Authors: Peter Steiner <peter.steiner@pyrcn.net>
 # License: BSD 3 clause
 
 from . import init

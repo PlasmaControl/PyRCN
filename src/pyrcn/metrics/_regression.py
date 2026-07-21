@@ -13,7 +13,7 @@ argument unchanged. This keeps the signatures in sync with scikit-learn.
 
 from __future__ import annotations
 
-# Authors: Peter Steiner <peter.steiner@princeton.edu>
+# Authors: Peter Steiner <peter.steiner@pyrcn.net>
 # License: BSD 3 clause
 
 import sklearn.metrics as sklearn_metrics

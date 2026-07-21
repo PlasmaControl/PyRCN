@@ -14,7 +14,7 @@ mirror the current scikit-learn versions.
 
 from __future__ import annotations
 
-# Author: Peter Steiner <peter.steiner@princeton.edu>
+# Author: Peter Steiner <peter.steiner@pyrcn.net>
 # License: BSD 3 clause
 from ..metrics._regression import (explained_variance_score, max_error,
                                    mean_absolute_error,

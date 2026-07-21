@@ -1,6 +1,6 @@
 """The :mod:`coates` contains the Coates preprocessing."""
 
-# Authors: Peter Steiner <peter.steiner@princeton.edu>,
+# Authors: Peter Steiner <peter.steiner@pyrcn.net>,
 # License: BSD 3 clause
 
 from __future__ import annotations
