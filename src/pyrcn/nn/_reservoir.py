@@ -6,6 +6,20 @@ integration (:class:`EulerESNCell`), and the extra PyRCN activations
 (``logistic``/``identity``/``bounded_relu``). In every cell ``weight_ih`` is a
 frozen identity (the reservoir input is added directly; input weights belong to
 ``InputToNode``); the effective recurrent matrix is folded into ``weight_hh``.
+
+The whole-sequence forward uses a two-tier dispatch (same maths, no per-step
+Python overhead):
+
+* **Fused sub-case** -- plain (non-Euler) reservoir with ``leakage == 1`` and a
+  ``tanh``/``relu`` activation whose recurrent weights are *not* being trained:
+  ATen's fused whole-sequence :func:`torch.rnn_tanh` / :func:`torch.rnn_relu`
+  (``weight_ih`` is the identity, so the reservoir input is added directly and
+  the recurrence equals the per-step cell). Bidirectional reuses the *same*
+  weights on the time-flipped input, matching ``NodeToNode``.
+* **General case** -- everything else (leaky integration, the Euler variant,
+  ``logistic``/``identity``/``bounded_relu``, and any config whose recurrent
+  weights require gradients): a :func:`torch.jit.script` compiled loop running
+  the identical recurrence ``h' = a*h + b*f(x + h @ weight_hh.T)``.
 """
 
 # Authors: Peter Steiner <peter.steiner@tu-dresden.de>
@@ -13,11 +27,17 @@ frozen identity (the reservoir input is added directly; input weights belong to
 
 from __future__ import annotations
 
+from typing import List, Tuple
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from ._activations import ACTIVATIONS, FUSED, SUPPORTED
+
+#: Integer id per activation for the (scriptable) general-path loop.
+_ACT_IDS = {"tanh": 0, "relu": 1, "logistic": 2, "identity": 3,
+            "bounded_relu": 4}
 
 
 class _ReservoirCell(nn.RNNCell):
@@ -128,13 +148,55 @@ class EulerESNCell(_ReservoirCell):
         return hx + self.epsilon * self._activate(input, hx)
 
 
-def _iterate(cell: _ReservoirCell, x: torch.Tensor,
-             h: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-    outputs = []
-    for t in range(x.shape[1]):
-        h = cell(x[:, t, :], h)
+@torch.jit.script
+def _iterate_general(x: torch.Tensor, h: torch.Tensor,
+                     weight_hh: torch.Tensor, coeff_prev: float,
+                     coeff_new: float, activation: int
+                     ) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Scripted whole-sequence loop of ``h' = a*h + b*f(x + h @ W.T)``.
+
+    ``coeff_prev``/``coeff_new`` are ``(1 - leakage, leakage)`` for the leaky
+    reservoir and ``(1.0, epsilon)`` for the Euler variant; ``weight_hh`` holds
+    the (already scaled/folded) recurrent matrix, so ``F.linear`` reproduces
+    the per-step cell exactly. Bit-exact with the original Python loop.
+    """
+    outputs: List[torch.Tensor] = []
+    length = x.shape[1]
+    for t in range(length):
+        pre = x[:, t, :] + F.linear(h, weight_hh)
+        if activation == 0:
+            a = torch.tanh(pre)
+        elif activation == 1:
+            a = torch.relu(pre)
+        elif activation == 2:
+            a = torch.sigmoid(pre)
+        elif activation == 3:
+            a = pre
+        else:
+            a = torch.clamp(pre, 0.0, 1.0)
+        h = coeff_prev * h + coeff_new * a
         outputs.append(h)
     return torch.stack(outputs, dim=1), h
+
+
+def _iterate_fused(x: torch.Tensor, initial_state: torch.Tensor,
+                   weight_ih: torch.Tensor, weight_hh: torch.Tensor,
+                   activation: str) -> tuple[torch.Tensor, torch.Tensor]:
+    """Fused whole-sequence ``tanh``/``relu`` recurrence via ATen.
+
+    Uses :func:`torch.rnn_tanh` / :func:`torch.rnn_relu` (single layer,
+    unidirectional, no biases). ``weight_ih`` is the frozen identity, so this
+    computes ``h' = f(x + h @ weight_hh.T)`` (the ``leakage == 1`` case).
+    """
+    hx = initial_state.unsqueeze(0)
+    params = [weight_ih, weight_hh]
+    if activation == "relu":
+        out, hn = torch.rnn_relu(
+            x, hx, params, False, 1, 0.0, False, False, True)
+    else:
+        out, hn = torch.rnn_tanh(
+            x, hx, params, False, 1, 0.0, False, False, True)
+    return out, hn.squeeze(0)
 
 
 class Reservoir(nn.Module):
@@ -168,21 +230,31 @@ class Reservoir(nn.Module):
         """Enable/disable gradient training of the recurrent weights."""
         self.cell.weight_hh.requires_grad_(trainable)
 
+    def _run(self, x: torch.Tensor, h0: torch.Tensor
+             ) -> tuple[torch.Tensor, torch.Tensor]:
+        cell = self.cell
+        use_fused = (cell.activation in FUSED and cell.leakage == 1.0
+                     and not cell.weight_hh.requires_grad)
+        if use_fused:
+            return _iterate_fused(
+                x, h0, cell.weight_ih, cell.weight_hh, cell.activation)
+        return _iterate_general(
+            x, h0, cell.weight_hh, 1.0 - cell.leakage, cell.leakage,
+            _ACT_IDS[cell.activation])
+
     def forward(self, x: torch.Tensor,
                 initial_state: torch.Tensor | None = None
                 ) -> tuple[torch.Tensor, torch.Tensor]:
         if not self.bidirectional:
             if initial_state is None:
                 initial_state = self.cell._zeros_like_state(x)
-            return _iterate(self.cell, x, initial_state)
+            return self._run(x, initial_state)
         if initial_state is not None:
             raise ValueError(
                 "initial_state is not supported with bidirectional=True")
-        states_fw, final_fw = _iterate(
-            self.cell, x, self.cell._zeros_like_state(x))
-        reversed_states, final_bw = _iterate(
-            self.cell, torch.flip(x, dims=[1]),
-            self.cell._zeros_like_state(x))
+        states_fw, final_fw = self._run(x, self.cell._zeros_like_state(x))
+        reversed_states, final_bw = self._run(
+            torch.flip(x, dims=[1]), self.cell._zeros_like_state(x))
         states = torch.cat(
             [states_fw, torch.flip(reversed_states, dims=[1])], dim=-1)
         return states, torch.cat([final_fw, final_bw], dim=-1)
@@ -219,4 +291,7 @@ class EulerReservoir(nn.Module):
                 ) -> tuple[torch.Tensor, torch.Tensor]:
         if initial_state is None:
             initial_state = self.cell._zeros_like_state(x)
-        return _iterate(self.cell, x, initial_state)
+        # Euler always takes the general path: h' = h + epsilon * f(...).
+        return _iterate_general(
+            x, initial_state, self.cell.weight_hh, 1.0, self.cell.epsilon,
+            _ACT_IDS[self.cell.activation])
