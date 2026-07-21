@@ -348,11 +348,11 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             if self.requires_sequence:
                 X, y, sequence_ranges = concatenate_sequences(X, y)
                 self._input_to_node.fit(X)
-                self._node_to_node.fit(self._input_to_node.transform(X))
+                self._fit_node_to_node(X, backable)
             else:
                 validate_data(self, X, y, multi_output=True)
                 self._input_to_node.fit(X)
-                self._node_to_node.fit(self._input_to_node.transform(X))
+                self._fit_node_to_node(X, backable)
             self._build_torch_backend(torch.float64)
             self._use_torch = True
             ranges = sequence_ranges if self.requires_sequence else None
@@ -367,11 +367,11 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
         if self.requires_sequence:
             X, y, sequence_ranges = concatenate_sequences(X, y)
             self._input_to_node.fit(X)
-            self._node_to_node.fit(self._input_to_node.transform(X))
+            self._fit_node_to_node(X, backable)
         else:
             validate_data(self, X, y, multi_output=True)
             self._input_to_node.fit(X)
-            self._node_to_node.fit(self._input_to_node.transform(X))
+            self._fit_node_to_node(X, backable)
         if self._use_torch:
             self._build_torch_backend(torch.float64)
             if self.requires_sequence:
@@ -386,6 +386,25 @@ class ESNRegressor(RegressorMixin, MultiOutputMixin, BaseEstimator):
             return self._sequence_fit(X, y, sequence_ranges, n_jobs)
         else:
             return self.partial_fit(X, y, postpone_inverse=False)
+
+    def _fit_node_to_node(self, X: np.ndarray, backable: bool) -> None:
+        """Fit ``node_to_node`` given the already-fitted ``input_to_node``.
+
+        ``NodeToNode.fit`` reads only the *column count* of its argument (plus
+        ``hidden_layer_size`` + ``random_state``); on the torch-backable path
+        the reservoir recomputes the input map itself, so the full
+        ``input_to_node.transform(X)`` fed here would be computed and then
+        discarded. Pass a cheap shape-only zero array of the correct width
+        (``InputToNode.hidden_layer_size``) instead. On the numpy-fallback
+        path ``input_to_node`` may be an arbitrary estimator (e.g. a
+        ``FeatureUnion`` with a different width) whose transform is genuinely
+        used, so keep the real transform there.
+        """
+        if backable:
+            width = int(self._input_to_node.hidden_layer_size)
+            self._node_to_node.fit(np.zeros((X.shape[0], width)))
+        else:
+            self._node_to_node.fit(self._input_to_node.transform(X))
 
     def _build_torch_backend(self, dtype: torch.dtype) -> None:
         """Build the torch backend modules from the fitted blocks."""
@@ -1082,11 +1101,11 @@ class ESNClassifier(ClassifierMixin, ESNRegressor):
             X, y, sequence_ranges = concatenate_sequences(
                 X, y, sequence_to_value=self._sequence_to_value)
             self._input_to_node.fit(X)
-            self._node_to_node.fit(self._input_to_node.transform(X))
+            self._fit_node_to_node(X, backable)
         else:
             validate_data(self, X, y, multi_output=True)
             self._input_to_node.fit(X)
-            self._node_to_node.fit(self._input_to_node.transform(X))
+            self._fit_node_to_node(X, backable)
         self._encoder = LabelBinarizer().fit(y)
         y = self._encoder.transform(y)
         self._target_1d = (np.asarray(y).ndim == 1)
