@@ -123,3 +123,112 @@ def test_incremental_coef_not_fitted() -> None:
     reg = IncrementalRegression()
     assert reg.coef_.shape == ()
     assert reg.intercept_.size == 0
+
+
+# --- P3 parity: np.linalg.solve must match the legacy inv(A) @ rhs formula ---
+
+# Sizes: (n_samples, n_features, n_targets), incl. multi-target & single-target
+_P3_SIZES = [
+    (40, 8, 1),
+    (40, 8, 3),
+    (60, 12, 2),
+    (30, 5, 1),
+]
+
+
+def _reference_incremental_weights(batches, alpha, fit_intercept, postpone):
+    """Replicate IncrementalRegression.partial_fit using the LEGACY inv(A).
+
+    This is the frozen reference formula (explicit matrix inverse) that the
+    ``np.linalg.solve`` implementation must reproduce bit-tight. Covers both
+    the main solve and the incremental residual branch. ``normalize=False``.
+    """
+    K = None
+    xTy = None
+    w = None
+    for (X, y), pp in zip(batches, postpone):
+        if fit_intercept:
+            Xp = np.hstack((X, np.ones(shape=(X.shape[0], 1))))
+        else:
+            Xp = X
+        gram = np.matmul(Xp.T, Xp)
+        rhs = np.matmul(Xp.T, y)
+        K = gram if K is None else K + gram
+        xTy = rhs if xTy is None else xTy + rhs
+        if pp and w is None:
+            continue
+        A = K + alpha * np.identity(Xp.shape[1])
+        P = np.linalg.inv(A)
+        if w is None:
+            w = np.matmul(P, xTy)
+        else:
+            w = w + np.matmul(P, np.matmul(Xp.T, y - np.matmul(Xp, w)))
+    return w
+
+
+@pytest.mark.parametrize("fit_intercept", [True, False])
+@pytest.mark.parametrize("size", _P3_SIZES)
+def test_p3_solve_parity_main(fit_intercept, size) -> None:
+    """Single fit(): solve() output identical to inv(K + aI) @ xTy."""
+    n_samples, n_features, n_targets = size
+    rs = np.random.RandomState(hash(size) % (2 ** 31))
+    X = rs.normal(size=(n_samples, n_features))
+    y = rs.normal(size=(n_samples, n_targets))
+    alpha = 1e-3
+
+    reg = IncrementalRegression(
+        alpha=alpha, fit_intercept=fit_intercept).fit(X, y)
+
+    ref = _reference_incremental_weights(
+        [(X, y)], alpha, fit_intercept, [False])
+
+    assert np.allclose(
+        reg._output_weights, ref, atol=1e-12, rtol=1e-12)
+
+
+@pytest.mark.parametrize("fit_intercept", [True, False])
+@pytest.mark.parametrize("size", _P3_SIZES)
+def test_p3_solve_parity_residual_branch(fit_intercept, size) -> None:
+    """Multiple partial_fit() calls exercise the incremental residual path."""
+    n_samples, n_features, n_targets = size
+    rs = np.random.RandomState((hash(size) ^ 0x5bd1e995) % (2 ** 31))
+    X = rs.normal(size=(n_samples, n_features))
+    y = rs.normal(size=(n_samples, n_targets))
+    alpha = 1e-3
+
+    idx = np.array_split(np.arange(n_samples), 3)
+    batches = [(X[prt, :], y[prt, :]) for prt in idx]
+
+    reg = IncrementalRegression(alpha=alpha, fit_intercept=fit_intercept)
+    for i, (Xb, yb) in enumerate(batches):
+        reg.partial_fit(Xb, yb, partial_normalize=False, reset=(i == 0))
+
+    ref = _reference_incremental_weights(
+        batches, alpha, fit_intercept, [False] * len(batches))
+
+    assert np.allclose(
+        reg._output_weights, ref, atol=1e-12, rtol=1e-12)
+
+
+def test_p3_solve_parity_postpone_then_residual() -> None:
+    """postpone_inverse batches then non-postponed calls (both branches)."""
+    n_samples, n_features, n_targets = 60, 10, 2
+    rs = np.random.RandomState(7)
+    X = rs.normal(size=(n_samples, n_features))
+    y = rs.normal(size=(n_samples, n_targets))
+    alpha = 1e-3
+
+    idx = np.array_split(np.arange(n_samples), 4)
+    batches = [(X[prt, :], y[prt, :]) for prt in idx]
+    # first two batches postpone, last two trigger main solve then residual
+    postpone = [True, True, False, False]
+
+    reg = IncrementalRegression(alpha=alpha, fit_intercept=True)
+    for i, (Xb, yb) in enumerate(batches):
+        reg.partial_fit(Xb, yb, partial_normalize=False, reset=(i == 0),
+                        postpone_inverse=postpone[i])
+
+    ref = _reference_incremental_weights(batches, alpha, True, postpone)
+
+    assert np.allclose(
+        reg._output_weights, ref, atol=1e-12, rtol=1e-12)
