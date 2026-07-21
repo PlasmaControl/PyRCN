@@ -24,6 +24,15 @@ hard partial branches. Reports at `<scratchpad>/cov_missing.txt`/`cov.json`
 (before) and `cov_after.*`.
 
 ### Goal B — performance. Analysis DONE (4 read-only subagents). Implementing per approval.
+
+**Method (TDD) + strict acceptance gate for EVERY point below:** write the
+parity test first, then a before/after benchmark. Keep the implementation ONLY
+if the parity test passes (identical within ~1e-12, bit-exact where possible)
+AND a speed-up is actually measured. If EITHER fails (no measured speed-up, or
+parity fails), **discard/revert the change and leave that point OPEN here**
+(mark status). One change at a time, committed separately, full suite green.
+See memory `perf-work-tdd-parity`.
+
 Ranked in-scope findings (all numerically identical within ~1e-12 unless noted):
 - **P1 — APPROVED, IMPLEMENTING NOW: two-tier reservoir dispatch**
   (`nn/_reservoir.py`). Fast sub-case (`leakage==1.0` & tanh/relu, non-Euler) →
