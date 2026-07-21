@@ -59,9 +59,15 @@ Ranked in-scope findings (all numerically identical within ~1e-12 unless noted):
   guarantee ≤1e-12 for realistic small-`alpha` readouts, and the benefit is
   multi-target-only (single-target 1-D rhs can't use `cholesky_solve`). Left
   open; could revisit only if a looser readout-solve tolerance is accepted.
-- **P5** drop the wasted numpy `input_to_node.transform` fed to
-  `node_to_node.fit` (only `shape[1]` used) in `_esn.py`/`_elm.py` — ~10% of
-  single-series fit; `np.array_equal` verified.
+- **P5 — DONE (commit `d301f85`, local):** skip the discarded
+  `input_to_node.transform` fed to `node_to_node.fit` on the backable path
+  (pass a finite shape-only `np.zeros`); fallback keeps the real transform.
+  ELM unchanged (no node_to_node). Bit-identical (7 configs incl. fallback).
+  Speed-up scales with input dimensionality: negligible for univariate input
+  (transform is trivial there), ~1.3-1.6× on multi-feature inputs (in=100:
+  hidden=100 116→72ms). Never slower. (The subagent's initial 46%-on-univariate
+  figure was measurement noise; my controlled before/after showed the real
+  picture.)
 - **P6/P7/P8 — DONE (commit `d5f74c1`, local):** numpy block hot paths, all
   bit-identical (`np.array_equal` exact) + measured speed-up. P6 hoist
   `EulerNodeToNode`'s per-step `scaling·W + γ·I` rebuild → ~6.5× on the Euler
