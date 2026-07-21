@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
-
-import pytest
 from sklearn import datasets
 from sklearn.model_selection import GridSearchCV, KFold, RandomizedSearchCV
 from sklearn.svm import SVC
 
-from pyrcn.model_selection import SequentialSearchCV, SHGOSearchCV
+from pyrcn.model_selection import SequentialSearchCV
 
 
 def test_sequentialSearchCV_equivalence() -> None:
@@ -75,116 +72,3 @@ def test_sequentialSearchCV_norefit() -> None:
     assert np.isnan(ss.best_score_)
     assert ss.best_params_ == {}
     assert ss.best_index_ == 0
-
-
-def test_SHGOSearchCV_svc() -> None:
-    """Optimize an SVC with SHGO and refit on the full data."""
-    import numpy as np
-    import pandas as pd
-    from sklearn.base import BaseEstimator, clone
-    from sklearn.metrics import accuracy_score
-
-    iris = datasets.load_iris()
-    X = pd.DataFrame(iris.data[:, [0, 2]], columns=['a', 'b'])
-    y = iris.target
-    cv = KFold(2, shuffle=True, random_state=42)
-    svm = SVC(random_state=42)
-
-    def func(params: Iterable, param_names: Iterable,
-             base_estimator: BaseEstimator, X: pd.DataFrame,
-             y: np.ndarray, train: list, test: list) -> float:
-        est = clone(base_estimator)
-        for name, param in zip(param_names, params):
-            est.set_params(**{name: param})
-        scores = []
-        for tr, te in zip(train, test):
-            fitted = clone(est).fit(X.iloc[tr], y[tr])
-            y_pred = fitted.predict(X.iloc[te])
-            scores.append(-accuracy_score(y[te], y_pred))
-        return float(np.mean(scores))
-
-    params = {'C': (0.5, 2.0)}
-    search = SHGOSearchCV(estimator=svm, func=func, params=params,
-                          cv=cv).fit(X, y)
-    assert isinstance(search.best_params_, dict)
-    assert 'C' in search.best_params_
-    assert search.best_estimator_ is not None
-    assert search.n_splits_ == 2
-    assert isinstance(search.refit_time_, float)
-    assert hasattr(search, 'feature_names_in_')
-    y_pred = search.predict(X)
-    assert accuracy_score(y, y_pred) >= 0.0
-
-
-def test_SHGOSearchCV_unsupervised() -> None:
-    """SHGO optimizes an unsupervised estimator with y=None."""
-    import numpy as np
-    from sklearn.base import BaseEstimator, clone
-    from sklearn.neighbors import KernelDensity
-
-    iris = datasets.load_iris()
-    X = iris.data[:, [0, 2]]
-    cv = KFold(2, shuffle=True, random_state=42)
-    kde = KernelDensity()
-
-    def func(params: Iterable, param_names: Iterable,
-             base_estimator: BaseEstimator, X: np.ndarray,
-             y: np.ndarray, train: list, test: list) -> float:
-        est = clone(base_estimator)
-        for name, param in zip(param_names, params):
-            est.set_params(**{name: param})
-        scores = []
-        for tr, te in zip(train, test):
-            fitted = clone(est).fit(X[tr])
-            scores.append(-fitted.score(X[te]))
-        return float(np.mean(scores))
-
-    params = {'bandwidth': (0.2, 1.0)}
-    search = SHGOSearchCV(estimator=kde, func=func, params=params,
-                          cv=cv).fit(X, None)
-    assert 'bandwidth' in search.best_params_
-    assert search.best_estimator_ is not None
-    assert search.n_splits_ == 2
-
-
-@pytest.mark.skip(reason="no way of currently testing this")
-def test_SHGOSearchCV() -> None:
-    """Test the SHGO search."""
-    import numpy as np
-    from sklearn.base import BaseEstimator, clone
-    from sklearn.metrics import accuracy_score
-    from sklearn.model_selection import StratifiedKFold
-    iris = datasets.load_iris()
-    X = iris.data[:, [0, 2]]
-    y = iris.target
-    cv = StratifiedKFold(n_splits=5)
-    svm = SVC(random_state=42)
-
-    def func(params: Iterable, param_names: Iterable,
-             base_estimator: BaseEstimator, X: np.ndarray, y: np.ndarray,
-             train: np.ndarray, test: np.ndarray) -> float:
-        estimator = base_estimator
-        for name, param in zip(param_names, params):
-            estimator.set_params(**{name: param})
-        mse = []
-        for tr, te in zip(train, test):
-            est = clone(estimator).fit(X[tr], y[tr])
-            y_pred = est.predict(X[te])
-            mse.append(-accuracy_score(y[te], y_pred))
-        return np.mean(mse)
-
-    params = {'max_iter': (1, 1000)}
-
-    def fun(x: tuple) -> float:
-        return max([x[0] - int(x[0])])
-    constraints = {'type': 'eq', 'fun': fun}
-    search = SHGOSearchCV(
-        estimator=svm, func=func, params=params, cv=cv,
-        constraints=constraints).fit(X, y)
-    y_pred = search.predict(X)
-    print(accuracy_score(y_true=y, y_pred=svm.fit(X, y).predict(X)))
-    print(accuracy_score(y_true=y, y_pred=y_pred))
-
-
-if __name__ == '__main__':
-    test_SHGOSearchCV()

@@ -227,10 +227,15 @@ class Coates(TransformerMixin, BaseEstimator):
             int(X.shape[-1] / self.clusterer.cluster_centers_.shape[0]),
             self.clusterer.cluster_centers_.shape[0]))
 
+        inv_features = self._inverse_feature_mapping(
+            patch_array, self.clusterer.cluster_centers_)
+        original_shape = inv_features.shape
+        inv_features_2d = inv_features.reshape(-1, original_shape[-1])
+        inv_preprocessed_2d = self._inverse_preprocessing(inv_features_2d)
+        inv_preprocessed = inv_preprocessed_2d.reshape(original_shape)
+
         patches = Coates._reshape_arrays_to_images(
-            self._inverse_preprocessing(self._inverse_feature_mapping(
-                patch_array, self.clusterer.cluster_centers_)),
-            image_size=self.patch_size)
+            inv_preprocessed, image_size=self.patch_size)
 
         return patches
 
@@ -517,12 +522,12 @@ class Coates(TransformerMixin, BaseEstimator):
         y : ndarray of shape (n_samples, n_features)
         """
         X_preprocessed = X
-        if self.normalize:
-            if self._normalizer is None:
-                raise NotFittedError('normalizer has not been fitted!')
-            X_preprocessed = self._normalizer.inverse_transform(X_preprocessed)
         if self.whiten:
             if self._whitener is None:
                 raise NotFittedError('whitener has not been fitted!')
             X_preprocessed = self._whitener.inverse_transform(X_preprocessed)
+        if self.normalize:
+            if self._normalizer is None:
+                raise NotFittedError('normalizer has not been fitted!')
+            X_preprocessed = self._normalizer.inverse_transform(X_preprocessed)
         return X_preprocessed

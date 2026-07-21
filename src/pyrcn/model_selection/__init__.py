@@ -6,6 +6,6 @@
 
 from __future__ import annotations
 
-from ._search import SequentialSearchCV, SHGOSearchCV
+from ._search import SequentialSearchCV
 
-__all__ = ('SequentialSearchCV', 'SHGOSearchCV')
+__all__ = ('SequentialSearchCV',)

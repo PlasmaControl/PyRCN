@@ -512,7 +512,7 @@ class BatchIntrinsicPlasticity(InputToNode):
         v = safe_sparse_dot(np.linalg.pinv(phi), t)
 
         np.multiply(self._input_weights, v[:, 0], out=self._input_weights)
-        self._bias_weights += v[:, 1]
+        self._bias_weights += v[:, 1:2]
         return self
 
     def _fit_dresden(self, X: np.ndarray, y: None = None) -> InputToNode:

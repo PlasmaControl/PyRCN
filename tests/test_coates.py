@@ -160,6 +160,44 @@ def test_inverse_transform() -> None:
     assert patches.shape == (X_digits.shape[0], 1, 3, 3)
 
 
+@pytest.mark.parametrize('normalize, whiten', [
+    (False, False), (True, False), (False, True), (True, True)])
+def test_inverse_transform_with_preprocessing(normalize: bool,
+                                              whiten: bool) -> None:
+    # Regression test for bug #4: inverse_transform fed a 3-D array into the
+    # sklearn inverse_transform calls (which require <=2-D), and
+    # _inverse_preprocessing reversed the forward operations in the wrong
+    # order. Both must now work for every normalize/whiten combination.
+    trf = Coates(
+        image_size=(8, 8),
+        patch_size=(3, 3),
+        stride_size=(3, 3),
+        n_patches=200,
+        normalize=normalize,
+        whiten=whiten,
+        pooling_func='max',
+        pooling_size=(2, 2),
+        clusterer=KMeans(n_clusters=20, random_state=42),
+        random_state=42)
+    trf.fit(X_digits)
+    features = trf.transform(X_digits)
+    patches = trf.inverse_transform(features)
+    assert patches.shape == (X_digits.shape[0], 1, 3, 3)
+
+
+@pytest.mark.parametrize('normalize, whiten', [
+    (False, False), (True, False), (False, True), (True, True)])
+def test_preprocessing_roundtrip_allclose(normalize: bool,
+                                          whiten: bool) -> None:
+    # Bug #4: a forward preprocessing pass followed by its inverse must
+    # recover the original 2-D patch array (correct inverse order).
+    trf = Coates(normalize=normalize, whiten=whiten)
+    rs = np.random.RandomState(42)
+    P = rs.rand(50, 9)
+    restored = trf._inverse_preprocessing(trf._preprocessing(P))
+    assert np.allclose(restored, P, atol=1e-8)
+
+
 def test_inverse_preprocessing_roundtrip() -> None:
     trf = Coates(normalize=True, whiten=True)
     rs = np.random.RandomState(42)

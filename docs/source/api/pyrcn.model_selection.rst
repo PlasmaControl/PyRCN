@@ -12,4 +12,3 @@ pyrcn.model_selection
    :nosignatures:
 
    SequentialSearchCV
-   SHGOSearchCV
