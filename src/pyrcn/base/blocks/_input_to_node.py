@@ -1,6 +1,6 @@
 ﻿"""The :mod:`input_to_node` contains InputToNode classes and derivatives."""
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
+# Authors: Peter Steiner <peter.steiner@princeton.edu>
 # License: BSD 3 clause
 
 from __future__ import annotations

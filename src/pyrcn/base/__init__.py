@@ -12,7 +12,7 @@ References
 
 from __future__ import annotations
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>,
+# Authors: Peter Steiner <peter.steiner@princeton.edu>,
 # License: BSD 3 clause
 from ._activations import (ACTIVATIONS, ACTIVATIONS_INVERSE,
                            ACTIVATIONS_INVERSE_BOUNDS)

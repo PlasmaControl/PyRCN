@@ -1,6 +1,6 @@
 """The :mod:`pyrcn.linear_model` module has incremental linear regression."""
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
+# Authors: Peter Steiner <peter.steiner@princeton.edu>
 # License: BSD 3 clause
 
 from __future__ import annotations

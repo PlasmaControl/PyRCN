@@ -1,6 +1,6 @@
 """The :mod:`echo_state_network` contains an ESNRegressor and ESNClassifier."""
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
+# Authors: Peter Steiner <peter.steiner@princeton.edu>
 # License: BSD 3 clause
 
 from __future__ import annotations

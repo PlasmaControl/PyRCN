@@ -1,6 +1,6 @@
 """The :mod:`pyrcn.util` has utilities for running, testing and analyzing."""
 
-# Author: Peter Steiner <peter.steiner@tu-dresden.de>,
+# Author: Peter Steiner <peter.steiner@princeton.edu>,
 # Michael Schindler <michael.schindler@maschindler.de>
 # License: BSD 3 clause
 

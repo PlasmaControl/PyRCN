@@ -22,7 +22,7 @@ Python overhead):
   the identical recurrence ``h' = a*h + b*f(x + h @ weight_hh.T)``.
 """
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
+# Authors: Peter Steiner <peter.steiner@princeton.edu>
 # License: BSD 3 clause
 
 from __future__ import annotations

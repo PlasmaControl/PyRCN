@@ -14,7 +14,7 @@ leaky/Euler recurrence (reservoir) qualify, so subclasses with bespoke
 transforms (e.g. ``BatchIntrinsicPlasticity``) correctly take the fallback.
 """
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
+# Authors: Peter Steiner <peter.steiner@princeton.edu>
 # License: BSD 3 clause
 
 from __future__ import annotations

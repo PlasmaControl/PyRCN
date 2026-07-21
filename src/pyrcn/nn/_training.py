@@ -8,7 +8,7 @@ regularization, so with a fixed reservoir this converges to the closed-form
 :class:`~pyrcn.nn.IncrementalRidge` solution.
 """
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
+# Authors: Peter Steiner <peter.steiner@princeton.edu>
 # License: BSD 3 clause
 
 from __future__ import annotations

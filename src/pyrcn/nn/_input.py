@@ -7,7 +7,7 @@ into ``weight`` and the shifts/``bias_scaling`` into ``bias``, so ``forward``
 reduces to ``activation(super().forward(x))``.
 """
 
-# Authors: Peter Steiner <peter.steiner@tu-dresden.de>
+# Authors: Peter Steiner <peter.steiner@princeton.edu>
 # License: BSD 3 clause
 
 from __future__ import annotations
