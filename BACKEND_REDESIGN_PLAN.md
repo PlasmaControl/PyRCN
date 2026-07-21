@@ -62,12 +62,12 @@ Ranked in-scope findings (all numerically identical within ~1e-12 unless noted):
 - **P5** drop the wasted numpy `input_to_node.transform` fed to
   `node_to_node.fit` (only `shape[1]` used) in `_esn.py`/`_elm.py` — ~10% of
   single-series fit; `np.array_equal` verified.
-- **P6** hoist `EulerNodeToNode`'s per-step `scaling·W + γ·I` rebuild
-  (`base/blocks/_node_to_node.py`) — ~9× on the Euler path, bit-identical.
-- **P7** drop `InputToNode`'s `np.ones` bias temp
-  (`base/blocks/_input_to_node.py`) — bit-identical.
-- **P8** `np.dot` instead of `safe_sparse_dot` for dense (`_node_to_node.py`) —
-  ~4%, bit-identical.
+- **P6/P7/P8 — DONE (commit `d5f74c1`, local):** numpy block hot paths, all
+  bit-identical (`np.array_equal` exact) + measured speed-up. P6 hoist
+  `EulerNodeToNode`'s per-step `scaling·W + γ·I` rebuild → ~6.5× on the Euler
+  transform; P7 drop `InputToNode`'s `np.ones` bias temp → ~14%; P8 dense
+  `np.dot` vs `safe_sparse_dot` → ~5% (interleaved A/B). Parity fixtures under
+  `tests/fixtures/` (gitignore exception added for `*.npz`).
 - **P9** (medium risk) de-dup `concatenate_sequences` conversions
   (`util/_util.py`) — needs before/after array-equality gating.
 - **P10** (larger) batched reservoir with `lengths`-masking — avoids ~37%
