@@ -66,7 +66,7 @@ def mackey_glass(n_timesteps: int, n_future: int = 1, tau: int = 17,
     delayed differential equation:
 
     .. math::
-        \\frac{dx}{dt} = \\beta\\frac{x(t-\\tau)}{1+x(t-\\tau)^n}-\\gamma x(t)
+        \frac{dx}{dt} = \beta\frac{x(t-\tau)}{1+x(t-\tau)^n}-\gamma x(t)
 
     Parameters
     ----------
@@ -75,12 +75,12 @@ def mackey_glass(n_timesteps: int, n_future: int = 1, tau: int = 17,
         n_future : int, default = 1
             distance between input and target samples.
         tau : int, default = 17
-            Time delay :math:`\\tau` of the Mackey-Glass equation. Other
+            Time delay :math:`\tau` of the Mackey-Glass equation. Other
             values can strongly change the chaotic behaviour of the timeseries.
         beta : float, default = 0.2
-            :math:`\\beta` parameter of the equation.
+            :math:`\beta` parameter of the equation.
         gamma : float, default = 0.1
-            :math:`\\gamma` parameter of the equation.
+            :math:`\gamma` parameter of the equation.
         n : int, default = 10
             :math:`n` parameter of the equation.
         x_0 : float, default = 1.2
@@ -151,9 +151,11 @@ def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
     equation:
 
     .. math::
-        \\frac{dx}{dt} = \\sigma(y - x)
-        \\frac{dy}{dt} = x(\\rho - z) - y
-        \\frac{dz}{dt} = xy - \\beta z
+        \begin{aligned}
+        \frac{dx}{dt} &= \sigma(y - x) \\
+        \frac{dy}{dt} &= x(\rho - z) - y \\
+        \frac{dz}{dt} &= xy - \beta z
+        \end{aligned}
 
     Parameters
     ----------
@@ -162,11 +164,11 @@ def lorenz(n_timesteps: int, n_future: int = 1, sigma: float = 10.,
         n_future : int, default = 1
             distance between input and target samples.
         sigma : float, default = 10
-            :math:`\\sigma` parameter of the system.
+            :math:`\sigma` parameter of the system.
         rho : float, default = 28.
-            :math:`\\rho` parameter of the equation.
-        beta : float, default = :math: `\\frac{8}{3}`
-            :math:`\\beta` parameter of the equation.
+            :math:`\rho` parameter of the equation.
+        beta : float, default = :math:`\frac{8}{3}`
+            :math:`\beta` parameter of the equation.
         x_0 : Union[List, np.ndarray], default = [1.0, 1.0, 1.0]
             Initial condition of the timeseries.
         h : float, default = 0.03

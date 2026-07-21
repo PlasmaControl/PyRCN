@@ -117,9 +117,18 @@ class LeakyESNCell(_ReservoirCell):
 
 
 class EulerESNCell(_ReservoirCell):
-    """Euler (EuSN) reservoir step.
+    """Euler State Network (EuSN) reservoir step [1]_.
 
     ``h' = h + epsilon * f(x + h @ (recurrent_scaling * W + gamma * I))``
+
+    Forward Euler discretization with an antisymmetric recurrent matrix yields
+    stable, non-dissipative dynamics near the edge of stability.
+
+    References
+    ----------
+    .. [1] C. Gallicchio, "Euler State Networks: Non-dissipative Reservoir
+       Computing", Neurocomputing, vol. 579, p. 127411, 2024,
+       :doi:`10.1016/j.neucom.2024.127411`.
     """
 
     def __init__(self, hidden_size: int, recurrent_scaling: float = 1.0,
@@ -261,10 +270,16 @@ class Reservoir(nn.Module):
 
 
 class EulerReservoir(nn.Module):
-    """Run an :class:`EulerESNCell` over batched sequences (unidirectional).
+    """Euler State Network (EuSN) reservoir over batched sequences [1]_.
 
-    ``forward`` matches :class:`Reservoir` (``(states, final_state)``);
-    ``EulerNodeToNode`` is single-direction.
+    Runs an :class:`EulerESNCell` (unidirectional); ``forward`` matches
+    :class:`Reservoir` (``(states, final_state)``).
+
+    References
+    ----------
+    .. [1] C. Gallicchio, "Euler State Networks: Non-dissipative Reservoir
+       Computing", Neurocomputing, vol. 579, p. 127411, 2024,
+       :doi:`10.1016/j.neucom.2024.127411`.
     """
 
     def __init__(self, hidden_size: int, recurrent_scaling: float = 1.0,

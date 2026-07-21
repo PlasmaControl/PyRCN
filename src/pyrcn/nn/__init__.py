@@ -1,7 +1,8 @@
 """PyTorch building blocks for reservoir computing (``pyrcn.nn``).
 
-The tensor-level, ``torch.nn``-style components that power PyRCN's
-scikit-learn estimators, usable directly for pure-PyTorch workflows:
+The tensor-level, ``torch.nn``-style components that power PyRCN's Echo State
+Network [1]_ scikit-learn estimators, usable directly for pure-PyTorch
+workflows:
 
 * reservoir layers -- :class:`Reservoir`, :class:`EulerReservoir` -- and their
   single-step cells :class:`LeakyESNCell`, :class:`EulerESNCell`;
@@ -10,6 +11,12 @@ scikit-learn estimators, usable directly for pure-PyTorch workflows:
 
 Weight initializers (spectral-radius normalization, sparse fan-in, the
 minimum-complexity topologies, ...) live in :mod:`pyrcn.nn.init`.
+
+References
+----------
+.. [1] H. Jaeger, "The 'echo state' approach to analysing and training
+   recurrent neural networks", GMD Report 148, German National Research Center
+   for Information Technology, 2001.
 
 Examples
 --------
