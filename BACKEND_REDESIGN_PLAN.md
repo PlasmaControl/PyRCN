@@ -102,28 +102,39 @@ discarded transform, ~1.3-1.6× on multi-feature input), P6 (Euler hoist
 out-of-scope items. Every kept change has a committed parity regression test
 and an independently re-verified benchmark; full suite green throughout.
 
-### Bugs found during the coverage push (PRE-EXISTING; NOT fixed — a fix changes behavior, needs separate go-ahead)
-- **`postprocessing/_normal_distribution.py`:** `fit` calls
-  `scipy.stats.norm.fit(X=…, y=…)`; those kwargs do not exist → **always raises
-  TypeError**, estimator unusable. (Blocks 2 coverage lines.)
-- **`metrics/_classification.py`:** `log_loss` forwards `eps=` (removed in
-  sklearn ≥1.5) → TypeError; `brier_score_loss` passes `y_prob=` (renamed to
-  `y_proba`) → TypeError. Both wrappers broken; coverage tests currently assert
-  the TypeError.
-- **`preprocessing/_coates.py`:** `inverse_transform` passes a 3-D array to
-  StandardScaler/PCA (require ≤2-D) → breaks when `normalize=True`/`whiten=True`;
-  and `_inverse_preprocessing` applies un-normalize/un-whiten in the wrong order.
-- **`linear_model/_incremental_regression.py:199`:** `normalize=True` via
-  `partial_fit` is a no-op (the scaler-transformed result is discarded, not
-  reassigned).
-- **`base/blocks/_input_to_node.py:~494`:** `if bound_low == np.inf` is almost
-  certainly meant to be `-np.inf` (dead code as written; pragma'd).
-- **`util/_util.py`:** `concatenate_sequences` raises on a ragged plain `list`
-  under NumPy 2 (`np.asarray` inhomogeneous shape); only object-arrays /
-  equal-length lists work.
-- **`model_selection/_search.py`:** `SHGOSearchCV.fit` iterates the raw
-  `self.cv` attribute instead of the checked splitter → crashes on `cv=None` /
-  `cv=int`.
+### Bugs found during the coverage push
+
+**FIXED (commit `0584542`, local, TDD — test fails before / passes after):**
+- **#1 `postprocessing/_normal_distribution.py`:** `fit` now
+  `self._transformer.fit(np.ravel(X))` (scipy `norm.fit` positional → (loc,
+  scale)). Was always TypeError.
+- **#2 `metrics.log_loss`:** stop forwarding `eps=` (removed in sklearn 1.5);
+  param kept but ignored. Was always TypeError.
+- **#3 `metrics.brier_score_loss`:** forward `y_proba=` (renamed in sklearn
+  1.5); pyrcn param stays `y_prob`. Was always TypeError.
+- **#6 `base/blocks/_input_to_node.py`:** `bound_low == np.inf` → `== -np.inf`
+  (identity's inverse has a -inf lower bound → was producing non-finite
+  weights). Pragma removed.
+
+**STILL OPEN (pre-existing; fix changes behavior, needs go-ahead):**
+- **#4 `preprocessing/_coates.py`:** `inverse_transform` passes a 3-D array to
+  StandardScaler/PCA (≤2-D) → breaks with `normalize`/`whiten`; and
+  `_inverse_preprocessing` applies un-normalize/un-whiten in the wrong order.
+- **#5 `linear_model/_incremental_regression.py:199`:** `normalize=True` via
+  `partial_fit` is a silent no-op (scaler result discarded). *(silent-wrong-
+  result — highest priority of the remaining.)*
+- **#7 `model_selection/_search.py`:** `SHGOSearchCV.fit` iterates the raw
+  `self.cv` instead of the checked splitter → crashes on `cv=None` / `cv=int`.
+- **#8 `util/_util.py`:** `concatenate_sequences` raises on a ragged plain
+  `list` under NumPy 2; only object-arrays / equal-length lists work.
+- **#9 `base/blocks/_input_to_node.py` (found fixing #6):** BIP `neumann`
+  algorithm is broken for `hidden_layer_size > 1` for EVERY activation:
+  `_bias_weights` is shape `(H,1)` but the neumann update does `+= v[:,1]`
+  (shape `(H,)`) → `ValueError: non-broadcastable output operand`. (The #6 test
+  uses `hidden_layer_size=1` to sidestep this.)
+- **Minor:** after #2/#3, sklearn ≥1.9 now also deprecates `y_pred`→`y_proba`
+  in `log_loss`, so pyrcn's `log_loss` emits a non-fatal `FutureWarning`
+  (correctness unaffected). Follow-up if desired.
 
 ## Status summary
 
