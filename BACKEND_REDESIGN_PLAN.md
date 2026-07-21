@@ -145,10 +145,18 @@ and an independently re-verified benchmark; full suite green throughout.
 **ALL NUMBERED BUGS (#1-#9) RESOLVED.** (#2/#3 also subsumed by the metrics
 rework; #7 resolved by deleting SHGOSearchCV.)
 
-**IN PROGRESS:**
-- **`pyrcn.metrics` docs** (green-lit): rebuild to catch warnings from the
-  sklearn-inherited docstrings; add a one-paragraph note that the metrics wrap
-  sklearn and also accept PyRCN sequence inputs.
+**DONE (metrics docs, commit `2b8baa3`):** the sklearn-inherited docstrings
+introduced 24 `ref.footnote` warnings + 35 doctest failures (sklearn's own
+`Examples`). Fixed in `conf.py`: suppress `ref.footnote`, register
+`:doi:`/`:arxiv:` via `sphinx.ext.extlinks`, and `doctest_test_doctest_blocks=""`
+(only our explicit `.. doctest::` run). Converted the `pyrcn.nn` example to a
+directive so it stays doctest-verified; added the sequence-support note to the
+`pyrcn.metrics` module docstring. Docs build 0 warnings; doctests pass.
+
+**Author email updated (commit `0db6804`):** `peter.steiner@tu-dresden.de` →
+`peter.steiner@princeton.edu` across all 39 source `# Authors:` headers
+(comment-only). NOT changed: the `@pyrcn.net` contact address in
+docs/pyproject, and the institutional "TU Dresden" copyright.
 - **Minor:** sklearn ≥1.9 emits a non-fatal `FutureWarning` about
   `y_pred`→`y_proba` in `log_loss`. The metrics rework (`fdae078`) mirrors
   sklearn's signature, so this is sklearn's own deprecation surfacing; harmless.
