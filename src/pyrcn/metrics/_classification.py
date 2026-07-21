@@ -1037,9 +1037,8 @@ def log_loss(y_true: np.ndarray, y_pred: np.ndarray, *, eps: float = 1e-15,
         ``y_pred.shape = (n_samples,)`` the probabilities provided are
         assumed to be that of the positive class. The labels in ``y_pred``
         are assumed to be ordered alphabetically.
-    eps : float, default=1e-15
-        Log loss is undefined for p=0 or p=1, so probabilities are clipped to
-        max(eps, min(1 - eps, p)).
+    eps : deprecated and ignored. Removed in scikit-learn 1.5; kept only for
+        backward compatibility and has no effect.
     normalize : bool, default=True
         If true, return the mean loss per sample. Otherwise, return the sum
         of the per-sample losses.
@@ -1066,7 +1065,7 @@ def log_loss(y_true: np.ndarray, y_pred: np.ndarray, *, eps: float = 1e-15,
     else:
         check_consistent_length(y_true, y_pred)
     return sklearn_metrics.log_loss(
-        y_true=y_true, y_pred=y_pred, eps=eps, normalize=normalize,
+        y_true=y_true, y_pred=y_pred, normalize=normalize,
         sample_weight=sample_weight, labels=labels)
 
 
@@ -1164,5 +1163,5 @@ def brier_score_loss(y_true: np.ndarray, y_prob: np.ndarray, *,
     else:
         check_consistent_length(y_true, y_prob)
     return sklearn_metrics.brier_score_loss(
-        y_true=y_true, y_prob=y_prob, sample_weight=sample_weight,
+        y_true=y_true, y_proba=y_prob, sample_weight=sample_weight,
         pos_label=pos_label)

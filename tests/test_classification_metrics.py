@@ -397,24 +397,38 @@ def test_hinge_loss() -> None:
 
 
 def test_log_loss() -> None:
-    # log_loss forwards the removed ``eps`` argument to scikit-learn>=1.5,
-    # which raises a TypeError; the sequence-handling branches are still
-    # exercised before the failing call.
-    with pytest.raises(TypeError):
+    # ``eps`` was removed in scikit-learn>=1.5; pyrcn no longer forwards it,
+    # so log_loss now returns the same value as scikit-learn.
+    np.testing.assert_almost_equal(
         pyrcn.metrics.log_loss(
             y_true=y_true_bin, y_pred=y_prob_bin,
-            sample_weight=sample_weight)
-    with pytest.raises(TypeError):
-        pyrcn.metrics.log_loss(y_true=y_true_bin, y_pred=y_prob_bin)
+            sample_weight=sample_weight),
+        sklearn.metrics.log_loss(
+            y_true=np.concatenate(y_true_bin),
+            y_pred=np.concatenate(y_prob_bin),
+            sample_weight=np.concatenate(sample_weight)))
+    np.testing.assert_almost_equal(
+        pyrcn.metrics.log_loss(y_true=y_true_bin, y_pred=y_prob_bin),
+        sklearn.metrics.log_loss(
+            y_true=np.concatenate(y_true_bin),
+            y_pred=np.concatenate(y_prob_bin)))
+    # Passing the deprecated ``eps`` argument must be ignored, not raise.
+    result = pyrcn.metrics.log_loss(
+        y_true=y_true_bin, y_pred=y_prob_bin, eps=1e-10)
+    assert isinstance(result, float)
 
 
 def test_brier_score_loss() -> None:
-    # brier_score_loss forwards ``y_prob``, renamed to ``y_proba`` in
-    # scikit-learn>=1.5, which raises a TypeError; the sequence-handling
-    # branches are still exercised before the failing call.
-    with pytest.raises(TypeError):
+    # scikit-learn>=1.5 renamed ``y_prob`` to ``y_proba``; pyrcn now forwards
+    # the new name, so brier_score_loss returns the same value as sklearn.
+    np.testing.assert_almost_equal(
         pyrcn.metrics.brier_score_loss(
             y_true=y_true_bin, y_prob=y_prob_bin,
-            sample_weight=sample_weight)
-    with pytest.raises(TypeError):
-        pyrcn.metrics.brier_score_loss(y_true=y_true_bin, y_prob=y_prob_bin)
+            sample_weight=sample_weight),
+        sklearn.metrics.brier_score_loss(
+            y_true=np.concatenate(y_true_bin),
+            y_proba=np.concatenate(y_prob_bin),
+            sample_weight=np.concatenate(sample_weight)))
+    result = pyrcn.metrics.brier_score_loss(
+        y_true=y_true_bin, y_prob=y_prob_bin)
+    assert isinstance(result, float)

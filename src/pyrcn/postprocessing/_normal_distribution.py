@@ -45,7 +45,7 @@ class NormalDistribution(TransformerMixin, BaseEstimator):
         -------
         self : returns a trained NormalDistribution.
         """
-        self._mean, self._std = self._transformer.fit(X=X, y=y)
+        self._mean, self._std = self._transformer.fit(np.ravel(X))
         return self
 
     def transform(self, X: np.ndarray, y: None = None) -> np.ndarray:

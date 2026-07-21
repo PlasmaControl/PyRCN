@@ -490,10 +490,10 @@ class BatchIntrinsicPlasticity(InputToNode):
                 bound_high = ACTIVATIONS_INVERSE_BOUNDS[
                     self.input_activation][1]
 
-            if bound_low == np.inf:
-                # No activation has a +inf lower bound (identity uses
-                # -inf), so this rescale branch is never taken.
-                bound_low = t_min  # pragma: no cover
+            if bound_low == -np.inf:
+                # identity's inverse has a -inf lower bound; clamp to the
+                # empirical min, mirroring the +inf upper-bound case.
+                bound_low = t_min
 
             if bound_high == np.inf:
                 bound_high = t_max

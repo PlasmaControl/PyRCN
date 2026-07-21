@@ -145,6 +145,24 @@ def test_bip_run_neumann() -> None:
     i2n.transform(X.reshape(-1, 1))
 
 
+def test_bip_neumann_identity_finite_weights() -> None:
+    # Regression test for the ``identity`` inverse bound bug: its inverse has
+    # a -inf lower bound, so before the fix ``bound_low`` stayed -inf and the
+    # rescale produced non-finite input weights. ``hidden_layer_size=1`` is
+    # used because the neumann bias update is broadcasting-incompatible with
+    # hidden_layer_size>1 (an unrelated issue), which would mask this one.
+    print('\ntest_bip_neumann_identity_finite_weights()')
+    rs = np.random.RandomState(42)
+    X = rs.normal(size=(100, 1))
+    i2n = BatchIntrinsicPlasticity(
+        hidden_layer_size=1, input_activation='identity',
+        distribution='uniform', algorithm='neumann', random_state=42)
+    i2n.fit(X)
+    W = i2n._input_weights
+    W = W.toarray() if hasattr(W, "toarray") else np.asarray(W)
+    assert np.all(np.isfinite(W))
+
+
 def test_bip_invalid_params() -> None:
     print('\ntest_bip_invalid_params()')
     rs = np.random.RandomState(42)
