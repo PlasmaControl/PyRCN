@@ -179,6 +179,22 @@ and an independently re-verified benchmark; full suite green throughout.
 - Audio examples (`f0_extraction`, `multipitch_tracking`) remain
   non-functional: dataset loaders (`fetch_ptdb_tug_dataset`,
   `fetch_maps_piano_dataset`) intentionally not restored.
+- **Rework the whole `pyrcn.metrics` module (design task, not just bugs).**
+  It is currently ~30 hand-written wrappers, each heavily engineered to make an
+  sklearn metric accept PyRCN's sequential (object-array) data: detect
+  sequence vs non-sequence, concatenate, then forward to sklearn. This is
+  brittle and over-fitted: (a) it duplicates sklearn's entire signature surface
+  and drifts with sklearn versions (the root cause of bugs #2/#3 —
+  `eps`/`y_prob`), needing per-function maintenance; (b) it forces
+  sequence-shaped input and raises `TypeError` on a plain array / a single
+  sequence element. Replace it with ONE flexible, intelligent adapter: a single
+  generic layer that normalizes sequence vs non-sequence input once (reusing
+  the `check_sequences` canonicalization) and delegates to ANY sklearn metric
+  or scorer by passthrough — so metrics work seamlessly on both plain arrays
+  and sequences with no per-metric code and no signature drift. Prefer wrapping
+  `sklearn.metrics.get_scorer` / `make_scorer` (or a thin `functools.wraps`
+  passthrough over `sklearn.metrics`) rather than re-declaring each function.
+  Do TDD + keep results identical for the currently-working sequence cases.
 
 ## Goal
 Keep the **frontend** (the scikit-learn-compatible API) unchanged; replace the
