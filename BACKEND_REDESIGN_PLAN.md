@@ -116,25 +116,34 @@ and an independently re-verified benchmark; full suite green throughout.
   (identity's inverse has a -inf lower bound → was producing non-finite
   weights). Pragma removed.
 
-**STILL OPEN (pre-existing; fix changes behavior, needs go-ahead):**
-- **#4 `preprocessing/_coates.py`:** `inverse_transform` passes a 3-D array to
-  StandardScaler/PCA (≤2-D) → breaks with `normalize`/`whiten`; and
-  `_inverse_preprocessing` applies un-normalize/un-whiten in the wrong order.
-- **#5 `linear_model/_incremental_regression.py:199`:** `normalize=True` via
-  `partial_fit` is a silent no-op (scaler result discarded). *(silent-wrong-
-  result — highest priority of the remaining.)*
-- **#7 `model_selection/_search.py`:** `SHGOSearchCV.fit` iterates the raw
-  `self.cv` instead of the checked splitter → crashes on `cv=None` / `cv=int`.
+**ALSO FIXED / RESOLVED (commit `bd88532`, local):**
+- **#4 `preprocessing/_coates.py`:** `inverse_transform` reshapes 3-D→2-D for
+  the StandardScaler/PCA inverse calls; `_inverse_preprocessing` reversed to
+  un-whiten→un-normalize. Round-trip + no-crash tests for all normalize/whiten
+  combos.
+- **#7 → RESOLVED by deletion:** `SHGOSearchCV` removed entirely (class +
+  export + `__all__` + docs autosummary + tests). Not required anymore;
+  `SequentialSearchCV` kept.
+- **#9 `base/blocks/_input_to_node.py`:** BIP `neumann` `+= v[:,1]` → `v[:,1:2]`
+  (`(H,1)` column) — was `ValueError` for `hidden_layer_size>1` every
+  activation. Tested at H=10.
+
+**IN PROGRESS:**
+- **#5 `linear_model/_incremental_regression.py`:** decision = **remove
+  `normalize` entirely** (it was a total no-op, and a real fix would need a
+  redesign — normalizes the intercept column, `predict` refits the scaler on
+  test data, incremental normalize ill-defined). Removing `normalize`/`scaler`/
+  `partial_normalize` + updating `_bridge.regressor_is_backable` (drops the
+  `and not regressor.normalize` clause) + switching fallback-path tests that
+  used `normalize=True` to an external sklearn `Ridge`.
+
+**STILL OPEN:**
 - **#8 `util/_util.py`:** `concatenate_sequences` raises on a ragged plain
-  `list` under NumPy 2; only object-arrays / equal-length lists work.
-- **#9 `base/blocks/_input_to_node.py` (found fixing #6):** BIP `neumann`
-  algorithm is broken for `hidden_layer_size > 1` for EVERY activation:
-  `_bias_weights` is shape `(H,1)` but the neumann update does `+= v[:,1]`
-  (shape `(H,)`) → `ValueError: non-broadcastable output operand`. (The #6 test
-  uses `hidden_layer_size=1` to sidestep this.)
-- **Minor:** after #2/#3, sklearn ≥1.9 now also deprecates `y_pred`→`y_proba`
-  in `log_loss`, so pyrcn's `log_loss` emits a non-fatal `FutureWarning`
-  (correctness unaffected). Follow-up if desired.
+  `list` under NumPy 2; only object-arrays / equal-length lists work. (Legacy
+  path; `check_sequences` supersedes it — decide repair vs deprecate.)
+- **Minor:** sklearn ≥1.9 emits a non-fatal `FutureWarning` about
+  `y_pred`→`y_proba` in `log_loss`. The metrics rework (`fdae078`) mirrors
+  sklearn's signature, so this is sklearn's own deprecation surfacing; harmless.
 
 ## Status summary
 
