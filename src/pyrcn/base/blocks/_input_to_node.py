@@ -195,8 +195,7 @@ class InputToNode(TransformerMixin, BaseEstimator):
             The shifted and scaled inputs.
         """
         return (safe_sparse_dot(X, input_weights) * input_scaling + input_shift
-                + np.ones(shape=(X.shape[0], 1)) * bias.T * bias_scaling
-                + bias_shift)
+                + bias.T * bias_scaling + bias_shift)
 
     def _validate_hyperparameters(self) -> None:
         """Validate the hyperparameters."""

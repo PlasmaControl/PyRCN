@@ -181,3 +181,7 @@ dmypy.json
 /tests/junit
 *.npz
 /examples/junit
+
+# keep committed test fixtures (parity oracles) despite *.npz above
+!tests/fixtures/
+!tests/fixtures/*.npz

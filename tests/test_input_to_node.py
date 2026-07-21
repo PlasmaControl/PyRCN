@@ -1,6 +1,8 @@
 """Testing for blocks.input_to_node module."""
 from __future__ import annotations
 
+import os
+
 import numpy as np
 import pytest
 import scipy
@@ -177,6 +179,38 @@ def test_input_to_node_dense() -> None:
     assert i2n.__sizeof__() != 0
     assert i2n.input_weights is not None
     assert i2n.bias_weights is not None
+
+
+_FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
+
+
+def test_input_to_node_parity() -> None:
+    """P7: InputToNode.transform is bit-identical after dropping the redundant
+    np.ones((N, 1)) bias temp in favour of broadcasting."""
+    print('\ntest_input_to_node_parity():')
+    ref = dict(np.load(os.path.join(_FIXTURES, "blocks_parity_p7.npz")))
+    i = 0
+    for hls in (5, 20, 50):
+        for nf in (1, 3, 8):
+            for rs_ in (1, 42):
+                for act in ('tanh', 'identity', 'relu'):
+                    for isc in (0.5, 1.0):
+                        for ish in (0.0, 0.3):
+                            for bsc in (0.0, 1.0, 2.0):
+                                for bsh in (0.0, 0.5):
+                                    rng = np.random.RandomState(rs_)
+                                    X = rng.normal(size=(12, nf))
+                                    i2n = InputToNode(
+                                        hidden_layer_size=hls,
+                                        input_activation=act,
+                                        input_scaling=isc, input_shift=ish,
+                                        bias_scaling=bsc, bias_shift=bsh,
+                                        random_state=rs_)
+                                    i2n.fit(X)
+                                    assert np.array_equal(i2n.transform(X),
+                                                          ref[f"o{i}"])
+                                    i += 1
+    assert i == len(ref)
 
 
 def test_input_to_node_sparse() -> None:

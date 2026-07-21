@@ -1,6 +1,7 @@
 """Testing for blocks.node_to_node module."""
 from __future__ import annotations
 
+import os
 from unittest.mock import patch
 
 import numpy as np
@@ -198,6 +199,71 @@ def test_euler_node_to_node_not_fitted() -> None:
     n2n = EulerNodeToNode(hidden_layer_size=5, random_state=42)
     with pytest.raises(NotFittedError):
         n2n.transform(np.zeros(shape=(10, 5)))
+
+
+_FIXTURES = os.path.join(os.path.dirname(__file__), "fixtures")
+
+
+def test_euler_node_to_node_parity() -> None:
+    """P6/P8: EulerNodeToNode.transform is bit-identical after hoisting the
+    effective-matrix rebuild out of the loop and using np.dot for dense."""
+    print('\ntest_euler_node_to_node_parity():')
+    ref = dict(np.load(os.path.join(_FIXTURES, "blocks_parity_p6.npz")))
+    i = 0
+    for hls in (5, 20, 50):
+        for rs_ in (1, 42):
+            for act in ('tanh', 'identity', 'relu'):
+                for scal in (0.5, 1.0):
+                    for gamma in (0.001, 0.01):
+                        for eps in (0.01, 0.1):
+                            rng = np.random.RandomState(rs_)
+                            X = rng.normal(size=(15, hls))
+                            n2n = EulerNodeToNode(
+                                hidden_layer_size=hls,
+                                reservoir_activation=act,
+                                recurrent_scaling=scal, gamma=gamma,
+                                epsilon=eps, random_state=rs_)
+                            n2n.fit(X)
+                            assert np.array_equal(n2n.transform(X),
+                                                  ref[f"o{i}"])
+                            i += 1
+    assert i == len(ref)
+
+
+def test_node_to_node_parity() -> None:
+    """P8: NodeToNode.transform is bit-identical when using np.dot for dense
+    recurrent weights (and safe_sparse_dot for the sparse path)."""
+    print('\ntest_node_to_node_parity():')
+    ref = dict(np.load(os.path.join(_FIXTURES, "blocks_parity_p8.npz")))
+    i = 0
+    for hls in (5, 20, 50):
+        for sparsity in (1.0, 0.4):
+            for rs_ in (1, 42):
+                for act in ('tanh', 'identity', 'relu'):
+                    for sr in (0.5, 0.9):
+                        for leak in (1.0, 0.5):
+                            for bidir in (False, True):
+                                rng = np.random.RandomState(rs_)
+                                X = rng.normal(size=(15, hls))
+                                n2n = NodeToNode(
+                                    hidden_layer_size=hls, sparsity=sparsity,
+                                    reservoir_activation=act,
+                                    spectral_radius=sr, leakage=leak,
+                                    bidirectional=bidir, random_state=rs_)
+                                n2n.fit(X)
+                                assert np.array_equal(n2n.transform(X),
+                                                      ref[f"o{i}"])
+                                i += 1
+    assert i == len(ref)
+
+
+def test_node_to_node_dense_dot_matches_safe_sparse_dot() -> None:
+    """P8: np.dot equals safe_sparse_dot exactly for dense weights."""
+    print('\ntest_node_to_node_dense_dot_matches_safe_sparse_dot():')
+    rng = np.random.RandomState(0)
+    v = rng.normal(size=(50,))
+    W = rng.normal(size=(50, 50))
+    assert np.array_equal(safe_sparse_dot(v, W), np.dot(v, W))
 
 
 def test_unitary_spectral_radius_no_convergence() -> None:

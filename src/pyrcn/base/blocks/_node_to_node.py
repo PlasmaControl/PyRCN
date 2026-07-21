@@ -162,10 +162,16 @@ class NodeToNode(TransformerMixin, BaseEstimator):
         """
         hidden_layer_state = np.zeros(
             shape=[X.shape[0]+1, self.hidden_layer_size])
+        recurrent_weights = self._recurrent_weights
+        dense = not issparse(recurrent_weights)
         for sample in range(X.shape[0]):
             a = X[sample, :]
-            b = safe_sparse_dot(hidden_layer_state[sample, :],
-                                self._recurrent_weights) * self.spectral_radius
+            if dense:
+                b = np.dot(hidden_layer_state[sample, :],
+                           recurrent_weights) * self.spectral_radius
+            else:
+                b = safe_sparse_dot(hidden_layer_state[sample, :],
+                                    recurrent_weights) * self.spectral_radius
             pre_activation = a + b
             ACTIVATIONS[self.reservoir_activation](pre_activation)
             hidden_layer_state[sample+1, :] = pre_activation
@@ -351,12 +357,17 @@ class EulerNodeToNode(NodeToNode):
         """
         hidden_layer_state = np.zeros(
             shape=[X.shape[0]+1, self.hidden_layer_size])
+        effective_weights = (
+            self.recurrent_scaling * self._recurrent_weights
+            + self.gamma * np.eye(self.hidden_layer_size))
+        dense = not issparse(effective_weights)
         for sample in range(X.shape[0]):
             a = X[sample, :]
-            b = safe_sparse_dot(
-                hidden_layer_state[sample, :],
-                self.recurrent_scaling * self._recurrent_weights + self.gamma *
-                np.eye(self.hidden_layer_size))
+            if dense:
+                b = np.dot(hidden_layer_state[sample, :], effective_weights)
+            else:
+                b = safe_sparse_dot(
+                    hidden_layer_state[sample, :], effective_weights)
             pre_activation = a + b
             ACTIVATIONS[self.reservoir_activation](pre_activation)
             hidden_layer_state[sample+1, :] = pre_activation
