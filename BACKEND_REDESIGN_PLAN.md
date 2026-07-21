@@ -153,10 +153,12 @@ introduced 24 `ref.footnote` warnings + 35 doctest failures (sklearn's own
 directive so it stays doctest-verified; added the sequence-support note to the
 `pyrcn.metrics` module docstring. Docs build 0 warnings; doctests pass.
 
-**Author email updated (commit `0db6804`):** `peter.steiner@tu-dresden.de` →
-`peter.steiner@princeton.edu` across all 39 source `# Authors:` headers
-(comment-only). NOT changed: the `@pyrcn.net` contact address in
-docs/pyproject, and the institutional "TU Dresden" copyright.
+**Author email updated (commits `0db6804` then `0f2dd0a`):** Peter Steiner's
+`# Authors:` email is now `peter.steiner@pyrcn.net` across all 39 source
+modules (first switched from `@tu-dresden.de` to `@princeton.edu`, then
+consolidated to `@pyrcn.net` as the canonical contact, matching docs/pyproject).
+Comment-only. NOT changed: co-author Simon Stone's `@tu-dresden.de` email, the
+TU Dresden affiliation URLs, and the institutional "TU Dresden" copyright.
 - **Minor:** sklearn ≥1.9 emits a non-fatal `FutureWarning` about
   `y_pred`→`y_proba` in `log_loss`. The metrics rework (`fdae078`) mirrors
   sklearn's signature, so this is sklearn's own deprecation surfacing; harmless.
