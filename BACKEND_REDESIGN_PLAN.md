@@ -34,13 +34,16 @@ parity fails), **discard/revert the change and leave that point OPEN here**
 See memory `perf-work-tdd-parity`.
 
 Ranked in-scope findings (all numerically identical within ~1e-12 unless noted):
-- **P1 — APPROVED, IMPLEMENTING NOW: two-tier reservoir dispatch**
-  (`nn/_reservoir.py`). Fast sub-case (`leakage==1.0` & tanh/relu, non-Euler) →
-  ATen fused `torch.rnn_tanh`/`rnn_relu` (~6-7×, measured bit-identical, diff
-  0.0). General case (leaky / Euler / logistic / identity / bounded_relu) →
-  `torch.jit.script` the recurrence (~1.9×, bit-identical). Behind a
-  parity-fixture gate (`tests/test_reservoir_parity.py`); I re-verify the parity
-  test + full suite + diff before committing.
+- **P1 — DONE (commit `a72ad3a`, local): two-tier reservoir dispatch**
+  (`nn/_reservoir.py`). Fast sub-case (`leakage==1.0` & tanh/relu, fixed
+  weights) → ATen fused `torch.rnn_tanh`/`rnn_relu`. General case (leaky /
+  Euler / logistic / identity / bounded_relu / trainable) →
+  `torch.jit.script` recurrence. Parity: `tests/test_reservoir_parity.py`
+  (200-config grid vs captured fixture) — general bit-exact, fused ≤1e-12, max
+  diff 0.0. Independent before→after benchmark: fused ~3.9×, general ~2.8×;
+  full suite exit 0, flake8+mypy clean. (Note: invalid-config fits in a param
+  search now raise a different RuntimeError message from the fused op, but
+  still raise → same fits fail with same nan scores; no numerical change.)
 - **P2** strip `nn.Module`/`RNNCell` per-step dispatch — subsumed into P1's
   scripted general path.
 - **P3** numpy readout `inv(K+αI)@xTy` → `np.linalg.solve`
