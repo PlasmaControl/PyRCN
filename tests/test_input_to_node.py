@@ -241,8 +241,9 @@ def test_input_to_node_parity() -> None:
                                         bias_scaling=bsc, bias_shift=bsh,
                                         random_state=rs_)
                                     i2n.fit(X)
-                                    assert np.array_equal(i2n.transform(X),
-                                                          ref[f"o{i}"])
+                                    assert np.allclose(
+                                        i2n.transform(X), ref[f"o{i}"],
+                                        atol=1e-12, rtol=1e-12)
                                     i += 1
     assert i == len(ref)
 

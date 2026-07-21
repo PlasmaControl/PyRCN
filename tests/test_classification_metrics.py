@@ -426,46 +426,39 @@ def test_hinge_loss() -> None:
 
 
 def test_log_loss() -> None:
-    # The generic wrapper mirrors scikit-learn's current signature (``eps``
-    # is gone, ``y_pred`` renamed to ``y_proba``), so log_loss matches
-    # scikit-learn on both sequence and plain-array input.
+    # The generic wrapper mirrors whatever signature the installed
+    # scikit-learn exposes (the probability arg was renamed y_pred->y_proba
+    # across versions), so call positionally to stay version-agnostic; the
+    # pyrcn metric matches scikit-learn on both sequence and plain input.
     np.testing.assert_almost_equal(
-        pyrcn.metrics.log_loss(
-            y_true=y_true_bin, y_proba=y_prob_bin,
-            sample_weight=sample_weight),
-        sklearn.metrics.log_loss(
-            y_true=np.concatenate(y_true_bin),
-            y_proba=np.concatenate(y_prob_bin),
-            sample_weight=np.concatenate(sample_weight)))
+        pyrcn.metrics.log_loss(y_true_bin, y_prob_bin,
+                               sample_weight=sample_weight),
+        sklearn.metrics.log_loss(np.concatenate(y_true_bin),
+                                 np.concatenate(y_prob_bin),
+                                 sample_weight=np.concatenate(sample_weight)))
     np.testing.assert_almost_equal(
-        pyrcn.metrics.log_loss(y_true=y_true_bin, y_proba=y_prob_bin),
-        sklearn.metrics.log_loss(
-            y_true=np.concatenate(y_true_bin),
-            y_proba=np.concatenate(y_prob_bin)))
+        pyrcn.metrics.log_loss(y_true_bin, y_prob_bin),
+        sklearn.metrics.log_loss(np.concatenate(y_true_bin),
+                                 np.concatenate(y_prob_bin)))
     # Plain (non-sequence) arrays are now accepted.
     np.testing.assert_almost_equal(
-        pyrcn.metrics.log_loss(y_true=y_true_bin[0], y_proba=y_prob_bin[0]),
-        sklearn.metrics.log_loss(
-            y_true=y_true_bin[0], y_proba=y_prob_bin[0]))
+        pyrcn.metrics.log_loss(y_true_bin[0], y_prob_bin[0]),
+        sklearn.metrics.log_loss(y_true_bin[0], y_prob_bin[0]))
 
 
 def test_brier_score_loss() -> None:
-    # scikit-learn>=1.5 renamed ``y_prob`` to ``y_proba``; the generic wrapper
-    # mirrors that signature, so brier_score_loss matches scikit-learn on both
-    # sequence and plain-array input.
+    # Call positionally to stay agnostic to the y_prob->y_proba rename across
+    # scikit-learn versions; the pyrcn metric matches scikit-learn on both
+    # sequence and plain input.
     np.testing.assert_almost_equal(
-        pyrcn.metrics.brier_score_loss(
-            y_true=y_true_bin, y_proba=y_prob_bin,
-            sample_weight=sample_weight),
+        pyrcn.metrics.brier_score_loss(y_true_bin, y_prob_bin,
+                                       sample_weight=sample_weight),
         sklearn.metrics.brier_score_loss(
-            y_true=np.concatenate(y_true_bin),
-            y_proba=np.concatenate(y_prob_bin),
+            np.concatenate(y_true_bin), np.concatenate(y_prob_bin),
             sample_weight=np.concatenate(sample_weight)))
     np.testing.assert_almost_equal(
-        pyrcn.metrics.brier_score_loss(
-            y_true=y_true_bin[0], y_proba=y_prob_bin[0]),
-        sklearn.metrics.brier_score_loss(
-            y_true=y_true_bin[0], y_proba=y_prob_bin[0]))
+        pyrcn.metrics.brier_score_loss(y_true_bin[0], y_prob_bin[0]),
+        sklearn.metrics.brier_score_loss(y_true_bin[0], y_prob_bin[0]))
 
 
 def test_plain_array_flexibility() -> None:

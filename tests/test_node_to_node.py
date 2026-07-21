@@ -224,8 +224,9 @@ def test_euler_node_to_node_parity() -> None:
                                 recurrent_scaling=scal, gamma=gamma,
                                 epsilon=eps, random_state=rs_)
                             n2n.fit(X)
-                            assert np.array_equal(n2n.transform(X),
-                                                  ref[f"o{i}"])
+                            assert np.allclose(
+                                n2n.transform(X), ref[f"o{i}"],
+                                atol=1e-12, rtol=1e-12)
                             i += 1
     assert i == len(ref)
 
@@ -251,8 +252,9 @@ def test_node_to_node_parity() -> None:
                                     spectral_radius=sr, leakage=leak,
                                     bidirectional=bidir, random_state=rs_)
                                 n2n.fit(X)
-                                assert np.array_equal(n2n.transform(X),
-                                                      ref[f"o{i}"])
+                                assert np.allclose(
+                                    n2n.transform(X), ref[f"o{i}"],
+                                    atol=1e-12, rtol=1e-12)
                                 i += 1
     assert i == len(ref)
 

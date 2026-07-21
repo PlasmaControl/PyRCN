@@ -143,12 +143,17 @@ import pytest  # noqa: E402
 
 
 @pytest.mark.parametrize("name", list(CASES))
-def test_p5_bit_identical(name: str) -> None:
-    """Predictions + node_to_node weights match the pre-edit fixture."""
+def test_p5_numerically_identical(name: str) -> None:
+    """Predictions + node_to_node weights match the pre-edit fixture to 1e-12.
+
+    (Bit-exact on a fixed library build; the fixture is compared across
+    possibly-different numpy/torch builds, so ~1-ULP drift is tolerated.)
+    """
     ref = np.load(FIXTURE, allow_pickle=False)
     pred, recur, _ = _run(name)
-    assert np.array_equal(pred, ref[f"{name}__pred"]), f"pred mismatch {name}"
-    assert np.array_equal(recur, ref[f"{name}__recur"]), \
+    assert np.allclose(pred, ref[f"{name}__pred"], atol=1e-12, rtol=1e-12), \
+        f"pred mismatch {name}"
+    assert np.allclose(recur, ref[f"{name}__recur"], atol=1e-12, rtol=1e-12), \
         f"recurrent-weights mismatch {name}"
 
 
