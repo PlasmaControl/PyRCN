@@ -135,12 +135,17 @@ and an independently re-verified benchmark; full suite green throughout.
   to sklearn `Ridge` (or a non-backable subclass where `partial_fit` is needed).
   No numerical change (was a no-op). Full suite green.
 
+- **#8 — DONE (commit `c544a76`, local):** `concatenate_sequences` builds the
+  object array element-wise (check_sequences' ragged-safe technique,
+  dtype-preserving) instead of `np.asarray`/`np.array`, and always populates
+  `sequence_ranges` (callers always iterate it; the old empty-ranges branch was
+  broken downstream). Ragged plain lists work; object-array/equal-length
+  inputs byte-identical; int labels preserved.
+
+**ALL NUMBERED BUGS (#1-#9) RESOLVED.** (#2/#3 also subsumed by the metrics
+rework; #7 resolved by deleting SHGOSearchCV.)
+
 **IN PROGRESS:**
-- **#8 `util/_util.py`:** `concatenate_sequences` raises on a ragged plain
-  `list` under NumPy 2. Decision = **use `check_sequences`'s robust ragged
-  normalization** inside `concatenate_sequences` (keep its concatenated-output
-  contract). TDD: ragged plain list works; object-array/equal-length inputs
-  stay byte-identical.
 - **`pyrcn.metrics` docs** (green-lit): rebuild to catch warnings from the
   sklearn-inherited docstrings; add a one-paragraph note that the metrics wrap
   sklearn and also accept PyRCN sequence inputs.
