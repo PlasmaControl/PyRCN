@@ -128,3 +128,34 @@ def test_feature_extractor_kw_args() -> None:
     fe.fit(np.ones((2, 2)))
     X_out = fe.transform(np.ones((2, 2)))
     np.testing.assert_array_equal(X_out, np.ones((2, 2)) * 5)
+
+
+def test_concatenate_sequences_ragged_list() -> None:
+    # Bug #8 regression: a ragged plain list of sequences must work. Previously
+    # np.array(ragged_list) raised "inhomogeneous shape" under NumPy 2.
+    rng = np.random.RandomState(0)
+    lens = [3, 5, 2]
+    X = [rng.randn(L, 4) for L in lens]
+    y = [rng.randint(0, 3, size=L) for L in lens]
+    X_out, y_out, sr = concatenate_sequences(list(X), list(y))
+    assert X_out.shape == (10, 4)
+    assert y_out.shape == (10,)
+    assert y_out.dtype.kind in 'iu'   # integer labels are preserved
+    np.testing.assert_array_equal(sr, np.array([[0, 3], [3, 8], [8, 10]]))
+
+
+def test_concatenate_sequences_list_matches_object_array() -> None:
+    # A ragged plain list and its equivalent object array give equal output.
+    rng = np.random.RandomState(1)
+    lens = [4, 2, 6]
+    Xs = [rng.randn(L, 3) for L in lens]
+    ys = [rng.randn(L) for L in lens]
+    X_obj = np.empty(3, dtype=object)
+    y_obj = np.empty(3, dtype=object)
+    for k in range(3):
+        X_obj[k], y_obj[k] = Xs[k], ys[k]
+    X_list, y_list, sr_list = concatenate_sequences(list(Xs), list(ys))
+    X_arr, y_arr, sr_arr = concatenate_sequences(X_obj, y_obj)
+    np.testing.assert_array_equal(X_list, X_arr)
+    np.testing.assert_array_equal(y_list, y_arr)
+    np.testing.assert_array_equal(sr_list, sr_arr)

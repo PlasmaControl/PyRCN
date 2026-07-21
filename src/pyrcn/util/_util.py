@@ -125,6 +125,21 @@ def get_mnist(directory: str = os.getcwd()) -> tuple[np.ndarray, np.ndarray]:
         return X, y
 
 
+def _to_sequence_object_array(seqs: list | np.ndarray) -> np.ndarray:
+    """Return ``seqs`` as a 1-D object array of per-sequence arrays.
+
+    This mirrors the ragged-safe normalization used by
+    :func:`pyrcn.util.check_sequences`: it builds the object array element by
+    element (preserving each sequence's dtype) instead of ``np.asarray``/
+    ``np.array``, which raise on ragged input under NumPy 2.
+    """
+    items = list(seqs)
+    out = np.empty(len(items), dtype=object)
+    for k, item in enumerate(items):
+        out[k] = np.asarray(item)
+    return out
+
+
 def concatenate_sequences(X: list | np.ndarray,
                           y: list | np.ndarray,
                           sequence_to_value: bool = False)\
@@ -152,23 +167,17 @@ def concatenate_sequences(X: list | np.ndarray,
     sequence_ranges : Union[None, np.ndarray] of shape=(n_sequences, 2)
         Sequence border indicator matrix
     """
-    if isinstance(X, list):
-        X = np.asarray(X)
-    if isinstance(y, list):
-        y = np.asarray(y)
-    X = np.array(X)
-    y = np.array(y)
+    X = _to_sequence_object_array(X)
+    y = _to_sequence_object_array(y)
     if sequence_to_value:
         for k, _ in enumerate(y):
             y[k] = np.repeat(y[k], X[k].shape[0])
 
     check_consistent_length(X, y)
-    sequence_ranges: np.ndarray = np.ndarray([])
-    if X.ndim == 1:
-        sequence_ranges = np.zeros((X.shape[0], 2), dtype=int)
-        sequence_ranges[:, 1] = np.cumsum(
-            [X[k].shape[0] for k, _ in enumerate(X)])
-        sequence_ranges[1:, 0] = sequence_ranges[:-1, 1]
-        for k, _ in enumerate(X):
-            X[k], y[k] = check_X_y(X[k], y[k], multi_output=True)
+    sequence_ranges = np.zeros((X.shape[0], 2), dtype=int)
+    sequence_ranges[:, 1] = np.cumsum(
+        [X[k].shape[0] for k, _ in enumerate(X)])
+    sequence_ranges[1:, 0] = sequence_ranges[:-1, 1]
+    for k, _ in enumerate(X):
+        X[k], y[k] = check_X_y(X[k], y[k], multi_output=True)
     return np.concatenate(X), np.concatenate(y), sequence_ranges
