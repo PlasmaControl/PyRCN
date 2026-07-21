@@ -46,10 +46,19 @@ Ranked in-scope findings (all numerically identical within ~1e-12 unless noted):
   still raise → same fits fail with same nan scores; no numerical change.)
 - **P2** strip `nn.Module`/`RNNCell` per-step dispatch — subsumed into P1's
   scripted general path.
-- **P3** numpy readout `inv(K+αI)@xTy` → `np.linalg.solve`
-  (`linear_model/_incremental_regression.py`) — 2-3.5×, diff ≤1.7e-16.
-- **P4** torch readout LU `solve` → Cholesky (`nn/_readout.py`) — ~1.4×, diff
-  ≤1.25e-16, guard `alpha≤0` → fallback to solve.
+- **P3 — DONE (commit `fcb2d27`, local):** numpy readout
+  `inv(K+αI)@xTy` → `np.linalg.solve` (`_incremental_regression.py`, main +
+  residual branch). Same LU factorization → difference cancels: max-abs-diff
+  2.8e-13 even on a pathological matrix (robustly < 1e-12). Faster at large h
+  (~2-4.6×), neutral small. Parity tests in `test_incremental_regression.py`.
+- **P4 — REJECTED / OPEN (reverted):** torch readout LU→Cholesky. Rejected
+  under the strict gate: Cholesky uses a *different* factorization than LU, so
+  the difference scales with condition number — measured **7.6e-10 on an
+  ill-conditioned system** (> 1e-12) and **6.83e-13 on a realistic
+  ESNClassifier** (hidden=500, alpha=1e-8 — only 0.68× the gate). Cannot
+  guarantee ≤1e-12 for realistic small-`alpha` readouts, and the benefit is
+  multi-target-only (single-target 1-D rhs can't use `cholesky_solve`). Left
+  open; could revisit only if a looser readout-solve tolerance is accepted.
 - **P5** drop the wasted numpy `input_to_node.transform` fed to
   `node_to_node.fit` (only `shape[1]` used) in `_esn.py`/`_elm.py` — ~10% of
   single-series fit; `np.array_equal` verified.
