@@ -128,19 +128,22 @@ and an independently re-verified benchmark; full suite green throughout.
   (`(H,1)` column) — was `ValueError` for `hidden_layer_size>1` every
   activation. Tested at H=10.
 
-**IN PROGRESS:**
-- **#5 `linear_model/_incremental_regression.py`:** decision = **remove
-  `normalize` entirely** (it was a total no-op, and a real fix would need a
-  redesign — normalizes the intercept column, `predict` refits the scaler on
-  test data, incremental normalize ill-defined). Removing `normalize`/`scaler`/
-  `partial_normalize` + updating `_bridge.regressor_is_backable` (drops the
-  `and not regressor.normalize` clause) + switching fallback-path tests that
-  used `normalize=True` to an external sklearn `Ridge`.
+- **#5 — DONE (commit `82181fb`, local): removed `normalize` entirely** from
+  IncrementalRegression (no-op feature; correct fix needed a redesign).
+  Dropped `normalize`/`scaler`/`partial_normalize`; `_bridge.regressor_is_backable`
+  drops the `and not regressor.normalize` clause; fallback-path tests switched
+  to sklearn `Ridge` (or a non-backable subclass where `partial_fit` is needed).
+  No numerical change (was a no-op). Full suite green.
 
-**STILL OPEN:**
+**IN PROGRESS:**
 - **#8 `util/_util.py`:** `concatenate_sequences` raises on a ragged plain
-  `list` under NumPy 2; only object-arrays / equal-length lists work. (Legacy
-  path; `check_sequences` supersedes it — decide repair vs deprecate.)
+  `list` under NumPy 2. Decision = **use `check_sequences`'s robust ragged
+  normalization** inside `concatenate_sequences` (keep its concatenated-output
+  contract). TDD: ragged plain list works; object-array/equal-length inputs
+  stay byte-identical.
+- **`pyrcn.metrics` docs** (green-lit): rebuild to catch warnings from the
+  sklearn-inherited docstrings; add a one-paragraph note that the metrics wrap
+  sklearn and also accept PyRCN sequence inputs.
 - **Minor:** sklearn ≥1.9 emits a non-fatal `FutureWarning` about
   `y_pred`→`y_proba` in `log_loss`. The metrics rework (`fdae078`) mirrors
   sklearn's signature, so this is sklearn's own deprecation surfacing; harmless.
