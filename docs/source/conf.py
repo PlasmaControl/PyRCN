@@ -40,10 +40,18 @@ extensions = [
     'sphinx.ext.autosummary',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
+    'sphinx.ext.extlinks',
     'sphinx.ext.mathjax',
     'sphinx_copybutton',
     'sphinx_design',
 ]
+
+# Resolve the ``:doi:`` / ``:arxiv:`` roles used in the scikit-learn docstrings
+# that pyrcn.metrics inherits (otherwise "unknown interpreted text role").
+extlinks = {
+    'doi': ('https://doi.org/%s', 'doi:%s'),
+    'arxiv': ('https://arxiv.org/abs/%s', 'arXiv:%s'),
+}
 
 # Generate the per-object stub pages referenced by ``.. autosummary::``
 # directives at build time (also regenerated on Read the Docs).
@@ -71,6 +79,16 @@ doctest_default_flags = (
     | doctest.NORMALIZE_WHITESPACE
     | doctest.DONT_ACCEPT_TRUE_FOR_1
 )
+
+# The pyrcn.metrics functions inherit scikit-learn's docstrings (they wrap the
+# corresponding sklearn metric). Only run our own explicit ``.. doctest::``
+# directives, not the standalone ``>>>`` example blocks in those inherited
+# docstrings (which import from sklearn and are sklearn's to test).
+doctest_test_doctest_blocks = ""
+
+# Those inherited docstrings also carry numpydoc "References" footnotes not
+# referenced once rendered standalone; silence only that cosmetic warning.
+suppress_warnings = ["ref.footnote"]
 
 # Do not document scikit-learn's dynamically added metadata-routing methods
 # (set_*_request); their docstrings reference sklearn-only glossary terms and

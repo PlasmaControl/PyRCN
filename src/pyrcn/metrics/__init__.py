@@ -3,6 +3,13 @@ The :mod:`pyrcn.metrics` module includes score functions, performance metrics.
 
 Also, pairwise metrics and distance computations for sequence-to-sequence
 results.
+
+Each metric here wraps the corresponding :mod:`sklearn.metrics` function and,
+in addition to plain arrays, accepts PyRCN's sequence inputs: a list or an
+object-dtype ``ndarray`` of per-sequence arrays. Such inputs are concatenated
+into the flat arrays scikit-learn expects before scoring; plain arrays are
+passed through unchanged. The function signatures and docstrings therefore
+mirror the current scikit-learn versions.
 """
 
 from __future__ import annotations
