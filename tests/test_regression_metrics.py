@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 import sklearn.metrics
 from sklearn.datasets import make_regression
 
@@ -67,9 +66,12 @@ def test_mean_absolute_error() -> None:
         sklearn.metrics.mean_absolute_error(
             y_true=np.concatenate(y_true_multi),
             y_pred=np.concatenate(y_pred_multi)))
-    with pytest.raises(TypeError):
+    # Plain (non-sequence) arrays are now accepted and match scikit-learn.
+    np.testing.assert_equal(
         pyrcn.metrics.mean_absolute_error(
-            y_true=y_true_multi[0], y_pred=y_pred_multi[0])
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]),
+        sklearn.metrics.mean_absolute_error(
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]))
 
 
 def test_mean_absolute_percentage_error() -> None:
@@ -99,9 +101,11 @@ def test_mean_absolute_percentage_error() -> None:
         sklearn.metrics.mean_absolute_percentage_error(
             y_true=np.concatenate(y_true_multi),
             y_pred=np.concatenate(y_pred_multi)))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.mean_absolute_percentage_error(
-            y_true=y_true_multi[0], y_pred=y_pred_multi[0])
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]),
+        sklearn.metrics.mean_absolute_percentage_error(
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]))
 
 
 def test_mean_squared_error() -> None:
@@ -131,9 +135,11 @@ def test_mean_squared_error() -> None:
         sklearn.metrics.mean_squared_error(
             y_true=np.concatenate(y_true_multi),
             y_pred=np.concatenate(y_pred_multi)))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.mean_squared_error(
-            y_true=y_true_multi[0], y_pred=y_pred_multi[0])
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]),
+        sklearn.metrics.mean_squared_error(
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]))
 
 
 def test_median_absolute_error() -> None:
@@ -164,9 +170,11 @@ def test_median_absolute_error() -> None:
         sklearn.metrics.median_absolute_error(
             y_true=np.concatenate(y_true_multi),
             y_pred=np.concatenate(y_pred_multi)))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.median_absolute_error(
-            y_true=y_true_multi[0], y_pred=y_pred_multi[0])
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]),
+        sklearn.metrics.median_absolute_error(
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]))
 
 
 def test_explained_variance_score() -> None:
@@ -194,9 +202,11 @@ def test_explained_variance_score() -> None:
         sklearn.metrics.explained_variance_score(
             y_true=np.concatenate(y_true_multi),
             y_pred=np.concatenate(y_pred_multi)))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.explained_variance_score(
-            y_true=y_true_multi[0], y_pred=y_pred_multi[0])
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]),
+        sklearn.metrics.explained_variance_score(
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]))
 
 
 def test_r2_score() -> None:
@@ -222,8 +232,11 @@ def test_r2_score() -> None:
         sklearn.metrics.r2_score(
             y_true=np.concatenate(y_true_multi),
             y_pred=np.concatenate(y_pred_multi)))
-    with pytest.raises(TypeError):
-        pyrcn.metrics.r2_score(y_true=y_true_multi[0], y_pred=y_pred_multi[0])
+    np.testing.assert_equal(
+        pyrcn.metrics.r2_score(
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]),
+        sklearn.metrics.r2_score(
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]))
 
 
 def test_max_error() -> None:
@@ -251,8 +264,11 @@ def test_max_error() -> None:
         sklearn.metrics.max_error(
             y_true=np.concatenate(y_true_multi),
             y_pred=np.concatenate(y_pred_multi)))
-    with pytest.raises(TypeError):
-        pyrcn.metrics.max_error(y_true=y_true_multi[0], y_pred=y_pred_multi[0])
+    np.testing.assert_equal(
+        pyrcn.metrics.max_error(
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]),
+        sklearn.metrics.max_error(
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]))
 
 
 def test_mean_tweedie_deviance() -> None:
@@ -282,19 +298,25 @@ def test_mean_tweedie_deviance() -> None:
         sklearn.metrics.mean_tweedie_deviance(
             y_true=np.concatenate(y_true_multi),
             y_pred=np.concatenate(y_pred_multi)))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.mean_tweedie_deviance(
-            y_true=y_true_multi[0], y_pred=y_pred_multi[0])
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]),
+        sklearn.metrics.mean_tweedie_deviance(
+            y_true=y_true_multi[0], y_pred=y_pred_multi[0]))
 
 
-def test_root_mean_squared_error() -> None:
+def test_mean_squared_error_matches_sklearn() -> None:
+    # The generic wrapper mirrors scikit-learn's current signature. The
+    # ``squared`` parameter was removed from ``mean_squared_error`` (RMSE now
+    # lives in ``root_mean_squared_error``), so mean_squared_error simply
+    # matches scikit-learn on both sequence and plain-array input.
     np.testing.assert_equal(
         pyrcn.metrics.mean_squared_error(
-            y_true=y_true_mono, y_pred=y_true_mono, squared=False), 0)
+            y_true=y_true_mono, y_pred=y_true_mono), 0)
     np.testing.assert_almost_equal(
         pyrcn.metrics.mean_squared_error(
-            y_true=y_true_mono, y_pred=y_pred_mono, squared=False),
-        sklearn.metrics.root_mean_squared_error(
+            y_true=y_true_mono, y_pred=y_pred_mono),
+        sklearn.metrics.mean_squared_error(
             y_true=np.concatenate(y_true_mono),
             y_pred=np.concatenate(y_pred_mono)))
 
@@ -313,9 +335,11 @@ def test_mean_squared_log_error() -> None:
         sklearn.metrics.mean_squared_log_error(
             y_true=np.concatenate(y_true_pos),
             y_pred=np.concatenate(y_pred_pos)))
-    with pytest.raises(TypeError):
+    np.testing.assert_almost_equal(
         pyrcn.metrics.mean_squared_log_error(
-            y_true=y_true_pos[0], y_pred=y_pred_pos[0])
+            y_true=y_true_pos[0], y_pred=y_pred_pos[0]),
+        sklearn.metrics.mean_squared_log_error(
+            y_true=y_true_pos[0], y_pred=y_pred_pos[0]))
 
 
 def test_mean_poisson_deviance() -> None:
@@ -329,9 +353,11 @@ def test_mean_poisson_deviance() -> None:
         sklearn.metrics.mean_poisson_deviance(
             y_true=np.concatenate(y_true_pos),
             y_pred=np.concatenate(y_pred_pos)))
-    with pytest.raises(TypeError):
+    np.testing.assert_almost_equal(
         pyrcn.metrics.mean_poisson_deviance(
-            y_true=y_true_pos[0], y_pred=y_pred_pos[0])
+            y_true=y_true_pos[0], y_pred=y_pred_pos[0]),
+        sklearn.metrics.mean_poisson_deviance(
+            y_true=y_true_pos[0], y_pred=y_pred_pos[0]))
 
 
 def test_mean_gamma_deviance() -> None:
@@ -345,6 +371,30 @@ def test_mean_gamma_deviance() -> None:
         sklearn.metrics.mean_gamma_deviance(
             y_true=np.concatenate(y_true_pos),
             y_pred=np.concatenate(y_pred_pos)))
-    with pytest.raises(TypeError):
+    np.testing.assert_almost_equal(
         pyrcn.metrics.mean_gamma_deviance(
-            y_true=y_true_pos[0], y_pred=y_pred_pos[0])
+            y_true=y_true_pos[0], y_pred=y_pred_pos[0]),
+        sklearn.metrics.mean_gamma_deviance(
+            y_true=y_true_pos[0], y_pred=y_pred_pos[0]))
+
+
+def test_plain_array_flexibility() -> None:
+    # A plain (non-object) array is passed straight through to scikit-learn.
+    np.testing.assert_equal(
+        pyrcn.metrics.r2_score(
+            y_true=y_true_mono[0], y_pred=y_true_mono[0]), 1)
+    np.testing.assert_almost_equal(
+        pyrcn.metrics.mean_absolute_error(
+            y_true=y_true_mono[0], y_pred=y_pred_mono[0]),
+        sklearn.metrics.mean_absolute_error(
+            y_true=y_true_mono[0], y_pred=y_pred_mono[0]))
+
+
+def test_sequence_equals_concatenation() -> None:
+    # A sequence and its concatenation yield the same result.
+    np.testing.assert_almost_equal(
+        pyrcn.metrics.mean_absolute_error(
+            y_true=y_true_mono, y_pred=y_pred_mono),
+        pyrcn.metrics.mean_absolute_error(
+            y_true=np.concatenate(y_true_mono),
+            y_pred=np.concatenate(y_pred_mono)))

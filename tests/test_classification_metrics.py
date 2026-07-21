@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 import sklearn.metrics
 from sklearn.datasets import (make_classification,
                               make_multilabel_classification)
@@ -59,9 +58,12 @@ def test_accuracy_score() -> None:
         pyrcn.metrics.accuracy_score(y_true=y_true_mlb, y_pred=y_pred_mlb),
         sklearn.metrics.accuracy_score(y_true=np.concatenate(y_true_mlb),
                                        y_pred=np.concatenate(y_pred_mlb)))
-    with pytest.raises(TypeError):
+    # Plain (non-sequence) arrays are now accepted and match scikit-learn.
+    np.testing.assert_equal(
         pyrcn.metrics.accuracy_score(
-            y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.accuracy_score(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_confusion_matrix() -> None:
@@ -78,9 +80,11 @@ def test_confusion_matrix() -> None:
             y_true=np.concatenate(y_true_bin),
             y_pred=np.concatenate(y_pred_bin)))
 
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.confusion_matrix(
-            y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.confusion_matrix(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_multilabel_confusion_matrix() -> None:
@@ -115,8 +119,9 @@ def test_cohen_kappa_score() -> None:
             y1=y_true_bin, y2=y_pred_bin, sample_weight=sample_weight),
         sklearn.metrics.cohen_kappa_score(
             y1=np.concatenate(y_true_bin), y2=np.concatenate(y_pred_bin)))
-    with pytest.raises(TypeError):
-        pyrcn.metrics.cohen_kappa_score(y1=y_true_bin[0], y2=y_pred_bin[0])
+    np.testing.assert_equal(
+        pyrcn.metrics.cohen_kappa_score(y1=y_true_bin[0], y2=y_pred_bin[0]),
+        sklearn.metrics.cohen_kappa_score(y1=y_true_bin[0], y2=y_pred_bin[0]))
 
 
 def test_jaccard_score() -> None:
@@ -143,8 +148,11 @@ def test_jaccard_score() -> None:
         sklearn.metrics.jaccard_score(y_true=np.concatenate(y_true_mlb),
                                       y_pred=np.concatenate(y_pred_mlb),
                                       average="macro"))
-    with pytest.raises(TypeError):
-        pyrcn.metrics.jaccard_score(y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+    np.testing.assert_equal(
+        pyrcn.metrics.jaccard_score(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.jaccard_score(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_matthews_corrcoef() -> None:
@@ -161,9 +169,11 @@ def test_matthews_corrcoef() -> None:
             y_true=y_true_bin, y_pred=y_pred_bin, sample_weight=sample_weight),
         sklearn.metrics.matthews_corrcoef(y_true=np.concatenate(y_true_bin),
                                           y_pred=np.concatenate(y_pred_bin)))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.matthews_corrcoef(
-            y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.matthews_corrcoef(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_zero_one_loss() -> None:
@@ -189,8 +199,11 @@ def test_zero_one_loss() -> None:
         pyrcn.metrics.zero_one_loss(y_true=y_true_mlb, y_pred=y_pred_mlb),
         sklearn.metrics.zero_one_loss(y_true=np.concatenate(y_true_mlb),
                                       y_pred=np.concatenate(y_pred_mlb)))
-    with pytest.raises(TypeError):
-        pyrcn.metrics.zero_one_loss(y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+    np.testing.assert_equal(
+        pyrcn.metrics.zero_one_loss(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.zero_one_loss(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_f1_score() -> None:
@@ -218,8 +231,9 @@ def test_f1_score() -> None:
         sklearn.metrics.f1_score(
             y_true=np.concatenate(y_true_mlb),
             y_pred=np.concatenate(y_pred_mlb), average="weighted"))
-    with pytest.raises(TypeError):
-        pyrcn.metrics.f1_score(y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+    np.testing.assert_equal(
+        pyrcn.metrics.f1_score(y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.f1_score(y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_fbeta_score() -> None:
@@ -250,9 +264,11 @@ def test_fbeta_score() -> None:
         sklearn.metrics.fbeta_score(
             y_true=np.concatenate(y_true_mlb),
             y_pred=np.concatenate(y_pred_mlb), average="weighted", beta=0.5))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.fbeta_score(
-            y_true=y_true_bin[0], y_pred=y_pred_bin[0], beta=0)
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0], beta=0),
+        sklearn.metrics.fbeta_score(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0], beta=0))
 
 
 def test_precision_score() -> None:
@@ -279,9 +295,11 @@ def test_precision_score() -> None:
         sklearn.metrics.precision_score(y_true=np.concatenate(y_true_mlb),
                                         y_pred=np.concatenate(y_pred_mlb),
                                         average="weighted"))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.precision_score(
-            y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.precision_score(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_recall_score() -> None:
@@ -308,9 +326,11 @@ def test_recall_score() -> None:
         sklearn.metrics.recall_score(y_true=np.concatenate(y_true_mlb),
                                      y_pred=np.concatenate(y_pred_mlb),
                                      average="weighted"))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.precision_score(
-            y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.precision_score(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_balanced_accuracy_score() -> None:
@@ -327,9 +347,11 @@ def test_balanced_accuracy_score() -> None:
         sklearn.metrics.balanced_accuracy_score(
             y_true=np.concatenate(y_true_bin),
             y_pred=np.concatenate(y_pred_bin), adjusted=True))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.balanced_accuracy_score(
-            y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.balanced_accuracy_score(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_hamming_loss() -> None:
@@ -357,8 +379,11 @@ def test_hamming_loss() -> None:
         sklearn.metrics.hamming_loss(
             y_true=np.concatenate(y_true_mlb),
             y_pred=np.concatenate(y_pred_mlb)))
-    with pytest.raises(TypeError):
-        pyrcn.metrics.hamming_loss(y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+    np.testing.assert_equal(
+        pyrcn.metrics.hamming_loss(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.hamming_loss(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_classification_report() -> None:
@@ -375,9 +400,11 @@ def test_classification_report() -> None:
         sklearn.metrics.classification_report(
             y_true=np.concatenate(y_true_bin),
             y_pred=np.concatenate(y_pred_bin), output_dict=True))
-    with pytest.raises(TypeError):
+    np.testing.assert_equal(
         pyrcn.metrics.classification_report(
-            y_true=y_true_bin[0], y_pred=y_pred_bin[0])
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.classification_report(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
 
 
 def test_hinge_loss() -> None:
@@ -391,44 +418,72 @@ def test_hinge_loss() -> None:
         sklearn.metrics.hinge_loss(
             y_true=np.concatenate(y_true_bin),
             pred_decision=np.concatenate(pred_decision)))
-    with pytest.raises(TypeError):
+    np.testing.assert_almost_equal(
         pyrcn.metrics.hinge_loss(
-            y_true=y_true_bin[0], pred_decision=pred_decision[0])
+            y_true=y_true_bin[0], pred_decision=pred_decision[0]),
+        sklearn.metrics.hinge_loss(
+            y_true=y_true_bin[0], pred_decision=pred_decision[0]))
 
 
 def test_log_loss() -> None:
-    # ``eps`` was removed in scikit-learn>=1.5; pyrcn no longer forwards it,
-    # so log_loss now returns the same value as scikit-learn.
+    # The generic wrapper mirrors scikit-learn's current signature (``eps``
+    # is gone, ``y_pred`` renamed to ``y_proba``), so log_loss matches
+    # scikit-learn on both sequence and plain-array input.
     np.testing.assert_almost_equal(
         pyrcn.metrics.log_loss(
-            y_true=y_true_bin, y_pred=y_prob_bin,
+            y_true=y_true_bin, y_proba=y_prob_bin,
             sample_weight=sample_weight),
         sklearn.metrics.log_loss(
             y_true=np.concatenate(y_true_bin),
-            y_pred=np.concatenate(y_prob_bin),
+            y_proba=np.concatenate(y_prob_bin),
             sample_weight=np.concatenate(sample_weight)))
     np.testing.assert_almost_equal(
-        pyrcn.metrics.log_loss(y_true=y_true_bin, y_pred=y_prob_bin),
+        pyrcn.metrics.log_loss(y_true=y_true_bin, y_proba=y_prob_bin),
         sklearn.metrics.log_loss(
             y_true=np.concatenate(y_true_bin),
-            y_pred=np.concatenate(y_prob_bin)))
-    # Passing the deprecated ``eps`` argument must be ignored, not raise.
-    result = pyrcn.metrics.log_loss(
-        y_true=y_true_bin, y_pred=y_prob_bin, eps=1e-10)
-    assert isinstance(result, float)
+            y_proba=np.concatenate(y_prob_bin)))
+    # Plain (non-sequence) arrays are now accepted.
+    np.testing.assert_almost_equal(
+        pyrcn.metrics.log_loss(y_true=y_true_bin[0], y_proba=y_prob_bin[0]),
+        sklearn.metrics.log_loss(
+            y_true=y_true_bin[0], y_proba=y_prob_bin[0]))
 
 
 def test_brier_score_loss() -> None:
-    # scikit-learn>=1.5 renamed ``y_prob`` to ``y_proba``; pyrcn now forwards
-    # the new name, so brier_score_loss returns the same value as sklearn.
+    # scikit-learn>=1.5 renamed ``y_prob`` to ``y_proba``; the generic wrapper
+    # mirrors that signature, so brier_score_loss matches scikit-learn on both
+    # sequence and plain-array input.
     np.testing.assert_almost_equal(
         pyrcn.metrics.brier_score_loss(
-            y_true=y_true_bin, y_prob=y_prob_bin,
+            y_true=y_true_bin, y_proba=y_prob_bin,
             sample_weight=sample_weight),
         sklearn.metrics.brier_score_loss(
             y_true=np.concatenate(y_true_bin),
             y_proba=np.concatenate(y_prob_bin),
             sample_weight=np.concatenate(sample_weight)))
-    result = pyrcn.metrics.brier_score_loss(
-        y_true=y_true_bin, y_prob=y_prob_bin)
-    assert isinstance(result, float)
+    np.testing.assert_almost_equal(
+        pyrcn.metrics.brier_score_loss(
+            y_true=y_true_bin[0], y_proba=y_prob_bin[0]),
+        sklearn.metrics.brier_score_loss(
+            y_true=y_true_bin[0], y_proba=y_prob_bin[0]))
+
+
+def test_plain_array_flexibility() -> None:
+    # A plain (non-object) array is passed straight through to scikit-learn.
+    plain = y_true_bin[0]
+    np.testing.assert_equal(
+        pyrcn.metrics.accuracy_score(y_true=plain, y_pred=plain), 1)
+    np.testing.assert_equal(
+        pyrcn.metrics.accuracy_score(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]),
+        sklearn.metrics.accuracy_score(
+            y_true=y_true_bin[0], y_pred=y_pred_bin[0]))
+
+
+def test_sequence_equals_concatenation() -> None:
+    # A sequence and its concatenation yield the same result.
+    np.testing.assert_equal(
+        pyrcn.metrics.accuracy_score(y_true=y_true_bin, y_pred=y_pred_bin),
+        pyrcn.metrics.accuracy_score(
+            y_true=np.concatenate(y_true_bin),
+            y_pred=np.concatenate(y_pred_bin)))
