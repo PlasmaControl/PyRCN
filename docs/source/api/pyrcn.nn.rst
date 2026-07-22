@@ -59,9 +59,12 @@ Weight initializers
 
    antisymmetric_recurrent_weights
    bernoulli_input_weights
+   cycle_reservoir_with_jumps_weights
    delay_line_feedback_weights
    delay_line_weights
+   multi_ring_weights
    normal_recurrent_weights
+   pi_digit_input_weights
    simple_cycle_weights
    spectral_normalize
    uniform_bias_weights

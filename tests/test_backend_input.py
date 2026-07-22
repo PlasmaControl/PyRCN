@@ -11,8 +11,8 @@ import pytest
 import torch
 
 from pyrcn.nn import InputFeatureMap
-from pyrcn.nn.init import (bernoulli_input_weights, uniform_bias_weights,
-                           uniform_input_weights)
+from pyrcn.nn.init import (bernoulli_input_weights, pi_digit_input_weights,
+                           uniform_bias_weights, uniform_input_weights)
 from pyrcn.base.blocks import InputToNode
 
 RTOL, ATOL = 1e-8, 1e-11
@@ -83,6 +83,36 @@ def test_bernoulli_input_weights_are_signed_constants() -> None:
         8, 20, value=0.5, generator=torch.Generator().manual_seed(0),
         dtype=torch.float64)
     assert set(torch.unique(W).tolist()) <= {0.5, -0.5}
+
+
+def test_pi_digit_input_weights_match_paper_sign_rule() -> None:
+    # pi = 3.14159265..., fractional digits 1,4,1,5,9,2,6,5,3,5; thresholded at
+    # 4.5 (digit >= 5 -> +) these give the exact Rodan & Tino sign sequence.
+    W = pi_digit_input_weights(1, 10, value=0.5, dtype=torch.float64)
+    expected = 0.5 * torch.tensor(
+        [[-1, -1, -1, 1, 1, -1, 1, 1, -1, 1]], dtype=torch.float64)
+    assert torch.equal(W, expected)
+
+
+def test_pi_digit_input_weights_are_signed_constants() -> None:
+    W = pi_digit_input_weights(8, 20, value=0.5, dtype=torch.float64)
+    assert W.shape == (8, 20)
+    assert set(torch.unique(W).tolist()) <= {0.5, -0.5}
+
+
+def test_pi_digit_input_weights_are_deterministic() -> None:
+    # no random state: identical across calls (the whole point vs. Bernoulli).
+    a = pi_digit_input_weights(4, 16, dtype=torch.float64)
+    b = pi_digit_input_weights(4, 16, dtype=torch.float64)
+    assert torch.equal(a, b)
+
+
+def test_pi_digit_input_weights_consume_digits_row_major() -> None:
+    # (2, 5): row 0 uses digits d1..d5, row 1 continues with d6..d10.
+    W = pi_digit_input_weights(2, 5, value=1.0, dtype=torch.float64)
+    expected = torch.tensor(
+        [[-1, -1, -1, 1, 1], [-1, 1, 1, -1, 1]], dtype=torch.float64)
+    assert torch.equal(W, expected)
 
 
 def test_uniform_bias_shape_and_range() -> None:
